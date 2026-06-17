@@ -1,15 +1,26 @@
 #!/usr/bin/env python3
-"""Tri intelligent de documents (PDF, Word, PowerPoint) par centre d'intérêt.
+"""Tri intelligent de documents (PDF, Word, PowerPoint, texte) par centre d'intérêt.
 
-Petite application avec interface graphique : tu choisis un dossier, tu donnes
-tes catégories, et l'outil lit le contenu de chaque document, demande à l'IA
-(API Claude) dans quelle catégorie il va, puis range les fichiers dans des
-sous-dossiers correspondants.
+Application avec interface graphique. Tu choisis ce qui doit être scanné
+(**tout le PC** ou des dossiers précis), tu donnes tes catégories, et l'outil
+lit le contenu de chaque document, détermine dans quelle catégorie il va, puis
+range les fichiers dans des sous-dossiers correspondants.
+
+Deux moteurs d'analyse au choix :
+
+* **Local (sur ton PC, sans internet)** — analyse le contenu et le nom du
+  fichier par mots-clés. Rien n'est envoyé sur internet, c'est gratuit et privé.
+* **API Claude** — analyse fine du contenu par l'IA (nécessite une clé API
+  Anthropic).
+
+À propos de « Copilot Windows » : Copilot Windows n'expose aucune API publique
+permettant de lui envoyer automatiquement des milliers de documents pour les
+classer. Il n'est donc pas possible de piloter Copilot en arrière-plan pour
+trier tout un PC. Le moteur **Local** est l'équivalent automatisable le plus
+proche : toute l'analyse se fait sur ta machine, sans rien envoyer ailleurs.
 
 Lancement :
     python tri_documents.py
-
-Nécessite la variable d'environnement ANTHROPIC_API_KEY.
 """
 
 from __future__ import annotations
@@ -17,21 +28,36 @@ from __future__ import annotations
 import json
 import os
 import queue
+import re
 import shutil
+import string
+import sys
 import threading
 import tkinter as tk
+import unicodedata
 from pathlib import Path
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
 # --- Lecture du contenu des documents --------------------------------------
 
-# Nombre de caractères de contenu envoyés à l'IA par document. Un extrait
-# suffit largement pour déterminer le thème, et ça maîtrise le coût/la vitesse.
+# Nombre de caractères de contenu analysés par document. Un extrait suffit
+# largement pour déterminer le thème, et ça maîtrise le coût/la vitesse.
 EXTRAIT_MAX_CARACTERES = 6000
 
 MODELE = "claude-opus-4-8"
 
-EXTENSIONS_SUPPORTEES = {".pdf", ".docx", ".pptx"}
+EXTENSIONS_SUPPORTEES = {".pdf", ".docx", ".pptx", ".txt", ".md"}
+
+# Dossiers qu'on ne scanne jamais : système, caches, environnements de dev…
+# Trier des fichiers système n'a pas de sens et peut casser des programmes.
+DOSSIERS_IGNORES = {
+    "windows", "program files", "program files (x86)", "programdata",
+    "$recycle.bin", "$windows.~bs", "$windows.~ws", "system volume information",
+    "recovery", "perflogs", "appdata", "application data", "local settings",
+    "node_modules", ".git", ".svn", ".hg", ".cache", "__pycache__",
+    ".venv", "venv", "env", "site-packages", "temp", "tmp",
+    "library", "system", "private", ".trash", ".local", ".config",
+}
 
 
 def lire_pdf(chemin: Path) -> str:
@@ -75,6 +101,12 @@ def lire_pptx(chemin: Path) -> str:
     return "\n".join(morceaux)
 
 
+def lire_texte_brut(chemin: Path) -> str:
+    # On lit au plus l'extrait nécessaire, en tolérant les encodages exotiques.
+    with open(chemin, "r", encoding="utf-8", errors="replace") as f:
+        return f.read(EXTRAIT_MAX_CARACTERES)
+
+
 def extraire_texte(chemin: Path) -> str:
     """Renvoie un extrait du contenu textuel du document."""
     extension = chemin.suffix.lower()
@@ -84,22 +116,145 @@ def extraire_texte(chemin: Path) -> str:
         texte = lire_docx(chemin)
     elif extension == ".pptx":
         texte = lire_pptx(chemin)
+    elif extension in (".txt", ".md"):
+        texte = lire_texte_brut(chemin)
     else:
         return ""
     return texte[:EXTRAIT_MAX_CARACTERES].strip()
 
 
-# --- Classification via l'API Claude ----------------------------------------
+# --- Recherche des documents sur le PC --------------------------------------
 
 
-def classer_document(client, nom_fichier: str, texte: str, categories: list[str]) -> dict:
-    """Demande à Claude dans quelle catégorie ranger le document.
+def lister_disques() -> list[Path]:
+    """Renvoie la liste des racines à scanner pour « tout le PC »."""
+    if os.name == "nt":
+        disques = []
+        for lettre in string.ascii_uppercase:
+            racine = Path(f"{lettre}:\\")
+            if racine.exists():
+                disques.append(racine)
+        return disques
+    # macOS / Linux : on part du dossier personnel (plus sûr que la racine « / »,
+    # qui est pleine de fichiers système).
+    return [Path.home()]
 
-    Renvoie un dict {"categorie": <str>, "justification": <str>}. La catégorie
-    renvoyée fait toujours partie des catégories fournies (contrainte par un
-    schéma JSON), avec un repli sur "Non classé" si le contenu est illisible.
+
+def _doit_ignorer(nom_dossier: str) -> bool:
+    nom = nom_dossier.lower()
+    return nom in DOSSIERS_IGNORES or nom.startswith(".")
+
+
+def scanner_documents(racines: list[Path], journaliser, arret) -> list[Path]:
+    """Parcourt récursivement les racines et renvoie les documents trouvés.
+
+    Ignore les dossiers système/caches et s'arrête proprement si `arret` (un
+    threading.Event) est déclenché.
     """
-    valeurs = categories + ["Non classé"]
+    trouves: list[Path] = []
+    for racine in racines:
+        if arret.is_set():
+            break
+        journaliser(f"Scan de {racine}…")
+        for dossier_courant, sous_dossiers, fichiers in os.walk(racine):
+            if arret.is_set():
+                break
+            # Élague les dossiers à ignorer (modification en place de la liste).
+            sous_dossiers[:] = [d for d in sous_dossiers if not _doit_ignorer(d)]
+            for nom in fichiers:
+                if Path(nom).suffix.lower() in EXTENSIONS_SUPPORTEES:
+                    trouves.append(Path(dossier_courant) / nom)
+                    if len(trouves) % 200 == 0:
+                        journaliser(f"  … {len(trouves)} documents repérés")
+    return trouves
+
+
+# --- Catégories (nom + mots-clés optionnels) --------------------------------
+
+
+def parser_categories(lignes: list[str]) -> list[tuple[str, list[str]]]:
+    """Transforme les lignes saisies en (nom, mots-clés).
+
+    Format accepté par ligne :
+        Travail
+        Cuisine: recette, ingrédient, four, cuisson
+    Les mots-clés (après « : ») servent au moteur local. Pour le moteur Claude,
+    seul le nom compte.
+    """
+    categories: list[tuple[str, list[str]]] = []
+    for ligne in lignes:
+        ligne = ligne.strip()
+        if not ligne:
+            continue
+        if ":" in ligne:
+            nom, reste = ligne.split(":", 1)
+            mots = [m.strip() for m in re.split(r"[,;]", reste) if m.strip()]
+        else:
+            nom, mots = ligne, []
+        nom = nom.strip()
+        if nom:
+            categories.append((nom, mots))
+    return categories
+
+
+# --- Moteur d'analyse LOCAL (sur le PC, sans internet) ----------------------
+
+
+def _normaliser(texte: str) -> str:
+    """Minuscule + sans accents, pour comparer les mots-clés de façon tolérante."""
+    texte = texte.lower()
+    texte = unicodedata.normalize("NFD", texte)
+    return "".join(c for c in texte if unicodedata.category(c) != "Mn")
+
+
+def classer_local(nom_fichier: str, texte: str,
+                  categories: list[tuple[str, list[str]]]) -> dict:
+    """Classe un document par comptage de mots-clés (aucun appel réseau).
+
+    Chaque catégorie est notée selon le nombre d'occurrences de ses mots-clés
+    (et de son propre nom) dans le nom du fichier et l'extrait de contenu. La
+    catégorie au meilleur score gagne ; en cas d'égalité à zéro, « Non classé ».
+    """
+    base = _normaliser(f"{nom_fichier}\n{texte}")
+    meilleur_nom = "Non classé"
+    meilleur_score = 0
+    meilleur_motif = ""
+
+    for nom, mots in categories:
+        # Le nom de la catégorie compte aussi comme mot-clé implicite.
+        termes = [nom] + mots
+        score = 0
+        touches: list[str] = []
+        for terme in termes:
+            terme_norm = _normaliser(terme)
+            if not terme_norm:
+                continue
+            # \b ne marche pas avec les accents retirés sur tous les mots ;
+            # on compte les occurrences de sous-chaîne, suffisant ici.
+            occurrences = base.count(terme_norm)
+            if occurrences:
+                score += occurrences
+                touches.append(terme)
+        if score > meilleur_score:
+            meilleur_score = score
+            meilleur_nom = nom
+            meilleur_motif = ", ".join(touches[:5])
+
+    if meilleur_score == 0:
+        return {"categorie": "Non classé",
+                "justification": "Aucun mot-clé de catégorie trouvé."}
+    return {"categorie": meilleur_nom,
+            "justification": f"Mots-clés trouvés : {meilleur_motif}"}
+
+
+# --- Moteur d'analyse CLAUDE (API) ------------------------------------------
+
+
+def classer_claude(client, nom_fichier: str, texte: str,
+                   categories: list[tuple[str, list[str]]]) -> dict:
+    """Demande à Claude dans quelle catégorie ranger le document."""
+    noms = [nom for nom, _ in categories]
+    valeurs = noms + ["Non classé"]
     schema = {
         "type": "object",
         "properties": {
@@ -111,10 +266,7 @@ def classer_document(client, nom_fichier: str, texte: str, categories: list[str]
     }
 
     if texte:
-        contenu = (
-            f"Nom du fichier : {nom_fichier}\n\n"
-            f"Extrait du contenu :\n{texte}"
-        )
+        contenu = f"Nom du fichier : {nom_fichier}\n\nExtrait du contenu :\n{texte}"
     else:
         contenu = (
             f"Nom du fichier : {nom_fichier}\n\n"
@@ -156,70 +308,111 @@ def chemin_destination_unique(dossier: Path, nom: str) -> Path:
         compteur += 1
 
 
-def trier(dossier: Path, categories: list[str], deplacer: bool, cle_api: str,
-          journaliser, fini):
-    """Parcourt le dossier, classe chaque document et le range. Thread de fond."""
+def trier(racines: list[Path], destination: Path,
+          categories: list[tuple[str, list[str]]], moteur: str, deplacer: bool,
+          simulation: bool, cle_api: str, journaliser, arret, fini):
+    """Scanne les racines, classe chaque document et le range. Thread de fond."""
+    try:
+        classer = _preparer_moteur(moteur, cle_api, journaliser)
+    except _ErreurMoteur:
+        fini()
+        return
+
+    journaliser("Recherche des documents… (cela peut prendre un moment)\n")
+    fichiers = scanner_documents(racines, journaliser, arret)
+
+    if arret.is_set():
+        journaliser("\n⏹ Scan interrompu.")
+        fini()
+        return
+
+    if not fichiers:
+        journaliser("Aucun document (.pdf, .docx, .pptx, .txt, .md) trouvé.")
+        fini()
+        return
+
+    destination.mkdir(parents=True, exist_ok=True)
+    journaliser(f"\n{len(fichiers)} document(s) à trier.")
+    if simulation:
+        journaliser("MODE SIMULATION : aucun fichier ne sera déplacé ni copié.")
+    action = "Déplacé" if deplacer else "Copié"
+    journaliser("")
+
+    deja_dans_destination = destination.resolve()
+
+    for i, fichier in enumerate(fichiers, start=1):
+        if arret.is_set():
+            journaliser("\n⏹ Tri interrompu.")
+            fini()
+            return
+        journaliser(f"[{i}/{len(fichiers)}] {fichier.name} — analyse…")
+        try:
+            # Ne pas re-trier ce qui est déjà rangé dans le dossier de destination.
+            if deja_dans_destination in fichier.resolve().parents:
+                journaliser("    (déjà dans le dossier de destination — ignoré)\n")
+                continue
+
+            texte = extraire_texte(fichier)
+            resultat = classer(fichier.name, texte, categories)
+            categorie = resultat["categorie"]
+            justification = resultat.get("justification", "")
+
+            dossier_cible = destination / _nom_dossier_sur(categorie)
+            cible = chemin_destination_unique(dossier_cible, fichier.name)
+
+            journaliser(f"    → {categorie}  ({justification})")
+            if simulation:
+                journaliser(f"    [simulation] irait dans : {dossier_cible}\n")
+            else:
+                dossier_cible.mkdir(parents=True, exist_ok=True)
+                if deplacer:
+                    shutil.move(str(fichier), str(cible))
+                else:
+                    shutil.copy2(str(fichier), str(cible))
+                journaliser(f"    {action} dans : {dossier_cible}\n")
+        except Exception as erreur:  # noqa: BLE001 - on continue malgré une erreur isolée
+            journaliser(f"    ÉCHEC : {erreur}\n")
+
+    journaliser("✅ Tri terminé." if not simulation
+                else "✅ Simulation terminée (rien n'a été modifié).")
+    fini()
+
+
+def _nom_dossier_sur(nom: str) -> str:
+    """Nettoie un nom de catégorie pour en faire un nom de dossier valide."""
+    nom = re.sub(r'[<>:"/\\|?*]', "_", nom).strip().strip(".")
+    return nom or "Non classé"
+
+
+class _ErreurMoteur(Exception):
+    pass
+
+
+def _preparer_moteur(moteur: str, cle_api: str, journaliser):
+    """Renvoie une fonction classer(nom, texte, categories) -> dict."""
+    if moteur == "local":
+        return classer_local
+
+    # moteur == "claude"
     try:
         import anthropic
     except ImportError:
-        import sys
         journaliser(
             "ERREUR : le paquet 'anthropic' n'est pas installé pour ce Python.\n"
             f"    Python utilisé : {sys.executable}\n"
             "    Installe les dépendances avec CE Python précis :\n"
             f'    "{sys.executable}" -m pip install anthropic pypdf python-docx python-pptx'
         )
-        fini()
-        return
-
+        raise _ErreurMoteur
     if not cle_api:
         journaliser(
             "ERREUR : aucune clé API. Colle ta clé Anthropic dans le champ "
-            "'Clé API' (récupère-la sur https://console.anthropic.com)."
+            "'Clé API' (récupère-la sur https://console.anthropic.com), ou "
+            "choisis le moteur « Local »."
         )
-        fini()
-        return
-
+        raise _ErreurMoteur
     client = anthropic.Anthropic(api_key=cle_api)
-
-    fichiers = [
-        p for p in sorted(dossier.iterdir())
-        if p.is_file() and p.suffix.lower() in EXTENSIONS_SUPPORTEES
-    ]
-
-    if not fichiers:
-        journaliser("Aucun fichier PDF, Word (.docx) ou PowerPoint (.pptx) "
-                    "trouvé dans ce dossier.")
-        fini()
-        return
-
-    journaliser(f"{len(fichiers)} document(s) à trier.\n")
-    action = "Déplacé" if deplacer else "Copié"
-
-    for i, fichier in enumerate(fichiers, start=1):
-        journaliser(f"[{i}/{len(fichiers)}] {fichier.name} — analyse…")
-        try:
-            texte = extraire_texte(fichier)
-            resultat = classer_document(client, fichier.name, texte, categories)
-            categorie = resultat["categorie"]
-            justification = resultat.get("justification", "")
-
-            dossier_cible = dossier / categorie
-            dossier_cible.mkdir(exist_ok=True)
-            destination = chemin_destination_unique(dossier_cible, fichier.name)
-
-            if deplacer:
-                shutil.move(str(fichier), str(destination))
-            else:
-                shutil.copy2(str(fichier), str(destination))
-
-            journaliser(f"    → {categorie}  ({justification})")
-            journaliser(f"    {action} dans : {dossier_cible}\n")
-        except Exception as erreur:  # noqa: BLE001 - on continue malgré une erreur isolée
-            journaliser(f"    ÉCHEC : {erreur}\n")
-
-    journaliser("✅ Tri terminé.")
-    fini()
+    return lambda nom, texte, cats: classer_claude(client, nom, texte, cats)
 
 
 # --- Mémorisation de la clé API ---------------------------------------------
@@ -255,10 +448,12 @@ class Application(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Tri intelligent de documents")
-        self.geometry("720x600")
-        self.minsize(640, 520)
+        self.geometry("760x760")
+        self.minsize(680, 640)
 
         self.file_journal: queue.Queue[str] = queue.Queue()
+        self.arret = threading.Event()
+        self.dossiers_choisis: list[str] = []
         self._construire_interface()
         self.after(100, self._vider_journal)
 
@@ -266,56 +461,148 @@ class Application(tk.Tk):
         cadre = ttk.Frame(self, padding=12)
         cadre.pack(fill="both", expand=True)
 
-        # Dossier
-        ttk.Label(cadre, text="Dossier contenant tes documents :").pack(anchor="w")
+        # --- Quoi scanner ---
+        ttk.Label(cadre, text="Que veux-tu scanner ?",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
+        self.var_etendue = tk.StringVar(value="pc")
+        ttk.Radiobutton(cadre, text="Tout le PC (tous les disques)",
+                        variable=self.var_etendue, value="pc",
+                        command=self._maj_etendue).pack(anchor="w")
+        self.radio_dossiers = ttk.Radiobutton(
+            cadre, text="Des dossiers que je choisis",
+            variable=self.var_etendue, value="dossiers",
+            command=self._maj_etendue)
+        self.radio_dossiers.pack(anchor="w")
+
+        self.cadre_dossiers = ttk.Frame(cadre)
+        ligne_d = ttk.Frame(self.cadre_dossiers)
+        ligne_d.pack(fill="x")
+        ttk.Button(ligne_d, text="Ajouter un dossier…",
+                   command=self._ajouter_dossier).pack(side="left")
+        ttk.Button(ligne_d, text="Vider la liste",
+                   command=self._vider_dossiers).pack(side="left", padx=(6, 0))
+        self.liste_dossiers = tk.Listbox(self.cadre_dossiers, height=3)
+        self.liste_dossiers.pack(fill="x", pady=(4, 0))
+
+        # --- Destination ---
+        ttk.Label(cadre, text="Dossier de destination (où créer les catégories) :",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor="w", pady=(10, 0))
         ligne = ttk.Frame(cadre)
         ligne.pack(fill="x", pady=(2, 10))
-        self.var_dossier = tk.StringVar()
-        ttk.Entry(ligne, textvariable=self.var_dossier).pack(
+        self.var_destination = tk.StringVar(
+            value=str(Path.home() / "Documents tries"))
+        ttk.Entry(ligne, textvariable=self.var_destination).pack(
             side="left", fill="x", expand=True)
-        ttk.Button(ligne, text="Parcourir…", command=self._choisir_dossier).pack(
-            side="left", padx=(6, 0))
+        ttk.Button(ligne, text="Parcourir…",
+                   command=self._choisir_destination).pack(side="left", padx=(6, 0))
 
-        # Clé API
-        ttk.Label(
+        # --- Moteur d'analyse ---
+        ttk.Label(cadre, text="Moteur d'analyse :",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
+        self.var_moteur = tk.StringVar(value="local")
+        ttk.Radiobutton(
             cadre,
-            text="Clé API Anthropic (depuis console.anthropic.com) — mémorisée après le 1er tri :",
-        ).pack(anchor="w")
+            text="Local — sur ton PC, sans internet, gratuit (mots-clés)",
+            variable=self.var_moteur, value="local",
+            command=self._maj_moteur).pack(anchor="w")
+        self.radio_claude = ttk.Radiobutton(
+            cadre,
+            text="API Claude — analyse fine du contenu (clé API requise)",
+            variable=self.var_moteur, value="claude",
+            command=self._maj_moteur)
+        self.radio_claude.pack(anchor="w")
+
+        self.cadre_cle = ttk.Frame(cadre)
+        ttk.Label(self.cadre_cle,
+                  text="Clé API Anthropic (mémorisée après le 1er tri) :").pack(anchor="w")
         self.var_cle = tk.StringVar(value=charger_cle())
-        ttk.Entry(cadre, textvariable=self.var_cle, show="•").pack(
-            fill="x", pady=(2, 10))
+        ttk.Entry(self.cadre_cle, textvariable=self.var_cle, show="•").pack(
+            fill="x", pady=(2, 0))
 
-        # Catégories
+        # --- Catégories ---
         ttk.Label(
             cadre,
-            text="Tes catégories (une par ligne) — ex. Travail, Études, Cuisine, Voyages :",
+            text=("Tes catégories (une par ligne). En mode Local, ajoute des "
+                  "mots-clés après « : »."),
+            font=("TkDefaultFont", 10, "bold"),
+        ).pack(anchor="w", pady=(10, 0))
+        ttk.Label(
+            cadre,
+            text="Ex.  Cuisine: recette, ingrédient, cuisson    |    Finances: facture, impôt, banque",
+            foreground="#666",
         ).pack(anchor="w")
         self.txt_categories = tk.Text(cadre, height=6)
         self.txt_categories.pack(fill="x", pady=(2, 10))
-        self.txt_categories.insert("1.0", "Travail\nÉtudes\nPersonnel\nFinances")
+        self.txt_categories.insert(
+            "1.0",
+            "Travail: contrat, réunion, projet, client\n"
+            "Études: cours, examen, devoir, université\n"
+            "Finances: facture, impôt, banque, salaire\n"
+            "Personnel: famille, photo, vacances",
+        )
 
-        # Options
+        # --- Options ---
+        self.var_simulation = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            cadre,
+            text="Simulation (montre ce qui serait fait, sans rien déplacer) — recommandé pour un 1er essai",
+            variable=self.var_simulation,
+        ).pack(anchor="w")
         self.var_deplacer = tk.BooleanVar(value=False)
         ttk.Checkbutton(
             cadre,
             text="Déplacer les fichiers (décoché = les copier, originaux conservés)",
             variable=self.var_deplacer,
-        ).pack(anchor="w", pady=(0, 10))
+        ).pack(anchor="w", pady=(0, 8))
 
-        # Bouton lancer
+        # --- Boutons ---
+        ligne_boutons = ttk.Frame(cadre)
+        ligne_boutons.pack(anchor="w", pady=(0, 10))
         self.bouton_lancer = ttk.Button(
-            cadre, text="Lancer le tri", command=self._lancer)
-        self.bouton_lancer.pack(anchor="w", pady=(0, 10))
+            ligne_boutons, text="Lancer le tri", command=self._lancer)
+        self.bouton_lancer.pack(side="left")
+        self.bouton_arret = ttk.Button(
+            ligne_boutons, text="Arrêter", command=self._demander_arret,
+            state="disabled")
+        self.bouton_arret.pack(side="left", padx=(6, 0))
 
-        # Journal
+        # --- Journal ---
         ttk.Label(cadre, text="Journal :").pack(anchor="w")
-        self.journal = scrolledtext.ScrolledText(cadre, height=14, state="disabled")
+        self.journal = scrolledtext.ScrolledText(cadre, height=12, state="disabled")
         self.journal.pack(fill="both", expand=True, pady=(2, 0))
 
-    def _choisir_dossier(self):
-        dossier = filedialog.askdirectory(title="Choisis le dossier à trier")
+        self._maj_etendue()
+        self._maj_moteur()
+
+    # --- Réactions de l'interface ---
+
+    def _maj_etendue(self):
+        if self.var_etendue.get() == "dossiers":
+            self.cadre_dossiers.pack(fill="x", pady=(4, 0),
+                                     after=self.radio_dossiers)
+        else:
+            self.cadre_dossiers.pack_forget()
+
+    def _maj_moteur(self):
+        if self.var_moteur.get() == "claude":
+            self.cadre_cle.pack(fill="x", pady=(2, 6), after=self.radio_claude)
+        else:
+            self.cadre_cle.pack_forget()
+
+    def _ajouter_dossier(self):
+        dossier = filedialog.askdirectory(title="Choisis un dossier à scanner")
+        if dossier and dossier not in self.dossiers_choisis:
+            self.dossiers_choisis.append(dossier)
+            self.liste_dossiers.insert("end", dossier)
+
+    def _vider_dossiers(self):
+        self.dossiers_choisis.clear()
+        self.liste_dossiers.delete(0, "end")
+
+    def _choisir_destination(self):
+        dossier = filedialog.askdirectory(title="Choisis le dossier de destination")
         if dossier:
-            self.var_dossier.set(dossier)
+            self.var_destination.set(dossier)
 
     def _ecrire(self, message: str):
         self.journal.configure(state="normal")
@@ -328,36 +615,57 @@ class Application(tk.Tk):
             self._ecrire(self.file_journal.get_nowait())
         self.after(100, self._vider_journal)
 
-    def _lancer(self):
-        dossier_txt = self.var_dossier.get().strip()
-        if not dossier_txt:
-            messagebox.showwarning("Dossier manquant", "Choisis d'abord un dossier.")
-            return
-        dossier = Path(dossier_txt)
-        if not dossier.is_dir():
-            messagebox.showerror("Dossier invalide", "Ce dossier n'existe pas.")
-            return
+    def _demander_arret(self):
+        self.arret.set()
+        self.file_journal.put("Arrêt demandé…")
 
-        categories = [
-            ligne.strip()
-            for ligne in self.txt_categories.get("1.0", "end").splitlines()
-            if ligne.strip()
-        ]
+    def _lancer(self):
+        # Étendue → racines.
+        if self.var_etendue.get() == "pc":
+            racines = lister_disques()
+            if not racines:
+                messagebox.showerror("Aucun disque", "Aucun disque détecté.")
+                return
+            if not messagebox.askyesno(
+                "Scanner tout le PC ?",
+                "Tu vas scanner TOUT le PC. Cela peut prendre du temps.\n\n"
+                "Les dossiers système sont ignorés et, par défaut, les fichiers "
+                "sont copiés (pas déplacés) en mode simulation.\n\nContinuer ?"):
+                return
+        else:
+            if not self.dossiers_choisis:
+                messagebox.showwarning(
+                    "Aucun dossier", "Ajoute au moins un dossier à scanner.")
+                return
+            racines = [Path(d) for d in self.dossiers_choisis]
+
+        destination_txt = self.var_destination.get().strip()
+        if not destination_txt:
+            messagebox.showwarning(
+                "Destination manquante", "Indique un dossier de destination.")
+            return
+        destination = Path(destination_txt)
+
+        categories = parser_categories(
+            self.txt_categories.get("1.0", "end").splitlines())
         if not categories:
             messagebox.showwarning(
                 "Catégories manquantes", "Indique au moins une catégorie.")
             return
 
+        moteur = self.var_moteur.get()
         cle_api = self.var_cle.get().strip()
-        if not cle_api:
-            messagebox.showwarning(
-                "Clé API manquante",
-                "Colle ta clé API Anthropic dans le champ 'Clé API'.\n"
-                "Tu peux en créer une sur https://console.anthropic.com")
-            return
-        enregistrer_cle(cle_api)  # mémorise pour la prochaine fois
+        if moteur == "claude":
+            if not cle_api:
+                messagebox.showwarning(
+                    "Clé API manquante",
+                    "Colle ta clé API Anthropic, ou choisis le moteur « Local ».")
+                return
+            enregistrer_cle(cle_api)
 
+        self.arret.clear()
         self.bouton_lancer.configure(state="disabled")
+        self.bouton_arret.configure(state="normal")
         self.journal.configure(state="normal")
         self.journal.delete("1.0", "end")
         self.journal.configure(state="disabled")
@@ -365,11 +673,15 @@ class Application(tk.Tk):
         threading.Thread(
             target=trier,
             args=(
-                dossier,
+                racines,
+                destination,
                 categories,
+                moteur,
                 self.var_deplacer.get(),
+                self.var_simulation.get(),
                 cle_api,
                 self.file_journal.put,
+                self.arret,
                 lambda: self.after(0, self._reactiver),
             ),
             daemon=True,
@@ -377,6 +689,7 @@ class Application(tk.Tk):
 
     def _reactiver(self):
         self.bouton_lancer.configure(state="normal")
+        self.bouton_arret.configure(state="disabled")
 
 
 if __name__ == "__main__":

@@ -1,12 +1,29 @@
 # Tri intelligent de documents
 
-Petite application avec interface graphique qui range automatiquement tes
-fichiers **PDF, Word (.docx) et PowerPoint (.pptx)** par centre d'intérêt.
+Application avec interface graphique qui range automatiquement tes fichiers
+**PDF, Word (.docx), PowerPoint (.pptx), texte (.txt, .md)** par centre
+d'intérêt.
 
-Tu choisis un dossier et tu donnes tes catégories (ex. *Travail*, *Études*,
-*Cuisine*, *Voyages*). L'outil lit le contenu de chaque document, demande à
-l'IA (l'**API Claude**) dans quelle catégorie il va, puis range les fichiers
-dans des sous-dossiers correspondants.
+Tu choisis **ce qui doit être scanné** (tout le PC ou des dossiers précis) et
+tu donnes tes catégories (ex. *Travail*, *Études*, *Cuisine*, *Finances*).
+L'outil lit le contenu de chaque document, détermine dans quelle catégorie il
+va, puis range les fichiers dans des sous-dossiers du dossier de destination.
+
+## Deux moteurs d'analyse au choix
+
+- **Local (sur ton PC, sans internet)** — analyse le contenu et le nom de
+  chaque fichier par mots-clés. Rien n'est envoyé sur internet, c'est **gratuit
+  et privé**. C'est le mode par défaut.
+- **API Claude** — analyse fine du contenu par l'IA. Plus précis, mais nécessite
+  une clé API Anthropic et envoie un extrait de chaque document à Anthropic.
+
+### Et « Copilot Windows » ?
+
+Copilot Windows **n'expose aucune API publique** permettant à un programme de
+lui envoyer automatiquement des milliers de documents pour les classer. On ne
+peut donc pas le piloter en arrière-plan pour trier tout un PC. Le moteur
+**Local** est l'équivalent automatisable le plus proche : toute l'analyse se
+fait sur ta machine, sans rien envoyer ailleurs.
 
 ## Installation rapide (recommandée)
 
@@ -19,8 +36,8 @@ Un script fait tout pour toi (installe les dépendances puis lance l'appli) :
 - **Windows :** double-clic sur `installer.bat` (ou lance-le depuis l'invite
   de commandes).
 
-Pense quand même à définir ta clé API (voir l'étape 3 ci-dessous) ; le script
-te prévient si elle manque.
+Le moteur **Local** fonctionne sans clé API. La clé n'est utile que pour le
+moteur **API Claude**.
 
 ## Installation manuelle
 
@@ -31,13 +48,11 @@ te prévient si elle manque.
    pip install -r requirements.txt
    ```
 
-3. Récupérer une clé API Anthropic sur https://console.anthropic.com. Tu n'as
-   **rien à configurer** : au premier lancement, colle simplement ta clé dans
-   le champ **« Clé API »** de l'application. Elle est mémorisée (dans un
-   fichier `cle_api.txt` à côté du programme) pour les fois suivantes.
-
-   *Optionnel* — si tu préfères, tu peux aussi la définir comme variable
-   d'environnement `ANTHROPIC_API_KEY` ; l'appli la reprendra automatiquement.
+3. *(Uniquement pour le moteur API Claude)* récupérer une clé API Anthropic sur
+   https://console.anthropic.com. Au premier lancement, colle ta clé dans le
+   champ **« Clé API »** de l'application ; elle est mémorisée (fichier
+   `cle_api.txt` à côté du programme) pour les fois suivantes. Tu peux aussi la
+   définir comme variable d'environnement `ANTHROPIC_API_KEY`.
 
 ## Utilisation
 
@@ -45,24 +60,43 @@ te prévient si elle manque.
 python tri_documents.py
 ```
 
-1. **Parcourir…** pour choisir le dossier contenant tes documents.
-2. Saisir tes catégories, une par ligne.
-3. Choisir de **copier** (par défaut, les originaux sont conservés) ou de
-   **déplacer** les fichiers.
-4. Cliquer sur **Lancer le tri**.
+1. **Que veux-tu scanner ?** : *Tout le PC* (tous les disques) ou *des dossiers
+   que tu choisis*.
+2. **Dossier de destination** : l'endroit où les sous-dossiers de catégories
+   seront créés.
+3. **Moteur d'analyse** : *Local* (par défaut) ou *API Claude*.
+4. **Catégories** : une par ligne. En mode Local, ajoute des mots-clés après
+   « : » pour guider le tri, par exemple :
 
-L'outil crée un sous-dossier par catégorie dans ton dossier et y range chaque
-document. Les documents dont le thème ne correspond à aucune catégorie (ou
-illisibles) vont dans **Non classé**.
+   ```
+   Cuisine: recette, ingrédient, cuisson, four
+   Finances: facture, impôt, banque, salaire
+   ```
+
+5. **Options** :
+   - *Simulation* (activée par défaut) : montre ce qui serait fait **sans rien
+     déplacer ni copier**. Idéal pour un premier essai.
+   - *Déplacer* (sinon, copie : les originaux sont conservés).
+6. Cliquer sur **Lancer le tri**. Le bouton **Arrêter** interrompt à tout
+   moment.
+
+L'outil crée un sous-dossier par catégorie dans le dossier de destination et y
+range chaque document. Les documents dont le thème ne correspond à aucune
+catégorie vont dans **Non classé**.
 
 ## Bon à savoir
 
-- **Coût :** chaque document entraîne un appel à l'API Claude (facturé selon ta
-  consommation Anthropic). Seul un extrait du début de chaque document est
-  envoyé, ce qui suffit pour le thème et limite le coût.
-- **Confidentialité :** le contenu des documents est envoyé à l'API d'Anthropic
-  pour analyse.
-- **Formats pris en charge :** `.pdf`, `.docx`, `.pptx`. Les anciens formats
-  `.doc` et `.ppt` ne sont pas lus (convertis-les au préalable).
-- **Pas d'écrasement :** si un fichier du même nom existe déjà dans la
+- **Sécurité du scan « tout le PC »** : les dossiers système et techniques
+  (Windows, Program Files, AppData, node_modules, caches, dossiers cachés…)
+  sont automatiquement ignorés. Par défaut les fichiers sont **copiés** et le
+  mode **simulation** est activé : commence par une simulation pour vérifier le
+  résultat avant de déplacer quoi que ce soit.
+- **Coût (moteur API Claude uniquement)** : chaque document entraîne un appel à
+  l'API Claude (facturé selon ta consommation Anthropic). Seul un extrait du
+  début de chaque document est envoyé.
+- **Confidentialité** : en mode **Local**, rien ne quitte ton PC. En mode **API
+  Claude**, un extrait du contenu est envoyé à Anthropic pour analyse.
+- **Formats pris en charge** : `.pdf`, `.docx`, `.pptx`, `.txt`, `.md`. Les
+  anciens formats `.doc` et `.ppt` ne sont pas lus (convertis-les au préalable).
+- **Pas d'écrasement** : si un fichier du même nom existe déjà dans la
   catégorie cible, un suffixe ` (1)`, ` (2)`… est ajouté.
