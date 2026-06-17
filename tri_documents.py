@@ -588,16 +588,22 @@ GEMINI_URL = (
 
 def _schema_gemini(valeurs: list[str], sous_dossiers: bool,
                    multi: bool) -> dict:
-    """Schéma de réponse au format attendu par Gemini (types en MAJUSCULES)."""
-    enum_cat = {"type": "STRING", "format": "enum", "enum": valeurs}
+    """Schéma de réponse au format attendu par Gemini (types en MAJUSCULES).
+
+    On n'utilise volontairement PAS le format `enum` (certaines versions de
+    Gemini le rejettent) : les catégories autorisées sont rappelées dans la
+    consigne, et la réponse est validée côté code. On ne contraint que la
+    structure JSON, ce qui est largement supporté.
+    """
+    categorie = {"type": "STRING"}
     if multi:
         proprietes = {
-            "categories": {"type": "ARRAY", "items": enum_cat},
+            "categories": {"type": "ARRAY", "items": categorie},
             "justification": {"type": "STRING"},
         }
         ordre = ["categories", "justification"]
     else:
-        proprietes = {"categorie": enum_cat, "justification": {"type": "STRING"}}
+        proprietes = {"categorie": categorie, "justification": {"type": "STRING"}}
         ordre = ["categorie", "justification"]
     if sous_dossiers:
         proprietes["sous_categorie"] = {"type": "STRING"}
@@ -641,20 +647,46 @@ def _appel_gemini_json(modele: str, cle: str, systeme: str, user: str,
             donnees = json.loads(reponse.read().decode("utf-8"))
     except urllib.error.HTTPError as erreur:
         detail = erreur.read().decode("utf-8", errors="replace")[:300]
+        if erreur.code in (401, 403):
+            indice = ("Ta clé API semble invalide ou non autorisée. Recrée-en "
+                      "une sur https://aistudio.google.com/apikey et recopie-la "
+                      "entièrement (sans espace).")
+        elif erreur.code == 404:
+            indice = (f"Le modèle « {modele or GEMINI_MODELE_DEFAUT} » est "
+                      "introuvable. Essaie un autre nom de modèle, par ex. "
+                      "« gemini-1.5-flash » ou « gemini-2.5-flash ».")
+        elif erreur.code == 429:
+            indice = ("Quota gratuit dépassé pour le moment. Réessaie plus tard "
+                      "ou réduis le nombre de documents.")
+        else:
+            indice = "Vérifie ta clé API et le nom du modèle."
         raise RuntimeError(
-            f"Gemini a refusé la requête (HTTP {erreur.code}). Vérifie ta clé "
-            f"API et le nom du modèle. {detail}") from erreur
+            f"Gemini a refusé la requête (HTTP {erreur.code}). {indice} "
+            f"[détail : {detail}]") from erreur
     except urllib.error.URLError as erreur:
         raise RuntimeError(
             f"Gemini injoignable (vérifie ta connexion internet). {erreur}"
         ) from erreur
 
+    candidats = donnees.get("candidates")
+    if not candidats:
+        blocage = donnees.get("promptFeedback", {}).get("blockReason")
+        if blocage:
+            raise RuntimeError(
+                f"Gemini a bloqué la demande (raison : {blocage}).")
+        raise RuntimeError(f"Réponse Gemini vide : {str(donnees)[:200]}")
     try:
-        texte = donnees["candidates"][0]["content"]["parts"][0]["text"]
+        texte = candidats[0]["content"]["parts"][0]["text"]
     except (KeyError, IndexError) as erreur:
+        raison = candidats[0].get("finishReason", "inconnue")
         raise RuntimeError(
-            f"Réponse Gemini inattendue : {str(donnees)[:200]}") from erreur
-    return json.loads(texte)
+            f"Gemini n'a pas renvoyé de texte (finishReason : {raison}). "
+            "Réessaie, éventuellement avec un autre modèle.") from erreur
+    try:
+        return json.loads(texte)
+    except json.JSONDecodeError as erreur:
+        raise RuntimeError(
+            f"Réponse Gemini illisible (pas du JSON) : {texte[:200]}") from erreur
 
 
 def classer_gemini(nom_fichier: str, texte: str,
