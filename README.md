@@ -81,13 +81,19 @@ python tri_documents.py
 2. **Dossier de destination** : l'endroit où les sous-dossiers de catégories
    seront créés.
 3. **Moteur d'analyse** : *Local* (par défaut) ou *API Claude*.
-4. **Catégories** : une par ligne. En mode Local, ajoute des mots-clés après
-   « : » pour guider le tri, par exemple :
+4. **Catégories** : une par ligne. Ajoute des mots-clés après « : » pour
+   guider le tri, par exemple :
 
    ```
    Cuisine: recette, ingrédient, cuisson, four
    Finances: facture, impôt, banque, salaire
    ```
+
+   Ces mots-clés sont utilisés par **tous les moteurs** : le moteur Local les
+   recherche en **mots entiers** (avec un poids plus fort dans le nom du
+   fichier et pour tes mots-clés que pour le nom de la catégorie), et les
+   moteurs **Ollama** et **Claude** les reçoivent comme **indices** pour mieux
+   juger. Plus tes mots-clés sont précis, meilleur est le tri.
 
 5. **Options** :
    - *Simulation* (activée par défaut) : montre ce qui serait fait **sans rien

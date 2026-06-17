@@ -42,9 +42,10 @@ from tkinter import filedialog, messagebox, scrolledtext, ttk
 
 # --- Lecture du contenu des documents --------------------------------------
 
-# Nombre de caractères de contenu analysés par document. Un extrait suffit
-# largement pour déterminer le thème, et ça maîtrise le coût/la vitesse.
-EXTRAIT_MAX_CARACTERES = 6000
+# Nombre de caractères de contenu analysés par document. Un extrait assez
+# généreux améliore la précision du classement, tout en maîtrisant le coût/la
+# vitesse côté IA.
+EXTRAIT_MAX_CARACTERES = 9000
 
 MODELE = "claude-opus-4-8"
 
@@ -217,53 +218,117 @@ def parser_categories(lignes: list[str]) -> list[tuple[str, list[str]]]:
 
 
 def _normaliser(texte: str) -> str:
-    """Minuscule + sans accents, pour comparer les mots-clés de façon tolérante."""
+    """Minuscule, sans accents, et séparateurs uniformisés en espaces.
+
+    Remplacer la ponctuation et les séparateurs (`_`, `-`, `.`…) par des espaces
+    permet de retrouver un mot-clé même collé à un séparateur, comme « facture »
+    dans « facture_edf.pdf ».
+    """
     texte = texte.lower()
     texte = unicodedata.normalize("NFD", texte)
-    return "".join(c for c in texte if unicodedata.category(c) != "Mn")
+    texte = "".join(c for c in texte if unicodedata.category(c) != "Mn")
+    # Tout ce qui n'est ni lettre ni chiffre devient un espace.
+    return re.sub(r"[^0-9a-z]+", " ", texte).strip()
+
+
+# Poids du nom de fichier : un mot-clé dans le nom est un signal bien plus fort
+# que dans le corps du document.
+POIDS_NOM_FICHIER = 3
+# Poids relatif : tes mots-clés (spécifiques) comptent plus que le nom de la
+# catégorie (souvent générique, ex. « Personnel »).
+POIDS_MOT_CLE = 2
+POIDS_NOM_CATEGORIE = 1
+
+
+def _compter_mots_entiers(motif_norm: str, texte_norm: str) -> int:
+    """Compte les occurrences de `motif_norm` en tant que mot/expression entier.
+
+    Évite les faux positifs (« art » ne doit pas matcher « carte »). Les
+    lookarounds gèrent aussi les expressions de plusieurs mots (« compte rendu »).
+    """
+    if not motif_norm:
+        return 0
+    motif = r"(?<!\w)" + re.escape(motif_norm) + r"(?!\w)"
+    return len(re.findall(motif, texte_norm))
 
 
 def classer_local(nom_fichier: str, texte: str,
                   categories: list[tuple[str, list[str]]]) -> dict:
-    """Classe un document par comptage de mots-clés (aucun appel réseau).
+    """Classe un document par correspondance de mots-clés pondérée (aucun réseau).
 
-    Chaque catégorie est notée selon le nombre d'occurrences de ses mots-clés
-    (et de son propre nom) dans le nom du fichier et l'extrait de contenu. La
-    catégorie au meilleur score gagne ; en cas d'égalité à zéro, « Non classé ».
+    Pour chaque catégorie, on additionne les occurrences de son nom et de ses
+    mots-clés, en tant que **mots entiers**, avec deux pondérations :
+
+    * une occurrence dans le **nom du fichier** pèse plus que dans le corps ;
+    * un **mot-clé** que tu as fourni pèse plus que le nom (générique) de la
+      catégorie.
+
+    La catégorie au meilleur score gagne. En cas d'égalité (ou de score nul),
+    on renvoie « Non classé » pour éviter un classement arbitraire.
     """
-    base = _normaliser(f"{nom_fichier}\n{texte}")
-    meilleur_nom = "Non classé"
-    meilleur_score = 0
-    meilleur_motif = ""
+    nom_norm = _normaliser(nom_fichier)
+    corps_norm = _normaliser(texte)
 
+    scores: list[tuple[float, str, str]] = []  # (score, catégorie, motif)
     for nom, mots in categories:
-        # Le nom de la catégorie compte aussi comme mot-clé implicite.
-        termes = [nom] + mots
-        score = 0
+        termes = [(nom, POIDS_NOM_CATEGORIE)] + [(m, POIDS_MOT_CLE) for m in mots]
+        score = 0.0
         touches: list[str] = []
-        for terme in termes:
+        for terme, poids in termes:
             terme_norm = _normaliser(terme)
-            if not terme_norm:
-                continue
-            # \b ne marche pas avec les accents retirés sur tous les mots ;
-            # on compte les occurrences de sous-chaîne, suffisant ici.
-            occurrences = base.count(terme_norm)
-            if occurrences:
-                score += occurrences
+            dans_nom = _compter_mots_entiers(terme_norm, nom_norm)
+            dans_corps = _compter_mots_entiers(terme_norm, corps_norm)
+            gain = poids * (POIDS_NOM_FICHIER * dans_nom + dans_corps)
+            if gain:
+                score += gain
                 touches.append(terme)
-        if score > meilleur_score:
-            meilleur_score = score
-            meilleur_nom = nom
-            meilleur_motif = ", ".join(touches[:5])
+        scores.append((score, nom, ", ".join(touches[:5])))
 
-    if meilleur_score == 0:
+    scores.sort(key=lambda x: x[0], reverse=True)
+    meilleur = scores[0]
+
+    if meilleur[0] == 0:
         return {"categorie": "Non classé",
                 "justification": "Aucun mot-clé de catégorie trouvé."}
-    return {"categorie": meilleur_nom,
-            "justification": f"Mots-clés trouvés : {meilleur_motif}"}
+    # Égalité en tête : ambigu, on préfère ne pas trancher au hasard.
+    if len(scores) > 1 and scores[1][0] == meilleur[0]:
+        return {"categorie": "Non classé",
+                "justification": (
+                    f"Ambigu entre « {meilleur[1]} » et « {scores[1][1]} » "
+                    "(scores égaux).")}
+    return {"categorie": meilleur[1],
+            "justification": f"Mots-clés trouvés : {meilleur[2]}"}
 
 
 # --- Moteur d'analyse CLAUDE (API) ------------------------------------------
+
+
+def _indices_categories(categories: list[tuple[str, list[str]]]) -> str:
+    """Formate la liste des catégories et leurs mots-clés, en indices pour l'IA."""
+    lignes = []
+    for nom, mots in categories:
+        if mots:
+            lignes.append(f"- {nom} (indices : {', '.join(mots)})")
+        else:
+            lignes.append(f"- {nom}")
+    return "\n".join(lignes)
+
+
+def _contenu_document(nom_fichier: str, texte: str,
+                      categories: list[tuple[str, list[str]]]) -> str:
+    """Message décrivant le document et les catégories possibles (avec indices)."""
+    entete = (
+        "Catégories possibles (les « indices » sont des mots-clés typiques, pas "
+        "des règles strictes) :\n"
+        f"{_indices_categories(categories)}\n\n"
+        f"Nom du fichier : {nom_fichier}\n\n"
+    )
+    if texte:
+        return entete + f"Extrait du contenu :\n{texte}"
+    return entete + (
+        "(Impossible d'extraire du texte de ce document — base-toi sur le nom "
+        "du fichier, ou choisis 'Non classé'.)"
+    )
 
 
 def classer_claude(client, nom_fichier: str, texte: str,
@@ -281,14 +346,7 @@ def classer_claude(client, nom_fichier: str, texte: str,
         "additionalProperties": False,
     }
 
-    if texte:
-        contenu = f"Nom du fichier : {nom_fichier}\n\nExtrait du contenu :\n{texte}"
-    else:
-        contenu = (
-            f"Nom du fichier : {nom_fichier}\n\n"
-            "(Impossible d'extraire du texte de ce document — base-toi "
-            "uniquement sur le nom du fichier, ou choisis 'Non classé'.)"
-        )
+    contenu = _contenu_document(nom_fichier, texte, categories)
 
     reponse = client.messages.create(
         model=MODELE,
@@ -296,9 +354,11 @@ def classer_claude(client, nom_fichier: str, texte: str,
         system=(
             "Tu es un assistant qui range des documents par centre d'intérêt. "
             "Tu choisis exactement UNE catégorie parmi la liste fournie, celle "
-            "qui correspond le mieux au thème du document. Si rien ne "
-            "correspond ou que le contenu est inexploitable, utilise "
-            "'Non classé'. La justification doit tenir en une courte phrase."
+            "qui correspond le mieux au thème réel du document. Sers-toi des "
+            "indices comme d'une aide, mais juge surtout d'après le contenu. Si "
+            "le document ne correspond clairement à aucune catégorie, ou que le "
+            "contenu est inexploitable, utilise 'Non classé' plutôt que de "
+            "forcer un choix. La justification doit tenir en une courte phrase."
         ),
         messages=[{"role": "user", "content": contenu}],
         output_config={"format": {"type": "json_schema", "schema": schema}},
@@ -335,21 +395,15 @@ def classer_ollama(nom_fichier: str, texte: str,
         "required": ["categorie", "justification"],
     }
 
-    if texte:
-        contenu = f"Nom du fichier : {nom_fichier}\n\nExtrait du contenu :\n{texte}"
-    else:
-        contenu = (
-            f"Nom du fichier : {nom_fichier}\n\n"
-            "(Impossible d'extraire du texte — base-toi sur le nom du fichier, "
-            "ou choisis 'Non classé'.)"
-        )
+    contenu = _contenu_document(nom_fichier, texte, categories)
 
     systeme = (
         "Tu ranges des documents par centre d'intérêt. Choisis exactement UNE "
-        f"catégorie parmi : {', '.join(valeurs)}. Choisis celle qui correspond "
-        "le mieux au thème du document. Si rien ne correspond, utilise "
-        "'Non classé'. Réponds uniquement en JSON avec les clés 'categorie' et "
-        "'justification' (une courte phrase)."
+        f"catégorie parmi : {', '.join(valeurs)}. Juge d'après le thème réel du "
+        "document ; les indices fournis sont une aide, pas une règle stricte. "
+        "Si le document ne correspond clairement à aucune catégorie, utilise "
+        "'Non classé' plutôt que de forcer. Réponds uniquement en JSON avec les "
+        "clés 'categorie' et 'justification' (une courte phrase)."
     )
 
     payload = {
