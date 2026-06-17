@@ -37,9 +37,28 @@ toute l'analyse se fait sur ta machine, sans rien envoyer ailleurs.
    ```
    D'autres modèles conviennent aussi (`qwen2.5:3b`, `mistral`…). Les petits
    modèles sont plus rapides ; les plus gros, plus précis.
-3. Dans l'appli, choisis le moteur **IA locale (Ollama)** et indique le nom du
-   modèle téléchargé. Ollama doit être lancé (il l'est automatiquement après
-   installation sous Windows/macOS).
+3. Dans l'appli, choisis le moteur **IA locale (Ollama)**. Clique sur
+   **Détecter les modèles** pour remplir automatiquement la liste des modèles
+   installés, puis choisis celui à utiliser. Ollama doit être lancé (il l'est
+   automatiquement après installation sous Windows/macOS).
+
+### Tri fin en sous-dossiers (moteurs IA)
+
+Avec les moteurs **IA locale (Ollama)** ou **API Claude**, coche l'option
+**« Tri fin : créer des sous-dossiers par sous-thème »**. En plus de la grande
+catégorie, l'IA propose un sous-thème et range le document dans un sous-dossier,
+par exemple :
+
+```
+Documents triés/
+  Finances/
+    Factures EDF/
+    Impôts/
+  Cuisine/
+    Recettes desserts/
+```
+
+Le moteur **Local** (mots-clés) range uniquement par grande catégorie.
 
 ## Installation rapide (recommandée)
 

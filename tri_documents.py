@@ -368,22 +368,38 @@ def _contenu_document(nom_fichier: str, texte: str,
     )
 
 
+# Consigne commune aux moteurs IA pour proposer un sous-thème (tri fin).
+_CONSIGNE_SOUS_CATEGORIE = (
+    " Donne aussi un 'sous_categorie' : un sous-thème court (1 à 3 mots) et "
+    "réutilisable décrivant plus finement le document dans sa catégorie (ex. "
+    "« Factures EDF », « Impôts », « Recettes desserts »). Reste cohérent d'un "
+    "document à l'autre, et laisse-le vide si aucun sous-thème net ne se dégage."
+)
+
+
 def classer_claude(client, nom_fichier: str, texte: str,
-                   categories: list[tuple[str, list[str]]]) -> dict:
+                   categories: list[tuple[str, list[str]]],
+                   sous_dossiers: bool = False) -> dict:
     """Demande à Claude dans quelle catégorie ranger le document."""
     noms = [nom for nom, _ in categories]
     valeurs = noms + ["Non classé"]
+    proprietes = {
+        "categorie": {"type": "string", "enum": valeurs},
+        "justification": {"type": "string"},
+    }
+    requis = ["categorie", "justification"]
+    if sous_dossiers:
+        proprietes["sous_categorie"] = {"type": "string"}
+        requis.append("sous_categorie")
     schema = {
         "type": "object",
-        "properties": {
-            "categorie": {"type": "string", "enum": valeurs},
-            "justification": {"type": "string"},
-        },
-        "required": ["categorie", "justification"],
+        "properties": proprietes,
+        "required": requis,
         "additionalProperties": False,
     }
 
     contenu = _contenu_document(nom_fichier, texte, categories)
+    consigne_sous = _CONSIGNE_SOUS_CATEGORIE if sous_dossiers else ""
 
     reponse = client.messages.create(
         model=MODELE,
@@ -396,6 +412,7 @@ def classer_claude(client, nom_fichier: str, texte: str,
             "le document ne correspond clairement à aucune catégorie, ou que le "
             "contenu est inexploitable, utilise 'Non classé' plutôt que de "
             "forcer un choix. La justification doit tenir en une courte phrase."
+            + consigne_sous
         ),
         messages=[{"role": "user", "content": contenu}],
         output_config={"format": {"type": "json_schema", "schema": schema}},
@@ -414,23 +431,39 @@ OLLAMA_HOTE_DEFAUT = "http://localhost:11434"
 OLLAMA_MODELE_DEFAUT = "llama3.2"
 
 
+def lister_modeles_ollama(hote: str = OLLAMA_HOTE_DEFAUT) -> list[str]:
+    """Renvoie la liste des modèles installés dans Ollama (vide si injoignable)."""
+    import urllib.error
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(
+                hote.rstrip("/") + "/api/tags", timeout=5) as reponse:
+            donnees = json.loads(reponse.read().decode("utf-8"))
+    except (urllib.error.URLError, json.JSONDecodeError, OSError):
+        return []
+    return sorted(m.get("name", "") for m in donnees.get("models", [])
+                  if m.get("name"))
+
+
 def classer_ollama(nom_fichier: str, texte: str,
                    categories: list[tuple[str, list[str]]],
-                   modele: str, hote: str) -> dict:
+                   modele: str, hote: str, sous_dossiers: bool = False) -> dict:
     """Classe un document via un modèle local servi par Ollama (aucun réseau externe)."""
     import urllib.error
     import urllib.request
 
     noms = [nom for nom, _ in categories]
     valeurs = noms + ["Non classé"]
-    schema = {
-        "type": "object",
-        "properties": {
-            "categorie": {"type": "string", "enum": valeurs},
-            "justification": {"type": "string"},
-        },
-        "required": ["categorie", "justification"],
+    proprietes = {
+        "categorie": {"type": "string", "enum": valeurs},
+        "justification": {"type": "string"},
     }
+    requis = ["categorie", "justification"]
+    if sous_dossiers:
+        proprietes["sous_categorie"] = {"type": "string"}
+        requis.append("sous_categorie")
+    schema = {"type": "object", "properties": proprietes, "required": requis}
 
     contenu = _contenu_document(nom_fichier, texte, categories)
 
@@ -441,6 +474,7 @@ def classer_ollama(nom_fichier: str, texte: str,
         "Si le document ne correspond clairement à aucune catégorie, utilise "
         "'Non classé' plutôt que de forcer. Réponds uniquement en JSON avec les "
         "clés 'categorie' et 'justification' (une courte phrase)."
+        + (_CONSIGNE_SOUS_CATEGORIE if sous_dossiers else "")
     )
 
     payload = {
@@ -509,7 +543,7 @@ def chemin_destination_unique(dossier: Path, nom: str) -> Path:
 def trier(racines: list[Path], destination: Path,
           categories: list[tuple[str, list[str]]], moteur: str, deplacer: bool,
           simulation: bool, cle_api: str, modele_ollama: str, hote_ollama: str,
-          journaliser, arret, fini, progres=None):
+          sous_dossiers: bool, journaliser, arret, fini, progres=None):
     """Scanne les racines, classe chaque document et le range. Thread de fond.
 
     `progres(courant, total)` est appelé pour la barre de progression (optionnel).
@@ -520,7 +554,8 @@ def trier(racines: list[Path], destination: Path,
 
     try:
         classer = _preparer_moteur(
-            moteur, cle_api, modele_ollama, hote_ollama, journaliser)
+            moteur, cle_api, modele_ollama, hote_ollama, sous_dossiers,
+            journaliser)
     except _ErreurMoteur:
         fini()
         return
@@ -572,9 +607,15 @@ def trier(racines: list[Path], destination: Path,
             justification = resultat.get("justification", "")
 
             dossier_cible = destination / _nom_dossier_sur(categorie)
+            # Tri fin : range dans un sous-dossier si l'IA en a proposé un.
+            sous = (resultat.get("sous_categorie") or "").strip()
+            label = categorie
+            if sous_dossiers and sous:
+                dossier_cible = dossier_cible / _nom_dossier_sur(sous)
+                label = f"{categorie} / {sous}"
             cible = chemin_destination_unique(dossier_cible, fichier.name)
 
-            journaliser(f"    → {categorie}  ({justification})")
+            journaliser(f"    → {label}  ({justification})")
             if simulation:
                 journaliser(f"    [simulation] irait dans : {dossier_cible}\n")
             else:
@@ -650,7 +691,7 @@ class _ErreurMoteur(Exception):
 
 
 def _preparer_moteur(moteur: str, cle_api: str, modele_ollama: str,
-                     hote_ollama: str, journaliser):
+                     hote_ollama: str, sous_dossiers: bool, journaliser):
     """Renvoie une fonction classer(nom, texte, categories) -> dict."""
     if moteur == "local":
         return classer_local
@@ -664,7 +705,7 @@ def _preparer_moteur(moteur: str, cle_api: str, modele_ollama: str,
             f"dans un terminal lance « ollama pull {modele} ».\n"
         )
         return lambda nom, texte, cats: classer_ollama(
-            nom, texte, cats, modele, hote)
+            nom, texte, cats, modele, hote, sous_dossiers)
 
     # moteur == "claude"
     try:
@@ -685,7 +726,8 @@ def _preparer_moteur(moteur: str, cle_api: str, modele_ollama: str,
         )
         raise _ErreurMoteur
     client = anthropic.Anthropic(api_key=cle_api)
-    return lambda nom, texte, cats: classer_claude(client, nom, texte, cats)
+    return lambda nom, texte, cats: classer_claude(
+        client, nom, texte, cats, sous_dossiers)
 
 
 # --- Mémorisation de la clé API ---------------------------------------------
@@ -838,10 +880,14 @@ class Application(tk.Tk):
         self.cadre_ollama = ttk.Frame(cadre)
         ttk.Label(self.cadre_ollama,
                   text="Modèle Ollama (ex. llama3.2, qwen2.5:3b, mistral) :").pack(anchor="w")
+        ligne_m = ttk.Frame(self.cadre_ollama)
+        ligne_m.pack(fill="x", pady=(2, 0))
         self.var_modele = tk.StringVar(
             value=self.config.get("modele", OLLAMA_MODELE_DEFAUT))
-        ttk.Entry(self.cadre_ollama, textvariable=self.var_modele).pack(
-            fill="x", pady=(2, 0))
+        self.combo_modele = ttk.Combobox(ligne_m, textvariable=self.var_modele)
+        self.combo_modele.pack(side="left", fill="x", expand=True)
+        ttk.Button(ligne_m, text="Détecter les modèles",
+                   command=self._detecter_modeles).pack(side="left", padx=(6, 0))
         ttk.Label(
             self.cadre_ollama,
             text="Installe Ollama depuis https://ollama.com, puis : ollama pull " + OLLAMA_MODELE_DEFAUT,
@@ -894,6 +940,13 @@ class Application(tk.Tk):
             cadre,
             text="Déplacer les fichiers (décoché = les copier, originaux conservés)",
             variable=self.var_deplacer,
+        ).pack(anchor="w")
+        self.var_sous_dossiers = tk.BooleanVar(
+            value=self.config.get("sous_dossiers", False))
+        ttk.Checkbutton(
+            cadre,
+            text="Tri fin : créer des sous-dossiers par sous-thème (moteurs IA Ollama / Claude)",
+            variable=self.var_sous_dossiers,
         ).pack(anchor="w", pady=(0, 8))
 
         # --- Boutons ---
@@ -960,6 +1013,19 @@ class Application(tk.Tk):
         dossier = filedialog.askdirectory(title="Choisis le dossier de destination")
         if dossier:
             self.var_destination.set(dossier)
+
+    def _detecter_modeles(self):
+        modeles = lister_modeles_ollama()
+        if not modeles:
+            messagebox.showwarning(
+                "Aucun modèle détecté",
+                "Ollama ne répond pas ou aucun modèle n'est installé.\n\n"
+                "Vérifie qu'Ollama est lancé (https://ollama.com) et qu'un "
+                "modèle est téléchargé, par ex. : ollama pull " + OLLAMA_MODELE_DEFAUT)
+            return
+        self.combo_modele.configure(values=modeles)
+        if self.var_modele.get() not in modeles:
+            self.var_modele.set(modeles[0])
 
     def _ecrire(self, message: str):
         self.journal.configure(state="normal")
@@ -1038,6 +1104,7 @@ class Application(tk.Tk):
             "categories": self.txt_categories.get("1.0", "end").strip(),
             "simulation": self.var_simulation.get(),
             "deplacer": self.var_deplacer.get(),
+            "sous_dossiers": self.var_sous_dossiers.get(),
         })
 
         self.derniere_destination = destination
@@ -1063,6 +1130,7 @@ class Application(tk.Tk):
                 cle_api,
                 self.var_modele.get().strip(),
                 OLLAMA_HOTE_DEFAUT,
+                self.var_sous_dossiers.get(),
                 self.file_journal.put,
                 self.arret,
                 lambda: self.after(0, self._reactiver),
