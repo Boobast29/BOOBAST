@@ -93,12 +93,20 @@ python tri_documents.py
    - *Simulation* (activée par défaut) : montre ce qui serait fait **sans rien
      déplacer ni copier**. Idéal pour un premier essai.
    - *Déplacer* (sinon, copie : les originaux sont conservés).
-6. Cliquer sur **Lancer le tri**. Le bouton **Arrêter** interrompt à tout
-   moment.
+6. Cliquer sur **Lancer le tri**. Une **barre de progression** indique
+   l'avancement ; le bouton **Arrêter** interrompt à tout moment ; le bouton
+   **Ouvrir le dossier** ouvre la destination à la fin.
 
 L'outil crée un sous-dossier par catégorie dans le dossier de destination et y
 range chaque document. Les documents dont le thème ne correspond à aucune
 catégorie vont dans **Non classé**.
+
+À la fin, un **récapitulatif** (nombre de documents par catégorie, échecs,
+ignorés) s'affiche dans le journal, et un **rapport CSV** (`rapport-*.csv`) est
+écrit dans le dossier de destination : il liste, pour chaque fichier, sa
+catégorie, la justification et sa destination — pratique pour vérifier le tri
+(ou revenir en arrière). Tes réglages (dossiers, destination, moteur, modèle,
+catégories, options) sont **mémorisés** d'un lancement à l'autre.
 
 ## Bon à savoir
 

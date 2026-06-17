@@ -6,10 +6,12 @@ Application avec interface graphique. Tu choisis ce qui doit être scanné
 lit le contenu de chaque document, détermine dans quelle catégorie il va, puis
 range les fichiers dans des sous-dossiers correspondants.
 
-Deux moteurs d'analyse au choix :
+Trois moteurs d'analyse au choix :
 
 * **Local (sur ton PC, sans internet)** — analyse le contenu et le nom du
   fichier par mots-clés. Rien n'est envoyé sur internet, c'est gratuit et privé.
+* **IA locale (Ollama)** — un modèle de langage qui tourne sur ta machine, pour
+  une analyse fine du contenu sans clé API ni internet.
 * **API Claude** — analyse fine du contenu par l'IA (nécessite une clé API
   Anthropic).
 
@@ -145,12 +147,15 @@ def _doit_ignorer(nom_dossier: str) -> bool:
     return nom in DOSSIERS_IGNORES or nom.startswith(".")
 
 
-def scanner_documents(racines: list[Path], journaliser, arret) -> list[Path]:
+def scanner_documents(racines: list[Path], journaliser, arret,
+                      exclure: set[Path] | None = None) -> list[Path]:
     """Parcourt récursivement les racines et renvoie les documents trouvés.
 
-    Ignore les dossiers système/caches et s'arrête proprement si `arret` (un
+    Ignore les dossiers système/caches (et tout dossier de `exclure`, p. ex. le
+    dossier de destination) et s'arrête proprement si `arret` (un
     threading.Event) est déclenché.
     """
+    exclure = exclure or set()
     trouves: list[Path] = []
     for racine in racines:
         if arret.is_set():
@@ -159,8 +164,19 @@ def scanner_documents(racines: list[Path], journaliser, arret) -> list[Path]:
         for dossier_courant, sous_dossiers, fichiers in os.walk(racine):
             if arret.is_set():
                 break
-            # Élague les dossiers à ignorer (modification en place de la liste).
-            sous_dossiers[:] = [d for d in sous_dossiers if not _doit_ignorer(d)]
+            # Élague les dossiers à ignorer (modification en place de la liste) :
+            # noms système/caches, et le dossier de destination le cas échéant.
+            gardes = []
+            for d in sous_dossiers:
+                if _doit_ignorer(d):
+                    continue
+                try:
+                    if (Path(dossier_courant) / d).resolve() in exclure:
+                        continue
+                except OSError:
+                    pass
+                gardes.append(d)
+            sous_dossiers[:] = gardes
             for nom in fichiers:
                 if Path(nom).suffix.lower() in EXTENSIONS_SUPPORTEES:
                     trouves.append(Path(dossier_courant) / nom)
@@ -399,8 +415,15 @@ def chemin_destination_unique(dossier: Path, nom: str) -> Path:
 def trier(racines: list[Path], destination: Path,
           categories: list[tuple[str, list[str]]], moteur: str, deplacer: bool,
           simulation: bool, cle_api: str, modele_ollama: str, hote_ollama: str,
-          journaliser, arret, fini):
-    """Scanne les racines, classe chaque document et le range. Thread de fond."""
+          journaliser, arret, fini, progres=None):
+    """Scanne les racines, classe chaque document et le range. Thread de fond.
+
+    `progres(courant, total)` est appelé pour la barre de progression (optionnel).
+    """
+    def avancer(courant, total):
+        if progres is not None:
+            progres(courant, total)
+
     try:
         classer = _preparer_moteur(
             moteur, cle_api, modele_ollama, hote_ollama, journaliser)
@@ -409,7 +432,9 @@ def trier(racines: list[Path], destination: Path,
         return
 
     journaliser("Recherche des documents… (cela peut prendre un moment)\n")
-    fichiers = scanner_documents(racines, journaliser, arret)
+    destination.mkdir(parents=True, exist_ok=True)
+    fichiers = scanner_documents(
+        racines, journaliser, arret, exclure={destination.resolve()})
 
     if arret.is_set():
         journaliser("\n⏹ Scan interrompu.")
@@ -421,7 +446,6 @@ def trier(racines: list[Path], destination: Path,
         fini()
         return
 
-    destination.mkdir(parents=True, exist_ok=True)
     journaliser(f"\n{len(fichiers)} document(s) à trier.")
     if simulation:
         journaliser("MODE SIMULATION : aucun fichier ne sera déplacé ni copié.")
@@ -429,17 +453,23 @@ def trier(racines: list[Path], destination: Path,
     journaliser("")
 
     deja_dans_destination = destination.resolve()
+    total = len(fichiers)
+    compteur: dict[str, int] = {}
+    echecs = 0
+    ignores = 0
+    lignes_rapport: list[tuple[str, str, str, str]] = []
 
     for i, fichier in enumerate(fichiers, start=1):
         if arret.is_set():
             journaliser("\n⏹ Tri interrompu.")
-            fini()
-            return
-        journaliser(f"[{i}/{len(fichiers)}] {fichier.name} — analyse…")
+            break
+        avancer(i, total)
+        journaliser(f"[{i}/{total}] {fichier.name} — analyse…")
         try:
             # Ne pas re-trier ce qui est déjà rangé dans le dossier de destination.
             if deja_dans_destination in fichier.resolve().parents:
                 journaliser("    (déjà dans le dossier de destination — ignoré)\n")
+                ignores += 1
                 continue
 
             texte = extraire_texte(fichier)
@@ -460,12 +490,59 @@ def trier(racines: list[Path], destination: Path,
                 else:
                     shutil.copy2(str(fichier), str(cible))
                 journaliser(f"    {action} dans : {dossier_cible}\n")
+
+            compteur[categorie] = compteur.get(categorie, 0) + 1
+            lignes_rapport.append(
+                (str(fichier), categorie, justification, str(cible)))
         except Exception as erreur:  # noqa: BLE001 - on continue malgré une erreur isolée
             journaliser(f"    ÉCHEC : {erreur}\n")
+            echecs += 1
+            lignes_rapport.append((str(fichier), "ÉCHEC", str(erreur), ""))
 
-    journaliser("✅ Tri terminé." if not simulation
-                else "✅ Simulation terminée (rien n'a été modifié).")
+    _ecrire_recapitulatif(journaliser, compteur, echecs, ignores, simulation)
+    chemin_rapport = _ecrire_rapport_csv(destination, lignes_rapport, simulation)
+    if chemin_rapport:
+        journaliser(f"📄 Rapport détaillé : {chemin_rapport}")
     fini()
+
+
+def _ecrire_recapitulatif(journaliser, compteur: dict[str, int], echecs: int,
+                          ignores: int, simulation: bool):
+    journaliser("\n— Récapitulatif —")
+    if compteur:
+        for categorie in sorted(compteur, key=lambda c: (-compteur[c], c)):
+            journaliser(f"  {categorie} : {compteur[categorie]}")
+    else:
+        journaliser("  Aucun document classé.")
+    if ignores:
+        journaliser(f"  Ignorés (déjà rangés) : {ignores}")
+    if echecs:
+        journaliser(f"  Échecs : {echecs}")
+    journaliser("\n✅ Simulation terminée (rien n'a été modifié)." if simulation
+                else "\n✅ Tri terminé.")
+
+
+def _ecrire_rapport_csv(destination: Path,
+                        lignes: list[tuple[str, str, str, str]],
+                        simulation: bool) -> Path | None:
+    """Écrit un rapport CSV de ce qui a été (ou serait) rangé. Aide à vérifier/annuler."""
+    if not lignes:
+        return None
+    import csv
+    from datetime import datetime
+
+    suffixe = "simulation" if simulation else "tri"
+    horodatage = datetime.now().strftime("%Y%m%d-%H%M%S")
+    chemin = destination / f"rapport-{suffixe}-{horodatage}.csv"
+    try:
+        with open(chemin, "w", encoding="utf-8-sig", newline="") as f:
+            ecrivain = csv.writer(f)
+            ecrivain.writerow(
+                ["Fichier source", "Catégorie", "Justification", "Destination"])
+            ecrivain.writerows(lignes)
+        return chemin
+    except OSError:
+        return None
 
 
 def _nom_dossier_sur(nom: str) -> str:
@@ -543,6 +620,43 @@ def enregistrer_cle(cle: str) -> None:
         pass  # pas grave : la clé reste utilisable pour cette session
 
 
+# --- Mémorisation des réglages ----------------------------------------------
+
+# On retient les derniers réglages (destination, catégories, moteur…) pour ne
+# pas avoir à tout ressaisir à chaque lancement. La clé API reste à part.
+CHEMIN_CONFIG = Path(__file__).resolve().parent / "config.json"
+
+
+def charger_config() -> dict:
+    try:
+        return json.loads(CHEMIN_CONFIG.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def enregistrer_config(config: dict) -> None:
+    try:
+        CHEMIN_CONFIG.write_text(
+            json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def ouvrir_dossier(chemin: Path) -> None:
+    """Ouvre un dossier dans l'explorateur de fichiers du système."""
+    try:
+        if os.name == "nt":
+            os.startfile(str(chemin))  # type: ignore[attr-defined]
+        elif sys.platform == "darwin":
+            import subprocess
+            subprocess.Popen(["open", str(chemin)])
+        else:
+            import subprocess
+            subprocess.Popen(["xdg-open", str(chemin)])
+    except Exception:  # noqa: BLE001 - simple confort, on ignore les erreurs
+        pass
+
+
 # --- Interface graphique -----------------------------------------------------
 
 
@@ -554,8 +668,12 @@ class Application(tk.Tk):
         self.minsize(680, 640)
 
         self.file_journal: queue.Queue[str] = queue.Queue()
+        self.file_progres: queue.Queue[tuple[int, int]] = queue.Queue()
         self.arret = threading.Event()
-        self.dossiers_choisis: list[str] = []
+        self.config = charger_config()
+        self.dossiers_choisis: list[str] = list(
+            self.config.get("dossiers_choisis", []))
+        self.derniere_destination: Path | None = None
         self._construire_interface()
         self.after(100, self._vider_journal)
 
@@ -566,7 +684,7 @@ class Application(tk.Tk):
         # --- Quoi scanner ---
         ttk.Label(cadre, text="Que veux-tu scanner ?",
                   font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
-        self.var_etendue = tk.StringVar(value="pc")
+        self.var_etendue = tk.StringVar(value=self.config.get("etendue", "pc"))
         ttk.Radiobutton(cadre, text="Tout le PC (tous les disques)",
                         variable=self.var_etendue, value="pc",
                         command=self._maj_etendue).pack(anchor="w")
@@ -585,6 +703,8 @@ class Application(tk.Tk):
                    command=self._vider_dossiers).pack(side="left", padx=(6, 0))
         self.liste_dossiers = tk.Listbox(self.cadre_dossiers, height=3)
         self.liste_dossiers.pack(fill="x", pady=(4, 0))
+        for d in self.dossiers_choisis:
+            self.liste_dossiers.insert("end", d)
 
         # --- Destination ---
         ttk.Label(cadre, text="Dossier de destination (où créer les catégories) :",
@@ -592,7 +712,8 @@ class Application(tk.Tk):
         ligne = ttk.Frame(cadre)
         ligne.pack(fill="x", pady=(2, 10))
         self.var_destination = tk.StringVar(
-            value=str(Path.home() / "Documents tries"))
+            value=self.config.get(
+                "destination", str(Path.home() / "Documents tries")))
         ttk.Entry(ligne, textvariable=self.var_destination).pack(
             side="left", fill="x", expand=True)
         ttk.Button(ligne, text="Parcourir…",
@@ -601,7 +722,7 @@ class Application(tk.Tk):
         # --- Moteur d'analyse ---
         ttk.Label(cadre, text="Moteur d'analyse :",
                   font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
-        self.var_moteur = tk.StringVar(value="local")
+        self.var_moteur = tk.StringVar(value=self.config.get("moteur", "local"))
         ttk.Radiobutton(
             cadre,
             text="Local — sur ton PC, sans internet, gratuit (mots-clés)",
@@ -623,7 +744,8 @@ class Application(tk.Tk):
         self.cadre_ollama = ttk.Frame(cadre)
         ttk.Label(self.cadre_ollama,
                   text="Modèle Ollama (ex. llama3.2, qwen2.5:3b, mistral) :").pack(anchor="w")
-        self.var_modele = tk.StringVar(value=OLLAMA_MODELE_DEFAUT)
+        self.var_modele = tk.StringVar(
+            value=self.config.get("modele", OLLAMA_MODELE_DEFAUT))
         ttk.Entry(self.cadre_ollama, textvariable=self.var_modele).pack(
             fill="x", pady=(2, 0))
         ttk.Label(
@@ -655,20 +777,25 @@ class Application(tk.Tk):
         self.txt_categories.pack(fill="x", pady=(2, 10))
         self.txt_categories.insert(
             "1.0",
-            "Travail: contrat, réunion, projet, client\n"
-            "Études: cours, examen, devoir, université\n"
-            "Finances: facture, impôt, banque, salaire\n"
-            "Personnel: famille, photo, vacances",
+            self.config.get(
+                "categories",
+                "Travail: contrat, réunion, projet, client\n"
+                "Études: cours, examen, devoir, université\n"
+                "Finances: facture, impôt, banque, salaire\n"
+                "Personnel: famille, photo, vacances",
+            ),
         )
 
         # --- Options ---
-        self.var_simulation = tk.BooleanVar(value=True)
+        self.var_simulation = tk.BooleanVar(
+            value=self.config.get("simulation", True))
         ttk.Checkbutton(
             cadre,
             text="Simulation (montre ce qui serait fait, sans rien déplacer) — recommandé pour un 1er essai",
             variable=self.var_simulation,
         ).pack(anchor="w")
-        self.var_deplacer = tk.BooleanVar(value=False)
+        self.var_deplacer = tk.BooleanVar(
+            value=self.config.get("deplacer", False))
         ttk.Checkbutton(
             cadre,
             text="Déplacer les fichiers (décoché = les copier, originaux conservés)",
@@ -685,6 +812,17 @@ class Application(tk.Tk):
             ligne_boutons, text="Arrêter", command=self._demander_arret,
             state="disabled")
         self.bouton_arret.pack(side="left", padx=(6, 0))
+        self.bouton_ouvrir = ttk.Button(
+            ligne_boutons, text="Ouvrir le dossier",
+            command=self._ouvrir_destination, state="disabled")
+        self.bouton_ouvrir.pack(side="left", padx=(6, 0))
+
+        # --- Progression ---
+        self.progression = ttk.Progressbar(cadre, mode="determinate")
+        self.progression.pack(fill="x", pady=(0, 6))
+        self.var_statut = tk.StringVar(value="")
+        ttk.Label(cadre, textvariable=self.var_statut, foreground="#666").pack(
+            anchor="w")
 
         # --- Journal ---
         ttk.Label(cadre, text="Journal :").pack(anchor="w")
@@ -738,7 +876,15 @@ class Application(tk.Tk):
     def _vider_journal(self):
         while not self.file_journal.empty():
             self._ecrire(self.file_journal.get_nowait())
+        while not self.file_progres.empty():
+            courant, total = self.file_progres.get_nowait()
+            self.progression.configure(maximum=max(total, 1), value=courant)
+            self.var_statut.set(f"{courant} / {total} documents traités")
         self.after(100, self._vider_journal)
+
+    def _ouvrir_destination(self):
+        if self.derniere_destination is not None:
+            ouvrir_dossier(self.derniere_destination)
 
     def _demander_arret(self):
         self.arret.set()
@@ -788,9 +934,25 @@ class Application(tk.Tk):
                 return
             enregistrer_cle(cle_api)
 
+        # Mémorise les réglages pour le prochain lancement.
+        enregistrer_config({
+            "etendue": self.var_etendue.get(),
+            "dossiers_choisis": self.dossiers_choisis,
+            "destination": destination_txt,
+            "moteur": moteur,
+            "modele": self.var_modele.get().strip(),
+            "categories": self.txt_categories.get("1.0", "end").strip(),
+            "simulation": self.var_simulation.get(),
+            "deplacer": self.var_deplacer.get(),
+        })
+
+        self.derniere_destination = destination
         self.arret.clear()
         self.bouton_lancer.configure(state="disabled")
         self.bouton_arret.configure(state="normal")
+        self.bouton_ouvrir.configure(state="disabled")
+        self.progression.configure(value=0)
+        self.var_statut.set("")
         self.journal.configure(state="normal")
         self.journal.delete("1.0", "end")
         self.journal.configure(state="disabled")
@@ -810,6 +972,7 @@ class Application(tk.Tk):
                 self.file_journal.put,
                 self.arret,
                 lambda: self.after(0, self._reactiver),
+                lambda c, t: self.file_progres.put((c, t)),
             ),
             daemon=True,
         ).start()
@@ -817,6 +980,8 @@ class Application(tk.Tk):
     def _reactiver(self):
         self.bouton_lancer.configure(state="normal")
         self.bouton_arret.configure(state="disabled")
+        if self.derniere_destination is not None:
+            self.bouton_ouvrir.configure(state="normal")
 
 
 if __name__ == "__main__":

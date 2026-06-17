@@ -1,4 +1,5 @@
-# Ne jamais versionner la clé API ni les fichiers temporaires Python
+# Ne jamais versionner la clé API, les réglages locaux ni les fichiers temporaires Python
 cle_api.txt
+config.json
 __pycache__/
 *.pyc
