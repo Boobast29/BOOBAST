@@ -574,6 +574,119 @@ def classer_ollama(nom_fichier: str, texte: str,
     return resultat
 
 
+# --- Moteur d'analyse GOOGLE GEMINI (API gratuite) --------------------------
+
+# Gemini propose un palier gratuit généreux. Clé API gratuite à créer sur
+# https://aistudio.google.com/apikey. On appelle l'API REST directement (aucune
+# dépendance Python à installer). Les documents transitent par Google.
+GEMINI_MODELE_DEFAUT = "gemini-2.0-flash"
+GEMINI_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/models/"
+    "{modele}:generateContent"
+)
+
+
+def _schema_gemini(valeurs: list[str], sous_dossiers: bool,
+                   multi: bool) -> dict:
+    """Schéma de réponse au format attendu par Gemini (types en MAJUSCULES)."""
+    enum_cat = {"type": "STRING", "format": "enum", "enum": valeurs}
+    if multi:
+        proprietes = {
+            "categories": {"type": "ARRAY", "items": enum_cat},
+            "justification": {"type": "STRING"},
+        }
+        ordre = ["categories", "justification"]
+    else:
+        proprietes = {"categorie": enum_cat, "justification": {"type": "STRING"}}
+        ordre = ["categorie", "justification"]
+    if sous_dossiers:
+        proprietes["sous_categorie"] = {"type": "STRING"}
+        ordre.append("sous_categorie")
+    return {
+        "type": "OBJECT",
+        "properties": proprietes,
+        "required": list(ordre),
+        "propertyOrdering": ordre,
+    }
+
+
+def _appel_gemini_json(modele: str, cle: str, systeme: str, user: str,
+                       schema: dict | None = None) -> dict:
+    """Appelle Gemini et renvoie la réponse JSON décodée (aucune dépendance)."""
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    if not cle:
+        raise RuntimeError(
+            "Clé API Gemini manquante. Crée-en une gratuitement sur "
+            "https://aistudio.google.com/apikey et colle-la dans le champ "
+            "« Clé API Gemini ».")
+
+    generation = {"temperature": 0, "responseMimeType": "application/json"}
+    if schema:
+        generation["responseSchema"] = schema
+    corps = {
+        "system_instruction": {"parts": [{"text": systeme}]},
+        "contents": [{"role": "user", "parts": [{"text": user}]}],
+        "generationConfig": generation,
+    }
+    url = (GEMINI_URL.format(modele=modele or GEMINI_MODELE_DEFAUT)
+           + "?key=" + urllib.parse.quote(cle))
+    requete = urllib.request.Request(
+        url, data=json.dumps(corps).encode("utf-8"),
+        headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(requete, timeout=120) as reponse:
+            donnees = json.loads(reponse.read().decode("utf-8"))
+    except urllib.error.HTTPError as erreur:
+        detail = erreur.read().decode("utf-8", errors="replace")[:300]
+        raise RuntimeError(
+            f"Gemini a refusé la requête (HTTP {erreur.code}). Vérifie ta clé "
+            f"API et le nom du modèle. {detail}") from erreur
+    except urllib.error.URLError as erreur:
+        raise RuntimeError(
+            f"Gemini injoignable (vérifie ta connexion internet). {erreur}"
+        ) from erreur
+
+    try:
+        texte = donnees["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError) as erreur:
+        raise RuntimeError(
+            f"Réponse Gemini inattendue : {str(donnees)[:200]}") from erreur
+    return json.loads(texte)
+
+
+def classer_gemini(nom_fichier: str, texte: str,
+                   categories: list[tuple[str, list[str]]],
+                   modele: str, cle: str, sous_dossiers: bool = False,
+                   multi: bool = False) -> dict:
+    """Classe un document via l'API Google Gemini."""
+    noms = [nom for nom, _ in categories]
+    valeurs = noms + ["Non classé"]
+    schema = _schema_gemini(valeurs, sous_dossiers, multi)
+
+    contenu = _contenu_document(nom_fichier, texte, categories)
+    systeme = (
+        "Tu ranges des documents par centre d'intérêt. "
+        + _consigne_classement(multi) +
+        " Sers-toi des indices comme d'une aide, mais juge surtout d'après le "
+        "contenu. Si le document ne correspond clairement à aucune catégorie, "
+        "ou que le contenu est inexploitable, utilise 'Non classé' plutôt que "
+        "de forcer un choix. La justification doit tenir en une courte phrase."
+        + (_CONSIGNE_SOUS_CATEGORIE if sous_dossiers else "")
+    )
+
+    resultat = _appel_gemini_json(modele, cle, systeme, contenu, schema)
+    resultat.setdefault("justification", "")
+    if multi:
+        valides = [c for c in resultat.get("categories", []) if c in valeurs]
+        resultat["categories"] = valides or ["Non classé"]
+    elif resultat.get("categorie") not in valeurs:
+        resultat["categorie"] = "Non classé"
+    return resultat
+
+
 # --- Proposition automatique de catégories (IA) -----------------------------
 
 _SCHEMA_PROPOSITION = {
@@ -629,19 +742,21 @@ def _proposition_vers_categories(donnees: dict) -> list[tuple[str, list[str]]]:
     return categories
 
 
-def proposer_categories(echantillon: str, moteur: str, modele: str, hote: str,
-                        cle_api: str) -> list[tuple[str, list[str]]]:
+def proposer_categories(echantillon: str, moteur: str,
+                        cfg: dict) -> list[tuple[str, list[str]]]:
     """Demande à l'IA de proposer des catégories d'après un échantillon.
 
-    Utilise Claude si `moteur == 'claude'`, sinon Ollama (y compris quand le
-    moteur de tri sélectionné est « Local » : la suggestion nécessite une IA).
+    Utilise le moteur sélectionné s'il est une IA (Claude / Gemini / Ollama).
+    Pour le moteur « Local » (qui ne sait pas inventer de catégories), on se
+    rabat sur Ollama. `cfg` porte les clés/modèles des moteurs.
     """
     user = "Extraits de documents :\n\n" + echantillon
+
     if moteur == "claude":
         import anthropic
-        if not cle_api:
+        if not cfg.get("cle_api"):
             raise RuntimeError("Clé API Anthropic requise pour la proposition.")
-        client = anthropic.Anthropic(api_key=cle_api)
+        client = anthropic.Anthropic(api_key=cfg["cle_api"])
         reponse = client.messages.create(
             model=MODELE,
             max_tokens=1000,
@@ -653,11 +768,18 @@ def proposer_categories(echantillon: str, moteur: str, modele: str, hote: str,
         texte = next(b.text for b in reponse.content if b.type == "text")
         return _proposition_vers_categories(json.loads(texte))
 
+    if moteur == "gemini":
+        donnees = _appel_gemini_json(
+            cfg.get("modele_gemini", ""), cfg.get("cle_gemini", ""),
+            _CONSIGNE_PROPOSITION, user)
+        return _proposition_vers_categories(donnees)
+
     # Ollama (moteur local ou ollama)
     import urllib.error
     import urllib.request
+    hote = cfg.get("hote_ollama", "") or OLLAMA_HOTE_DEFAUT
     payload = {
-        "model": modele or OLLAMA_MODELE_DEFAUT,
+        "model": cfg.get("modele_ollama", "") or OLLAMA_MODELE_DEFAUT,
         "messages": [
             {"role": "system", "content": _CONSIGNE_PROPOSITION},
             {"role": "user", "content": user},
@@ -667,7 +789,7 @@ def proposer_categories(echantillon: str, moteur: str, modele: str, hote: str,
         "options": {"temperature": 0, "num_ctx": 8192},
     }
     requete = urllib.request.Request(
-        (hote or OLLAMA_HOTE_DEFAUT).rstrip("/") + "/api/chat",
+        hote.rstrip("/") + "/api/chat",
         data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json"},
     )
@@ -676,8 +798,8 @@ def proposer_categories(echantillon: str, moteur: str, modele: str, hote: str,
             donnees = json.loads(reponse.read().decode("utf-8"))
     except urllib.error.URLError as erreur:
         raise RuntimeError(
-            f"Ollama injoignable sur {hote or OLLAMA_HOTE_DEFAUT}. Lance Ollama "
-            "(ou choisis le moteur API Claude) pour proposer des catégories. "
+            f"Ollama injoignable sur {hote}. Lance Ollama (ou choisis un autre "
+            "moteur IA) pour proposer des catégories. "
             f"(détail : {erreur})") from erreur
     if "error" in donnees:
         raise RuntimeError(f"Ollama : {donnees['error']}")
@@ -688,8 +810,8 @@ def proposer_categories(echantillon: str, moteur: str, modele: str, hote: str,
 # --- Logique de tri (exécutée dans un thread de fond) -----------------------
 
 
-def tache_proposer(racines: list[Path], moteur: str, modele: str, hote: str,
-                   cle_api: str, journaliser, arret, fini):
+def tache_proposer(racines: list[Path], moteur: str, cfg: dict,
+                   journaliser, arret, fini):
     """Analyse un échantillon de documents et propose des catégories. Thread de fond.
 
     `fini(texte)` reçoit les catégories proposées (texte prêt à coller) ou None.
@@ -708,7 +830,7 @@ def tache_proposer(racines: list[Path], moteur: str, modele: str, hote: str,
     journaliser(f"Analyse de {min(len(fichiers), 20)} document(s) par l'IA…")
     echantillon = _digest_echantillon(fichiers, arret)
     try:
-        categories = proposer_categories(echantillon, moteur, modele, hote, cle_api)
+        categories = proposer_categories(echantillon, moteur, cfg)
     except Exception as erreur:  # noqa: BLE001 - on rapporte l'erreur à l'utilisateur
         journaliser(f"ÉCHEC de la proposition : {erreur}")
         fini(None)
@@ -741,11 +863,12 @@ def chemin_destination_unique(dossier: Path, nom: str) -> Path:
 
 def trier(racines: list[Path], destination: Path,
           categories: list[tuple[str, list[str]]], moteur: str, deplacer: bool,
-          simulation: bool, cle_api: str, modele_ollama: str, hote_ollama: str,
-          sous_dossiers: bool, multi: bool, journaliser, arret, fini, progres=None):
+          simulation: bool, cfg: dict, sous_dossiers: bool, multi: bool,
+          journaliser, arret, fini, progres=None):
     """Scanne les racines, classe chaque document et le range. Thread de fond.
 
-    `progres(courant, total)` est appelé pour la barre de progression (optionnel).
+    `cfg` porte les clés/modèles des moteurs IA. `progres(courant, total)` est
+    appelé pour la barre de progression (optionnel).
     """
     def avancer(courant, total):
         if progres is not None:
@@ -753,8 +876,7 @@ def trier(racines: list[Path], destination: Path,
 
     try:
         classer = _preparer_moteur(
-            moteur, cle_api, modele_ollama, hote_ollama, sous_dossiers, multi,
-            journaliser)
+            moteur, cfg, sous_dossiers, multi, journaliser)
     except _ErreurMoteur:
         fini()
         return
@@ -947,16 +1069,15 @@ class _ErreurMoteur(Exception):
     pass
 
 
-def _preparer_moteur(moteur: str, cle_api: str, modele_ollama: str,
-                     hote_ollama: str, sous_dossiers: bool, multi: bool,
+def _preparer_moteur(moteur: str, cfg: dict, sous_dossiers: bool, multi: bool,
                      journaliser):
     """Renvoie une fonction classer(nom, texte, categories) -> dict."""
     if moteur == "local":
         return lambda nom, texte, cats: classer_local(nom, texte, cats, multi)
 
     if moteur == "ollama":
-        modele = modele_ollama or OLLAMA_MODELE_DEFAUT
-        hote = hote_ollama or OLLAMA_HOTE_DEFAUT
+        modele = cfg.get("modele_ollama", "") or OLLAMA_MODELE_DEFAUT
+        hote = cfg.get("hote_ollama", "") or OLLAMA_HOTE_DEFAUT
         journaliser(
             f"Moteur IA locale (Ollama) — modèle « {modele} » sur {hote}.\n"
             "Si rien ne se passe : installe Ollama (https://ollama.com), puis "
@@ -964,6 +1085,20 @@ def _preparer_moteur(moteur: str, cle_api: str, modele_ollama: str,
         )
         return lambda nom, texte, cats: classer_ollama(
             nom, texte, cats, modele, hote, sous_dossiers, multi)
+
+    if moteur == "gemini":
+        cle = cfg.get("cle_gemini", "")
+        modele = cfg.get("modele_gemini", "") or GEMINI_MODELE_DEFAUT
+        if not cle:
+            journaliser(
+                "ERREUR : clé API Gemini manquante. Crée-en une gratuitement "
+                "sur https://aistudio.google.com/apikey et colle-la dans le "
+                "champ « Clé API Gemini »."
+            )
+            raise _ErreurMoteur
+        journaliser(f"Moteur Google Gemini — modèle « {modele} ».\n")
+        return lambda nom, texte, cats: classer_gemini(
+            nom, texte, cats, modele, cle, sous_dossiers, multi)
 
     # moteur == "claude"
     try:
@@ -976,11 +1111,12 @@ def _preparer_moteur(moteur: str, cle_api: str, modele_ollama: str,
             f'    "{sys.executable}" -m pip install anthropic pypdf python-docx python-pptx'
         )
         raise _ErreurMoteur
+    cle_api = cfg.get("cle_api", "")
     if not cle_api:
         journaliser(
             "ERREUR : aucune clé API. Colle ta clé Anthropic dans le champ "
             "'Clé API' (récupère-la sur https://console.anthropic.com), ou "
-            "choisis le moteur « Local »."
+            "choisis un autre moteur."
         )
         raise _ErreurMoteur
     client = anthropic.Anthropic(api_key=cle_api)
@@ -1012,6 +1148,30 @@ def enregistrer_cle(cle: str) -> None:
         CHEMIN_CLE.write_text(cle.strip(), encoding="utf-8")
     except OSError:
         pass  # pas grave : la clé reste utilisable pour cette session
+
+
+# Clé API Gemini (gratuite), mémorisée dans son propre fichier.
+CHEMIN_CLE_GEMINI = Path(__file__).resolve().parent / "cle_gemini.txt"
+
+
+def charger_cle_gemini() -> str:
+    """Clé Gemini : variable d'environnement, sinon fichier cle_gemini.txt."""
+    for var in ("GEMINI_API_KEY", "GOOGLE_API_KEY"):
+        depuis_env = os.environ.get(var, "").strip()
+        if depuis_env:
+            return depuis_env
+    try:
+        return CHEMIN_CLE_GEMINI.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def enregistrer_cle_gemini(cle: str) -> None:
+    """Mémorise la clé Gemini pour les prochains lancements."""
+    try:
+        CHEMIN_CLE_GEMINI.write_text(cle.strip(), encoding="utf-8")
+    except OSError:
+        pass
 
 
 # --- Mémorisation des réglages ----------------------------------------------
@@ -1049,6 +1209,60 @@ def ouvrir_dossier(chemin: Path) -> None:
             subprocess.Popen(["xdg-open", str(chemin)])
     except Exception:  # noqa: BLE001 - simple confort, on ignore les erreurs
         pass
+
+
+# --- Aide Copilot pour les documents « Non classé » -------------------------
+
+# On ne peut pas piloter Copilot Windows automatiquement (pas d'API publique).
+# En revanche, pour les documents que le tri n'a pas su classer, on prépare une
+# demande toute prête et on ouvre Copilot : l'utilisateur colle la demande et
+# Copilot l'aide à décider. Honnête, gratuit, et ça utilise vraiment Copilot.
+NOM_NON_CLASSE = "Non classé"
+URL_COPILOT = "https://copilot.microsoft.com"
+
+
+def construire_prompt_copilot(nom_fichier: str, extrait: str,
+                              noms_categories: list[str]) -> str:
+    """Rédige une demande prête à coller dans Copilot pour un document."""
+    cats = ", ".join(noms_categories) if noms_categories else "(à toi de proposer)"
+    return (
+        "Dans laquelle de ces catégories devrais-je ranger ce document ? "
+        f"Catégories possibles : {cats}. Réponds par UNE seule catégorie et "
+        "explique en une phrase.\n\n"
+        f"Nom du fichier : {nom_fichier}\n"
+        f"Extrait du contenu :\n{extrait[:1500]}"
+    )
+
+
+def preparer_aide_copilot(destination: Path, noms_categories: list[str]):
+    """Prépare les demandes Copilot pour les documents du dossier « Non classé ».
+
+    Écrit un fichier `aide-copilot.txt` (une demande par document) et renvoie
+    (chemin_du_fichier, nombre, première_demande), ou None s'il n'y a rien.
+    """
+    dossier = destination / NOM_NON_CLASSE
+    if not dossier.is_dir():
+        return None
+    fichiers = [p for p in sorted(dossier.iterdir())
+                if p.is_file() and p.suffix.lower() in EXTENSIONS_SUPPORTEES]
+    if not fichiers:
+        return None
+
+    blocs = []
+    premier = ""
+    for fichier in fichiers:
+        try:
+            extrait = extraire_texte(fichier)
+        except Exception:  # noqa: BLE001 - un fichier illisible ne bloque pas
+            extrait = ""
+        prompt = construire_prompt_copilot(fichier.name, extrait, noms_categories)
+        if not premier:
+            premier = prompt
+        blocs.append("=" * 60 + "\n" + prompt)
+
+    chemin = destination / "aide-copilot.txt"
+    chemin.write_text("\n\n".join(blocs), encoding="utf-8")
+    return chemin, len(fichiers), premier
 
 
 # --- Interface graphique -----------------------------------------------------
@@ -1122,6 +1336,12 @@ class Application(tk.Tk):
             text="Local — sur ton PC, sans internet, gratuit (mots-clés)",
             variable=self.var_moteur, value="local",
             command=self._maj_moteur).pack(anchor="w")
+        self.radio_gemini = ttk.Radiobutton(
+            cadre,
+            text="Google Gemini — IA puissante et GRATUITE (clé API gratuite requise)",
+            variable=self.var_moteur, value="gemini",
+            command=self._maj_moteur)
+        self.radio_gemini.pack(anchor="w")
         self.radio_ollama = ttk.Radiobutton(
             cadre,
             text="IA locale (Ollama) — analyse fine du contenu, sur ton PC, sans clé API",
@@ -1134,6 +1354,24 @@ class Application(tk.Tk):
             variable=self.var_moteur, value="claude",
             command=self._maj_moteur)
         self.radio_claude.pack(anchor="w")
+
+        self.cadre_gemini = ttk.Frame(cadre)
+        ttk.Label(self.cadre_gemini,
+                  text="Modèle Gemini :").pack(anchor="w")
+        self.var_modele_gemini = tk.StringVar(
+            value=self.config.get("modele_gemini", GEMINI_MODELE_DEFAUT))
+        ttk.Entry(self.cadre_gemini, textvariable=self.var_modele_gemini).pack(
+            fill="x", pady=(2, 4))
+        ttk.Label(self.cadre_gemini,
+                  text="Clé API Gemini (gratuite, mémorisée après le 1er tri) :").pack(anchor="w")
+        self.var_cle_gemini = tk.StringVar(value=charger_cle_gemini())
+        ttk.Entry(self.cadre_gemini, textvariable=self.var_cle_gemini,
+                  show="•").pack(fill="x", pady=(2, 0))
+        ttk.Label(
+            self.cadre_gemini,
+            text="Crée ta clé gratuite sur https://aistudio.google.com/apikey",
+            foreground="#666",
+        ).pack(anchor="w")
 
         self.cadre_ollama = ttk.Frame(cadre)
         ttk.Label(self.cadre_ollama,
@@ -1234,6 +1472,10 @@ class Application(tk.Tk):
             ligne_boutons, text="Ouvrir le dossier",
             command=self._ouvrir_destination, state="disabled")
         self.bouton_ouvrir.pack(side="left", padx=(6, 0))
+        self.bouton_copilot = ttk.Button(
+            ligne_boutons, text="Aide Copilot (Non classé)",
+            command=self._aide_copilot, state="disabled")
+        self.bouton_copilot.pack(side="left", padx=(6, 0))
 
         # --- Progression ---
         self.progression = ttk.Progressbar(cadre, mode="determinate")
@@ -1265,6 +1507,10 @@ class Application(tk.Tk):
             self.cadre_ollama.pack(fill="x", pady=(2, 6), after=self.radio_ollama)
         else:
             self.cadre_ollama.pack_forget()
+        if moteur == "gemini":
+            self.cadre_gemini.pack(fill="x", pady=(2, 6), after=self.radio_gemini)
+        else:
+            self.cadre_gemini.pack_forget()
         if moteur == "claude":
             self.cadre_cle.pack(fill="x", pady=(2, 6), after=self.radio_claude)
         else:
@@ -1317,6 +1563,37 @@ class Application(tk.Tk):
         if self.derniere_destination is not None:
             ouvrir_dossier(self.derniere_destination)
 
+    def _aide_copilot(self):
+        """Prépare une demande Copilot pour les documents « Non classé »."""
+        if self.derniere_destination is None:
+            return
+        noms = [nom for nom, _ in parser_categories(
+            self.txt_categories.get("1.0", "end").splitlines())]
+        resultat = preparer_aide_copilot(self.derniere_destination, noms)
+        if resultat is None:
+            messagebox.showinfo(
+                "Rien à faire",
+                "Aucun document dans le dossier « Non classé ». "
+                "(Lance d'abord un tri réel, hors simulation.)")
+            return
+        chemin, nombre, premier = resultat
+        # Copie la 1re demande dans le presse-papiers et ouvre Copilot.
+        self.clipboard_clear()
+        self.clipboard_append(premier)
+        self.update()
+        import webbrowser
+        webbrowser.open(URL_COPILOT)
+        self.file_journal.put(
+            f"🧠 Aide Copilot : {nombre} document(s) « Non classé ».\n"
+            f"   La 1re demande est copiée — colle-la dans Copilot (Ctrl+V).\n"
+            f"   Toutes les demandes sont dans : {chemin}\n")
+        messagebox.showinfo(
+            "Aide Copilot prête",
+            f"{nombre} document(s) non classé(s).\n\n"
+            "La 1re demande est copiée dans le presse-papiers : colle-la dans "
+            "Copilot (Ctrl+V).\n\n"
+            f"Toutes les demandes ont été enregistrées dans :\n{chemin}")
+
     def _demander_arret(self):
         self.arret.set()
         self.file_journal.put("Arrêt demandé…")
@@ -1341,18 +1618,36 @@ class Application(tk.Tk):
             return None
         return [Path(d) for d in self.dossiers_choisis]
 
+    def _config_moteurs(self) -> dict:
+        """Rassemble clés/modèles des moteurs IA en un seul dictionnaire."""
+        return {
+            "cle_api": self.var_cle.get().strip(),
+            "modele_ollama": self.var_modele.get().strip(),
+            "hote_ollama": OLLAMA_HOTE_DEFAUT,
+            "cle_gemini": self.var_cle_gemini.get().strip(),
+            "modele_gemini": self.var_modele_gemini.get().strip(),
+        }
+
     def _proposer_categories(self):
         racines = self._racines_courantes(confirmer_pc=False)
         if racines is None:
             return
         moteur = self.var_moteur.get()
-        cle_api = self.var_cle.get().strip()
-        if moteur == "claude" and not cle_api:
+        cfg = self._config_moteurs()
+        if moteur == "claude" and not cfg["cle_api"]:
             messagebox.showwarning(
                 "Clé API manquante",
                 "Pour proposer des catégories avec Claude, indique ta clé API, "
-                "ou choisis le moteur « Local »/« Ollama » (Ollama sera utilisé).")
+                "ou choisis un autre moteur.")
             return
+        if moteur == "gemini" and not cfg["cle_gemini"]:
+            messagebox.showwarning(
+                "Clé API manquante",
+                "Pour proposer des catégories avec Gemini, indique ta clé API "
+                "gratuite (https://aistudio.google.com/apikey).")
+            return
+        if moteur == "gemini":
+            enregistrer_cle_gemini(cfg["cle_gemini"])
 
         self.arret.clear()
         self.bouton_lancer.configure(state="disabled")
@@ -1365,8 +1660,7 @@ class Application(tk.Tk):
         threading.Thread(
             target=tache_proposer,
             args=(
-                racines, moteur, self.var_modele.get().strip(),
-                OLLAMA_HOTE_DEFAUT, cle_api, self.file_journal.put, self.arret,
+                racines, moteur, cfg, self.file_journal.put, self.arret,
                 lambda texte: self.after(0, self._appliquer_categories, texte),
             ),
             daemon=True,
@@ -1400,14 +1694,23 @@ class Application(tk.Tk):
             return
 
         moteur = self.var_moteur.get()
-        cle_api = self.var_cle.get().strip()
+        cfg = self._config_moteurs()
         if moteur == "claude":
-            if not cle_api:
+            if not cfg["cle_api"]:
                 messagebox.showwarning(
                     "Clé API manquante",
-                    "Colle ta clé API Anthropic, ou choisis le moteur « Local ».")
+                    "Colle ta clé API Anthropic, ou choisis un autre moteur.")
                 return
-            enregistrer_cle(cle_api)
+            enregistrer_cle(cfg["cle_api"])
+        if moteur == "gemini":
+            if not cfg["cle_gemini"]:
+                messagebox.showwarning(
+                    "Clé API manquante",
+                    "Colle ta clé API Gemini gratuite "
+                    "(https://aistudio.google.com/apikey), ou choisis un autre "
+                    "moteur.")
+                return
+            enregistrer_cle_gemini(cfg["cle_gemini"])
 
         # Mémorise les réglages pour le prochain lancement.
         enregistrer_config({
@@ -1416,6 +1719,7 @@ class Application(tk.Tk):
             "destination": destination_txt,
             "moteur": moteur,
             "modele": self.var_modele.get().strip(),
+            "modele_gemini": self.var_modele_gemini.get().strip(),
             "categories": self.txt_categories.get("1.0", "end").strip(),
             "simulation": self.var_simulation.get(),
             "deplacer": self.var_deplacer.get(),
@@ -1443,9 +1747,7 @@ class Application(tk.Tk):
                 moteur,
                 self.var_deplacer.get(),
                 self.var_simulation.get(),
-                cle_api,
-                self.var_modele.get().strip(),
-                OLLAMA_HOTE_DEFAUT,
+                cfg,
                 self.var_sous_dossiers.get(),
                 self.var_multi.get(),
                 self.file_journal.put,
@@ -1462,6 +1764,7 @@ class Application(tk.Tk):
         self.bouton_arret.configure(state="disabled")
         if self.derniere_destination is not None:
             self.bouton_ouvrir.configure(state="normal")
+            self.bouton_copilot.configure(state="normal")
 
 
 if __name__ == "__main__":

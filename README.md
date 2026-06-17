@@ -9,24 +9,40 @@ tu donnes tes catégories (ex. *Travail*, *Études*, *Cuisine*, *Finances*).
 L'outil lit le contenu de chaque document, détermine dans quelle catégorie il
 va, puis range les fichiers dans des sous-dossiers du dossier de destination.
 
-## Deux moteurs d'analyse au choix
+## Moteurs d'analyse au choix
 
 - **Local (sur ton PC, sans internet)** — analyse le contenu et le nom de
   chaque fichier par mots-clés. Rien n'est envoyé sur internet, c'est **gratuit
   et privé**. C'est le mode par défaut.
+- **Google Gemini** — IA **puissante et gratuite** (palier gratuit généreux).
+  Pas besoin d'un PC puissant ; il faut une clé API gratuite. Les documents
+  transitent par Google.
 - **IA locale (Ollama)** — un vrai modèle de langage qui tourne **sur ton PC**
   pour une analyse fine du contenu, **sans clé API ni internet**. Nécessite
   d'installer [Ollama](https://ollama.com) et de télécharger un modèle.
-- **API Claude** — analyse fine du contenu par l'IA. Plus précis, mais nécessite
-  une clé API Anthropic et envoie un extrait de chaque document à Anthropic.
+- **API Claude** — analyse fine du contenu par l'IA. Nécessite une clé API
+  Anthropic et envoie un extrait de chaque document à Anthropic.
+
+### Utiliser le moteur « Google Gemini » (gratuit)
+
+1. Crée une clé API gratuite sur https://aistudio.google.com/apikey.
+2. Dans l'appli, choisis le moteur **Google Gemini**, colle ta clé (elle est
+   mémorisée) et, au besoin, ajuste le nom du modèle (par défaut
+   `gemini-2.0-flash`). Tu peux aussi définir la clé via la variable
+   d'environnement `GEMINI_API_KEY`.
 
 ### Et « Copilot Windows » ?
 
 Copilot Windows **n'expose aucune API publique** permettant à un programme de
 lui envoyer automatiquement des milliers de documents pour les classer. On ne
 peut donc pas le piloter en arrière-plan pour trier tout un PC. Les moteurs
-**Local** et **IA locale (Ollama)** en sont les équivalents automatisables :
-toute l'analyse se fait sur ta machine, sans rien envoyer ailleurs.
+**Local**, **Gemini** et **Ollama** font le même travail de façon automatisable.
+
+Pour quand même profiter de Copilot : après un tri, le bouton **« Aide Copilot
+(Non classé) »** prépare une demande prête à coller pour chaque document resté
+« Non classé », copie la première dans le presse-papiers et ouvre Copilot — tu
+n'as plus qu'à coller et lire la réponse. Toutes les demandes sont aussi
+enregistrées dans `aide-copilot.txt`.
 
 ### Utiliser le moteur « IA locale (Ollama) »
 
