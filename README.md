@@ -8,7 +8,21 @@ Tu choisis un dossier et tu donnes tes catégories (ex. *Travail*, *Études*,
 l'IA (l'**API Claude**) dans quelle catégorie il va, puis range les fichiers
 dans des sous-dossiers correspondants.
 
-## Installation
+## Installation rapide (recommandée)
+
+Un script fait tout pour toi (installe les dépendances puis lance l'appli) :
+
+- **macOS / Linux :**
+  ```bash
+  ./installer.sh
+  ```
+- **Windows :** double-clic sur `installer.bat` (ou lance-le depuis l'invite
+  de commandes).
+
+Pense quand même à définir ta clé API (voir l'étape 3 ci-dessous) ; le script
+te prévient si elle manque.
+
+## Installation manuelle
 
 1. Installer Python 3.9 ou plus récent.
 2. Installer les dépendances :
