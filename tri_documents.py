@@ -617,36 +617,6 @@ GEMINI_URL = (
 )
 
 
-def _schema_gemini(valeurs: list[str], sous_dossiers: bool,
-                   multi: bool) -> dict:
-    """Schéma de réponse au format attendu par Gemini (types en MAJUSCULES).
-
-    On n'utilise volontairement PAS le format `enum` (certaines versions de
-    Gemini le rejettent) : les catégories autorisées sont rappelées dans la
-    consigne, et la réponse est validée côté code. On ne contraint que la
-    structure JSON, ce qui est largement supporté.
-    """
-    categorie = {"type": "STRING"}
-    if multi:
-        proprietes = {
-            "categories": {"type": "ARRAY", "items": categorie},
-            "justification": {"type": "STRING"},
-        }
-        ordre = ["categories", "justification"]
-    else:
-        proprietes = {"categorie": categorie, "justification": {"type": "STRING"}}
-        ordre = ["categorie", "justification"]
-    if sous_dossiers:
-        proprietes["sous_categorie"] = {"type": "STRING"}
-        ordre.append("sous_categorie")
-    return {
-        "type": "OBJECT",
-        "properties": proprietes,
-        "required": list(ordre),
-        "propertyOrdering": ordre,
-    }
-
-
 def _delai_retry_gemini(corps_err: str) -> int | None:
     """Extrait le délai d'attente conseillé (en secondes) d'une erreur 429."""
     try:
@@ -664,11 +634,14 @@ def _delai_retry_gemini(corps_err: str) -> int | None:
 
 
 def _appel_gemini_json(modele: str, cle: str, systeme: str, user: str,
-                       schema: dict | None = None, journaliser=None) -> dict:
+                       journaliser=None) -> dict:
     """Appelle Gemini et renvoie la réponse JSON décodée (aucune dépendance).
 
-    En cas de dépassement du quota gratuit (HTTP 429), attend le délai conseillé
-    par Gemini et réessaie automatiquement, plutôt que d'échouer.
+    On reste sur la requête la plus compatible possible : pas de
+    `system_instruction` ni de `responseSchema` (rejetés en HTTP 400 par
+    certains modèles) — la consigne est mise dans le texte, on demande juste du
+    JSON via `responseMimeType`, et on valide la réponse côté code. En cas de
+    quota dépassé (HTTP 429), on attend le délai conseillé puis on réessaie.
     """
     import time
     import urllib.error
@@ -681,13 +654,13 @@ def _appel_gemini_json(modele: str, cle: str, systeme: str, user: str,
             "https://aistudio.google.com/apikey et colle-la dans le champ "
             "« Clé API Gemini ».")
 
-    generation = {"temperature": 0, "responseMimeType": "application/json"}
-    if schema:
-        generation["responseSchema"] = schema
+    invite = f"{systeme}\n\n{user}"
     corps = {
-        "system_instruction": {"parts": [{"text": systeme}]},
-        "contents": [{"role": "user", "parts": [{"text": user}]}],
-        "generationConfig": generation,
+        "contents": [{"role": "user", "parts": [{"text": invite}]}],
+        "generationConfig": {
+            "temperature": 0,
+            "responseMimeType": "application/json",
+        },
     }
     url = (GEMINI_URL.format(modele=modele or GEMINI_MODELE_DEFAUT)
            + "?key=" + urllib.parse.quote(cle))
@@ -719,9 +692,9 @@ def _appel_gemini_json(modele: str, cle: str, systeme: str, user: str,
                 indice = ("Ta clé API semble invalide ou non autorisée. "
                           "Recrée-en une sur https://aistudio.google.com/apikey "
                           "et recopie-la entièrement (sans espace).")
-            elif erreur.code == 404:
-                indice = (f"Le modèle « {modele or GEMINI_MODELE_DEFAUT} » est "
-                          "introuvable. Essaie un autre nom de modèle, par ex. "
+            elif erreur.code in (400, 404):
+                indice = (f"Le modèle « {modele or GEMINI_MODELE_DEFAUT} » n'est "
+                          "pas accepté. Essaie un autre nom de modèle, par ex. "
                           "« gemini-1.5-flash » ou « gemini-2.5-flash ».")
             elif erreur.code == 429:
                 indice = ("Quota gratuit dépassé. Attends quelques minutes, "
@@ -731,7 +704,7 @@ def _appel_gemini_json(modele: str, cle: str, systeme: str, user: str,
                 indice = "Vérifie ta clé API et le nom du modèle."
             message = (f"Gemini a refusé la requête (HTTP {erreur.code}). "
                        f"{indice} [détail : {extrait}]")
-            if erreur.code in (401, 403, 404, 429):
+            if erreur.code in (400, 401, 403, 404, 429):
                 raise _ErreurFatale(message) from erreur
             raise RuntimeError(message) from erreur
         except urllib.error.URLError as erreur:
@@ -767,21 +740,29 @@ def classer_gemini(nom_fichier: str, texte: str,
     """Classe un document via l'API Google Gemini."""
     noms = [nom for nom, _ in categories]
     valeurs = noms + ["Non classé"]
-    schema = _schema_gemini(valeurs, sous_dossiers, multi)
 
     contenu = _contenu_document(nom_fichier, texte, categories)
+    if multi:
+        format_json = ('{"categories": ["..."], "justification": "..."'
+                       + (', "sous_categorie": "..."' if sous_dossiers else "")
+                       + "}")
+    else:
+        format_json = ('{"categorie": "...", "justification": "..."'
+                       + (', "sous_categorie": "..."' if sous_dossiers else "")
+                       + "}")
     systeme = (
-        "Tu ranges des documents par centre d'intérêt. "
+        "Tu ranges des documents par centre d'intérêt parmi exactement ces "
+        f"catégories : {', '.join(valeurs)}. "
         + _consigne_classement(multi) +
         " Sers-toi des indices comme d'une aide, mais juge surtout d'après le "
         "contenu. Si le document ne correspond clairement à aucune catégorie, "
         "ou que le contenu est inexploitable, utilise 'Non classé' plutôt que "
         "de forcer un choix. La justification doit tenir en une courte phrase."
         + (_CONSIGNE_SOUS_CATEGORIE if sous_dossiers else "")
+        + f" Réponds UNIQUEMENT par un objet JSON de la forme {format_json}."
     )
 
-    resultat = _appel_gemini_json(modele, cle, systeme, contenu, schema,
-                                  journaliser)
+    resultat = _appel_gemini_json(modele, cle, systeme, contenu, journaliser)
     resultat.setdefault("justification", "")
     if multi:
         valides = [c for c in resultat.get("categories", []) if c in valeurs]
