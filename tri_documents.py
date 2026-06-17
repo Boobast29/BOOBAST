@@ -288,9 +288,14 @@ POIDS_NOM_FICHIER = 3
 POIDS_MOT_CLE = 2
 POIDS_NOM_CATEGORIE = 1
 
+# En mode multi-catégories, on retient aussi les catégories dont le score
+# atteint cette fraction du meilleur (signal nettement présent, pas marginal).
+SEUIL_MULTI = 0.6
+
 
 def classer_local(nom_fichier: str, texte: str,
-                  categories: list[tuple[str, list[str]]]) -> dict:
+                  categories: list[tuple[str, list[str]]],
+                  multi: bool = False) -> dict:
     """Classe un document par correspondance de mots-clés pondérée (aucun réseau).
 
     Le texte et les mots-clés sont réduits à leurs **racines** (facture ≈
@@ -302,8 +307,9 @@ def classer_local(nom_fichier: str, texte: str,
     * un **mot-clé** que tu as fourni pèse plus que le nom (générique) de la
       catégorie.
 
-    La catégorie au meilleur score gagne. En cas d'égalité (ou de score nul),
-    on renvoie « Non classé » pour éviter un classement arbitraire.
+    Si `multi` est faux : la catégorie au meilleur score gagne (en cas d'égalité
+    ou de score nul, « Non classé »). Si `multi` est vrai : toutes les catégories
+    dont le score est proche du meilleur sont renvoyées dans « categories ».
     """
     tokens_nom = _raciner_tokens(_normaliser(nom_fichier))
     tokens_corps = _raciner_tokens(_normaliser(texte))
@@ -329,6 +335,17 @@ def classer_local(nom_fichier: str, texte: str,
     if meilleur[0] == 0:
         return {"categorie": "Non classé",
                 "justification": "Aucun mot-clé de catégorie trouvé."}
+
+    if multi:
+        # Toutes les catégories dont le signal est proche du meilleur.
+        seuil = meilleur[0] * SEUIL_MULTI
+        retenues = [(c, motif) for s, c, motif in scores if s >= seuil and s > 0]
+        return {
+            "categories": [c for c, _ in retenues],
+            "justification": "; ".join(
+                f"{c} ({motif})" for c, motif in retenues),
+        }
+
     # Égalité en tête : ambigu, on préfère ne pas trancher au hasard.
     if len(scores) > 1 and scores[1][0] == meilleur[0]:
         return {"categorie": "Non classé",
@@ -379,20 +396,54 @@ _CONSIGNE_SOUS_CATEGORIE = (
 )
 
 
-def classer_claude(client, nom_fichier: str, texte: str,
-                   categories: list[tuple[str, list[str]]],
-                   sous_dossiers: bool = False) -> dict:
-    """Demande à Claude dans quelle catégorie ranger le document."""
-    noms = [nom for nom, _ in categories]
-    valeurs = noms + ["Non classé"]
-    proprietes = {
-        "categorie": {"type": "string", "enum": valeurs},
-        "justification": {"type": "string"},
-    }
-    requis = ["categorie", "justification"]
+def _schema_classement(valeurs: list[str], sous_dossiers: bool,
+                       multi: bool) -> tuple[dict, list[str]]:
+    """Construit (proprietes, requis) du schéma JSON de classement."""
+    if multi:
+        proprietes = {
+            "categories": {
+                "type": "array",
+                "items": {"type": "string", "enum": valeurs},
+                "minItems": 1,
+                "maxItems": 3,
+            },
+            "justification": {"type": "string"},
+        }
+        requis = ["categories", "justification"]
+    else:
+        proprietes = {
+            "categorie": {"type": "string", "enum": valeurs},
+            "justification": {"type": "string"},
+        }
+        requis = ["categorie", "justification"]
     if sous_dossiers:
         proprietes["sous_categorie"] = {"type": "string"}
         requis.append("sous_categorie")
+    return proprietes, requis
+
+
+def _consigne_classement(multi: bool) -> str:
+    """Phrase indiquant à l'IA de choisir une ou plusieurs catégories."""
+    if multi:
+        return (
+            "Choisis 1 à 3 catégories parmi la liste, celles dont relève "
+            "réellement le document. N'en mets plusieurs QUE si le document "
+            "couvre vraiment plusieurs thèmes ; sinon une seule. Renvoie-les "
+            "dans 'categories'."
+        )
+    return (
+        "Choisis exactement UNE catégorie parmi la liste, celle qui correspond "
+        "le mieux au thème réel du document."
+    )
+
+
+def classer_claude(client, nom_fichier: str, texte: str,
+                   categories: list[tuple[str, list[str]]],
+                   sous_dossiers: bool = False, multi: bool = False) -> dict:
+    """Demande à Claude dans quelle(s) catégorie(s) ranger le document."""
+    noms = [nom for nom, _ in categories]
+    valeurs = noms + ["Non classé"]
+    proprietes, requis = _schema_classement(valeurs, sous_dossiers, multi)
     schema = {
         "type": "object",
         "properties": proprietes,
@@ -408,12 +459,12 @@ def classer_claude(client, nom_fichier: str, texte: str,
         max_tokens=1000,
         system=(
             "Tu es un assistant qui range des documents par centre d'intérêt. "
-            "Tu choisis exactement UNE catégorie parmi la liste fournie, celle "
-            "qui correspond le mieux au thème réel du document. Sers-toi des "
-            "indices comme d'une aide, mais juge surtout d'après le contenu. Si "
-            "le document ne correspond clairement à aucune catégorie, ou que le "
-            "contenu est inexploitable, utilise 'Non classé' plutôt que de "
-            "forcer un choix. La justification doit tenir en une courte phrase."
+            + _consigne_classement(multi) +
+            " Sers-toi des indices comme d'une aide, mais juge surtout d'après "
+            "le contenu. Si le document ne correspond clairement à aucune "
+            "catégorie, ou que le contenu est inexploitable, utilise 'Non "
+            "classé' plutôt que de forcer un choix. La justification doit tenir "
+            "en une courte phrase."
             + consigne_sous
         ),
         messages=[{"role": "user", "content": contenu}],
@@ -450,32 +501,27 @@ def lister_modeles_ollama(hote: str = OLLAMA_HOTE_DEFAUT) -> list[str]:
 
 def classer_ollama(nom_fichier: str, texte: str,
                    categories: list[tuple[str, list[str]]],
-                   modele: str, hote: str, sous_dossiers: bool = False) -> dict:
+                   modele: str, hote: str, sous_dossiers: bool = False,
+                   multi: bool = False) -> dict:
     """Classe un document via un modèle local servi par Ollama (aucun réseau externe)."""
     import urllib.error
     import urllib.request
 
     noms = [nom for nom, _ in categories]
     valeurs = noms + ["Non classé"]
-    proprietes = {
-        "categorie": {"type": "string", "enum": valeurs},
-        "justification": {"type": "string"},
-    }
-    requis = ["categorie", "justification"]
-    if sous_dossiers:
-        proprietes["sous_categorie"] = {"type": "string"}
-        requis.append("sous_categorie")
+    proprietes, requis = _schema_classement(valeurs, sous_dossiers, multi)
     schema = {"type": "object", "properties": proprietes, "required": requis}
 
     contenu = _contenu_document(nom_fichier, texte, categories)
 
+    cle_json = "'categories' (liste)" if multi else "'categorie'"
     systeme = (
-        "Tu ranges des documents par centre d'intérêt. Choisis exactement UNE "
-        f"catégorie parmi : {', '.join(valeurs)}. Juge d'après le thème réel du "
-        "document ; les indices fournis sont une aide, pas une règle stricte. "
-        "Si le document ne correspond clairement à aucune catégorie, utilise "
-        "'Non classé' plutôt que de forcer. Réponds uniquement en JSON avec les "
-        "clés 'categorie' et 'justification' (une courte phrase)."
+        "Tu ranges des documents par centre d'intérêt parmi : "
+        f"{', '.join(valeurs)}. " + _consigne_classement(multi) +
+        " Juge d'après le thème réel du document ; les indices fournis sont une "
+        "aide, pas une règle stricte. Si le document ne correspond clairement à "
+        "aucune catégorie, utilise 'Non classé' plutôt que de forcer. Réponds "
+        f"uniquement en JSON avec les clés {cle_json} et 'justification'."
         + (_CONSIGNE_SOUS_CATEGORIE if sous_dossiers else "")
     )
 
@@ -518,10 +564,13 @@ def classer_ollama(nom_fichier: str, texte: str,
         return {"categorie": "Non classé",
                 "justification": "Réponse du modèle local illisible."}
 
-    # Sécurité : on force la catégorie à faire partie de la liste autorisée.
-    if resultat.get("categorie") not in valeurs:
-        resultat["categorie"] = "Non classé"
+    # Sécurité : on ne garde que des catégories de la liste autorisée.
     resultat.setdefault("justification", "")
+    if multi:
+        valides = [c for c in resultat.get("categories", []) if c in valeurs]
+        resultat["categories"] = valides or ["Non classé"]
+    elif resultat.get("categorie") not in valeurs:
+        resultat["categorie"] = "Non classé"
     return resultat
 
 
@@ -693,7 +742,7 @@ def chemin_destination_unique(dossier: Path, nom: str) -> Path:
 def trier(racines: list[Path], destination: Path,
           categories: list[tuple[str, list[str]]], moteur: str, deplacer: bool,
           simulation: bool, cle_api: str, modele_ollama: str, hote_ollama: str,
-          sous_dossiers: bool, journaliser, arret, fini, progres=None):
+          sous_dossiers: bool, multi: bool, journaliser, arret, fini, progres=None):
     """Scanne les racines, classe chaque document et le range. Thread de fond.
 
     `progres(courant, total)` est appelé pour la barre de progression (optionnel).
@@ -704,7 +753,7 @@ def trier(racines: list[Path], destination: Path,
 
     try:
         classer = _preparer_moteur(
-            moteur, cle_api, modele_ollama, hote_ollama, sous_dossiers,
+            moteur, cle_api, modele_ollama, hote_ollama, sous_dossiers, multi,
             journaliser)
     except _ErreurMoteur:
         fini()
@@ -728,7 +777,6 @@ def trier(racines: list[Path], destination: Path,
     journaliser(f"\n{len(fichiers)} document(s) à trier.")
     if simulation:
         journaliser("MODE SIMULATION : aucun fichier ne sera déplacé ni copié.")
-    action = "Déplacé" if deplacer else "Copié"
     journaliser("")
 
     deja_dans_destination = destination.resolve()
@@ -755,35 +803,49 @@ def trier(racines: list[Path], destination: Path,
 
             texte = extraire_texte(fichier)
             resultat = classer(fichier.name, texte, categories)
-            categorie = resultat["categorie"]
             justification = resultat.get("justification", "")
 
-            dossier_cible = destination / _nom_dossier_sur(categorie)
-            # Tri fin : range dans un sous-dossier si l'IA en a proposé un.
+            # Une ou plusieurs catégories selon le moteur / le mode.
+            cats_doc = resultat.get("categories") or [
+                resultat.get("categorie", "Non classé")]
+            # Dédoublonne en gardant l'ordre (la 1re est la catégorie principale).
+            vues = set()
+            cats_doc = [c for c in cats_doc
+                        if c and not (c in vues or vues.add(c))] or ["Non classé"]
+
+            # Sous-thème (tri fin) : appliqué à la catégorie principale.
             sous = (resultat.get("sous_categorie") or "").strip()
-            label = categorie
-            if sous_dossiers and sous:
-                # Regroupe les sous-thèmes équivalents sous un libellé commun.
-                sous = _canoniser_sous_theme(
-                    sous, sous_vus.setdefault(categorie, []))
-                dossier_cible = dossier_cible / _nom_dossier_sur(sous)
-                label = f"{categorie} / {sous}"
-            cible = chemin_destination_unique(dossier_cible, fichier.name)
 
-            journaliser(f"    → {label}  ({justification})")
-            if simulation:
-                journaliser(f"    [simulation] irait dans : {dossier_cible}\n")
-            else:
-                dossier_cible.mkdir(parents=True, exist_ok=True)
-                if deplacer:
-                    shutil.move(str(fichier), str(cible))
+            journaliser(f"    → {' + '.join(cats_doc)}  ({justification})")
+
+            for rang, categorie in enumerate(cats_doc):
+                dossier_cible = destination / _nom_dossier_sur(categorie)
+                if rang == 0 and sous_dossiers and sous:
+                    canon = _canoniser_sous_theme(
+                        sous, sous_vus.setdefault(categorie, []))
+                    dossier_cible = dossier_cible / _nom_dossier_sur(canon)
+                cible = chemin_destination_unique(dossier_cible, fichier.name)
+
+                if simulation:
+                    journaliser(f"    [simulation] irait dans : {dossier_cible}")
                 else:
+                    dossier_cible.mkdir(parents=True, exist_ok=True)
+                    # On copie dans chaque catégorie (un fichier peut être dans
+                    # plusieurs). Le déplacement éventuel se fait après coup.
                     shutil.copy2(str(fichier), str(cible))
-                journaliser(f"    {action} dans : {dossier_cible}\n")
+                    journaliser(f"    Copié dans : {dossier_cible}")
 
-            compteur[categorie] = compteur.get(categorie, 0) + 1
-            lignes_rapport.append(
-                (str(fichier), categorie, justification, str(cible)))
+                compteur[categorie] = compteur.get(categorie, 0) + 1
+                lignes_rapport.append(
+                    (str(fichier), categorie, justification, str(cible)))
+
+            # En mode « déplacer », l'original est retiré une fois copié partout.
+            if deplacer and not simulation:
+                try:
+                    os.remove(str(fichier))
+                except OSError as err:
+                    journaliser(f"    (original non supprimé : {err})")
+            journaliser("")
         except Exception as erreur:  # noqa: BLE001 - on continue malgré une erreur isolée
             journaliser(f"    ÉCHEC : {erreur}\n")
             echecs += 1
@@ -886,10 +948,11 @@ class _ErreurMoteur(Exception):
 
 
 def _preparer_moteur(moteur: str, cle_api: str, modele_ollama: str,
-                     hote_ollama: str, sous_dossiers: bool, journaliser):
+                     hote_ollama: str, sous_dossiers: bool, multi: bool,
+                     journaliser):
     """Renvoie une fonction classer(nom, texte, categories) -> dict."""
     if moteur == "local":
-        return classer_local
+        return lambda nom, texte, cats: classer_local(nom, texte, cats, multi)
 
     if moteur == "ollama":
         modele = modele_ollama or OLLAMA_MODELE_DEFAUT
@@ -900,7 +963,7 @@ def _preparer_moteur(moteur: str, cle_api: str, modele_ollama: str,
             f"dans un terminal lance « ollama pull {modele} ».\n"
         )
         return lambda nom, texte, cats: classer_ollama(
-            nom, texte, cats, modele, hote, sous_dossiers)
+            nom, texte, cats, modele, hote, sous_dossiers, multi)
 
     # moteur == "claude"
     try:
@@ -922,7 +985,7 @@ def _preparer_moteur(moteur: str, cle_api: str, modele_ollama: str,
         raise _ErreurMoteur
     client = anthropic.Anthropic(api_key=cle_api)
     return lambda nom, texte, cats: classer_claude(
-        client, nom, texte, cats, sous_dossiers)
+        client, nom, texte, cats, sous_dossiers, multi)
 
 
 # --- Mémorisation de la clé API ---------------------------------------------
@@ -1148,6 +1211,13 @@ class Application(tk.Tk):
             cadre,
             text="Tri fin : créer des sous-dossiers par sous-thème (moteurs IA Ollama / Claude)",
             variable=self.var_sous_dossiers,
+        ).pack(anchor="w")
+        self.var_multi = tk.BooleanVar(
+            value=self.config.get("multi", False))
+        ttk.Checkbutton(
+            cadre,
+            text="Multi-catégories : copier un document dans chaque catégorie pertinente",
+            variable=self.var_multi,
         ).pack(anchor="w", pady=(0, 8))
 
         # --- Boutons ---
@@ -1350,6 +1420,7 @@ class Application(tk.Tk):
             "simulation": self.var_simulation.get(),
             "deplacer": self.var_deplacer.get(),
             "sous_dossiers": self.var_sous_dossiers.get(),
+            "multi": self.var_multi.get(),
         })
 
         self.derniere_destination = destination
@@ -1376,6 +1447,7 @@ class Application(tk.Tk):
                 self.var_modele.get().strip(),
                 OLLAMA_HOTE_DEFAUT,
                 self.var_sous_dossiers.get(),
+                self.var_multi.get(),
                 self.file_journal.put,
                 self.arret,
                 lambda: self.after(0, self._reactiver),

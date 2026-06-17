@@ -73,6 +73,22 @@ peux ensuite l'ajuster). Cette fonction utilise **Ollama** (ou **Claude** si ce
 moteur est sélectionné) — le moteur Local seul ne peut pas inventer de
 catégories.
 
+### Classer un document dans plusieurs catégories
+
+Coche l'option **« Multi-catégories »** pour qu'un document qui relève de
+plusieurs thèmes soit rangé dans **chacune** des catégories concernées (une
+**copie** par catégorie) :
+
+- **Moteurs IA (Ollama / Claude)** : l'IA renvoie 1 à 3 catégories, et n'en met
+  plusieurs que si le document couvre réellement plusieurs thèmes.
+- **Moteur Local** : le document est copié dans toutes les catégories dont le
+  score de mots-clés est proche du meilleur.
+
+Si l'option **« Déplacer »** est aussi cochée, l'original est supprimé après
+avoir été copié dans toutes les catégories. Le sous-thème (tri fin) s'applique à
+la catégorie principale (la première). Chaque copie apparaît comme une ligne du
+rapport CSV.
+
 ## Installation rapide (recommandée)
 
 Un script fait tout pour toi (installe les dépendances puis lance l'appli) :
