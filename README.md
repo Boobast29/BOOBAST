@@ -31,18 +31,13 @@ te prévient si elle manque.
    pip install -r requirements.txt
    ```
 
-3. Récupérer une clé API Anthropic sur https://console.anthropic.com puis la
-   définir comme variable d'environnement :
+3. Récupérer une clé API Anthropic sur https://console.anthropic.com. Tu n'as
+   **rien à configurer** : au premier lancement, colle simplement ta clé dans
+   le champ **« Clé API »** de l'application. Elle est mémorisée (dans un
+   fichier `cle_api.txt` à côté du programme) pour les fois suivantes.
 
-   - **macOS / Linux :**
-     ```bash
-     export ANTHROPIC_API_KEY="ta-clé-ici"
-     ```
-   - **Windows (PowerShell) :**
-     ```powershell
-     setx ANTHROPIC_API_KEY "ta-clé-ici"
-     ```
-     (puis rouvrir le terminal)
+   *Optionnel* — si tu préfères, tu peux aussi la définir comme variable
+   d'environnement `ANTHROPIC_API_KEY` ; l'appli la reprendra automatiquement.
 
 ## Utilisation
 
