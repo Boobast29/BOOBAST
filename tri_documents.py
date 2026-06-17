@@ -156,7 +156,8 @@ def chemin_destination_unique(dossier: Path, nom: str) -> Path:
         compteur += 1
 
 
-def trier(dossier: Path, categories: list[str], deplacer: bool, journaliser, fini):
+def trier(dossier: Path, categories: list[str], deplacer: bool, cle_api: str,
+          journaliser, fini):
     """Parcourt le dossier, classe chaque document et le range. Thread de fond."""
     try:
         import anthropic
@@ -166,17 +167,20 @@ def trier(dossier: Path, categories: list[str], deplacer: bool, journaliser, fin
             "ERREUR : le paquet 'anthropic' n'est pas installé pour ce Python.\n"
             f"    Python utilisé : {sys.executable}\n"
             "    Installe les dépendances avec CE Python précis :\n"
-            f'    "{sys.executable}" -m pip install -r requirements.txt'
+            f'    "{sys.executable}" -m pip install anthropic pypdf python-docx python-pptx'
         )
         fini()
         return
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        journaliser("ERREUR : la variable ANTHROPIC_API_KEY n'est pas définie.")
+    if not cle_api:
+        journaliser(
+            "ERREUR : aucune clé API. Colle ta clé Anthropic dans le champ "
+            "'Clé API' (récupère-la sur https://console.anthropic.com)."
+        )
         fini()
         return
 
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(api_key=cle_api)
 
     fichiers = [
         p for p in sorted(dossier.iterdir())
@@ -218,6 +222,32 @@ def trier(dossier: Path, categories: list[str], deplacer: bool, journaliser, fin
     fini()
 
 
+# --- Mémorisation de la clé API ---------------------------------------------
+
+# La clé est conservée dans un fichier à côté du script, pour ne la saisir
+# qu'une seule fois (évite de devoir gérer une variable d'environnement).
+CHEMIN_CLE = Path(__file__).resolve().parent / "cle_api.txt"
+
+
+def charger_cle() -> str:
+    """Clé API mémorisée : variable d'environnement, sinon fichier cle_api.txt."""
+    depuis_env = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if depuis_env:
+        return depuis_env
+    try:
+        return CHEMIN_CLE.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def enregistrer_cle(cle: str) -> None:
+    """Mémorise la clé dans cle_api.txt pour les prochains lancements."""
+    try:
+        CHEMIN_CLE.write_text(cle.strip(), encoding="utf-8")
+    except OSError:
+        pass  # pas grave : la clé reste utilisable pour cette session
+
+
 # --- Interface graphique -----------------------------------------------------
 
 
@@ -245,6 +275,15 @@ class Application(tk.Tk):
             side="left", fill="x", expand=True)
         ttk.Button(ligne, text="Parcourir…", command=self._choisir_dossier).pack(
             side="left", padx=(6, 0))
+
+        # Clé API
+        ttk.Label(
+            cadre,
+            text="Clé API Anthropic (depuis console.anthropic.com) — mémorisée après le 1er tri :",
+        ).pack(anchor="w")
+        self.var_cle = tk.StringVar(value=charger_cle())
+        ttk.Entry(cadre, textvariable=self.var_cle, show="•").pack(
+            fill="x", pady=(2, 10))
 
         # Catégories
         ttk.Label(
@@ -309,6 +348,15 @@ class Application(tk.Tk):
                 "Catégories manquantes", "Indique au moins une catégorie.")
             return
 
+        cle_api = self.var_cle.get().strip()
+        if not cle_api:
+            messagebox.showwarning(
+                "Clé API manquante",
+                "Colle ta clé API Anthropic dans le champ 'Clé API'.\n"
+                "Tu peux en créer une sur https://console.anthropic.com")
+            return
+        enregistrer_cle(cle_api)  # mémorise pour la prochaine fois
+
         self.bouton_lancer.configure(state="disabled")
         self.journal.configure(state="normal")
         self.journal.delete("1.0", "end")
@@ -320,6 +368,7 @@ class Application(tk.Tk):
                 dossier,
                 categories,
                 self.var_deplacer.get(),
+                cle_api,
                 self.file_journal.put,
                 lambda: self.after(0, self._reactiver),
             ),
