@@ -1,6 +1,7 @@
 @echo off
 REM Installe les dependances puis lance l'outil de tri (Windows).
 REM Utilisation : double-clic sur installer.bat, ou lancer depuis l'invite de commandes.
+REM IMPORTANT : ce fichier doit etre dans le MEME dossier que tri_documents.py.
 cd /d "%~dp0"
 
 REM Choisir l'interpreteur : on prefere le lanceur "py" (cible le Python le plus
@@ -19,11 +20,25 @@ if not defined PY (
     exit /b 1
 )
 
+REM Verifier que le programme principal est bien a cote de ce script.
+if not exist "tri_documents.py" (
+    echo ERREUR : "tri_documents.py" est introuvable dans ce dossier :
+    echo     %CD%
+    echo.
+    echo Place installer.bat et tri_documents.py dans le MEME dossier, puis relance.
+    echo Contenu actuel du dossier :
+    dir /b
+    pause
+    exit /b 1
+)
+
 echo ==^> Interpreteur utilise :
 %PY% -c "import sys; print(sys.version); print(sys.executable)"
 
 echo ==^> Installation des dependances...
-%PY% -m pip install -r requirements.txt
+REM On installe par nom (pas besoin de requirements.txt) : plus robuste.
+%PY% -m pip install --upgrade pip
+%PY% -m pip install anthropic pypdf python-docx python-pptx
 if errorlevel 1 (
     echo.
     echo ERREUR pendant l'installation des dependances.
