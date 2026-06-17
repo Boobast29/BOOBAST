@@ -616,9 +616,30 @@ def _schema_gemini(valeurs: list[str], sous_dossiers: bool,
     }
 
 
+def _delai_retry_gemini(corps_err: str) -> int | None:
+    """Extrait le délai d'attente conseillé (en secondes) d'une erreur 429."""
+    try:
+        donnees = json.loads(corps_err)
+    except json.JSONDecodeError:
+        return None
+    for detail in donnees.get("error", {}).get("details", []):
+        retard = detail.get("retryDelay", "")
+        if isinstance(retard, str) and retard.endswith("s"):
+            try:
+                return max(1, int(float(retard[:-1])))
+            except ValueError:
+                pass
+    return None
+
+
 def _appel_gemini_json(modele: str, cle: str, systeme: str, user: str,
-                       schema: dict | None = None) -> dict:
-    """Appelle Gemini et renvoie la réponse JSON décodée (aucune dépendance)."""
+                       schema: dict | None = None, journaliser=None) -> dict:
+    """Appelle Gemini et renvoie la réponse JSON décodée (aucune dépendance).
+
+    En cas de dépassement du quota gratuit (HTTP 429), attend le délai conseillé
+    par Gemini et réessaie automatiquement, plutôt que d'échouer.
+    """
+    import time
     import urllib.error
     import urllib.parse
     import urllib.request
@@ -642,31 +663,47 @@ def _appel_gemini_json(modele: str, cle: str, systeme: str, user: str,
     requete = urllib.request.Request(
         url, data=json.dumps(corps).encode("utf-8"),
         headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(requete, timeout=120) as reponse:
-            donnees = json.loads(reponse.read().decode("utf-8"))
-    except urllib.error.HTTPError as erreur:
-        detail = erreur.read().decode("utf-8", errors="replace")[:300]
-        if erreur.code in (401, 403):
-            indice = ("Ta clé API semble invalide ou non autorisée. Recrée-en "
-                      "une sur https://aistudio.google.com/apikey et recopie-la "
-                      "entièrement (sans espace).")
-        elif erreur.code == 404:
-            indice = (f"Le modèle « {modele or GEMINI_MODELE_DEFAUT} » est "
-                      "introuvable. Essaie un autre nom de modèle, par ex. "
-                      "« gemini-1.5-flash » ou « gemini-2.5-flash ».")
-        elif erreur.code == 429:
-            indice = ("Quota gratuit dépassé pour le moment. Réessaie plus tard "
-                      "ou réduis le nombre de documents.")
-        else:
-            indice = "Vérifie ta clé API et le nom du modèle."
-        raise RuntimeError(
-            f"Gemini a refusé la requête (HTTP {erreur.code}). {indice} "
-            f"[détail : {detail}]") from erreur
-    except urllib.error.URLError as erreur:
-        raise RuntimeError(
-            f"Gemini injoignable (vérifie ta connexion internet). {erreur}"
-        ) from erreur
+
+    max_essais = 5
+    for essai in range(max_essais):
+        try:
+            with urllib.request.urlopen(requete, timeout=120) as reponse:
+                donnees = json.loads(reponse.read().decode("utf-8"))
+            break
+        except urllib.error.HTTPError as erreur:
+            detail = erreur.read().decode("utf-8", errors="replace")
+            # Quota dépassé : on patiente le temps conseillé puis on réessaie.
+            if erreur.code == 429 and essai < max_essais - 1:
+                delai = _delai_retry_gemini(detail) or (10 * (essai + 1))
+                delai = min(delai, 60)
+                if journaliser:
+                    journaliser(
+                        f"    Quota Gemini atteint — pause de {delai}s puis "
+                        "nouvelle tentative…")
+                time.sleep(delai)
+                continue
+            extrait = detail[:300]
+            if erreur.code in (401, 403):
+                indice = ("Ta clé API semble invalide ou non autorisée. "
+                          "Recrée-en une sur https://aistudio.google.com/apikey "
+                          "et recopie-la entièrement (sans espace).")
+            elif erreur.code == 404:
+                indice = (f"Le modèle « {modele or GEMINI_MODELE_DEFAUT} » est "
+                          "introuvable. Essaie un autre nom de modèle, par ex. "
+                          "« gemini-1.5-flash » ou « gemini-2.5-flash ».")
+            elif erreur.code == 429:
+                indice = ("Quota gratuit dépassé. Attends quelques minutes, "
+                          "réduis le nombre de documents, ou utilise le moteur "
+                          "« Ollama » / « Local » (sans quota).")
+            else:
+                indice = "Vérifie ta clé API et le nom du modèle."
+            raise RuntimeError(
+                f"Gemini a refusé la requête (HTTP {erreur.code}). {indice} "
+                f"[détail : {extrait}]") from erreur
+        except urllib.error.URLError as erreur:
+            raise RuntimeError(
+                f"Gemini injoignable (vérifie ta connexion internet). {erreur}"
+            ) from erreur
 
     candidats = donnees.get("candidates")
     if not candidats:
@@ -692,7 +729,7 @@ def _appel_gemini_json(modele: str, cle: str, systeme: str, user: str,
 def classer_gemini(nom_fichier: str, texte: str,
                    categories: list[tuple[str, list[str]]],
                    modele: str, cle: str, sous_dossiers: bool = False,
-                   multi: bool = False) -> dict:
+                   multi: bool = False, journaliser=None) -> dict:
     """Classe un document via l'API Google Gemini."""
     noms = [nom for nom, _ in categories]
     valeurs = noms + ["Non classé"]
@@ -709,7 +746,8 @@ def classer_gemini(nom_fichier: str, texte: str,
         + (_CONSIGNE_SOUS_CATEGORIE if sous_dossiers else "")
     )
 
-    resultat = _appel_gemini_json(modele, cle, systeme, contenu, schema)
+    resultat = _appel_gemini_json(modele, cle, systeme, contenu, schema,
+                                  journaliser)
     resultat.setdefault("justification", "")
     if multi:
         valides = [c for c in resultat.get("categories", []) if c in valeurs]
@@ -1130,7 +1168,7 @@ def _preparer_moteur(moteur: str, cfg: dict, sous_dossiers: bool, multi: bool,
             raise _ErreurMoteur
         journaliser(f"Moteur Google Gemini — modèle « {modele} ».\n")
         return lambda nom, texte, cats: classer_gemini(
-            nom, texte, cats, modele, cle, sous_dossiers, multi)
+            nom, texte, cats, modele, cle, sous_dossiers, multi, journaliser)
 
     # moteur == "claude"
     try:
