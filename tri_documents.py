@@ -67,9 +67,19 @@ def lire_pdf(chemin: Path) -> str:
     from pypdf import PdfReader
 
     lecteur = PdfReader(str(chemin))
+    pages = lecteur.pages
+    # Sur un PDF court, on lit tout dans l'ordre. Sur un PDF long, on échantillonne
+    # début + milieu + fin : la 1re page est souvent une page de garde peu
+    # informative, et le thème se précise au fil du document.
+    if len(pages) <= 6:
+        indices = range(len(pages))
+    else:
+        milieu = len(pages) // 2
+        indices = [0, 1, 2, milieu, milieu + 1, len(pages) - 2, len(pages) - 1]
+
     morceaux = []
-    for page in lecteur.pages:
-        texte = page.extract_text() or ""
+    for i in indices:
+        texte = pages[i].extract_text() or ""
         if texte:
             morceaux.append(texte)
         if sum(len(m) for m in morceaux) >= EXTRAIT_MAX_CARACTERES:
@@ -231,6 +241,43 @@ def _normaliser(texte: str) -> str:
     return re.sub(r"[^0-9a-z]+", " ", texte).strip()
 
 
+# Racinisation française légère (sans dépendance) : on retire un suffixe courant
+# pour rattacher les variantes d'un même mot (facture / factures / facturation /
+# facturer → « factur »). On évite volontairement les terminaisons purement
+# verbales (ons, ez, ent…) qui rattacheraient mal les noms, et on n'agit que sur
+# les mots assez longs pour ne pas sur-regrouper (art ≠ artisan).
+_SUFFIXES_FR = (
+    "issements", "issement", "ations", "ation", "ateurs", "ateur", "atrice",
+    "ements", "ement", "ances", "ance", "ences", "ence", "ables", "able",
+    "ibles", "ible", "ites", "ite", "eaux", "aux", "euses", "euse", "eurs",
+    "eur", "ieres", "iere", "ier", "er", "ee", "ees", "es", "s", "x", "e",
+)
+
+
+def _raciniser(mot: str) -> str:
+    """Renvoie une racine approximative d'un mot déjà normalisé."""
+    if len(mot) <= 4:
+        return mot
+    for suffixe in _SUFFIXES_FR:
+        if mot.endswith(suffixe) and len(mot) - len(suffixe) >= 4:
+            return mot[: -len(suffixe)]
+    return mot
+
+
+def _raciner_tokens(texte_norm: str) -> list[str]:
+    """Découpe un texte normalisé en mots et renvoie leurs racines."""
+    return [_raciniser(mot) for mot in texte_norm.split()]
+
+
+def _compter_sequence(sequence: list[str], tokens: list[str]) -> int:
+    """Compte les occurrences consécutives de `sequence` dans `tokens`."""
+    n = len(sequence)
+    if n == 0:
+        return 0
+    return sum(1 for i in range(len(tokens) - n + 1)
+               if tokens[i:i + n] == sequence)
+
+
 # Poids du nom de fichier : un mot-clé dans le nom est un signal bien plus fort
 # que dans le corps du document.
 POIDS_NOM_FICHIER = 3
@@ -240,24 +287,14 @@ POIDS_MOT_CLE = 2
 POIDS_NOM_CATEGORIE = 1
 
 
-def _compter_mots_entiers(motif_norm: str, texte_norm: str) -> int:
-    """Compte les occurrences de `motif_norm` en tant que mot/expression entier.
-
-    Évite les faux positifs (« art » ne doit pas matcher « carte »). Les
-    lookarounds gèrent aussi les expressions de plusieurs mots (« compte rendu »).
-    """
-    if not motif_norm:
-        return 0
-    motif = r"(?<!\w)" + re.escape(motif_norm) + r"(?!\w)"
-    return len(re.findall(motif, texte_norm))
-
-
 def classer_local(nom_fichier: str, texte: str,
                   categories: list[tuple[str, list[str]]]) -> dict:
     """Classe un document par correspondance de mots-clés pondérée (aucun réseau).
 
-    Pour chaque catégorie, on additionne les occurrences de son nom et de ses
-    mots-clés, en tant que **mots entiers**, avec deux pondérations :
+    Le texte et les mots-clés sont réduits à leurs **racines** (facture ≈
+    factures ≈ facturation), puis comparés en **mots/expressions entiers**. Pour
+    chaque catégorie, on additionne les occurrences de son nom et de ses
+    mots-clés, avec deux pondérations :
 
     * une occurrence dans le **nom du fichier** pèse plus que dans le corps ;
     * un **mot-clé** que tu as fourni pèse plus que le nom (générique) de la
@@ -266,8 +303,8 @@ def classer_local(nom_fichier: str, texte: str,
     La catégorie au meilleur score gagne. En cas d'égalité (ou de score nul),
     on renvoie « Non classé » pour éviter un classement arbitraire.
     """
-    nom_norm = _normaliser(nom_fichier)
-    corps_norm = _normaliser(texte)
+    tokens_nom = _raciner_tokens(_normaliser(nom_fichier))
+    tokens_corps = _raciner_tokens(_normaliser(texte))
 
     scores: list[tuple[float, str, str]] = []  # (score, catégorie, motif)
     for nom, mots in categories:
@@ -275,9 +312,9 @@ def classer_local(nom_fichier: str, texte: str,
         score = 0.0
         touches: list[str] = []
         for terme, poids in termes:
-            terme_norm = _normaliser(terme)
-            dans_nom = _compter_mots_entiers(terme_norm, nom_norm)
-            dans_corps = _compter_mots_entiers(terme_norm, corps_norm)
+            sequence = _raciner_tokens(_normaliser(terme))
+            dans_nom = _compter_sequence(sequence, tokens_nom)
+            dans_corps = _compter_sequence(sequence, tokens_corps)
             gain = poids * (POIDS_NOM_FICHIER * dans_nom + dans_corps)
             if gain:
                 score += gain
@@ -414,7 +451,10 @@ def classer_ollama(nom_fichier: str, texte: str,
         ],
         "stream": False,
         "format": schema,
-        "options": {"temperature": 0},
+        # temperature 0 = réponse stable ; num_ctx large pour que tout l'extrait
+        # soit réellement lu (la fenêtre par défaut d'Ollama tronque les longs
+        # documents, ce qui dégrade la précision du classement).
+        "options": {"temperature": 0, "num_ctx": 8192},
     }
 
     requete = urllib.request.Request(

@@ -90,10 +90,11 @@ python tri_documents.py
    ```
 
    Ces mots-clés sont utilisés par **tous les moteurs** : le moteur Local les
-   recherche en **mots entiers** (avec un poids plus fort dans le nom du
-   fichier et pour tes mots-clés que pour le nom de la catégorie), et les
-   moteurs **Ollama** et **Claude** les reçoivent comme **indices** pour mieux
-   juger. Plus tes mots-clés sont précis, meilleur est le tri.
+   recherche en **mots entiers** et reconnaît les **variantes** d'un mot
+   (facture ≈ factures ≈ facturation), avec un poids plus fort dans le nom du
+   fichier et pour tes mots-clés que pour le nom de la catégorie ; les moteurs
+   **Ollama** et **Claude** les reçoivent comme **indices** pour mieux juger.
+   Plus tes mots-clés sont précis, meilleur est le tri.
 
 5. **Options** :
    - *Simulation* (activée par défaut) : montre ce qui serait fait **sans rien
