@@ -359,6 +359,27 @@ def classer_local(nom_fichier: str, texte: str,
 # --- Moteur d'analyse CLAUDE (API) ------------------------------------------
 
 
+class _ErreurFatale(Exception):
+    """Erreur d'un moteur IA qui rendra TOUS les documents en échec.
+
+    (clé invalide, plus de crédit, modèle introuvable, quota épuisé…). On
+    interrompt alors le tri au lieu de réessayer en vain sur chaque fichier.
+    """
+
+
+# Indices d'erreurs définitives dans le message d'une exception (Claude/Anthropic).
+_MOTS_ERREUR_FATALE = (
+    "credit balance", "billing", "plans & billing", "quota",
+    "authentication", "invalid x-api-key", "invalid api key",
+    "permission", "could not resolve authentication",
+)
+
+
+def _est_fatale(message: str) -> bool:
+    message = message.lower()
+    return any(motif in message for motif in _MOTS_ERREUR_FATALE)
+
+
 def _indices_categories(categories: list[tuple[str, list[str]]]) -> str:
     """Formate la liste des catégories et leurs mots-clés, en indices pour l'IA."""
     lignes = []
@@ -454,22 +475,32 @@ def classer_claude(client, nom_fichier: str, texte: str,
     contenu = _contenu_document(nom_fichier, texte, categories)
     consigne_sous = _CONSIGNE_SOUS_CATEGORIE if sous_dossiers else ""
 
-    reponse = client.messages.create(
-        model=MODELE,
-        max_tokens=1000,
-        system=(
-            "Tu es un assistant qui range des documents par centre d'intérêt. "
-            + _consigne_classement(multi) +
-            " Sers-toi des indices comme d'une aide, mais juge surtout d'après "
-            "le contenu. Si le document ne correspond clairement à aucune "
-            "catégorie, ou que le contenu est inexploitable, utilise 'Non "
-            "classé' plutôt que de forcer un choix. La justification doit tenir "
-            "en une courte phrase."
-            + consigne_sous
-        ),
-        messages=[{"role": "user", "content": contenu}],
-        output_config={"format": {"type": "json_schema", "schema": schema}},
-    )
+    try:
+        reponse = client.messages.create(
+            model=MODELE,
+            max_tokens=1000,
+            system=(
+                "Tu es un assistant qui range des documents par centre d'intérêt. "
+                + _consigne_classement(multi) +
+                " Sers-toi des indices comme d'une aide, mais juge surtout d'après "
+                "le contenu. Si le document ne correspond clairement à aucune "
+                "catégorie, ou que le contenu est inexploitable, utilise 'Non "
+                "classé' plutôt que de forcer un choix. La justification doit tenir "
+                "en une courte phrase."
+                + consigne_sous
+            ),
+            messages=[{"role": "user", "content": contenu}],
+            output_config={"format": {"type": "json_schema", "schema": schema}},
+        )
+    except Exception as erreur:  # noqa: BLE001 - on classe l'erreur (fatale ou non)
+        message = str(erreur)
+        if _est_fatale(message):
+            raise _ErreurFatale(
+                "Claude a refusé l'accès. Souvent : plus de crédit Anthropic, "
+                "ou clé invalide. Passe au moteur « Google Gemini » (gratuit) "
+                "ou « Ollama »/« Local ». [détail : "
+                f"{message[:200]}]") from erreur
+        raise
     texte_reponse = next(bloc.text for bloc in reponse.content if bloc.type == "text")
     return json.loads(texte_reponse)
 
@@ -683,6 +714,7 @@ def _appel_gemini_json(modele: str, cle: str, systeme: str, user: str,
                 time.sleep(delai)
                 continue
             extrait = detail[:300]
+            # Ces erreurs feront échouer TOUS les documents : on interrompt.
             if erreur.code in (401, 403):
                 indice = ("Ta clé API semble invalide ou non autorisée. "
                           "Recrée-en une sur https://aistudio.google.com/apikey "
@@ -697,9 +729,11 @@ def _appel_gemini_json(modele: str, cle: str, systeme: str, user: str,
                           "« Ollama » / « Local » (sans quota).")
             else:
                 indice = "Vérifie ta clé API et le nom du modèle."
-            raise RuntimeError(
-                f"Gemini a refusé la requête (HTTP {erreur.code}). {indice} "
-                f"[détail : {extrait}]") from erreur
+            message = (f"Gemini a refusé la requête (HTTP {erreur.code}). "
+                       f"{indice} [détail : {extrait}]")
+            if erreur.code in (401, 403, 404, 429):
+                raise _ErreurFatale(message) from erreur
+            raise RuntimeError(message) from erreur
         except urllib.error.URLError as erreur:
             raise RuntimeError(
                 f"Gemini injoignable (vérifie ta connexion internet). {erreur}"
@@ -1038,6 +1072,11 @@ def trier(racines: list[Path], destination: Path,
                 except OSError as err:
                     journaliser(f"    (original non supprimé : {err})")
             journaliser("")
+        except _ErreurFatale as erreur:
+            # Erreur qui ferait échouer tous les documents : on arrête net.
+            journaliser(f"\n⛔ {erreur}")
+            journaliser("Tri interrompu — change de moteur puis relance.\n")
+            break
         except Exception as erreur:  # noqa: BLE001 - on continue malgré une erreur isolée
             journaliser(f"    ÉCHEC : {erreur}\n")
             echecs += 1
