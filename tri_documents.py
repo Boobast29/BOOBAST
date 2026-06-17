@@ -161,8 +161,13 @@ def trier(dossier: Path, categories: list[str], deplacer: bool, journaliser, fin
     try:
         import anthropic
     except ImportError:
-        journaliser("ERREUR : le paquet 'anthropic' n'est pas installé. "
-                    "Lance : pip install -r requirements.txt")
+        import sys
+        journaliser(
+            "ERREUR : le paquet 'anthropic' n'est pas installé pour ce Python.\n"
+            f"    Python utilisé : {sys.executable}\n"
+            "    Installe les dépendances avec CE Python précis :\n"
+            f'    "{sys.executable}" -m pip install -r requirements.txt'
+        )
         fini()
         return
 
