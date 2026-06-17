@@ -291,6 +291,94 @@ def classer_claude(client, nom_fichier: str, texte: str,
     return json.loads(texte_reponse)
 
 
+# --- Moteur d'analyse IA LOCALE (Ollama, sur le PC) -------------------------
+
+# Ollama (https://ollama.com) fait tourner un modèle de langage directement sur
+# ta machine et expose une petite API HTTP locale. Aucune donnée ne quitte le
+# PC, aucune clé API. Il faut avoir installé Ollama et téléchargé un modèle
+# (ex. `ollama pull llama3.2`).
+OLLAMA_HOTE_DEFAUT = "http://localhost:11434"
+OLLAMA_MODELE_DEFAUT = "llama3.2"
+
+
+def classer_ollama(nom_fichier: str, texte: str,
+                   categories: list[tuple[str, list[str]]],
+                   modele: str, hote: str) -> dict:
+    """Classe un document via un modèle local servi par Ollama (aucun réseau externe)."""
+    import urllib.error
+    import urllib.request
+
+    noms = [nom for nom, _ in categories]
+    valeurs = noms + ["Non classé"]
+    schema = {
+        "type": "object",
+        "properties": {
+            "categorie": {"type": "string", "enum": valeurs},
+            "justification": {"type": "string"},
+        },
+        "required": ["categorie", "justification"],
+    }
+
+    if texte:
+        contenu = f"Nom du fichier : {nom_fichier}\n\nExtrait du contenu :\n{texte}"
+    else:
+        contenu = (
+            f"Nom du fichier : {nom_fichier}\n\n"
+            "(Impossible d'extraire du texte — base-toi sur le nom du fichier, "
+            "ou choisis 'Non classé'.)"
+        )
+
+    systeme = (
+        "Tu ranges des documents par centre d'intérêt. Choisis exactement UNE "
+        f"catégorie parmi : {', '.join(valeurs)}. Choisis celle qui correspond "
+        "le mieux au thème du document. Si rien ne correspond, utilise "
+        "'Non classé'. Réponds uniquement en JSON avec les clés 'categorie' et "
+        "'justification' (une courte phrase)."
+    )
+
+    payload = {
+        "model": modele,
+        "messages": [
+            {"role": "system", "content": systeme},
+            {"role": "user", "content": contenu},
+        ],
+        "stream": False,
+        "format": schema,
+        "options": {"temperature": 0},
+    }
+
+    requete = urllib.request.Request(
+        hote.rstrip("/") + "/api/chat",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(requete, timeout=180) as reponse:
+            donnees = json.loads(reponse.read().decode("utf-8"))
+    except urllib.error.URLError as erreur:
+        raise RuntimeError(
+            f"Ollama injoignable sur {hote}. Vérifie qu'Ollama est lancé. "
+            f"(détail : {erreur})"
+        ) from erreur
+
+    if "error" in donnees:
+        raise RuntimeError(f"Ollama : {donnees['error']}")
+
+    texte_reponse = donnees.get("message", {}).get("content", "").strip()
+    try:
+        resultat = json.loads(texte_reponse)
+    except json.JSONDecodeError:
+        # Repli : le modèle n'a pas renvoyé du JSON valide.
+        return {"categorie": "Non classé",
+                "justification": "Réponse du modèle local illisible."}
+
+    # Sécurité : on force la catégorie à faire partie de la liste autorisée.
+    if resultat.get("categorie") not in valeurs:
+        resultat["categorie"] = "Non classé"
+    resultat.setdefault("justification", "")
+    return resultat
+
+
 # --- Logique de tri (exécutée dans un thread de fond) -----------------------
 
 
@@ -310,10 +398,12 @@ def chemin_destination_unique(dossier: Path, nom: str) -> Path:
 
 def trier(racines: list[Path], destination: Path,
           categories: list[tuple[str, list[str]]], moteur: str, deplacer: bool,
-          simulation: bool, cle_api: str, journaliser, arret, fini):
+          simulation: bool, cle_api: str, modele_ollama: str, hote_ollama: str,
+          journaliser, arret, fini):
     """Scanne les racines, classe chaque document et le range. Thread de fond."""
     try:
-        classer = _preparer_moteur(moteur, cle_api, journaliser)
+        classer = _preparer_moteur(
+            moteur, cle_api, modele_ollama, hote_ollama, journaliser)
     except _ErreurMoteur:
         fini()
         return
@@ -388,10 +478,22 @@ class _ErreurMoteur(Exception):
     pass
 
 
-def _preparer_moteur(moteur: str, cle_api: str, journaliser):
+def _preparer_moteur(moteur: str, cle_api: str, modele_ollama: str,
+                     hote_ollama: str, journaliser):
     """Renvoie une fonction classer(nom, texte, categories) -> dict."""
     if moteur == "local":
         return classer_local
+
+    if moteur == "ollama":
+        modele = modele_ollama or OLLAMA_MODELE_DEFAUT
+        hote = hote_ollama or OLLAMA_HOTE_DEFAUT
+        journaliser(
+            f"Moteur IA locale (Ollama) — modèle « {modele} » sur {hote}.\n"
+            "Si rien ne se passe : installe Ollama (https://ollama.com), puis "
+            f"dans un terminal lance « ollama pull {modele} ».\n"
+        )
+        return lambda nom, texte, cats: classer_ollama(
+            nom, texte, cats, modele, hote)
 
     # moteur == "claude"
     try:
@@ -505,12 +607,30 @@ class Application(tk.Tk):
             text="Local — sur ton PC, sans internet, gratuit (mots-clés)",
             variable=self.var_moteur, value="local",
             command=self._maj_moteur).pack(anchor="w")
+        self.radio_ollama = ttk.Radiobutton(
+            cadre,
+            text="IA locale (Ollama) — analyse fine du contenu, sur ton PC, sans clé API",
+            variable=self.var_moteur, value="ollama",
+            command=self._maj_moteur)
+        self.radio_ollama.pack(anchor="w")
         self.radio_claude = ttk.Radiobutton(
             cadre,
             text="API Claude — analyse fine du contenu (clé API requise)",
             variable=self.var_moteur, value="claude",
             command=self._maj_moteur)
         self.radio_claude.pack(anchor="w")
+
+        self.cadre_ollama = ttk.Frame(cadre)
+        ttk.Label(self.cadre_ollama,
+                  text="Modèle Ollama (ex. llama3.2, qwen2.5:3b, mistral) :").pack(anchor="w")
+        self.var_modele = tk.StringVar(value=OLLAMA_MODELE_DEFAUT)
+        ttk.Entry(self.cadre_ollama, textvariable=self.var_modele).pack(
+            fill="x", pady=(2, 0))
+        ttk.Label(
+            self.cadre_ollama,
+            text="Installe Ollama depuis https://ollama.com, puis : ollama pull " + OLLAMA_MODELE_DEFAUT,
+            foreground="#666",
+        ).pack(anchor="w")
 
         self.cadre_cle = ttk.Frame(cadre)
         ttk.Label(self.cadre_cle,
@@ -584,7 +704,12 @@ class Application(tk.Tk):
             self.cadre_dossiers.pack_forget()
 
     def _maj_moteur(self):
-        if self.var_moteur.get() == "claude":
+        moteur = self.var_moteur.get()
+        if moteur == "ollama":
+            self.cadre_ollama.pack(fill="x", pady=(2, 6), after=self.radio_ollama)
+        else:
+            self.cadre_ollama.pack_forget()
+        if moteur == "claude":
             self.cadre_cle.pack(fill="x", pady=(2, 6), after=self.radio_claude)
         else:
             self.cadre_cle.pack_forget()
@@ -680,6 +805,8 @@ class Application(tk.Tk):
                 self.var_deplacer.get(),
                 self.var_simulation.get(),
                 cle_api,
+                self.var_modele.get().strip(),
+                OLLAMA_HOTE_DEFAUT,
                 self.file_journal.put,
                 self.arret,
                 lambda: self.after(0, self._reactiver),

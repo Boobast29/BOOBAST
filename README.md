@@ -14,6 +14,9 @@ va, puis range les fichiers dans des sous-dossiers du dossier de destination.
 - **Local (sur ton PC, sans internet)** — analyse le contenu et le nom de
   chaque fichier par mots-clés. Rien n'est envoyé sur internet, c'est **gratuit
   et privé**. C'est le mode par défaut.
+- **IA locale (Ollama)** — un vrai modèle de langage qui tourne **sur ton PC**
+  pour une analyse fine du contenu, **sans clé API ni internet**. Nécessite
+  d'installer [Ollama](https://ollama.com) et de télécharger un modèle.
 - **API Claude** — analyse fine du contenu par l'IA. Plus précis, mais nécessite
   une clé API Anthropic et envoie un extrait de chaque document à Anthropic.
 
@@ -21,9 +24,22 @@ va, puis range les fichiers dans des sous-dossiers du dossier de destination.
 
 Copilot Windows **n'expose aucune API publique** permettant à un programme de
 lui envoyer automatiquement des milliers de documents pour les classer. On ne
-peut donc pas le piloter en arrière-plan pour trier tout un PC. Le moteur
-**Local** est l'équivalent automatisable le plus proche : toute l'analyse se
-fait sur ta machine, sans rien envoyer ailleurs.
+peut donc pas le piloter en arrière-plan pour trier tout un PC. Les moteurs
+**Local** et **IA locale (Ollama)** en sont les équivalents automatisables :
+toute l'analyse se fait sur ta machine, sans rien envoyer ailleurs.
+
+### Utiliser le moteur « IA locale (Ollama) »
+
+1. Installe Ollama depuis https://ollama.com.
+2. Télécharge un modèle (dans un terminal), par exemple :
+   ```bash
+   ollama pull llama3.2
+   ```
+   D'autres modèles conviennent aussi (`qwen2.5:3b`, `mistral`…). Les petits
+   modèles sont plus rapides ; les plus gros, plus précis.
+3. Dans l'appli, choisis le moteur **IA locale (Ollama)** et indique le nom du
+   modèle téléchargé. Ollama doit être lancé (il l'est automatiquement après
+   installation sous Windows/macOS).
 
 ## Installation rapide (recommandée)
 
