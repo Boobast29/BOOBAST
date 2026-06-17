@@ -159,21 +159,23 @@ def _doit_ignorer(nom_dossier: str) -> bool:
 
 
 def scanner_documents(racines: list[Path], journaliser, arret,
-                      exclure: set[Path] | None = None) -> list[Path]:
+                      exclure: set[Path] | None = None,
+                      limite: int | None = None) -> list[Path]:
     """Parcourt récursivement les racines et renvoie les documents trouvés.
 
     Ignore les dossiers système/caches (et tout dossier de `exclure`, p. ex. le
     dossier de destination) et s'arrête proprement si `arret` (un
-    threading.Event) est déclenché.
+    threading.Event) est déclenché. Si `limite` est fixée, s'arrête une fois ce
+    nombre de documents atteint (utile pour échantillonner rapidement).
     """
     exclure = exclure or set()
     trouves: list[Path] = []
     for racine in racines:
-        if arret.is_set():
+        if arret.is_set() or (limite is not None and len(trouves) >= limite):
             break
         journaliser(f"Scan de {racine}…")
         for dossier_courant, sous_dossiers, fichiers in os.walk(racine):
-            if arret.is_set():
+            if arret.is_set() or (limite is not None and len(trouves) >= limite):
                 break
             # Élague les dossiers à ignorer (modification en place de la liste) :
             # noms système/caches, et le dossier de destination le cas échéant.
@@ -523,7 +525,155 @@ def classer_ollama(nom_fichier: str, texte: str,
     return resultat
 
 
+# --- Proposition automatique de catégories (IA) -----------------------------
+
+_SCHEMA_PROPOSITION = {
+    "type": "object",
+    "properties": {
+        "categories": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "nom": {"type": "string"},
+                    "mots_cles": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["nom", "mots_cles"],
+            },
+        }
+    },
+    "required": ["categories"],
+}
+
+_CONSIGNE_PROPOSITION = (
+    "Tu aides à organiser des documents personnels. À partir des extraits "
+    "fournis, propose entre 4 et 8 catégories de classement par centre "
+    "d'intérêt, vraiment adaptées à CES documents. Pour chaque catégorie : un "
+    "nom court (1 à 3 mots) et 3 à 6 mots-clés représentatifs. Évite les "
+    "doublons. Réponds uniquement en JSON : "
+    '{"categories":[{"nom":..., "mots_cles":[...]}]}.'
+)
+
+
+def _digest_echantillon(fichiers: list[Path], arret,
+                        max_fichiers: int = 20, max_chars: int = 500) -> str:
+    """Construit un condensé (nom + court extrait) d'un échantillon de fichiers."""
+    morceaux = []
+    for fichier in fichiers[:max_fichiers]:
+        if arret.is_set():
+            break
+        try:
+            extrait = extraire_texte(fichier)[:max_chars]
+        except Exception:  # noqa: BLE001 - un fichier illisible ne doit pas tout bloquer
+            extrait = ""
+        morceaux.append(f"Fichier : {fichier.name}\nExtrait : {extrait}")
+    return "\n\n".join(morceaux)
+
+
+def _proposition_vers_categories(donnees: dict) -> list[tuple[str, list[str]]]:
+    categories = []
+    for item in donnees.get("categories", []):
+        nom = (item.get("nom") or "").strip()
+        mots = [m.strip() for m in item.get("mots_cles", []) if m.strip()]
+        if nom:
+            categories.append((nom, mots))
+    return categories
+
+
+def proposer_categories(echantillon: str, moteur: str, modele: str, hote: str,
+                        cle_api: str) -> list[tuple[str, list[str]]]:
+    """Demande à l'IA de proposer des catégories d'après un échantillon.
+
+    Utilise Claude si `moteur == 'claude'`, sinon Ollama (y compris quand le
+    moteur de tri sélectionné est « Local » : la suggestion nécessite une IA).
+    """
+    user = "Extraits de documents :\n\n" + echantillon
+    if moteur == "claude":
+        import anthropic
+        if not cle_api:
+            raise RuntimeError("Clé API Anthropic requise pour la proposition.")
+        client = anthropic.Anthropic(api_key=cle_api)
+        reponse = client.messages.create(
+            model=MODELE,
+            max_tokens=1000,
+            system=_CONSIGNE_PROPOSITION,
+            messages=[{"role": "user", "content": user}],
+            output_config={"format": {"type": "json_schema",
+                                      "schema": _SCHEMA_PROPOSITION}},
+        )
+        texte = next(b.text for b in reponse.content if b.type == "text")
+        return _proposition_vers_categories(json.loads(texte))
+
+    # Ollama (moteur local ou ollama)
+    import urllib.error
+    import urllib.request
+    payload = {
+        "model": modele or OLLAMA_MODELE_DEFAUT,
+        "messages": [
+            {"role": "system", "content": _CONSIGNE_PROPOSITION},
+            {"role": "user", "content": user},
+        ],
+        "stream": False,
+        "format": _SCHEMA_PROPOSITION,
+        "options": {"temperature": 0, "num_ctx": 8192},
+    }
+    requete = urllib.request.Request(
+        (hote or OLLAMA_HOTE_DEFAUT).rstrip("/") + "/api/chat",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(requete, timeout=180) as reponse:
+            donnees = json.loads(reponse.read().decode("utf-8"))
+    except urllib.error.URLError as erreur:
+        raise RuntimeError(
+            f"Ollama injoignable sur {hote or OLLAMA_HOTE_DEFAUT}. Lance Ollama "
+            "(ou choisis le moteur API Claude) pour proposer des catégories. "
+            f"(détail : {erreur})") from erreur
+    if "error" in donnees:
+        raise RuntimeError(f"Ollama : {donnees['error']}")
+    contenu = donnees.get("message", {}).get("content", "").strip()
+    return _proposition_vers_categories(json.loads(contenu))
+
+
 # --- Logique de tri (exécutée dans un thread de fond) -----------------------
+
+
+def tache_proposer(racines: list[Path], moteur: str, modele: str, hote: str,
+                   cle_api: str, journaliser, arret, fini):
+    """Analyse un échantillon de documents et propose des catégories. Thread de fond.
+
+    `fini(texte)` reçoit les catégories proposées (texte prêt à coller) ou None.
+    """
+    journaliser("Recherche d'un échantillon de documents…")
+    fichiers = scanner_documents(racines, journaliser, arret, limite=60)
+    if arret.is_set():
+        journaliser("⏹ Analyse interrompue.")
+        fini(None)
+        return
+    if not fichiers:
+        journaliser("Aucun document trouvé pour l'analyse.")
+        fini(None)
+        return
+
+    journaliser(f"Analyse de {min(len(fichiers), 20)} document(s) par l'IA…")
+    echantillon = _digest_echantillon(fichiers, arret)
+    try:
+        categories = proposer_categories(echantillon, moteur, modele, hote, cle_api)
+    except Exception as erreur:  # noqa: BLE001 - on rapporte l'erreur à l'utilisateur
+        journaliser(f"ÉCHEC de la proposition : {erreur}")
+        fini(None)
+        return
+
+    if not categories:
+        journaliser("L'IA n'a pas proposé de catégories exploitables.")
+        fini(None)
+        return
+
+    texte = "\n".join(
+        f"{nom}: {', '.join(mots)}" if mots else nom for nom, mots in categories)
+    journaliser(f"✅ {len(categories)} catégorie(s) proposée(s) — vérifie et ajuste si besoin.")
+    fini(texte)
 
 
 def chemin_destination_unique(dossier: Path, nom: str) -> Path:
@@ -587,6 +737,8 @@ def trier(racines: list[Path], destination: Path,
     echecs = 0
     ignores = 0
     lignes_rapport: list[tuple[str, str, str, str]] = []
+    # Sous-thèmes déjà vus par catégorie, pour les regrouper de façon cohérente.
+    sous_vus: dict[str, list[tuple[set[str], str]]] = {}
 
     for i, fichier in enumerate(fichiers, start=1):
         if arret.is_set():
@@ -611,6 +763,9 @@ def trier(racines: list[Path], destination: Path,
             sous = (resultat.get("sous_categorie") or "").strip()
             label = categorie
             if sous_dossiers and sous:
+                # Regroupe les sous-thèmes équivalents sous un libellé commun.
+                sous = _canoniser_sous_theme(
+                    sous, sous_vus.setdefault(categorie, []))
                 dossier_cible = dossier_cible / _nom_dossier_sur(sous)
                 label = f"{categorie} / {sous}"
             cible = chemin_destination_unique(dossier_cible, fichier.name)
@@ -684,6 +839,46 @@ def _nom_dossier_sur(nom: str) -> str:
     """Nettoie un nom de catégorie pour en faire un nom de dossier valide."""
     nom = re.sub(r'[<>:"/\\|?*]', "_", nom).strip().strip(".")
     return nom or "Non classé"
+
+
+# Mots vides ignorés pour comparer deux sous-thèmes.
+_MOTS_VIDES = {
+    "de", "des", "du", "la", "le", "les", "et", "ou", "un", "une", "aux",
+    "au", "en", "pour", "par", "sur", "a", "l", "d",
+}
+
+
+def _stems_significatifs(texte: str) -> set[str]:
+    """Ensemble des racines des mots « porteurs de sens » d'un libellé."""
+    return {
+        _raciniser(mot)
+        for mot in _normaliser(texte).split()
+        if len(mot) > 2 and mot not in _MOTS_VIDES
+    }
+
+
+def _canoniser_sous_theme(nom: str, deja_vus: list[tuple[set[str], str]]) -> str:
+    """Regroupe les sous-thèmes équivalents sous un seul libellé.
+
+    Compare le sous-thème proposé à ceux déjà rencontrés (dans la même
+    catégorie) via leurs racines : si l'un est inclus dans l'autre, ou si le
+    recouvrement (Jaccard) est suffisant, on réutilise le libellé déjà vu pour
+    éviter d'éparpiller « Factures EDF », « EDF » et « facture edf » dans trois
+    dossiers différents. `deja_vus` est complété au fil de l'eau.
+    """
+    stems = _stems_significatifs(nom)
+    if not stems:
+        return nom
+    for autres_stems, canon in deja_vus:
+        if not autres_stems:
+            continue
+        if stems <= autres_stems or autres_stems <= stems:
+            return canon
+        jaccard = len(stems & autres_stems) / len(stems | autres_stems)
+        if jaccard >= 0.6:
+            return canon
+    deja_vus.append((stems, nom))
+    return nom
 
 
 class _ErreurMoteur(Exception):
@@ -902,12 +1097,18 @@ class Application(tk.Tk):
             fill="x", pady=(2, 0))
 
         # --- Catégories ---
+        ligne_cat = ttk.Frame(cadre)
+        ligne_cat.pack(fill="x", pady=(10, 0))
         ttk.Label(
-            cadre,
+            ligne_cat,
             text=("Tes catégories (une par ligne). En mode Local, ajoute des "
                   "mots-clés après « : »."),
             font=("TkDefaultFont", 10, "bold"),
-        ).pack(anchor="w", pady=(10, 0))
+        ).pack(side="left")
+        self.bouton_proposer = ttk.Button(
+            ligne_cat, text="Proposer des catégories (IA)",
+            command=self._proposer_categories)
+        self.bouton_proposer.pack(side="right")
         ttk.Label(
             cadre,
             text="Ex.  Cuisine: recette, ingrédient, cuisson    |    Finances: facture, impôt, banque",
@@ -1050,25 +1251,69 @@ class Application(tk.Tk):
         self.arret.set()
         self.file_journal.put("Arrêt demandé…")
 
-    def _lancer(self):
-        # Étendue → racines.
+    def _racines_courantes(self, confirmer_pc: bool):
+        """Renvoie les racines à scanner selon l'étendue choisie, ou None."""
         if self.var_etendue.get() == "pc":
             racines = lister_disques()
             if not racines:
                 messagebox.showerror("Aucun disque", "Aucun disque détecté.")
-                return
-            if not messagebox.askyesno(
+                return None
+            if confirmer_pc and not messagebox.askyesno(
                 "Scanner tout le PC ?",
                 "Tu vas scanner TOUT le PC. Cela peut prendre du temps.\n\n"
                 "Les dossiers système sont ignorés et, par défaut, les fichiers "
                 "sont copiés (pas déplacés) en mode simulation.\n\nContinuer ?"):
-                return
-        else:
-            if not self.dossiers_choisis:
-                messagebox.showwarning(
-                    "Aucun dossier", "Ajoute au moins un dossier à scanner.")
-                return
-            racines = [Path(d) for d in self.dossiers_choisis]
+                return None
+            return racines
+        if not self.dossiers_choisis:
+            messagebox.showwarning(
+                "Aucun dossier", "Ajoute au moins un dossier à scanner.")
+            return None
+        return [Path(d) for d in self.dossiers_choisis]
+
+    def _proposer_categories(self):
+        racines = self._racines_courantes(confirmer_pc=False)
+        if racines is None:
+            return
+        moteur = self.var_moteur.get()
+        cle_api = self.var_cle.get().strip()
+        if moteur == "claude" and not cle_api:
+            messagebox.showwarning(
+                "Clé API manquante",
+                "Pour proposer des catégories avec Claude, indique ta clé API, "
+                "ou choisis le moteur « Local »/« Ollama » (Ollama sera utilisé).")
+            return
+
+        self.arret.clear()
+        self.bouton_lancer.configure(state="disabled")
+        self.bouton_proposer.configure(state="disabled")
+        self.bouton_arret.configure(state="normal")
+        self.journal.configure(state="normal")
+        self.journal.delete("1.0", "end")
+        self.journal.configure(state="disabled")
+
+        threading.Thread(
+            target=tache_proposer,
+            args=(
+                racines, moteur, self.var_modele.get().strip(),
+                OLLAMA_HOTE_DEFAUT, cle_api, self.file_journal.put, self.arret,
+                lambda texte: self.after(0, self._appliquer_categories, texte),
+            ),
+            daemon=True,
+        ).start()
+
+    def _appliquer_categories(self, texte):
+        self.bouton_lancer.configure(state="normal")
+        self.bouton_proposer.configure(state="normal")
+        self.bouton_arret.configure(state="disabled")
+        if texte:
+            self.txt_categories.delete("1.0", "end")
+            self.txt_categories.insert("1.0", texte)
+
+    def _lancer(self):
+        racines = self._racines_courantes(confirmer_pc=True)
+        if racines is None:
+            return
 
         destination_txt = self.var_destination.get().strip()
         if not destination_txt:
@@ -1141,6 +1386,7 @@ class Application(tk.Tk):
 
     def _reactiver(self):
         self.bouton_lancer.configure(state="normal")
+        self.bouton_proposer.configure(state="normal")
         self.bouton_arret.configure(state="disabled")
         if self.derniere_destination is not None:
             self.bouton_ouvrir.configure(state="normal")

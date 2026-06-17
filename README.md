@@ -60,6 +60,19 @@ Documents triés/
 
 Le moteur **Local** (mots-clés) range uniquement par grande catégorie.
 
+Les sous-thèmes équivalents sont **regroupés automatiquement** : « Factures
+EDF », « EDF » et « facture edf » atterrissent dans le même sous-dossier, au
+lieu d'être éparpillés.
+
+### Proposer des catégories automatiquement (IA)
+
+Pas sûr de tes catégories ? Clique sur **« Proposer des catégories (IA) »** :
+l'outil analyse un échantillon de tes documents et propose une liste de
+catégories avec leurs mots-clés, directement dans le champ des catégories (tu
+peux ensuite l'ajuster). Cette fonction utilise **Ollama** (ou **Claude** si ce
+moteur est sélectionné) — le moteur Local seul ne peut pas inventer de
+catégories.
+
 ## Installation rapide (recommandée)
 
 Un script fait tout pour toi (installe les dépendances puis lance l'appli) :
