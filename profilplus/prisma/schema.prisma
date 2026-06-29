@@ -1,0 +1,358 @@
+// PROFIL+ SUPPORT DIAGNOSTIC - Schema Prisma
+// Base de donnees PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------------------------------
+// ENUMS
+// ----------------------------------------------------------------------------
+
+enum Role {
+  GARAGE // utilisateur garage qui cree des demandes
+  TECHNICIEN // support technique
+  ADMIN // administrateur reseau
+}
+
+enum TicketStatus {
+  CRITIQUE // rouge
+  PRIORITAIRE // orange
+  EN_COURS // jaune
+  RESOLU // vert
+}
+
+enum Urgence {
+  BASSE
+  NORMALE
+  HAUTE
+  CRITIQUE
+}
+
+enum ToolBrand {
+  TEXA
+  BOSCH
+  JALTEST
+  LAUNCH
+  AUTEL
+  DELPHI
+  ACTIA
+  AUTRE
+}
+
+enum AttachmentType {
+  PHOTO
+  VIDEO
+  PDF
+  RAPPORT
+  AUTRE
+}
+
+enum KnowledgeType {
+  CAS_CONNU
+  ASTUCE
+  SOLUTION
+  PROCEDURE
+  FICHE_TECHNIQUE
+}
+
+enum GarageLevel {
+  DEBUTANT // rouge
+  INTERMEDIAIRE // orange
+  CONFIRME // jaune
+  AVANCE // vert
+  EXPERT // trophee
+}
+
+// ----------------------------------------------------------------------------
+// AUTH / UTILISATEURS
+// ----------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  phone         String?
+  passwordHash  String?
+  role          Role      @default(GARAGE)
+  image         String?
+  emailVerified DateTime?
+
+  garageId String?
+  garage   Garage? @relation(fields: [garageId], references: [id])
+
+  ticketsCreated Ticket[]       @relation("TicketCreator")
+  ticketsAssigned Ticket[]      @relation("TicketAssignee")
+  messages       Message[]
+  callLogs       CallLog[]
+  knowledge      KnowledgeArticle[]
+  auditLogs      AuditLog[]
+  accounts       Account[]
+  sessions       Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------------------------------------------------------------
+// GARAGES + PARC MATERIEL
+// ----------------------------------------------------------------------------
+
+model Garage {
+  id        String  @id @default(cuid())
+  name      String
+  city      String?
+  address   String?
+  phone     String?
+  region    String?
+
+  // Scoring - Indice d'Autonomie Profil+
+  autonomyScore Int         @default(50)
+  level         GarageLevel @default(INTERMEDIAIRE)
+
+  users     User[]
+  tickets   Ticket[]
+  equipment Equipment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Equipment {
+  id           String    @id @default(cuid())
+  garageId     String
+  garage       Garage    @relation(fields: [garageId], references: [id], onDelete: Cascade)
+  brand        ToolBrand
+  model        String?
+  version      String?
+  serialNumber String?
+  license      String?
+  notes        String?
+  installedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ----------------------------------------------------------------------------
+// TICKETS / DEMANDES
+// ----------------------------------------------------------------------------
+
+model Ticket {
+  id        String       @id @default(cuid())
+  reference String       @unique // ex: PP-2026-0001
+  status    TicketStatus @default(EN_COURS)
+  urgence   Urgence      @default(NORMALE)
+
+  // Etape 1
+  garageName String
+  userName   String
+  phone      String
+
+  // Etape 2 - valise
+  toolBrand ToolBrand
+
+  // Etape 3 - vehicule
+  vehicleBrand String
+  vehicleModel String
+  vehicleYear  String?
+  plate        String?
+
+  // Etape 4
+  immobilized Boolean @default(false)
+
+  // Etape 5
+  description String @db.Text
+
+  // Questions intelligentes (JSON)
+  smartAnswers Json?
+
+  // Champs IA
+  aiSummary String? @db.Text
+
+  // Relations
+  garageId String?
+  garage   Garage? @relation(fields: [garageId], references: [id])
+
+  creatorId String
+  creator   User   @relation("TicketCreator", fields: [creatorId], references: [id])
+
+  assigneeId String?
+  assignee   User?   @relation("TicketAssignee", fields: [assigneeId], references: [id])
+
+  attachments Attachment[]
+  messages    Message[]
+  callLogs    CallLog[]
+  knowledge   KnowledgeArticle[]
+
+  resolvedAt        DateTime?
+  resolutionMinutes Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([toolBrand])
+  @@index([vehicleBrand])
+}
+
+model Attachment {
+  id        String         @id @default(cuid())
+  ticketId  String?
+  ticket    Ticket?        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  messageId String?
+  message   Message?       @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  type      AttachmentType @default(PHOTO)
+  url       String
+  filename  String
+  mimeType  String?
+  size      Int?
+
+  createdAt DateTime @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// MESSAGERIE TEMPS REEL (style Teams)
+// ----------------------------------------------------------------------------
+
+model Message {
+  id       String @id @default(cuid())
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  body        String       @db.Text
+  attachments Attachment[]
+
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+// ----------------------------------------------------------------------------
+// RAPPEL GARAGE
+// ----------------------------------------------------------------------------
+
+model CallLog {
+  id       String @id @default(cuid())
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  agentId String
+  agent   User   @relation(fields: [agentId], references: [id])
+
+  calledAt        DateTime
+  durationMinutes Int?
+  report          String   @db.Text
+
+  createdAt DateTime @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// BASE DE CONNAISSANCES + BASE DE PANNES NATIONALE
+// ----------------------------------------------------------------------------
+
+model KnowledgeArticle {
+  id    String        @id @default(cuid())
+  type  KnowledgeType @default(SOLUTION)
+  title String
+
+  // Classement
+  toolBrand    ToolBrand?
+  vehicleBrand String?
+  vehicleModel String?
+
+  // Memoire technique nationale
+  symptoms     String? @db.Text
+  errorCode    String? // ex P2002
+  cause        String? @db.Text
+  solution     String  @db.Text
+  procedure    String? @db.Text
+
+  resolutionMinutes Int?
+  views             Int   @default(0)
+
+  // Source
+  sourceTicketId String?
+  sourceTicket   Ticket? @relation(fields: [sourceTicketId], references: [id])
+
+  authorId String?
+  author   User?   @relation(fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([errorCode])
+  @@index([toolBrand])
+  @@index([vehicleBrand])
+}
+
+// ----------------------------------------------------------------------------
+// ALERTES NATIONALES
+// ----------------------------------------------------------------------------
+
+model NationalAlert {
+  id          String    @id @default(cuid())
+  title       String
+  description String    @db.Text
+  toolBrand   ToolBrand?
+  count       Int       @default(1)
+  active      Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ----------------------------------------------------------------------------
+// AUDIT / SECURITE
+// ----------------------------------------------------------------------------
+
+model AuditLog {
+  id     String  @id @default(cuid())
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+  action String
+  entity String?
+  entityId String?
+  meta   Json?
+  ip     String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+}
