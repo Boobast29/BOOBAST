@@ -11,6 +11,7 @@ export type Player = {
   archived?: boolean;
   /** Code d'accès joueur (haché) ; absent = accès sans code */
   pinHash?: string;
+  photoUri?: string;
   createdAt: string;
 };
 
@@ -23,7 +24,32 @@ export type Match = {
   scoreFor?: number;
   scoreAgainst?: number;
   notes?: string;
+  prep?: MatchPrep;
+  debrief?: MatchDebrief;
   createdAt: string;
+};
+
+/** Préparation d'un match à venir (visible par les joueurs si publiée). */
+export type MatchPrep = {
+  published: boolean;
+  opponentSystem?: string;
+  keyPlayers?: string;
+  strengths?: string;
+  weaknesses?: string;
+  attack?: string;
+  defense?: string;
+  setPieces?: string;
+  objectives?: string;
+  message?: string;
+};
+
+/** Débrief du coach après le match (privé). */
+export type MatchDebrief = {
+  positives?: string;
+  problems?: string;
+  solutions?: string;
+  toWork?: string;
+  coachTeamRating?: number;
 };
 
 /** Clés des statistiques de match. La liste affichée est dans constants.ts (STAT_FIELDS). */
@@ -114,6 +140,9 @@ export type AppData = {
   media: MediaItem[];
   lineups: Lineup[];
   sessions: TrainingSession[];
+  objectives: Objective[];
+  surveys: Survey[];
+  surveyResponses: SurveyResponse[];
 };
 
 export type Attendance = 'present' | 'retard' | 'absent' | 'excuse' | 'blesse';
@@ -130,6 +159,8 @@ export type TrainingSession = {
   rpe?: number;
   attendance: Record<ID, Attendance>;
   playerRpe: Record<ID, number>;
+  /** Ressenti des joueurs après la séance */
+  feedback?: Record<ID, TrainingFeedback>;
   createdAt: string;
 };
 
@@ -143,9 +174,58 @@ export type Lineup = {
   notes?: string;
   /** Visible par les joueurs */
   published: boolean;
-  /** Rendez-vous pour la convocation */
-  meetTime?: string;
-  meetPlace?: string;
+  updatedAt: string;
+};
+
+export type TrainingFeedback = {
+  /** Qualité de l'entraînement 1–10 */
+  quality?: number;
+  /** Performance perso 1–10 */
+  selfPerf?: number;
+  /** Intensité ressentie 1–10 */
+  intensity?: number;
+  comment?: string;
+  updatedAt: string;
+};
+
+export type ObjectiveStatus = 'en cours' | 'acquis' | 'abandonné';
+
+/** Point à travailler fixé par le coach pour un joueur. */
+export type Objective = {
+  id: ID;
+  playerId: ID;
+  title: string;
+  category?: string;
+  details?: string;
+  dueDate?: string;
+  status: ObjectiveStatus;
+  /** Où le joueur pense en être (0–10) */
+  playerProgress?: number;
+  /** Évaluation du coach (0–10) */
+  coachProgress?: number;
+  playerComment?: string;
+  coachNotes: { id: ID; date: string; text: string }[];
+  createdAt: string;
+};
+
+/** Questionnaire libre créé par le coach (bilan, mental, vie de groupe…). */
+export type Survey = {
+  id: ID;
+  title: string;
+  description?: string;
+  questions: CustomQuestion[];
+  /** 'all' ou liste de joueurs */
+  target: 'all' | ID[];
+  dueDate?: string;
+  open: boolean;
+  createdAt: string;
+};
+
+export type SurveyResponse = {
+  id: ID;
+  surveyId: ID;
+  playerId: ID;
+  answers: Record<string, Answer>;
   updatedAt: string;
 };
 

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { Locked } from '@/components/Locked';
 import { QuestionInput } from '@/components/QuestionInput';
+import { SliderScale } from '@/components/Slider';
 import { useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Chips, Empty, Field, Progress, Row, Scale, Screen, Section, Stepper, Toggle, Txt } from '@/components/ui';
 import { confirm, notify } from '@/lib/confirm';
@@ -105,7 +106,7 @@ export default function Questionnaire() {
       <Stack.Screen options={{ title: playerName(player) }} />
       <Card>
         <Row style={{ gap: 12 }}>
-          <Avatar label={initials(player)} colorKey={player.id} size={52} />
+          <Avatar label={initials(player)} colorKey={player.id} photo={player.photoUri} size={52} />
           <View style={{ flex: 1, gap: 3 }}>
             <Txt bold size={18}>
               {playerName(player)}
@@ -139,6 +140,7 @@ export default function Questionnaire() {
             {q.section && q.section !== customQuestions[i - 1]?.section ? <SectionBanner title={q.section} /> : null}
             <QuestionInput
               q={q}
+              showValue={coach}
               value={answers[q.id]}
               onChange={(v) =>
                 setAnswers((a) => {
@@ -152,7 +154,7 @@ export default function Questionnaire() {
           </View>
         ))}
         {customQuestions.some((q) => q.section) && !customQuestions.some((q) => q.section === 'Toi') ? <SectionBanner title="Toi" /> : null}
-        <Scale label={`${SELF_RATING_LABEL} *`} hint="1 = Très mauvaise · 10 = Exceptionnel" value={selfRating} onChange={setSelfRating} min={1} max={10} />
+        <SliderScale label={`${SELF_RATING_LABEL} *`} value={selfRating} onChange={setSelfRating} min={1} max={10} showValue={coach} />
         <Field label={PLAYER_COMMENT_LABEL} value={playerComment} onChangeText={setPlayerComment} multiline placeholder="Votre réponse" />
       </Card>
 
@@ -186,28 +188,33 @@ export default function Questionnaire() {
 
       <Section icon="flame-outline">Effort du match (RPE)</Section>
       <Card>
-        <Scale
+        <SliderScale
           label="Effort perçu (RPE)"
-          hint={rpe != null ? `${rpeLabel(rpe)} — charge = ${rpe * minutes} UA` : 'Dureté de la séance/du match, 0 = repos · 10 = maximal'}
+          hint={rpe != null ? (coach ? `${rpeLabel(rpe)} — charge = ${rpe * minutes} UA` : rpeLabel(rpe)) : 'À quel point le match a été dur pour toi'}
           value={rpe}
           onChange={setRpe}
           min={0}
           max={10}
-          invertColors
+          minLabel="Repos"
+          maxLabel="Maximal"
+          showValue={coach}
+          invert
         />
       </Card>
 
       <Section icon="heart-outline">Bien-être</Section>
       <Card>
         {WELLNESS_FIELDS.map((f) => (
-          <Scale
+          <SliderScale
             key={f.key}
             label={f.label}
-            hint={f.hint}
             value={wellness[f.key]}
             onChange={(v) => setWellness((w) => ({ ...w, [f.key]: v }))}
             min={1}
             max={5}
+            minLabel={f.hint.split('·')[0].replace(/^1 = /, '').trim()}
+            maxLabel={f.hint.split('·')[1].replace(/^\s*5 = /, '').trim()}
+            showValue={coach}
           />
         ))}
       </Card>
@@ -218,14 +225,16 @@ export default function Questionnaire() {
         {pain && (
           <View style={{ gap: 12 }}>
             <Chips label="Zone" options={BODY_ZONES} value={painZone} onChange={setPainZone} allowEmpty />
-            <Scale
+            <SliderScale
               label="Intensité de la douleur"
-              hint="0 = aucune · 10 = insupportable"
               value={painLevel}
               onChange={setPainLevel}
               min={0}
               max={10}
-              invertColors
+              minLabel="Aucune"
+              maxLabel="Insupportable"
+              showValue={coach}
+              invert
             />
             {coach ? (
               <Button

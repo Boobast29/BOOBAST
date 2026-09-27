@@ -191,7 +191,7 @@ export default function MediaViewer() {
                 return (
                   <Pressable key={pid} onPress={() => router.push(`/joueur/${pid}`)}>
                     <Row>
-                      <Avatar size={34} colorKey={p.id} label={p.number != null ? String(p.number) : p.firstName[0] ?? '?'} />
+                      <Avatar size={34} colorKey={p.id} photo={p.photoUri} label={p.number != null ? String(p.number) : p.firstName[0] ?? '?'} />
                       <Txt bold>{playerName(p)}</Txt>
                       <View style={{ flex: 1 }} />
                       <Txt muted size={13}>

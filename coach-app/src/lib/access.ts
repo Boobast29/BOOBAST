@@ -1,7 +1,7 @@
 import type { AppData, MediaItem, Session } from './types';
 
 /** Routes (1er segment) accessibles à un joueur. Le reste est réservé au coach. */
-export const PLAYER_ROUTES = new Set(['(tabs)', 'questionnaire', 'media', 'connexion']);
+export const PLAYER_ROUTES = new Set(['(tabs)', 'questionnaire', 'media', 'connexion', 'prepa', 'ressenti-seance', 'sondage', 'objectif']);
 /** Onglets visibles par un joueur */
 export const PLAYER_TABS = new Set(['index', 'compo', 'videos']);
 

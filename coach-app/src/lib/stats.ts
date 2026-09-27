@@ -198,7 +198,7 @@ export const initials = (p: Player) => (p.number != null ? String(p.number) : `$
 export function trainingLoad(x: TrainingSession, playerId: string) {
   const a = x.attendance[playerId];
   if (a !== 'present' && a !== 'retard') return 0;
-  return (x.playerRpe[playerId] ?? x.rpe ?? 0) * x.durationMin;
+  return (x.playerRpe[playerId] ?? x.feedback?.[playerId]?.intensity ?? x.rpe ?? 0) * x.durationMin;
 }
 
 /** Assiduité : séances où le joueur était présent (ou en retard) parmi celles où il était attendu (hors blessé). */
@@ -212,3 +212,10 @@ export function attendanceRate(data: AppData, playerId: string, lastN = 12) {
 }
 
 export const sessionPresent = (x: TrainingSession) => Object.values(x.attendance).filter((a) => a === 'present' || a === 'retard').length;
+
+/** Date AAAA-MM-JJ d'il y a `n` jours. */
+export function isoDaysAgo(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}

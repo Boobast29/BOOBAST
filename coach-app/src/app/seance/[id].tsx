@@ -3,10 +3,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { useTheme } from '@/components/theme';
-import { Avatar, Button, Card, Empty, HeaderButton, HeroStat, Row, Screen, Section, tap, toneColors, Txt } from '@/components/ui';
+import { Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, Progress, Row, Screen, Section, tap, toneColors, Txt } from '@/components/ui';
 import { ATTENDANCE } from '@/lib/constants';
 import { useStore } from '@/lib/store';
-import { formatDate, initials, playerName, sessionPresent, trainingLoad } from '@/lib/stats';
+import { avg, fmt, formatDate, initials, playerName, sessionPresent, trainingLoad } from '@/lib/stats';
 import type { Attendance } from '@/lib/types';
 
 const ORDER: Attendance[] = ['present', 'retard', 'absent', 'excuse', 'blesse'];
@@ -22,6 +22,7 @@ export default function SessionDetail() {
   const present = sessionPresent(s);
   const counts = Object.fromEntries(ORDER.map((a) => [a, Object.values(s.attendance).filter((x) => x === a).length])) as Record<Attendance, number>;
   const load = players.reduce((a, p) => a + trainingLoad(s, p.id), 0);
+  const fb = Object.entries(s.feedback ?? {});
   const edit = () => router.push({ pathname: '/seance/edit', params: { id: s.id } });
 
   const setAtt = (pid: string, a: Attendance) => {
@@ -63,6 +64,51 @@ export default function SessionDetail() {
         </Card>
       ) : null}
 
+      {fb.length > 0 && (
+        <>
+          <Section icon="chatbubbles-outline">
+            Ressenti des joueurs ({fb.length}/{present})
+          </Section>
+          <Card>
+            {(
+              [
+                ['quality', 'Qualité de l’entraînement', false],
+                ['selfPerf', 'Performance perso', false],
+                ['intensity', 'Intensité ressentie', true],
+              ] as const
+            ).map(([k, label, inv]) => {
+              const a = avg(fb.map(([, f]) => f[k]));
+              const ratio = a == null ? 0 : (a - 1) / 9;
+              const good = inv ? 1 - ratio : ratio;
+              const c = inv ? t.info : good < 0.4 ? t.danger : good < 0.65 ? t.warning : t.primary;
+              return (
+                <View key={k} style={{ gap: 4 }}>
+                  <Row style={{ justifyContent: 'space-between' }}>
+                    <Txt size={14} bold>
+                      {label}
+                    </Txt>
+                    <Txt bold color={c}>
+                      {fmt(a)}/10
+                    </Txt>
+                  </Row>
+                  <Progress value={ratio} color={c} />
+                </View>
+              );
+            })}
+            {fb
+              .filter(([, f]) => f.comment)
+              .map(([pid, f]) => (
+                <Txt key={pid} muted size={13}>
+                  <Txt bold size={13}>
+                    {playerName(data.players.find((p) => p.id === pid))} :{' '}
+                  </Txt>
+                  « {f.comment} »
+                </Txt>
+              ))}
+          </Card>
+        </>
+      )}
+
       <Section
         icon="checkbox-outline"
         action={
@@ -102,7 +148,7 @@ export default function SessionDetail() {
         return (
           <Card key={p.id} style={{ paddingVertical: 12, gap: 10 }}>
             <Row style={{ gap: 10 }}>
-              <Avatar size={36} colorKey={p.id} label={initials(p)} />
+              <Avatar size={36} colorKey={p.id} photo={p.photoUri} label={initials(p)} />
               <View style={{ flex: 1 }}>
                 <Txt bold>{playerName(p)}</Txt>
               </View>
@@ -131,6 +177,13 @@ export default function SessionDetail() {
                 })}
               </Row>
             </Row>
+            {s.feedback?.[p.id] && (
+              <Row style={{ gap: 6, flexWrap: 'wrap' }}>
+                <Badge text={`Qualité ${s.feedback[p.id].quality ?? '–'}`} tone="success" />
+                <Badge text={`Perf ${s.feedback[p.id].selfPerf ?? '–'}`} tone="accent" />
+                <Badge text={`Intensité ${s.feedback[p.id].intensity ?? '–'}`} tone="info" />
+              </Row>
+            )}
             {here && (
               <Row style={{ gap: 8 }}>
                 <Ionicons name="flame-outline" size={16} color={t.muted} />

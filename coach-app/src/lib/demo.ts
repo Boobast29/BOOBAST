@@ -1,6 +1,6 @@
 import { QEA_QUESTIONS, QUESTION_TEMPLATES, statsForPosition } from './constants';
 import { autoLineup } from './formations';
-import type { AppData, Attendance, CustomQuestion, TrainingSession, Injury, Match, MediaItem, Player, PostMatchReport } from './types';
+import type { AppData, Attendance, CustomQuestion, Objective, Survey, SurveyResponse, TrainingFeedback, TrainingSession, Injury, Match, MediaItem, Player, PostMatchReport } from './types';
 
 const iso = (daysAgo: number) => {
   const d = new Date();
@@ -223,10 +223,74 @@ export function buildDemoData(): AppData {
     }
     // Un joueur souvent absent pour illustrer l'alerte
     if (ago <= 11) attendance.p6 = 'absent';
-    return { id: `s${k}`, date: iso(ago), time: '19:00', durationMin: 90, theme: themes[k], rpe: 6, attendance, playerRpe, createdAt: created };
+    // Ressenti des joueurs présents (sauf la dernière séance, à remplir)
+    const feedback: Record<string, TrainingFeedback> = {};
+    if (k < 5)
+      for (const p of players)
+        if (attendance[p.id] === 'present' && rnd(0, 4) > 0)
+          feedback[p.id] = { quality: rnd(5, 9), selfPerf: rnd(4, 9), intensity: rnd(4, 9), updatedAt: created, comment: rnd(0, 7) === 0 ? 'Séance top, bon rythme.' : undefined };
+    return { id: `s${k}`, date: iso(ago), time: '19:00', durationMin: 90, theme: themes[k], rpe: 6, attendance, playerRpe: {}, feedback, createdAt: created };
   });
 
-  const data: AppData = { version: 1, teamName: 'Quimper Ergué Armel FC', players, matches, reports, injuries, questions, media, lineups: [], sessions };
+  // Préparation du prochain match et débrief du dernier
+  matches[3].prep = {
+    published: true,
+    opponentSystem: '4-2-3-1, bloc médian, latéraux très offensifs',
+    keyPlayers: 'Le 10, gaucher, décroche beaucoup. Le 9, très fort de la tête sur CPA.',
+    strengths: 'Transitions rapides, centres depuis les côtés.',
+    weaknesses: 'Espaces dans le dos des latéraux, lents à se replacer.',
+    attack: 'Sortie de balle courte par les centraux, chercher la profondeur dans le dos des latéraux.',
+    defense: 'Pressing déclenché sur leur 6. Bloc compact, ne pas laisser le 10 se retourner.',
+    setPieces: 'Marquage individuel sur le 9. Tireurs : Richard (droite), Kerjean (gauche).',
+    objectives: 'Gagner 60 % des duels, 0 but encaissé sur coup de pied arrêté.',
+    message: 'On reste solidaires 90 minutes. Allez le QEA !',
+  };
+  matches[2].debrief = {
+    positives: 'Très bon début de match, pressing haut efficace, 2-0 à la pause.',
+    problems: 'Relâchement après le 2-0, difficultés à sortir le ballon sous pression en 2e mi-temps.',
+    solutions: 'Passage à 3 derrière à la relance, le 6 décroche entre les centraux.',
+    toWork: 'Sortie de balle sous pression, gestion des temps faibles.',
+    coachTeamRating: 7,
+  };
+
+  const objectives: Objective[] = [
+    { id: 'o0', playerId: 'p1', title: 'Jeu de tête défensif', category: 'Technique', details: 'Timing du saut et orientation de la tête. 15 min de travail spécifique après les séances du jeudi.', status: 'en cours', coachProgress: 5, playerProgress: 6, playerComment: 'Je me sens plus à l’aise sur les centres.', coachNotes: [{ id: 'n0', date: iso(9), text: 'Mieux sur les duels aériens ce soir, continuer.' }], createdAt: created },
+    { id: 'o1', playerId: 'p1', title: 'Communication avec le gardien', category: 'Comportement', status: 'acquis', coachProgress: 9, playerProgress: 8, coachNotes: [], createdAt: created },
+    { id: 'o2', playerId: 'p5', title: 'Finition pied gauche', category: 'Technique', details: 'Frappes à ras de terre, prise d’appui.', dueDate: iso(-30), status: 'en cours', coachProgress: 4, coachNotes: [], createdAt: created },
+    { id: 'o3', playerId: 'p3', title: 'Gestion des efforts sur 90 min', category: 'Physique', details: 'Travail de répétition d’efforts, récupération entre les séances.', status: 'en cours', coachProgress: 6, playerProgress: 5, coachNotes: [], createdAt: created },
+    { id: 'o4', playerId: 'p4', title: 'Leadership / prise de parole', category: 'Mental', details: 'Capitaine : organiser le bloc, encourager.', status: 'en cours', coachProgress: 7, playerProgress: 7, coachNotes: [], createdAt: created },
+    { id: 'o5', playerId: 'p0', title: 'Relances au pied', category: 'Tactique', status: 'en cours', coachProgress: 5, coachNotes: [], createdAt: created },
+  ];
+
+  const surveys: Survey[] = [
+    {
+      id: 'sv0',
+      title: 'Ressenti de la semaine',
+      description: 'Comment tu te sens avant le week-end ?',
+      target: 'all',
+      open: true,
+      dueDate: iso(-2),
+      createdAt: created,
+      questions: [
+        { id: 'sq0', label: 'Forme physique', type: 'scale', min: 1, max: 10, minLabel: 'Épuisé', maxLabel: 'Au top', required: true, active: true },
+        { id: 'sq1', label: 'Moral', type: 'scale', min: 1, max: 10, minLabel: 'Très bas', maxLabel: 'Excellent', required: true, active: true },
+        { id: 'sq2', label: 'Charge scolaire / pro', type: 'scale', min: 1, max: 10, minLabel: 'Légère', maxLabel: 'Très lourde', active: true },
+        { id: 'sq3', label: 'As-tu une gêne ou une douleur ?', type: 'yesno', required: true, active: true },
+        { id: 'sq4', label: 'Un mot pour le staff ?', type: 'text', active: true },
+      ],
+    },
+  ];
+  const surveyResponses: SurveyResponse[] = players
+    .filter((_, i) => i % 3 !== 0)
+    .map((p, i) => ({
+      id: `sr${i}`,
+      surveyId: 'sv0',
+      playerId: p.id,
+      answers: { sq0: rnd(4, 9), sq1: rnd(5, 10), sq2: rnd(2, 8), sq3: rnd(0, 5) === 0, ...(i % 4 === 0 ? { sq4: 'Tout va bien, motivé pour samedi !' } : {}) },
+      updatedAt: created,
+    }));
+
+  const data: AppData = { version: 1, teamName: 'Quimper Ergué Armel FC', players, matches, reports, injuries, questions, media, lineups: [], sessions, objectives, surveys, surveyResponses };
   const stamp = new Date().toISOString();
   data.lineups = [
     { ...autoLineup(data, 'm2', '4-3-3'), captainId: 'p4', published: true, updatedAt: stamp },

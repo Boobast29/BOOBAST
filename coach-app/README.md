@@ -10,10 +10,25 @@ Application mobile pour qu'un coach suive ses joueurs après chaque match :
   (1 = Très mauvaise → 10 = Exceptionnel) et commentaires divers.
   Le coach voit ensuite les **points forts / axes d'amélioration** de l'équipe, les moyennes par question,
   les commentaires des joueurs et les tendances de chaque joueur. Bouton **Relancer** (message WhatsApp aux retardataires).
+- **Curseurs de ressenti** : le joueur répond en glissant un curseur (smiley, sans chiffre) ; le coach voit la note
+  chiffrée (moyennes, min/max, par joueur).
+- **Ressenti d'entraînement** : après chaque séance, les présents notent la qualité de l'entraînement, leur performance
+  perso et l'intensité ressentie (+ commentaire). Le coach voit les moyennes par séance, par joueur et sur l'accueil.
+- **Onglet Suivi** (coach) :
+  - **points à travailler** par joueur (catégorie, détails, échéance, statut, progression coach vs ressenti du joueur,
+    notes de suivi datées) ; le joueur les voit et indique où il en est ;
+  - **questionnaires** créés par le coach (bilan mi-saison, ressenti de la semaine, vie de groupe… ou sur mesure),
+    pour tous ou certains joueurs, avec échéance, résultats chiffrés et relance des retardataires.
+- **Préparation des matchs** : adversaire (système, joueurs clés, forces, faiblesses), consignes offensives/défensives,
+  coups de pied arrêtés, objectifs, message au groupe — publiable aux joueurs.
+- **Débrief d'après-match** (privé coach) : points positifs, problématiques rencontrées, solutions trouvées,
+  à retravailler, note collective.
+- **Photo** pour chaque joueur.
+- **Espace joueur** : liste « À faire » (questionnaire de match, ressenti d'entraînement, questionnaires du coach),
+  points à travailler, prochain match + préparation + compo, stats, vidéos.
 - **Entraînements** (onglet Agenda) : séances avec thème, durée, RPE, **appel** (présent, retard, absent, excusé, blessé),
   RPE individuel ; charge d'entraînement prise en compte dans les alertes ; taux d'assiduité par joueur ;
   alerte après 2 absences non excusées ; export CSV des présences.
-- **Convocation** depuis la compo : RDV, lieu, titulaires par poste, remplaçants, consignes → partage WhatsApp.
 - **Questionnaire d'après-match** (un par joueur et par match) :
   - temps de jeu, titulaire/remplaçant ;
   - statistiques (buts, passes décisives, tirs, tirs cadrés, récupérations, arrêts, cartons) ;
@@ -90,7 +105,10 @@ npx eas-cli@latest submit --platform ios                        # envoi sur Test
 src/
   app/                  écrans (Expo Router : chaque fichier = un écran)
     connexion.tsx       choix coach / joueur + codes
-    (tabs)/             onglets Accueil, Joueurs, Matchs, Compo, Vidéos, Blessés (joueur : Moi, Compo, Vidéos)
+    (tabs)/             onglets Accueil, Joueurs (+ infirmerie), Agenda, Compo, Suivi, Vidéos (joueur : Moi, Compo, Vidéos)
+    prepa.tsx           préparation d'un match           ressenti-seance.tsx   ressenti d'entraînement
+    objectif/           points à travailler              sondage/              questionnaires du coach
+    seance/             entraînements et appel
     reglages.tsx        réglages (icône ⚙️ de l'accueil)
     media/[id].tsx      lecteur vidéo + temps forts   media/edit.tsx   ajout/modif d'un média
     questions/          questions perso du questionnaire

@@ -11,8 +11,9 @@ import { ScorePill } from '@/components/ScorePill';
 import { useTheme } from '@/components/theme';
 import { ActionTile, Avatar, HeroStat, Badge, Button, Card, Empty, IconCircle, Link, Progress, Row, Screen, Section, Txt } from '@/components/ui';
 import type { IconName, Tone } from '@/components/ui';
+import { PREP_FIELDS } from '@/lib/constants';
 import { useStore } from '@/lib/store';
-import { byDateDesc, computeAlerts, fmt, formatDate, initials, playerName, seasonRecord, sessionPresent, summarizePlayer, today } from '@/lib/stats';
+import { avg, byDateDesc, computeAlerts, isoDaysAgo, fmt, formatDate, initials, playerName, seasonRecord, sessionPresent, summarizePlayer, today } from '@/lib/stats';
 import type { AlertKind } from '@/lib/stats';
 
 const ALERT_ICON: Record<AlertKind, IconName> = {
@@ -41,6 +42,9 @@ function Dashboard() {
   const [showAll, setShowAll] = useState(false);
   const injured = summaries.filter((s) => s.activeInjury?.status === 'active').length;
   const lastMatch = [...data.matches].sort(byDateDesc)[0];
+  const nextMatch = data.matches.filter((m) => m.scoreFor == null && m.date >= today()).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const since = isoDaysAgo(14);
+  const recentFb = data.sessions.filter((x) => x.date >= since).flatMap((x) => Object.values(x.feedback ?? {}));
   const lastSession = [...data.sessions].sort(byDateDesc).find((x) => x.date <= today()) ?? [...data.sessions].sort((a, b) => a.date.localeCompare(b.date))[0];
   const players = new Map(data.players.map((p) => [p.id, p]));
   const recentMedia = [...data.media].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
@@ -168,6 +172,49 @@ function Dashboard() {
         </>
       )}
 
+      {nextMatch && (
+        <Card onPress={() => router.push({ pathname: '/prepa', params: { matchId: nextMatch.id } })} stripe={t.info}>
+          <Row style={{ gap: 12 }}>
+            <IconCircle icon="clipboard" tone="info" />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Txt bold>
+                Préparer {nextMatch.home ? 'vs' : '@'} {nextMatch.opponent}
+              </Txt>
+              <Txt muted size={13}>
+                {formatDate(nextMatch.date)} · préparation {PREP_FIELDS.filter((f) => nextMatch.prep?.[f.key]?.trim()).length}/{PREP_FIELDS.length}
+                {nextMatch.prep?.published ? ' · publiée' : ''} · compo {data.lineups.some((l) => l.matchId === nextMatch.id) ? '✓' : 'à faire'}
+              </Txt>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={t.muted} />
+          </Row>
+        </Card>
+      )}
+
+      {recentFb.length > 0 && (
+        <Card>
+          <Row>
+            <Ionicons name="pulse" size={18} color={t.primary} />
+            <Txt bold>Ressenti des séances · 14 derniers jours</Txt>
+          </Row>
+          <Row style={{ gap: 8 }}>
+            {(
+              [
+                ['Qualité', avg(recentFb.map((f) => f.quality)), 'success'],
+                ['Perf perso', avg(recentFb.map((f) => f.selfPerf)), 'accent'],
+                ['Intensité', avg(recentFb.map((f) => f.intensity)), 'warning'],
+              ] as const
+            ).map(([label, v, tone]) => (
+              <View key={label} style={{ flex: 1 }}>
+                <Badge text={`${label} ${fmt(v)}/10`} tone={tone} />
+              </View>
+            ))}
+          </Row>
+          <Txt muted size={12}>
+            {recentFb.length} réponses de joueurs
+          </Txt>
+        </Card>
+      )}
+
       {lastSession && (
         <Card onPress={() => router.push(`/seance/${lastSession.id}`)}>
           <Row style={{ gap: 12 }}>
@@ -264,7 +311,7 @@ function Leaderboard({ title, icon, rows }: { title: string; icon: IconName; row
         <Pressable key={id} onPress={() => router.push(`/joueur/${id}`)}>
           <Row>
             <Text style={{ fontSize: 18, width: 26 }}>{MEDALS[i]}</Text>
-            <Avatar size={32} colorKey={p.id} label={initials(p)} />
+            <Avatar size={32} colorKey={p.id} photo={p.photoUri} label={initials(p)} />
             <View style={{ flex: 1 }}>
               <Txt>{playerName(p)}</Txt>
             </View>

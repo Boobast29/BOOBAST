@@ -8,7 +8,7 @@ import { useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, Link, Progress, Row, Screen, Section, StatBox, Txt } from '@/components/ui';
 import { INJURY_STATUS_LABEL, INJURY_STATUS_TONE, STAT_FIELDS, statsForPosition } from '@/lib/constants';
 import { useStore } from '@/lib/store';
-import { attendanceRate, byDateDesc, fmt, formatAnswer, formatDate, initials, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, wellnessScore } from '@/lib/stats';
+import { attendanceRate, avg, byDateDesc, fmt, formatAnswer, formatDate, initials, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, wellnessScore } from '@/lib/stats';
 
 export default function PlayerDetail() {
   const t = useTheme();
@@ -19,6 +19,10 @@ export default function PlayerDetail() {
 
   const s = summarizePlayer(data, player);
   const att = attendanceRate(data, player.id);
+  const objectives = data.objectives.filter((o) => o.playerId === player.id);
+  const trainingFb = data.sessions
+    .map((x) => x.feedback?.[player.id])
+    .filter((f): f is NonNullable<typeof f> => !!f);
   const reports = reportsForPlayer(data, player.id);
   const injuries = data.injuries.filter((i) => i.playerId === player.id).sort(byDateDesc);
   const matches = new Map(data.matches.map((m) => [m.id, m]));
@@ -40,7 +44,7 @@ export default function PlayerDetail() {
 
       <LinearGradient colors={t.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 24, padding: 20, gap: 16 }}>
         <Row style={{ gap: 14 }}>
-          <Avatar label={initials(player)} colorKey={player.id} size={72} ring="rgba(255,255,255,0.9)" />
+          <Avatar label={initials(player)} colorKey={player.id} photo={player.photoUri} size={72} ring="rgba(255,255,255,0.9)" />
           <View style={{ flex: 1, gap: 4 }}>
             <Text style={{ color: t.heroText, fontSize: 24, fontWeight: '800' }}>{playerName(player)}</Text>
             <Text style={{ color: t.heroMuted, fontSize: 14 }}>
@@ -94,6 +98,42 @@ export default function PlayerDetail() {
             {att.present} présence{att.present > 1 ? 's' : ''} sur {att.total} séance{att.total > 1 ? 's' : ''} (hors blessure)
           </Txt>
         </Card>
+      )}
+
+      <Section icon="fitness-outline" action={<Link title="+ Ajouter" onPress={() => router.push({ pathname: '/objectif/edit', params: { playerId: player.id } })} />}>
+        Points à travailler ({objectives.length})
+      </Section>
+      {objectives.length === 0 && <Txt muted size={14}>Aucun point à travailler.</Txt>}
+      {objectives.map((o) => (
+        <Card key={o.id} style={{ paddingVertical: 12, gap: 6 }} stripe={o.status === 'acquis' ? t.primary : t.info} onPress={() => router.push(`/objectif/${o.id}`)}>
+          <Row>
+            <Txt bold>{o.title}</Txt>
+            <View style={{ flex: 1 }} />
+            <Badge text={o.status} tone={o.status === 'acquis' ? 'success' : o.status === 'en cours' ? 'info' : 'neutral'} />
+          </Row>
+          <Row style={{ gap: 8 }}>
+            <Txt muted size={12}>
+              Coach {o.coachProgress ?? '–'}/10
+            </Txt>
+            <View style={{ flex: 1 }}>
+              <Progress value={(o.coachProgress ?? 0) / 10} height={6} />
+            </View>
+            <Txt muted size={12}>
+              Joueur {o.playerProgress ?? '–'}/10
+            </Txt>
+          </Row>
+        </Card>
+      ))}
+
+      {trainingFb.length > 0 && (
+        <>
+          <Section icon="fitness-outline">Ressenti à l’entraînement ({trainingFb.length} séances)</Section>
+          <Row style={{ gap: 10 }}>
+            <StatBox label="Qualité séance" value={fmt(avg(trainingFb.map((f) => f.quality)))} icon="star" tone="success" />
+            <StatBox label="Perf perso" value={fmt(avg(trainingFb.map((f) => f.selfPerf)))} icon="person" tone="accent" />
+            <StatBox label="Intensité" value={fmt(avg(trainingFb.map((f) => f.intensity)))} icon="flame" tone="warning" />
+          </Row>
+        </>
       )}
 
       <Section icon="play-circle-outline" action={<Link title="+ Ajouter" onPress={() => router.push({ pathname: '/media/edit', params: { source: 'library', playerId: player.id } })} />}>

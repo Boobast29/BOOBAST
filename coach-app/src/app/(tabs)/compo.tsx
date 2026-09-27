@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useMemo, useRef, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import { ClubLogo } from '@/components/ClubLogo';
 import { Pitch } from '@/components/Pitch';
@@ -142,28 +142,6 @@ export default function Compo() {
     }
   };
 
-  const sendConvocation = () => {
-    const name = (id: string) => {
-      const p = players.get(id);
-      return p ? `${p.firstName} ${p.lastName}`.trim() + (lineup.captainId === id ? ' (C)' : '') : '';
-    };
-    const lines = [
-      `⚽ ${data.teamName} — CONVOCATION`,
-      `${match.home ? 'vs' : '@'} ${match.opponent} · ${formatDate(match.date)}${match.competition ? ` · ${match.competition}` : ''}`,
-      lineup.meetTime || lineup.meetPlace ? `📍 RDV ${lineup.meetTime ?? ''}${lineup.meetPlace ? ` · ${lineup.meetPlace}` : ''}` : '',
-      '',
-      `Titulaires (${lineup.formation}) :`,
-      ...def.map((s, i) => (lineup.slots[i] ? `• ${s.role} — ${name(lineup.slots[i]!)}` : '')).filter(Boolean),
-      lineup.bench.length ? '' : '',
-      lineup.bench.length ? 'Remplaçants :' : '',
-      ...lineup.bench.map((id) => `• ${name(id)}`),
-      lineup.notes ? `\n📋 ${lineup.notes}` : '',
-      '',
-      'Prévoir : chaussures, protège-tibias, gourde. Prévenir le coach en cas d’absence.',
-    ].filter((l, i, arr) => l !== '' || (arr[i - 1] !== '' && i > 0));
-    Share.share({ message: lines.join('\n') }).catch(() => {});
-  };
-
   // ---------- Indicateurs ----------
   const xi = lineup.slots.filter(Boolean) as string[];
   const avgNote = avg(xi.map((id) => summarizePlayer(data, players.get(id)!).avgCoachRating));
@@ -255,7 +233,7 @@ export default function Compo() {
       {isCoach && sel && selectedId && (
         <Card stripe="#FACC15">
           <Row>
-            <Avatar size={36} colorKey={selectedId} label={initials(players.get(selectedId)!)} />
+            <Avatar size={36} colorKey={selectedId} label={initials(players.get(selectedId)!)} photo={players.get(selectedId)?.photoUri} />
             <View style={{ flex: 1 }}>
               <Txt bold>{playerName(players.get(selectedId))}</Txt>
               <Txt muted size={12}>
@@ -315,7 +293,7 @@ export default function Compo() {
             const on = sel?.kind === 'bench' && sel.id === id;
             return (
               <Pressable key={id} onPress={isCoach ? () => onBenchPress(id) : undefined} style={{ alignItems: 'center', width: 72, gap: 4 }}>
-                <Avatar size={52} colorKey={id} label={initials(p)} ring={on ? '#FACC15' : me === id ? '#38BDF8' : undefined} />
+                <Avatar size={52} colorKey={id} photo={p.photoUri} label={initials(p)} ring={on ? '#FACC15' : me === id ? '#38BDF8' : undefined} />
                 <Text style={{ color: t.text, fontSize: 12, fontWeight: '600' }} numberOfLines={1}>
                   {p.lastName || p.firstName}
                 </Text>
@@ -335,7 +313,7 @@ export default function Compo() {
               const ti = info.get(p.id);
               return (
                 <Row key={p.id} style={{ paddingVertical: 4 }}>
-                  <Avatar size={32} colorKey={p.id} label={initials(p)} />
+                  <Avatar size={32} colorKey={p.id} photo={p.photoUri} label={initials(p)} />
                   <View style={{ flex: 1 }}>
                     <Txt>{playerName(p)}</Txt>
                     <Txt muted size={12}>
@@ -393,24 +371,9 @@ export default function Compo() {
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Button icon="share-social-outline" kind="secondary" title="Image" onPress={share} />
+              <Button icon="share-social-outline" kind="secondary" title="Partager" onPress={share} />
             </View>
           </Row>
-          <Card>
-            <Row>
-              <Ionicons name="megaphone-outline" size={18} color={t.primary} />
-              <Txt bold>Convocation</Txt>
-            </Row>
-            <Row style={{ gap: 10 }}>
-              <View style={{ flex: 1 }}>
-                <Field label="Rendez-vous" value={lineup.meetTime ?? ''} onChangeText={(meetTime) => update({ ...lineup, meetTime: meetTime || undefined })} placeholder="13:30" />
-              </View>
-              <View style={{ flex: 2 }}>
-                <Field label="Lieu" value={lineup.meetPlace ?? ''} onChangeText={(meetPlace) => update({ ...lineup, meetPlace: meetPlace || undefined })} placeholder="Stade de Kerlaéron" />
-              </View>
-            </Row>
-            <Button icon="logo-whatsapp" title="Envoyer la convocation" onPress={sendConvocation} disabled={!xi.length} />
-          </Card>
           <Button
             small
             kind="ghost"
@@ -518,7 +481,7 @@ function PlayerPicker({
             return (
               <Card key={p.id} onPress={() => onPick(p.id)} style={{ paddingVertical: 12 }} stripe={ti?.injured === 'active' ? t.danger : match ? t.primary : undefined}>
                 <Row style={{ gap: 12 }}>
-                  <Avatar size={42} colorKey={p.id} label={initials(p)} />
+                  <Avatar size={42} colorKey={p.id} photo={p.photoUri} label={initials(p)} />
                   <View style={{ flex: 1, gap: 3 }}>
                     <Txt bold>{playerName(p)}</Txt>
                     <Row style={{ flexWrap: 'wrap', gap: 6 }}>

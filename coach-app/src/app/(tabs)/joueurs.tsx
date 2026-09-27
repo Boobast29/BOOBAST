@@ -1,7 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { InjuryList } from '@/components/InjuryList';
 import { useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Empty, Field, Row, Screen, Section, Toggle, Txt } from '@/components/ui';
 import { POSITIONS } from '@/lib/constants';
@@ -21,6 +22,8 @@ export default function Players() {
   const { data } = useStore();
   const [q, setQ] = useState('');
   const [showArchived, setShowArchived] = useState(false);
+  const [tab, setTab] = useState<'effectif' | 'infirmerie'>('effectif');
+  const injuredCount = data.injuries.filter((i) => i.status !== 'guérie').length;
 
   const groups = useMemo(() => {
     const list = data.players
@@ -41,51 +44,100 @@ export default function Players() {
 
   return (
     <Screen>
-      <Button title="Ajouter un joueur" icon="person-add" onPress={() => router.push('/joueur/edit')} />
-      {data.players.length > 5 && <Field label="Rechercher" value={q} onChangeText={setQ} placeholder="Nom, poste, numéro…" />}
-      {data.players.some((p) => p.archived) && <Toggle label="Afficher les joueurs archivés" icon="archive-outline" value={showArchived} onChange={setShowArchived} />}
-      {total === 0 && <Empty icon="people-outline" text="Aucun joueur pour le moment. Ajoutez votre effectif pour commencer le suivi." />}
+      <View style={{ flexDirection: 'row', backgroundColor: t.input, borderRadius: 14, padding: 4 }}>
+        {(
+          [
+            ['effectif', 'Effectif', 'people'],
+            ['infirmerie', `Infirmerie${injuredCount ? ` (${injuredCount})` : ''}`, 'medkit'],
+          ] as const
+        ).map(([k, label, icon]) => {
+          const on = tab === k;
+          return (
+            <Pressable
+              key={k}
+              onPress={() => setTab(k)}
+              style={{
+                flex: 1,
+                flexDirection: 'row',
+                gap: 6,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 10,
+                borderRadius: 11,
+                backgroundColor: on ? t.card : 'transparent',
+              }}
+            >
+              <Ionicons name={icon} size={16} color={on ? t.primary : t.muted} />
+              <Text style={{ color: on ? t.text : t.muted, fontWeight: on ? '800' : '600' }}>{label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {tab === 'infirmerie' ? (
+        <InjuryList />
+      ) : (
+        <>
+          <Button title="Ajouter un joueur" icon="person-add" onPress={() => router.push('/joueur/edit')} />
+          {data.players.length > 5 && <Field label="Rechercher" value={q} onChangeText={setQ} placeholder="Nom, poste, numéro…" />}
+          {data.players.some((p) => p.archived) && (
+            <Toggle label="Afficher les joueurs archivés" icon="archive-outline" value={showArchived} onChange={setShowArchived} />
+          )}
+          {total === 0 && <Empty icon="people-outline" text="Aucun joueur pour le moment. Ajoutez votre effectif pour commencer le suivi." />}
 
-      {groups.map(([pos, list]) => (
-        <View key={pos} style={{ gap: 10 }}>
-          <Section icon={POSITION_ICON[pos] ?? 'person-outline'}>
-            {pos === 'Sans poste' ? pos : `${pos}s`} · {list.length}
-          </Section>
-          {list.map((s) => {
-            const p = s.player;
-            const inj = s.activeInjury;
-            const status = p.archived ? t.muted : inj ? (inj.status === 'active' ? t.danger : t.warning) : t.primary;
-            return (
-              <Card key={p.id} onPress={() => router.push(`/joueur/${p.id}`)} style={{ paddingVertical: 14 }}>
-                <Row style={{ gap: 12 }}>
-                  <View>
-                    <Avatar label={initials(p)} colorKey={p.id} size={48} />
-                    <View style={{ position: 'absolute', right: -1, bottom: -1, width: 16, height: 16, borderRadius: 8, backgroundColor: status, borderWidth: 3, borderColor: t.card }} />
-                  </View>
-                  <View style={{ flex: 1, gap: 3 }}>
-                    <Txt bold size={16}>
-                      {playerName(p)}
-                    </Txt>
+          {groups.map(([pos, list]) => (
+            <View key={pos} style={{ gap: 10 }}>
+              <Section icon={POSITION_ICON[pos] ?? 'person-outline'}>
+                {pos === 'Sans poste' ? pos : `${pos}s`} · {list.length}
+              </Section>
+              {list.map((s) => {
+                const p = s.player;
+                const inj = s.activeInjury;
+                const status = p.archived ? t.muted : inj ? (inj.status === 'active' ? t.danger : t.warning) : t.primary;
+                return (
+                  <Card key={p.id} onPress={() => router.push(`/joueur/${p.id}`)} style={{ paddingVertical: 14 }}>
                     <Row style={{ gap: 12 }}>
-                      <Mini icon="football-outline" value={s.totals.goals} />
-                      <Mini icon="git-branch-outline" value={s.totals.assists} />
-                      <Mini icon="time-outline" value={`${s.minutes}′`} />
-                      <Mini icon="star-outline" value={fmt(s.avgCoachRating)} />
+                      <View>
+                        <Avatar label={initials(p)} colorKey={p.id} photo={p.photoUri} size={48} />
+                        <View
+                          style={{
+                            position: 'absolute',
+                            right: -1,
+                            bottom: -1,
+                            width: 16,
+                            height: 16,
+                            borderRadius: 8,
+                            backgroundColor: status,
+                            borderWidth: 3,
+                            borderColor: t.card,
+                          }}
+                        />
+                      </View>
+                      <View style={{ flex: 1, gap: 3 }}>
+                        <Txt bold size={16}>
+                          {playerName(p)}
+                        </Txt>
+                        <Row style={{ gap: 12 }}>
+                          <Mini icon="football-outline" value={s.totals.goals} />
+                          <Mini icon="git-branch-outline" value={s.totals.assists} />
+                          <Mini icon="time-outline" value={`${s.minutes}′`} />
+                          <Mini icon="star-outline" value={fmt(s.avgCoachRating)} />
+                        </Row>
+                      </View>
+                      {p.archived ? (
+                        <Badge text="Archivé" />
+                      ) : inj ? (
+                        <Badge text={inj.status === 'active' ? 'Blessé' : 'Reprise'} tone={inj.status === 'active' ? 'danger' : 'warning'} icon="medkit" />
+                      ) : s.avgWellness != null ? (
+                        <FormGauge value={s.avgWellness} />
+                      ) : null}
                     </Row>
-                  </View>
-                  {p.archived ? (
-                    <Badge text="Archivé" />
-                  ) : inj ? (
-                    <Badge text={inj.status === 'active' ? 'Blessé' : 'Reprise'} tone={inj.status === 'active' ? 'danger' : 'warning'} icon="medkit" />
-                  ) : s.avgWellness != null ? (
-                    <FormGauge value={s.avgWellness} />
-                  ) : null}
-                </Row>
-              </Card>
-            );
-          })}
-        </View>
-      ))}
+                  </Card>
+                );
+              })}
+            </View>
+          ))}
+        </>
+      )}
     </Screen>
   );
 }

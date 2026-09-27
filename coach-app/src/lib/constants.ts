@@ -1,5 +1,5 @@
 import type { IconName } from '../components/ui';
-import type { Attendance, CustomQuestion, InjuryStatus, MediaCategory, QuestionType, StatKey } from './types';
+import type { Attendance, CustomQuestion, MatchPrep, InjuryStatus, MediaCategory, QuestionType, StatKey } from './types';
 
 export const POSITIONS = ['Gardien', 'Défenseur', 'Milieu', 'Attaquant'];
 type Position = 'Gardien' | 'Défenseur' | 'Milieu' | 'Attaquant';
@@ -161,3 +161,31 @@ export const ATTENDANCE: Record<Attendance, { label: string; short: string; tone
 };
 
 export const TRAINING_THEMES = ['Physique', 'Technique', 'Tactique', 'Jeu réduit', 'Finition', 'Coups de pied arrêtés', 'Récupération', 'Veille de match'];
+
+type PrepKey = Exclude<keyof MatchPrep, 'published'>;
+
+/** Rubriques de la préparation de match. */
+export const PREP_FIELDS: { key: PrepKey; label: string; icon: IconName; placeholder: string; group: 'adv' | 'nous' }[] = [
+  { key: 'opponentSystem', label: 'Système adverse', icon: 'grid-outline', placeholder: 'Ex. : 4-4-2 à plat, bloc bas', group: 'adv' },
+  { key: 'keyPlayers', label: 'Joueurs clés adverses', icon: 'person-outline', placeholder: 'Ex. : le 9 très fort de la tête, le 10 gaucher…', group: 'adv' },
+  { key: 'strengths', label: 'Leurs forces', icon: 'trending-up-outline', placeholder: 'Transitions rapides, coups de pied arrêtés…', group: 'adv' },
+  { key: 'weaknesses', label: 'Leurs faiblesses', icon: 'trending-down-outline', placeholder: 'Lents derrière, dans le dos des latéraux…', group: 'adv' },
+  { key: 'attack', label: 'Consignes offensives', icon: 'flash-outline', placeholder: 'Sortie de balle, attaque de la surface…', group: 'nous' },
+  { key: 'defense', label: 'Consignes défensives', icon: 'shield-outline', placeholder: 'Pressing, bloc, défendre sa surface…', group: 'nous' },
+  { key: 'setPieces', label: 'Coups de pied arrêtés', icon: 'flag-outline', placeholder: 'Qui tire, placements, marquages…', group: 'nous' },
+  { key: 'objectives', label: 'Objectifs du match', icon: 'trophy-outline', placeholder: 'Ex. : gagner 60 % des duels, 0 but encaissé sur CPA…', group: 'nous' },
+  { key: 'message', label: 'Message au groupe', icon: 'megaphone-outline', placeholder: 'Le mot du coach…', group: 'nous' },
+];
+
+
+/** Rubriques du débrief d'après-match (coach). */
+export const DEBRIEF_FIELDS: { key: 'positives' | 'problems' | 'solutions' | 'toWork'; label: string; icon: IconName; placeholder: string; tone: 'success' | 'danger' | 'info' | 'warning' }[] = [
+  { key: 'positives', label: 'Points positifs', icon: 'thumbs-up-outline', placeholder: 'Ce qui a bien marché…', tone: 'success' },
+  { key: 'problems', label: 'Problématiques rencontrées', icon: 'alert-circle-outline', placeholder: 'Ex. : difficultés à sortir le ballon sous pression…', tone: 'danger' },
+  { key: 'solutions', label: 'Solutions trouvées / à tester', icon: 'bulb-outline', placeholder: 'Ex. : passage à 3 derrière à la relance, 6 qui décroche…', tone: 'info' },
+  { key: 'toWork', label: 'À retravailler à l’entraînement', icon: 'construct-outline', placeholder: 'Ex. : jeu court en sortie de balle, repli défensif…', tone: 'warning' },
+];
+
+export const OBJECTIVE_CATEGORIES = ['Technique', 'Tactique', 'Physique', 'Mental', 'Comportement'];
+
+export const OBJECTIVE_STATUS_TONE = { 'en cours': 'info', acquis: 'success', abandonné: 'neutral' } as const;

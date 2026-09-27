@@ -1,18 +1,30 @@
 import { Pressable, Text, View } from 'react-native';
 import { useTheme } from './theme';
-import { Chips, Field, Scale, Stepper } from './ui';
+import { SliderScale } from './Slider';
+import { Chips, Field, Stepper } from './ui';
 import type { Answer, CustomQuestion } from '@/lib/types';
 
 /** Champ de réponse adapté au type de la question personnalisée. */
-export function QuestionInput({ q: raw, value, onChange }: { q: CustomQuestion; value?: Answer; onChange: (v: Answer | undefined) => void }) {
+export function QuestionInput({ q: raw, value, onChange, showValue = true }: { q: CustomQuestion; value?: Answer; onChange: (v: Answer | undefined) => void; showValue?: boolean }) {
   const t = useTheme();
   const q = raw.required ? { ...raw, label: `${raw.label} *` } : raw;
   switch (q.type) {
     case 'scale': {
       const min = q.min ?? 1;
       const max = q.max ?? 5;
-      const hint = [q.minLabel && `${min} = ${q.minLabel}`, q.maxLabel && `${max} = ${q.maxLabel}`, q.help].filter(Boolean).join(' · ');
-      return <Scale label={q.label} hint={hint || undefined} value={typeof value === 'number' ? value : undefined} onChange={onChange} min={min} max={max} />;
+      return (
+        <SliderScale
+          label={q.label}
+          hint={q.help}
+          value={typeof value === 'number' ? value : undefined}
+          onChange={onChange}
+          min={min}
+          max={max}
+          minLabel={q.minLabel ?? String(min)}
+          maxLabel={q.maxLabel ?? String(max)}
+          showValue={showValue}
+        />
+      );
     }
     case 'yesno':
       return (

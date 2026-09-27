@@ -139,7 +139,7 @@ export default function Connexion() {
             {players.map((p) => (
               <Card key={p.id} style={{ paddingVertical: 12 }} onPress={() => (p.pinHash ? setStep({ k: 'player-pin', id: p.id }) : enterPlayer(p.id))}>
                 <Row style={{ gap: 12 }}>
-                  <Avatar size={44} colorKey={p.id} label={initials(p)} />
+                  <Avatar size={44} colorKey={p.id} photo={p.photoUri} label={initials(p)} />
                   <View style={{ flex: 1 }}>
                     <Txt bold>{playerName(p)}</Txt>
                     <Txt muted size={13}>
@@ -159,7 +159,7 @@ export default function Connexion() {
               const p = data.players.find((x) => x.id === step.id)!;
               return (
                 <>
-                  <Avatar size={72} colorKey={p.id} label={initials(p)} />
+                  <Avatar size={72} colorKey={p.id} photo={p.photoUri} label={initials(p)} />
                   <PinPad
                     title={`Salut ${p.firstName} 👋`}
                     subtitle="Entre ton code joueur"

@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 import { visibleMedia } from '@/lib/access';
+import { pendingSurveys, pendingTrainingFeedback } from '@/lib/surveys';
 import { INJURY_STATUS_LABEL, INJURY_STATUS_TONE, statsForPosition } from '@/lib/constants';
 import { FORMATIONS } from '@/lib/formations';
 import { useStore } from '@/lib/store';
@@ -11,7 +12,8 @@ import { ClubLogo } from './ClubLogo';
 import { PlayerFeedback } from './Feedback';
 import { MediaStrip } from './Media';
 import { useTheme } from './theme';
-import { Avatar, Badge, Button, Card, HeroStat, IconCircle, Row, Screen, Section, StatBox, Txt } from './ui';
+import { Avatar, Badge, Button, Card, HeroStat, IconCircle, Progress, Row, Screen, Section, StatBox, Txt } from './ui';
+import type { IconName, Tone } from './ui';
 
 /** Accueil d'un joueur connecté : uniquement ses propres données. */
 export function PlayerHome({ playerId }: { playerId: string }) {
@@ -28,6 +30,10 @@ export function PlayerHome({ playerId }: { playerId: string }) {
   const todo = data.matches
     .filter((m) => m.scoreFor != null && !done.has(m.id) && daysBetween(m.date, today()) <= 30 && m.date <= today())
     .sort((a, b) => b.date.localeCompare(a.date));
+  const trainings = pendingTrainingFeedback(data, player.id);
+  const surveys = pendingSurveys(data, player.id);
+  const todoCount = todo.length + trainings.length + surveys.length;
+  const objectives = data.objectives.filter((o) => o.playerId === player.id && o.status !== 'abandonné').sort((a, b) => (a.status === b.status ? 0 : a.status === 'en cours' ? -1 : 1));
   const next = data.matches.filter((m) => m.scoreFor == null && m.date >= today()).sort((a, b) => a.date.localeCompare(b.date))[0];
   const nextLineup = next && data.lineups.find((l) => l.matchId === next.id && l.published);
   const lineupStatus = nextLineup
@@ -47,7 +53,7 @@ export function PlayerHome({ playerId }: { playerId: string }) {
     <Screen>
       <LinearGradient colors={t.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 24, padding: 20, gap: 16 }}>
         <Row style={{ gap: 14 }}>
-          <Avatar size={68} colorKey={player.id} label={initials(player)} ring="rgba(255,255,255,0.9)" />
+          <Avatar size={68} colorKey={player.id} photo={player.photoUri} label={initials(player)} ring="rgba(255,255,255,0.9)" />
           <View style={{ flex: 1, gap: 3 }}>
             <Text style={{ color: t.heroMuted, fontSize: 13, fontWeight: '600' }}>Salut 👋</Text>
             <Text style={{ color: t.heroText, fontSize: 23, fontWeight: '800' }}>{playerName(player)}</Text>
@@ -65,22 +71,38 @@ export function PlayerHome({ playerId }: { playerId: string }) {
         </Row>
       </LinearGradient>
 
-      {todo.length > 0 && (
+      {todoCount > 0 && (
         <>
-          <Section icon="alert-circle-outline">À remplir ({todo.length})</Section>
+          <Section icon="alert-circle-outline">À faire ({todoCount})</Section>
           {todo.map((m) => (
-            <Card key={m.id} stripe={t.accent} onPress={() => router.push({ pathname: '/questionnaire', params: { matchId: m.id, playerId: player.id } })}>
-              <Row>
-                <IconCircle icon="clipboard" tone="accent" />
-                <View style={{ flex: 1 }}>
-                  <Txt bold>Questionnaire d’après-match</Txt>
-                  <Txt muted size={13}>
-                    {matchLabel(m)}
-                  </Txt>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={t.muted} />
-              </Row>
-            </Card>
+            <TodoCard
+              key={m.id}
+              icon="football"
+              tone="accent"
+              title="Questionnaire d’après-match"
+              subtitle={matchLabel(m)}
+              onPress={() => router.push({ pathname: '/questionnaire', params: { matchId: m.id, playerId: player.id } })}
+            />
+          ))}
+          {trainings.map((x) => (
+            <TodoCard
+              key={x.id}
+              icon="fitness"
+              tone="info"
+              title="Ressenti de l’entraînement"
+              subtitle={`${formatDate(x.date)}${x.theme ? ` · ${x.theme}` : ''}`}
+              onPress={() => router.push({ pathname: '/ressenti-seance', params: { sessionId: x.id, playerId: player.id } })}
+            />
+          ))}
+          {surveys.map((sv) => (
+            <TodoCard
+              key={sv.id}
+              icon="document-text"
+              tone="violet"
+              title={sv.title}
+              subtitle={sv.dueDate ? `À rendre avant le ${formatDate(sv.dueDate)}` : 'Questionnaire du coach'}
+              onPress={() => router.push(`/sondage/${sv.id}`)}
+            />
           ))}
         </>
       )}
@@ -101,6 +123,9 @@ export function PlayerHome({ playerId }: { playerId: string }) {
                 </Txt>
               </View>
             </Row>
+            {next.prep?.published && (
+              <Button small kind="secondary" icon="clipboard-outline" title="Voir la préparation du match" onPress={() => router.push({ pathname: '/prepa', params: { matchId: next.id } })} />
+            )}
             {lineupStatus ? (
               <Row style={{ justifyContent: 'space-between' }}>
                 <Badge text={lineupStatus} tone={lineupStatus.startsWith('Titulaire') ? 'success' : lineupStatus === 'Remplaçant' ? 'info' : 'neutral'} icon="shirt" />
@@ -134,6 +159,35 @@ export function PlayerHome({ playerId }: { playerId: string }) {
           {i.treatment ? <Txt size={13}>Soins : {i.treatment}</Txt> : null}
         </Card>
       ))}
+
+      {objectives.length > 0 && (
+        <>
+          <Section icon="fitness-outline">Mes points à travailler</Section>
+          {objectives.map((o) => (
+            <Card key={o.id} style={{ paddingVertical: 12, gap: 8 }} stripe={o.status === 'acquis' ? t.primary : t.info} onPress={() => router.push(`/objectif/${o.id}`)}>
+              <Row>
+                <Txt bold>{o.title}</Txt>
+                <View style={{ flex: 1 }} />
+                <Badge text={o.status} tone={o.status === 'acquis' ? 'success' : 'info'} />
+              </Row>
+              {o.details ? (
+                <Txt muted size={13} numberOfLines={2}>
+                  {o.details}
+                </Txt>
+              ) : null}
+              <Row style={{ gap: 8 }}>
+                <Txt muted size={12}>
+                  Ma progression
+                </Txt>
+                <View style={{ flex: 1 }}>
+                  <Progress value={(o.playerProgress ?? 0) / 10} height={6} color={t.info} />
+                </View>
+                {o.playerProgress == null ? <Badge text="À évaluer" tone="accent" /> : null}
+              </Row>
+            </Card>
+          ))}
+        </>
+      )}
 
       <Section icon="stats-chart-outline">Mes stats · {player.position ?? 'saison'}</Section>
       <Row style={{ flexWrap: 'wrap', gap: 10 }}>
@@ -184,5 +238,23 @@ export function PlayerHome({ playerId }: { playerId: string }) {
         }} />
       )}
     </Screen>
+  );
+}
+
+function TodoCard({ icon, tone, title, subtitle, onPress }: { icon: IconName; tone: Tone; title: string; subtitle: string; onPress: () => void }) {
+  const t = useTheme();
+  return (
+    <Card stripe={t.accent} onPress={onPress}>
+      <Row>
+        <IconCircle icon={icon} tone={tone} />
+        <View style={{ flex: 1 }}>
+          <Txt bold>{title}</Txt>
+          <Txt muted size={13}>
+            {subtitle}
+          </Txt>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={t.muted} />
+      </Row>
+    </Card>
   );
 }

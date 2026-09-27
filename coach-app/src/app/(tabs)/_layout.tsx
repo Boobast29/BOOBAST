@@ -74,8 +74,9 @@ export default function TabsLayout() {
       <Tabs.Screen name="joueurs" options={{ title: 'Joueurs', tabBarIcon: icon('people-outline', 'people'), ...coachOnly }} />
       <Tabs.Screen name="matchs" options={{ title: 'Agenda', tabBarIcon: icon('football-outline', 'football'), ...coachOnly }} />
       <Tabs.Screen name="compo" options={{ title: 'Compo', headerTitle: 'Composition', tabBarIcon: icon('grid-outline', 'grid') }} />
+      <Tabs.Screen name="suivi" options={{ title: 'Suivi', headerTitle: 'Suivi des joueurs', tabBarIcon: icon('pulse-outline', 'pulse'), ...coachOnly }} />
       <Tabs.Screen name="videos" options={{ title: 'Vidéos', tabBarIcon: icon('play-circle-outline', 'play-circle') }} />
-      <Tabs.Screen name="blessures" options={{ title: 'Blessés', headerTitle: 'Blessures', tabBarIcon: icon('medkit-outline', 'medkit'), ...coachOnly }} />
+      <Tabs.Screen name="blessures" options={{ href: null, title: 'Blessures' }} />
     </Tabs>
   );
 }

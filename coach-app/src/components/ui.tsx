@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ComponentProps, ReactNode } from 'react';
 import {
@@ -370,8 +371,17 @@ export function Empty({ text, action, icon = 'sparkles-outline' }: { text: strin
   );
 }
 
-export function Avatar({ label, colorKey, size = 44, ring }: { label: string; colorKey?: string; size?: number; ring?: string }) {
+export function Avatar({ label, colorKey, size = 44, ring, photo }: { label: string; colorKey?: string; size?: number; ring?: string; photo?: string }) {
   const c = colorFor(colorKey ?? label);
+  if (photo)
+    return (
+      <Image
+        source={photo}
+        contentFit="cover"
+        style={{ width: size, height: size, borderRadius: size / 2, borderWidth: ring ? 3 : 0, borderColor: ring, backgroundColor: c }}
+        accessibilityLabel={label}
+      />
+    );
   return (
     <View
       style={{

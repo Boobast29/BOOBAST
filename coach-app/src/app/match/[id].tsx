@@ -6,8 +6,9 @@ import { StrengthsWeaknesses, TeamFeedback } from '@/components/Feedback';
 import { ClubLogo } from '@/components/ClubLogo';
 import { MediaStrip } from '@/components/Media';
 import { useTheme } from '@/components/theme';
-import { Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, IconCircle, Link, Progress, Row, Screen, Section, Txt } from '@/components/ui';
-import { STAT_FIELDS } from '@/lib/constants';
+import { Avatar, Badge, Button, Card, Empty, Field, HeaderButton, HeroStat, IconCircle, Link, Progress, Row, Screen, Section, Txt } from '@/components/ui';
+import { DEBRIEF_FIELDS, PREP_FIELDS, STAT_FIELDS } from '@/lib/constants';
+import { SliderScale } from '@/components/Slider';
 import { useStore } from '@/lib/store';
 import { activeInjury, avg, fmt, formatDate, initials, matchResult, playerName, sessionLoad, wellnessScore } from '@/lib/stats';
 
@@ -16,7 +17,7 @@ const RESULT_LABEL = { win: 'Victoire', draw: 'Match nul', loss: 'Défaite', non
 export default function MatchDetail() {
   const t = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data } = useStore();
+  const { data, saveMatch } = useStore();
   const match = data.matches.find((m) => m.id === id);
   if (!match) return <Empty text="Match introuvable." />;
 
@@ -104,6 +105,47 @@ export default function MatchDetail() {
         );
       })()}
 
+      <Card onPress={() => router.push({ pathname: '/prepa', params: { matchId: match.id } })}>
+        <Row style={{ gap: 12 }}>
+          <IconCircle icon="clipboard" tone="info" />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Txt bold>Préparation du match</Txt>
+            <Txt muted size={13}>
+              {PREP_FIELDS.filter((f) => match.prep?.[f.key]?.trim()).length}/{PREP_FIELDS.length} rubriques · adversaire, consignes, objectifs
+            </Txt>
+          </View>
+          {match.prep?.published ? <Badge text="Publiée" tone="success" icon="eye" /> : null}
+          <Ionicons name="chevron-forward" size={20} color={t.muted} />
+        </Row>
+      </Card>
+
+      {match.scoreFor != null && (
+        <>
+          <Section icon="create-outline">Débrief du coach</Section>
+          <Card stripe={t.primary}>
+            <Txt muted size={12}>
+              Privé : les joueurs ne voient pas ce débrief.
+            </Txt>
+            {DEBRIEF_FIELDS.map((f) => (
+              <Field
+                key={f.key}
+                label={f.label}
+                value={match.debrief?.[f.key] ?? ''}
+                onChangeText={(v) => saveMatch({ ...match, debrief: { ...match.debrief, [f.key]: v || undefined } })}
+                multiline
+                placeholder={f.placeholder}
+              />
+            ))}
+            <SliderScale
+              label="Note collective du coach"
+              value={match.debrief?.coachTeamRating}
+              onChange={(v) => saveMatch({ ...match, debrief: { ...match.debrief, coachTeamRating: v } })}
+              showValue
+            />
+          </Card>
+        </>
+      )}
+
       <Section icon="play-circle-outline" action={<Link title="+ Ajouter" onPress={() => router.push({ pathname: '/media/edit', params: { source: 'library', matchId: match.id } })} />}>
         Vidéos du match ({media.length})
       </Section>
@@ -162,7 +204,7 @@ export default function MatchDetail() {
         return (
           <Card key={p.id} style={{ paddingVertical: 12 }} onPress={() => router.push({ pathname: '/questionnaire', params: { matchId: match.id, playerId: p.id } })}>
             <Row style={{ gap: 12 }}>
-              <Avatar label={initials(p)} colorKey={p.id} size={40} />
+              <Avatar label={initials(p)} colorKey={p.id} photo={p.photoUri} size={40} />
               <View style={{ flex: 1, gap: 2 }}>
                 <Txt bold>{playerName(p)}</Txt>
                 {r ? (

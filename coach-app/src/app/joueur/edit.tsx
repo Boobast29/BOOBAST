@@ -1,6 +1,11 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import * as ImagePicker from 'expo-image-picker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Pressable, View } from 'react-native';
+import { useTheme } from '@/components/theme';
+import { persistFile } from '@/lib/media';
 import { useState } from 'react';
-import { Badge, Button, Card, Chips, Field, Row, Screen, Section, Toggle, Txt } from '@/components/ui';
+import { Avatar, Badge, Button, Card, Chips, Field, Row, Screen, Section, Toggle, Txt } from '@/components/ui';
 import { hashPin, PIN_LENGTH } from '@/lib/auth';
 import { confirm, notify } from '@/lib/confirm';
 import { POSITIONS } from '@/lib/constants';
@@ -21,6 +26,17 @@ export default function EditPlayer() {
   const [archived, setArchived] = useState(!!existing?.archived);
   const [pin, setPin] = useState('');
   const [removePin, setRemovePin] = useState(false);
+  const [photoUri, setPhotoUri] = useState(existing?.photoUri);
+  const t = useTheme();
+
+  const pickPhoto = async () => {
+    try {
+      const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
+      if (!res.canceled && res.assets?.length) setPhotoUri(persistFile(res.assets[0].uri));
+    } catch (e) {
+      notify('Photo impossible', String((e as Error)?.message ?? e));
+    }
+  };
 
   const save = async () => {
     if (!firstName.trim() && !lastName.trim()) return notify('Nom manquant', 'Indiquez au moins un prénom ou un nom.');
@@ -33,6 +49,7 @@ export default function EditPlayer() {
       ...existing,
       id: playerId,
       pinHash,
+      photoUri,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       number: isNaN(n) ? undefined : n,
@@ -47,6 +64,18 @@ export default function EditPlayer() {
   return (
     <Screen>
       <Stack.Screen options={{ title: existing ? 'Modifier le joueur' : 'Nouveau joueur' }} />
+      <Card style={{ alignItems: 'center' }}>
+        <Pressable onPress={pickPhoto} accessibilityLabel="Choisir une photo">
+          <Avatar size={96} colorKey={existing?.id ?? 'nouveau'} photo={photoUri} label={`${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase() || '?'} />
+          <View style={{ position: 'absolute', right: 0, bottom: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: t.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: t.card }}>
+            <Ionicons name="camera" size={16} color="#fff" />
+          </View>
+        </Pressable>
+        <Row>
+          <Button small kind="ghost" icon="image-outline" title={photoUri ? 'Changer la photo' : 'Ajouter une photo'} onPress={pickPhoto} />
+          {photoUri ? <Button small kind="ghost" icon="close-outline" title="Retirer" onPress={() => setPhotoUri(undefined)} /> : null}
+        </Row>
+      </Card>
       <Card>
         <Field label="Prénom" value={firstName} onChangeText={setFirstName} autoFocus={!existing} />
         <Field label="Nom" value={lastName} onChangeText={setLastName} />
