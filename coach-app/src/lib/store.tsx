@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { QEA_QUESTIONS } from './constants';
 import { buildDemoData } from './demo';
-import type { AppData, CustomQuestion, Injury, Lineup, Match, MediaItem, Player, PostMatchReport, Session } from './types';
+import type { AppData, CustomQuestion, Injury, Lineup, Match, MediaItem, Player, PostMatchReport, Session, TrainingSession } from './types';
 
 const STORAGE_KEY = 'coach-suivi/data/v1';
 const SESSION_KEY = 'coach-suivi/session/v1';
@@ -14,9 +15,10 @@ export const emptyData = (): AppData => ({
   matches: [],
   reports: [],
   injuries: [],
-  questions: [],
+  questions: QEA_QUESTIONS.map((q) => ({ ...q })),
   media: [],
   lineups: [],
+  sessions: [],
 });
 
 export const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -32,6 +34,8 @@ type Store = {
   setCoachPin: (hash: string | undefined) => void;
   saveLineup: (l: Omit<Lineup, 'updatedAt'>) => void;
   deleteLineup: (matchId: string) => void;
+  saveSession: (s: Upsert<TrainingSession>) => TrainingSession;
+  deleteSession: (id: string) => void;
   setTeamName: (name: string) => void;
   setLogo: (uri: string | undefined) => void;
   savePlayer: (p: Upsert<Player>) => Player;
@@ -170,6 +174,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     (s ? AsyncStorage.setItem(SESSION_KEY, JSON.stringify(s)) : AsyncStorage.removeItem(SESSION_KEY)).catch(() => {});
   }, []);
 
+  const saveSession = useCallback((x: Upsert<TrainingSession>) => {
+    const item = { ...x, id: x.id ?? newId(), createdAt: x.createdAt ?? now() } as TrainingSession;
+    setData((d) => ({ ...d, sessions: upsert(d.sessions, item) }));
+    return item;
+  }, []);
+
   const value = useMemo<Store>(
     () => ({
       data,
@@ -183,6 +193,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ...d,
           lineups: [...d.lineups.filter((x) => x.matchId !== l.matchId), { ...l, updatedAt: now() }],
         })),
+      saveSession,
+      deleteSession: (id) => setData((d) => ({ ...d, sessions: d.sessions.filter((x) => x.id !== id) })),
       deleteLineup: (matchId) => setData((d) => ({ ...d, lineups: d.lineups.filter((x) => x.matchId !== matchId) })),
       setTeamName: (teamName) => setData((d) => ({ ...d, teamName })),
       setLogo: (logoUri) => setData((d) => ({ ...d, logoUri })),
@@ -210,7 +222,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       replaceAll: (d) => setData((cur) => ({ ...emptyData(), ...d, coachPinHash: d.coachPinHash ?? cur.coachPinHash })),
       loadDemo: () => setData((d) => ({ ...buildDemoData(), logoUri: d.logoUri, coachPinHash: d.coachPinHash })),
     }),
-    [data, ready, session, persistSession, saveMedia, savePlayer, deletePlayer, saveMatch, deleteMatch, saveReport, deleteReport, saveInjury, deleteInjury],
+    [data, ready, session, persistSession, saveSession, saveMedia, savePlayer, deletePlayer, saveMatch, deleteMatch, saveReport, deleteReport, saveInjury, deleteInjury],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

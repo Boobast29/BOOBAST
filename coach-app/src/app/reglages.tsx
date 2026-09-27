@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Button, Card, Field, Row, Screen, Section, Txt } from '@/components/ui';
 import { hashPin, PIN_LENGTH } from '@/lib/auth';
 import { confirm, notify } from '@/lib/confirm';
-import { injuriesCsv, reportsCsv, shareText } from '@/lib/export';
+import { attendanceCsv, injuriesCsv, reportsCsv, shareText } from '@/lib/export';
 import { buildDemoData } from '@/lib/demo';
 import { persistFile } from '@/lib/media';
 import { emptyData, useStore } from '@/lib/store';
@@ -102,6 +102,7 @@ export default function Settings() {
       <Card>
         <Txt muted size={13}>Fichiers CSV à envoyer par mail, Drive, WhatsApp… ou à ouvrir dans un tableur.</Txt>
         <Button title="Questionnaires & stats (CSV)" icon="document-text-outline" kind="secondary" onPress={() => run(() => shareText(`questionnaires-${today()}.csv`, reportsCsv(data), 'text/csv'))} />
+        <Button title="Présences entraînement (CSV)" icon="fitness-outline" kind="secondary" onPress={() => run(() => shareText(`presences-${today()}.csv`, attendanceCsv(data), 'text/csv'))} />
         <Button title="Blessures (CSV)" icon="medkit-outline" kind="secondary" onPress={() => run(() => shareText(`blessures-${today()}.csv`, injuriesCsv(data), 'text/csv'))} />
       </Card>
 

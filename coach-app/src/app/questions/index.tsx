@@ -2,7 +2,8 @@ import { router } from 'expo-router';
 import { Pressable, Switch, Text, View } from 'react-native';
 import { useTheme } from '@/components/theme';
 import { Badge, Button, Card, Row, Screen, Section, Txt } from '@/components/ui';
-import { QUESTION_TEMPLATES, QUESTION_TYPE_LABEL } from '@/lib/constants';
+import { QEA_QUESTIONS, QUESTION_TEMPLATES, QUESTION_TYPE_LABEL } from '@/lib/constants';
+import { ClubLogo } from '@/components/ClubLogo';
 import { useStore } from '@/lib/store';
 
 export default function Questions() {
@@ -10,6 +11,7 @@ export default function Questions() {
   const { data, saveQuestion, moveQuestion } = useStore();
   const existingLabels = new Set(data.questions.map((q) => q.label));
   const templates = QUESTION_TEMPLATES.filter((q) => !existingLabels.has(q.label));
+  const missingQea = QEA_QUESTIONS.filter((q) => !data.questions.some((x) => x.id === q.id || x.label === q.label));
 
   const arrow = (label: string, onPress: () => void, disabled: boolean) => (
     <Pressable onPress={onPress} disabled={disabled} hitSlop={6} style={{ opacity: disabled ? 0.25 : 1, padding: 4 }} accessibilityLabel={label}>
@@ -25,6 +27,23 @@ export default function Questions() {
       </Txt>
       <Button title="+ Créer une question" onPress={() => router.push('/questions/edit')} />
 
+      {missingQea.length > 0 && (
+        <Card stripe={t.primary} onPress={() => missingQea.forEach((q) => saveQuestion({ ...q }))}>
+          <Row>
+            <ClubLogo size={40} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Txt bold>Questionnaire QEA</Txt>
+              <Txt muted size={13}>
+                Ajouter les questions du Google Forms du club : {missingQea.map((q) => q.label).join(', ')}
+              </Txt>
+            </View>
+            <Txt color={t.primary} bold size={22}>
+              +
+            </Txt>
+          </Row>
+        </Card>
+      )}
+
       <Section>Mes questions ({data.questions.length})</Section>
       {data.questions.length === 0 && <Txt muted>Aucune question perso. Créez-en une ou piochez dans les modèles ci-dessous.</Txt>}
       {data.questions.map((q, i) => (
@@ -35,6 +54,7 @@ export default function Questions() {
               <Row>
                 <Badge text={QUESTION_TYPE_LABEL[q.type]} tone="info" />
                 {q.type === 'scale' && <Txt muted size={12}>{`${q.min ?? 1} → ${q.max ?? 5}`}</Txt>}
+                {q.required && <Badge text="Obligatoire" tone="danger" />}
                 {!q.active && <Badge text="Masquée" />}
               </Row>
             </View>

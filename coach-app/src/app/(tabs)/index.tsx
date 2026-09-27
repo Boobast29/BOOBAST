@@ -1,9 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { ClubLogo } from '@/components/ClubLogo';
+import { StrengthsWeaknesses } from '@/components/Feedback';
 import { MediaStrip } from '@/components/Media';
 import { PlayerHome } from '@/components/PlayerHome';
 import { ScorePill } from '@/components/ScorePill';
@@ -11,7 +12,7 @@ import { useTheme } from '@/components/theme';
 import { ActionTile, Avatar, HeroStat, Badge, Button, Card, Empty, IconCircle, Link, Progress, Row, Screen, Section, Txt } from '@/components/ui';
 import type { IconName, Tone } from '@/components/ui';
 import { useStore } from '@/lib/store';
-import { byDateDesc, computeAlerts, fmt, formatDate, initials, playerName, seasonRecord, summarizePlayer } from '@/lib/stats';
+import { byDateDesc, computeAlerts, fmt, formatDate, initials, playerName, seasonRecord, sessionPresent, summarizePlayer, today } from '@/lib/stats';
 import type { AlertKind } from '@/lib/stats';
 
 const ALERT_ICON: Record<AlertKind, IconName> = {
@@ -20,6 +21,7 @@ const ALERT_ICON: Record<AlertKind, IconName> = {
   wellness: 'battery-dead',
   rpe: 'flame',
   load: 'trending-up',
+  absence: 'calendar-clear',
 };
 const FORM_LETTER = { win: 'V', draw: 'N', loss: 'D', none: '–' } as const;
 
@@ -36,8 +38,10 @@ function Dashboard() {
   const alerts = useMemo(() => computeAlerts(data), [data]);
   const summaries = useMemo(() => active.map((p) => summarizePlayer(data, p)), [data, active]);
   const record = useMemo(() => seasonRecord(data), [data]);
+  const [showAll, setShowAll] = useState(false);
   const injured = summaries.filter((s) => s.activeInjury?.status === 'active').length;
   const lastMatch = [...data.matches].sort(byDateDesc)[0];
+  const lastSession = [...data.sessions].sort(byDateDesc).find((x) => x.date <= today()) ?? [...data.sessions].sort((a, b) => a.date.localeCompare(b.date))[0];
   const players = new Map(data.players.map((p) => [p.id, p]));
   const recentMedia = [...data.media].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
   const formColor = { win: '#22C55E', draw: '#94A3B8', loss: '#EF4444', none: '#94A3B8' };
@@ -164,6 +168,32 @@ function Dashboard() {
         </>
       )}
 
+      {lastSession && (
+        <Card onPress={() => router.push(`/seance/${lastSession.id}`)}>
+          <Row style={{ gap: 12 }}>
+            <IconCircle icon="fitness" tone="info" />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Txt bold>
+                {lastSession.date > today() ? 'Prochaine séance' : 'Dernière séance'} · {lastSession.theme ?? 'Entraînement'}
+              </Txt>
+              <Txt muted size={13}>
+                {formatDate(lastSession.date)}
+                {lastSession.time ? ` · ${lastSession.time}` : ''} · {sessionPresent(lastSession)}/{Object.keys(lastSession.attendance).length} présents
+              </Txt>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={t.muted} />
+          </Row>
+        </Card>
+      )}
+
+      {lastMatch && data.reports.some((r) => r.matchId === lastMatch.id) && (
+        <StrengthsWeaknesses
+          data={data}
+          reports={data.reports.filter((r) => r.matchId === lastMatch.id)}
+          title={`Analyse des joueurs · ${lastMatch.home ? 'vs' : '@'} ${lastMatch.opponent}`}
+        />
+      )}
+
       <Section icon="notifications-outline">Alertes ({alerts.length})</Section>
       {alerts.length === 0 ? (
         <Card>
@@ -173,7 +203,7 @@ function Dashboard() {
           </Row>
         </Card>
       ) : (
-        alerts.slice(0, 8).map((a, i) => {
+        alerts.slice(0, showAll ? alerts.length : 5).map((a, i) => {
           const p = players.get(a.playerId);
           const tone: Tone = a.level === 'high' ? 'danger' : 'warning';
           return (
@@ -191,6 +221,10 @@ function Dashboard() {
             </Card>
           );
         })
+      )}
+
+      {alerts.length > 5 && (
+        <Button small kind="ghost" icon={showAll ? 'chevron-up' : 'chevron-down'} title={showAll ? 'Réduire' : `Voir les ${alerts.length} alertes`} onPress={() => setShowAll((v) => !v)} />
       )}
 
       {recentMedia.length > 0 && (

@@ -113,6 +113,24 @@ export type AppData = {
   questions: CustomQuestion[];
   media: MediaItem[];
   lineups: Lineup[];
+  sessions: TrainingSession[];
+};
+
+export type Attendance = 'present' | 'retard' | 'absent' | 'excuse' | 'blesse';
+
+/** Séance d'entraînement avec présences et charge (RPE × durée). */
+export type TrainingSession = {
+  id: ID;
+  date: string; // AAAA-MM-JJ
+  time?: string; // HH:MM
+  durationMin: number;
+  theme?: string;
+  notes?: string;
+  /** RPE moyen de la séance, appliqué aux présents sans RPE individuel */
+  rpe?: number;
+  attendance: Record<ID, Attendance>;
+  playerRpe: Record<ID, number>;
+  createdAt: string;
 };
 
 /** Composition d'équipe pour un match. `slots` suit l'ordre des postes de la formation. */
@@ -125,6 +143,9 @@ export type Lineup = {
   notes?: string;
   /** Visible par les joueurs */
   published: boolean;
+  /** Rendez-vous pour la convocation */
+  meetTime?: string;
+  meetPlace?: string;
   updatedAt: string;
 };
 
@@ -175,6 +196,10 @@ export type CustomQuestion = {
   /** Choix unique / multiple */
   options?: string[];
   active: boolean;
+  /** Réponse obligatoire (astérisque, comme dans Google Forms) */
+  required?: boolean;
+  /** Rubrique (ex. « Analyse du match ») : un titre est affiché quand elle change */
+  section?: string;
 };
 
 export type Answer = number | boolean | string | string[];

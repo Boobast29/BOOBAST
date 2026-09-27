@@ -8,6 +8,7 @@ import { FORMATIONS } from '@/lib/formations';
 import { useStore } from '@/lib/store';
 import { daysBetween, fmt, formatDate, initials, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, today, wellnessScore } from '@/lib/stats';
 import { ClubLogo } from './ClubLogo';
+import { PlayerFeedback } from './Feedback';
 import { MediaStrip } from './Media';
 import { useTheme } from './theme';
 import { Avatar, Badge, Button, Card, HeroStat, IconCircle, Row, Screen, Section, StatBox, Txt } from './ui';
@@ -153,6 +154,13 @@ export function PlayerHome({ playerId }: { playerId: string }) {
         <>
           <Section icon="play-circle-outline">Mes vidéos</Section>
           <MediaStrip items={media.slice(0, 10)} />
+        </>
+      )}
+
+      {reports.length > 1 && (
+        <>
+          <Section icon="analytics-outline">Mes réponses — tendances</Section>
+          <PlayerFeedback data={data} reports={reports} />
         </>
       )}
 

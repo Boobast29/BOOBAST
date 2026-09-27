@@ -1,5 +1,5 @@
 import { ALERTS, STAT_FIELDS, WELLNESS_FIELDS } from './constants';
-import type { Answer, AppData, Injury, Match, Player, PostMatchReport, StatKey } from './types';
+import type { Answer, AppData, Injury, Match, Player, PostMatchReport, StatKey, TrainingSession } from './types';
 
 export const today = () => new Date().toISOString().slice(0, 10);
 
@@ -95,7 +95,7 @@ export function summarizePlayer(data: AppData, player: Player): PlayerSummary {
   };
 }
 
-export type AlertKind = 'injury' | 'pain' | 'wellness' | 'rpe' | 'load';
+export type AlertKind = 'injury' | 'pain' | 'wellness' | 'rpe' | 'load' | 'absence';
 export type Alert = { playerId: string; level: 'high' | 'medium'; text: string; kind: AlertKind };
 
 /** Alertes basées sur le dernier questionnaire et la charge des 7 vs 28 derniers jours. */
@@ -145,6 +145,19 @@ export function computeAlerts(data: AppData): Alert[] {
       chronic += l;
       if (age < 7) acute += l;
     }
+    // Séances d'entraînement (charge = RPE × durée pour les présents)
+    for (const x of data.sessions ?? []) {
+      const l = trainingLoad(x, p.id);
+      if (!l) continue;
+      const age = daysBetween(x.date, ref);
+      if (age < 0 || age >= 28) continue;
+      chronic += l;
+      if (age < 7) acute += l;
+    }
+    const recentSessions = (data.sessions ?? []).filter((x) => x.date <= ref).sort(byDateDesc).slice(0, 4);
+    const unexcused = recentSessions.filter((x) => x.attendance[p.id] === 'absent').length;
+    if (unexcused >= 2)
+      alerts.push({ playerId: p.id, kind: 'absence', level: 'medium', text: `${unexcused} absences non excusées sur les ${recentSessions.length} dernières séances` });
     const chronicWeekly = chronic / 4;
     if (chronicWeekly > 0 && acute / chronicWeekly >= ALERTS.loadSpike)
       alerts.push({
@@ -180,3 +193,22 @@ export function seasonRecord(data: AppData) {
 }
 
 export const initials = (p: Player) => (p.number != null ? String(p.number) : `${p.firstName[0] ?? ''}${p.lastName[0] ?? ''}`.toUpperCase() || '?');
+
+/** Charge d'entraînement d'un joueur sur une séance (0 s'il n'était pas là). */
+export function trainingLoad(x: TrainingSession, playerId: string) {
+  const a = x.attendance[playerId];
+  if (a !== 'present' && a !== 'retard') return 0;
+  return (x.playerRpe[playerId] ?? x.rpe ?? 0) * x.durationMin;
+}
+
+/** Assiduité : séances où le joueur était présent (ou en retard) parmi celles où il était attendu (hors blessé). */
+export function attendanceRate(data: AppData, playerId: string, lastN = 12) {
+  const list = (data.sessions ?? [])
+    .filter((x) => x.date <= today() && x.attendance[playerId] && x.attendance[playerId] !== 'blesse')
+    .sort(byDateDesc)
+    .slice(0, lastN);
+  const present = list.filter((x) => x.attendance[playerId] === 'present' || x.attendance[playerId] === 'retard').length;
+  return { present, total: list.length, rate: list.length ? present / list.length : undefined };
+}
+
+export const sessionPresent = (x: TrainingSession) => Object.values(x.attendance).filter((a) => a === 'present' || a === 'retard').length;

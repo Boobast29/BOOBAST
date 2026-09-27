@@ -4,6 +4,16 @@ Application mobile pour qu'un coach suive ses joueurs après chaque match :
 
 - **Effectif** : fiche joueur (numéro, poste, date de naissance, notes), archivage.
 - **Matchs** : adversaire, date, domicile/extérieur, compétition, score.
+- **Questionnaire du club (repris du Google Forms QEA)**, questions obligatoires marquées * :
+  rubrique « Analyse du match » (sortie de balle, attaque de la surface, défendre sa surface, qualité du pressing,
+  transition offensive, transition défensive, performance de l'équipe), état de forme physique, ta performance
+  (1 = Très mauvaise → 10 = Exceptionnel) et commentaires divers.
+  Le coach voit ensuite les **points forts / axes d'amélioration** de l'équipe, les moyennes par question,
+  les commentaires des joueurs et les tendances de chaque joueur. Bouton **Relancer** (message WhatsApp aux retardataires).
+- **Entraînements** (onglet Agenda) : séances avec thème, durée, RPE, **appel** (présent, retard, absent, excusé, blessé),
+  RPE individuel ; charge d'entraînement prise en compte dans les alertes ; taux d'assiduité par joueur ;
+  alerte après 2 absences non excusées ; export CSV des présences.
+- **Convocation** depuis la compo : RDV, lieu, titulaires par poste, remplaçants, consignes → partage WhatsApp.
 - **Questionnaire d'après-match** (un par joueur et par match) :
   - temps de jeu, titulaire/remplaçant ;
   - statistiques (buts, passes décisives, tirs, tirs cadrés, récupérations, arrêts, cartons) ;

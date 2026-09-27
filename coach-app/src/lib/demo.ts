@@ -1,6 +1,6 @@
-import { QUESTION_TEMPLATES, statsForPosition } from './constants';
+import { QEA_QUESTIONS, QUESTION_TEMPLATES, statsForPosition } from './constants';
 import { autoLineup } from './formations';
-import type { AppData, CustomQuestion, Injury, Match, MediaItem, Player, PostMatchReport } from './types';
+import type { AppData, Attendance, CustomQuestion, TrainingSession, Injury, Match, MediaItem, Player, PostMatchReport } from './types';
 
 const iso = (daysAgo: number) => {
   const d = new Date();
@@ -52,7 +52,10 @@ export function buildDemoData(): AppData {
     return min + Math.floor((seed / 233280) * (max - min + 1));
   };
 
-  const questions: CustomQuestion[] = [0, 1, 4, 7, 8, 17].map((i, n) => ({ ...QUESTION_TEMPLATES[i], id: `q${n}`, active: true }));
+  const questions: CustomQuestion[] = [
+    ...QEA_QUESTIONS.map((q) => ({ ...q })),
+    ...[7, 8].map((i, n) => ({ ...QUESTION_TEMPLATES[i], id: `q${n}`, active: true })),
+  ];
 
   const reports: PostMatchReport[] = [];
   for (const m of matches) {
@@ -101,13 +104,27 @@ export function buildDemoData(): AppData {
         selfRating: rnd(5, 8),
         coachRating: rnd(5, 8),
         pain: false,
+        playerComment:
+          rnd(0, 3) === 0
+            ? [
+                'Bonne préparation, on était prêts dès l’échauffement.',
+                'On a subi en fin de match, il faut mieux gérer les temps faibles.',
+                'Le plan de jeu était clair, le pressing a bien marché en 1re mi-temps.',
+                'Manque de communication derrière sur les coups de pied arrêtés.',
+                'Super ambiance avec le staff, on sent la confiance.',
+              ][rnd(0, 4)]
+            : undefined,
         answers: {
-          q0: rnd(2, 5),
-          q1: starter ? rnd(3, 5) : rnd(1, 3),
-          q2: rnd(0, 3) > 0,
-          q3: ['Bonne intensité dans les duels', 'Bons appels en profondeur', 'Solide défensivement', 'Bonne relance'][rnd(0, 3)],
-          q4: ['Le jeu de tête', 'La finition', 'Le placement sur coups de pied arrêtés', 'La communication'][rnd(0, 3)],
-          q5: questions[5].options![rnd(0, 2)],
+          'qea-sortie': rnd(4, 8),
+          'qea-att': rnd(3, 8),
+          'qea-def': rnd(5, 9),
+          'qea-press': rnd(3, 7),
+          'qea-to': rnd(4, 9),
+          'qea-td': rnd(3, 8),
+          'qea-eq': (m.scoreFor ?? 0) > (m.scoreAgainst ?? 0) ? rnd(6, 9) : rnd(3, 7),
+          'qea-forme': rnd(5, 9),
+          q0: ['Bonne intensité dans les duels', 'Bons appels en profondeur', 'Solide défensivement', 'Bonne relance'][rnd(0, 3)],
+          q1: ['Le jeu de tête', 'La finition', 'Le placement sur coups de pied arrêtés', 'La communication'][rnd(0, 3)],
         },
         createdAt: created,
         updatedAt: created,
@@ -194,7 +211,22 @@ export function buildDemoData(): AppData {
     },
   ];
 
-  const data: AppData = { version: 1, teamName: 'Quimper Ergué Armel FC', players, matches, reports, injuries, questions, media, lineups: [] };
+  // Séances d'entraînement des 3 dernières semaines (mardi / jeudi)
+  const themes = ['Physique', 'Tactique', 'Jeu réduit', 'Finition', 'Technique', 'Veille de match'];
+  const sessions: TrainingSession[] = [18, 16, 11, 9, 4, 2].map((ago, k) => {
+    const attendance: Record<string, Attendance> = {};
+    const playerRpe: Record<string, number> = {};
+    for (const p of players) {
+      const r = rnd(0, 19);
+      attendance[p.id] = p.id === 'p5' && ago <= 13 ? 'blesse' : r === 0 ? 'absent' : r === 1 ? 'excuse' : r === 2 ? 'retard' : 'present';
+      if (attendance[p.id] === 'present' || attendance[p.id] === 'retard') playerRpe[p.id] = rnd(4, 8);
+    }
+    // Un joueur souvent absent pour illustrer l'alerte
+    if (ago <= 11) attendance.p6 = 'absent';
+    return { id: `s${k}`, date: iso(ago), time: '19:00', durationMin: 90, theme: themes[k], rpe: 6, attendance, playerRpe, createdAt: created };
+  });
+
+  const data: AppData = { version: 1, teamName: 'Quimper Ergué Armel FC', players, matches, reports, injuries, questions, media, lineups: [], sessions };
   const stamp = new Date().toISOString();
   data.lineups = [
     { ...autoLineup(data, 'm2', '4-3-3'), captainId: 'p4', published: true, updatedAt: stamp },

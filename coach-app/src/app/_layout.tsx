@@ -54,6 +54,8 @@ function RootStack() {
       <Stack.Screen name="blessure/edit" options={{ presentation: 'modal', title: 'Blessure' }} />
       <Stack.Screen name="questions/index" options={{ title: 'Questions perso' }} />
       <Stack.Screen name="reglages" options={{ title: 'Réglages' }} />
+      <Stack.Screen name="seance/[id]" options={{ title: 'Séance' }} />
+      <Stack.Screen name="seance/edit" options={{ presentation: 'modal', title: 'Séance' }} />
       <Stack.Screen name="media/[id]" options={{ title: 'Vidéo' }} />
       <Stack.Screen name="media/edit" options={{ presentation: 'modal', title: 'Média' }} />
       <Stack.Screen name="questions/edit" options={{ presentation: 'modal', title: 'Question' }} />

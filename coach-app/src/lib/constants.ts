@@ -1,5 +1,5 @@
 import type { IconName } from '../components/ui';
-import type { CustomQuestion, InjuryStatus, MediaCategory, QuestionType, StatKey } from './types';
+import type { Attendance, CustomQuestion, InjuryStatus, MediaCategory, QuestionType, StatKey } from './types';
 
 export const POSITIONS = ['Gardien', 'Défenseur', 'Milieu', 'Attaquant'];
 type Position = 'Gardien' | 'Défenseur' | 'Milieu' | 'Attaquant';
@@ -126,3 +126,38 @@ export const QUESTION_TEMPLATES: Omit<CustomQuestion, 'id' | 'active'>[] = [
 ];
 
 export const MEDIA_CATEGORIES: MediaCategory[] = ['Match', 'Entraînement', 'Analyse', 'Adversaire', 'Exercice', 'Autre'];
+
+const QEA_SCALE = { type: 'scale' as const, min: 1, max: 10, minLabel: 'Très mauvaise', maxLabel: 'Exceptionnel', required: true, active: true };
+
+/**
+ * Questionnaire d'après-match du Quimper Ergué Armel FC (repris du Google Forms du club).
+ * « Ta performance » et « Commentaires divers » sont les questions intégrées (auto-évaluation et commentaire du joueur).
+ */
+export const QEA_QUESTIONS: CustomQuestion[] = [
+  { id: 'qea-sortie', label: 'Sortie de balle', section: 'Analyse du match', ...QEA_SCALE },
+  { id: 'qea-att', label: 'Attaque de la surface', section: 'Analyse du match', ...QEA_SCALE },
+  { id: 'qea-def', label: 'Défendre sa surface', section: 'Analyse du match', ...QEA_SCALE },
+  { id: 'qea-press', label: 'Qualité du pressing', section: 'Analyse du match', ...QEA_SCALE },
+  { id: 'qea-to', label: 'Transition offensive', section: 'Analyse du match', ...QEA_SCALE },
+  { id: 'qea-td', label: 'Transition défensive', section: 'Analyse du match', ...QEA_SCALE },
+  { id: 'qea-eq', label: 'La performance de l’équipe ?', section: 'Analyse du match', ...QEA_SCALE },
+  { id: 'qea-forme', label: 'État de forme physique', section: 'Toi', ...QEA_SCALE },
+];
+
+/** Descriptions affichées sous le titre des rubriques du questionnaire. */
+export const SECTION_DESCRIPTIONS: Record<string, string> = {
+  'Analyse du match': 'L’objectif est de dresser les points forts et les axes d’amélioration de l’équipe sur ce match.',
+};
+
+export const SELF_RATING_LABEL = 'Ta performance';
+export const PLAYER_COMMENT_LABEL = 'Commentaires divers (préparation du match, intention de jeu sur le match, attitude coach, staff, etc.)';
+
+export const ATTENDANCE: Record<Attendance, { label: string; short: string; tone: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
+  present: { label: 'Présent', short: 'P', tone: 'success' },
+  retard: { label: 'En retard', short: 'R', tone: 'warning' },
+  absent: { label: 'Absent', short: 'A', tone: 'danger' },
+  excuse: { label: 'Excusé', short: 'E', tone: 'info' },
+  blesse: { label: 'Blessé', short: 'B', tone: 'neutral' },
+};
+
+export const TRAINING_THEMES = ['Physique', 'Technique', 'Tactique', 'Jeu réduit', 'Finition', 'Coups de pied arrêtés', 'Récupération', 'Veille de match'];

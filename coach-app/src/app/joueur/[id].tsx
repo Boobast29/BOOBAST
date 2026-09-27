@@ -2,12 +2,13 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
+import { PlayerFeedback } from '@/components/Feedback';
 import { MediaStrip } from '@/components/Media';
 import { useTheme } from '@/components/theme';
-import { Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, Link, Row, Screen, Section, StatBox, Txt } from '@/components/ui';
+import { Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, Link, Progress, Row, Screen, Section, StatBox, Txt } from '@/components/ui';
 import { INJURY_STATUS_LABEL, INJURY_STATUS_TONE, STAT_FIELDS, statsForPosition } from '@/lib/constants';
 import { useStore } from '@/lib/store';
-import { byDateDesc, fmt, formatAnswer, formatDate, initials, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, wellnessScore } from '@/lib/stats';
+import { attendanceRate, byDateDesc, fmt, formatAnswer, formatDate, initials, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, wellnessScore } from '@/lib/stats';
 
 export default function PlayerDetail() {
   const t = useTheme();
@@ -17,6 +18,7 @@ export default function PlayerDetail() {
   if (!player) return <Empty text="Joueur introuvable." />;
 
   const s = summarizePlayer(data, player);
+  const att = attendanceRate(data, player.id);
   const reports = reportsForPlayer(data, player.id);
   const injuries = data.injuries.filter((i) => i.playerId === player.id).sort(byDateDesc);
   const matches = new Map(data.matches.map((m) => [m.id, m]));
@@ -76,6 +78,23 @@ export default function PlayerDetail() {
         <StatBox label="RPE moyen" value={fmt(s.avgRpe)} icon="flame" tone="warning" />
         <StatBox label="Forme /5" value={fmt(s.avgWellness)} icon="heart" tone="success" />
       </Row>
+      {att.total > 0 && (
+        <Card>
+          <Row style={{ justifyContent: 'space-between' }}>
+            <Row>
+              <Ionicons name="fitness-outline" size={18} color={t.primary} />
+              <Txt bold>Assiduité à l’entraînement</Txt>
+            </Row>
+            <Txt bold color={att.rate! < 0.7 ? t.danger : att.rate! < 0.85 ? t.warning : t.primary}>
+              {Math.round(att.rate! * 100)} %
+            </Txt>
+          </Row>
+          <Progress value={att.rate!} color={att.rate! < 0.7 ? t.danger : att.rate! < 0.85 ? t.warning : t.primary} />
+          <Txt muted size={12}>
+            {att.present} présence{att.present > 1 ? 's' : ''} sur {att.total} séance{att.total > 1 ? 's' : ''} (hors blessure)
+          </Txt>
+        </Card>
+      )}
 
       <Section icon="play-circle-outline" action={<Link title="+ Ajouter" onPress={() => router.push({ pathname: '/media/edit', params: { source: 'library', playerId: player.id } })} />}>
         Vidéos ({media.length})
@@ -97,6 +116,8 @@ export default function PlayerDetail() {
 
       {trend.length > 1 && (
         <>
+          <Section icon="analytics-outline">Questionnaire du club — tendances</Section>
+          <PlayerFeedback data={data} reports={reports} />
           <Section icon="pulse-outline">Forme — derniers matchs</Section>
           <Card>
             <Row style={{ alignItems: 'flex-end', height: 110, gap: 8 }}>

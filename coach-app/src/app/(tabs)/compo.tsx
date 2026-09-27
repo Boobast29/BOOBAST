@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useMemo, useRef, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import { ClubLogo } from '@/components/ClubLogo';
 import { Pitch } from '@/components/Pitch';
@@ -140,6 +140,28 @@ export default function Compo() {
     } catch (e) {
       notify('Partage impossible', String((e as Error)?.message ?? e));
     }
+  };
+
+  const sendConvocation = () => {
+    const name = (id: string) => {
+      const p = players.get(id);
+      return p ? `${p.firstName} ${p.lastName}`.trim() + (lineup.captainId === id ? ' (C)' : '') : '';
+    };
+    const lines = [
+      `⚽ ${data.teamName} — CONVOCATION`,
+      `${match.home ? 'vs' : '@'} ${match.opponent} · ${formatDate(match.date)}${match.competition ? ` · ${match.competition}` : ''}`,
+      lineup.meetTime || lineup.meetPlace ? `📍 RDV ${lineup.meetTime ?? ''}${lineup.meetPlace ? ` · ${lineup.meetPlace}` : ''}` : '',
+      '',
+      `Titulaires (${lineup.formation}) :`,
+      ...def.map((s, i) => (lineup.slots[i] ? `• ${s.role} — ${name(lineup.slots[i]!)}` : '')).filter(Boolean),
+      lineup.bench.length ? '' : '',
+      lineup.bench.length ? 'Remplaçants :' : '',
+      ...lineup.bench.map((id) => `• ${name(id)}`),
+      lineup.notes ? `\n📋 ${lineup.notes}` : '',
+      '',
+      'Prévoir : chaussures, protège-tibias, gourde. Prévenir le coach en cas d’absence.',
+    ].filter((l, i, arr) => l !== '' || (arr[i - 1] !== '' && i > 0));
+    Share.share({ message: lines.join('\n') }).catch(() => {});
   };
 
   // ---------- Indicateurs ----------
@@ -371,9 +393,24 @@ export default function Compo() {
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Button icon="share-social-outline" kind="secondary" title="Partager" onPress={share} />
+              <Button icon="share-social-outline" kind="secondary" title="Image" onPress={share} />
             </View>
           </Row>
+          <Card>
+            <Row>
+              <Ionicons name="megaphone-outline" size={18} color={t.primary} />
+              <Txt bold>Convocation</Txt>
+            </Row>
+            <Row style={{ gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Field label="Rendez-vous" value={lineup.meetTime ?? ''} onChangeText={(meetTime) => update({ ...lineup, meetTime: meetTime || undefined })} placeholder="13:30" />
+              </View>
+              <View style={{ flex: 2 }}>
+                <Field label="Lieu" value={lineup.meetPlace ?? ''} onChangeText={(meetPlace) => update({ ...lineup, meetPlace: meetPlace || undefined })} placeholder="Stade de Kerlaéron" />
+              </View>
+            </Row>
+            <Button icon="logo-whatsapp" title="Envoyer la convocation" onPress={sendConvocation} disabled={!xi.length} />
+          </Card>
           <Button
             small
             kind="ghost"

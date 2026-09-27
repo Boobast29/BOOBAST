@@ -1,7 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Share, Text, View } from 'react-native';
+import { StrengthsWeaknesses, TeamFeedback } from '@/components/Feedback';
 import { ClubLogo } from '@/components/ClubLogo';
 import { MediaStrip } from '@/components/Media';
 import { useTheme } from '@/components/theme';
@@ -30,6 +31,13 @@ export default function MatchDetail() {
   const media = data.media.filter((m) => m.matchId === match.id);
   const edit = () => router.push({ pathname: '/match/edit', params: { id: match.id } });
   const firstMissing = players.find((p) => !byPlayer.has(p.id));
+  const missing = players.filter((p) => !p.archived && !byPlayer.has(p.id));
+  const remind = () =>
+    Share.share({
+      message: `⚽ ${data.teamName}\nQuestionnaire d’après-match — ${match.home ? 'vs' : '@'} ${match.opponent} (${formatDate(match.date)})\n\nMerci de le remplir dans l’appli QEA Coach (espace joueur) :\n${missing
+        .map((p) => `• ${playerName(p)}`)
+        .join('\n')}`,
+    }).catch(() => {});
 
   return (
     <Screen>
@@ -101,7 +109,40 @@ export default function MatchDetail() {
       </Section>
       {media.length ? <MediaStrip items={media} /> : <Txt muted size={14}>Ajoutez le résumé ou des extraits pour la séance vidéo.</Txt>}
 
-      <Section icon="clipboard-outline">
+      {reports.length > 0 && (
+        <>
+          <Section icon="analytics-outline">Ressenti de l’équipe</Section>
+          <StrengthsWeaknesses data={data} reports={reports} />
+          <TeamFeedback data={data} reports={reports} />
+          {reports.some((r) => r.playerComment) && (
+            <Card>
+              <Row>
+                <Ionicons name="chatbubbles-outline" size={18} color={t.primary} />
+                <Txt bold>Ce que disent les joueurs</Txt>
+              </Row>
+              {reports
+                .filter((r) => r.playerComment)
+                .map((r) => (
+                  <View key={r.id} style={{ gap: 2 }}>
+                    <Txt size={13} bold>
+                      {playerName(data.players.find((p) => p.id === r.playerId))}
+                    </Txt>
+                    <Txt muted size={14}>
+                      « {r.playerComment} »
+                    </Txt>
+                  </View>
+                ))}
+            </Card>
+          )}
+        </>
+      )}
+
+      <Section
+        icon="clipboard-outline"
+        action={
+          missing.length > 0 && match.scoreFor != null ? <Button small kind="ghost" icon="notifications-outline" title={`Relancer (${missing.length})`} onPress={remind} /> : undefined
+        }
+      >
         Questionnaires ({reports.length}/{players.length})
       </Section>
       {players.length > 0 && <Progress value={players.length ? reports.length / players.length : 0} />}

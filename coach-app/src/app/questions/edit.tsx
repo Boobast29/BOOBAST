@@ -23,6 +23,8 @@ export default function EditQuestion() {
   const [maxLabel, setMaxLabel] = useState(existing?.maxLabel ?? '');
   const [options, setOptions] = useState((existing?.options ?? []).join('\n'));
   const [active, setActive] = useState(existing?.active ?? true);
+  const [required, setRequired] = useState(existing?.required ?? false);
+  const [section, setSection] = useState(existing?.section ?? '');
   const [preview, setPreview] = useState<Answer>();
 
   const optionList = options
@@ -39,6 +41,8 @@ export default function EditQuestion() {
     ...(type === 'scale' ? { min, max, minLabel: minLabel.trim() || undefined, maxLabel: maxLabel.trim() || undefined } : {}),
     ...(hasOptions ? { options: optionList } : {}),
     active,
+    required,
+    section: section.trim() || undefined,
   };
 
   const save = () => {
@@ -55,6 +59,7 @@ export default function EditQuestion() {
       <Card>
         <Field label="Question" value={label} onChangeText={setLabel} placeholder="Ex. : Comment as-tu vécu le match ?" autoFocus={!existing} multiline />
         <Field label="Aide (optionnel)" value={help} onChangeText={setHelp} placeholder="Précision affichée sous la question" />
+        <Field label="Rubrique (optionnel)" value={section} onChangeText={setSection} placeholder="Ex. : Analyse du match" />
         <Chips label="Type de réponse" options={TYPES} value={type} getLabel={(t) => QUESTION_TYPE_LABEL[t]} onChange={(t) => { if (t) { setType(t); setPreview(undefined); } }} />
       </Card>
 
@@ -74,6 +79,7 @@ export default function EditQuestion() {
 
       <Card>
         <Toggle label="Poser cette question" value={active} onChange={setActive} />
+        <Toggle label="Réponse obligatoire (*)" value={required} onChange={setRequired} />
       </Card>
 
       <Section>Aperçu</Section>

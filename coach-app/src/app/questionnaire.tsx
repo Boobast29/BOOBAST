@@ -1,11 +1,12 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Locked } from '@/components/Locked';
 import { QuestionInput } from '@/components/QuestionInput';
+import { useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Chips, Empty, Field, Progress, Row, Scale, Screen, Section, Stepper, Toggle, Txt } from '@/components/ui';
-import { confirm } from '@/lib/confirm';
-import { BODY_ZONES, STAT_FIELDS, statsForPosition, WELLNESS_FIELDS } from '@/lib/constants';
+import { confirm, notify } from '@/lib/confirm';
+import { BODY_ZONES, PLAYER_COMMENT_LABEL, SECTION_DESCRIPTIONS, SELF_RATING_LABEL, STAT_FIELDS, statsForPosition, WELLNESS_FIELDS } from '@/lib/constants';
 import type { WellnessKey } from '@/lib/constants';
 import { useStore } from '@/lib/store';
 import { initials, matchLabel, playerName } from '@/lib/stats';
@@ -82,6 +83,18 @@ export default function Questionnaire() {
   // Questions actives + questions désactivées auxquelles ce joueur a déjà répondu
   const customQuestions = data.questions.filter((q) => q.active || answers[q.id] !== undefined);
 
+  // Questions obligatoires (*) : bloquant pour le joueur, simple avertissement pour le coach
+  const trySave = (go: () => void) => {
+    const missing = [
+      ...customQuestions.filter((q) => q.required && answers[q.id] === undefined).map((q) => q.label),
+      ...(selfRating == null ? [SELF_RATING_LABEL] : []),
+    ];
+    if (!missing.length) return go();
+    const list = missing.map((m) => `• ${m}`).join('\n');
+    if (coach) confirm('Questions obligatoires sans réponse', `${list}\n\nEnregistrer quand même ?`, go, 'Enregistrer');
+    else notify('Il manque des réponses', list);
+  };
+
   // Joueur suivant sans questionnaire pour ce match
   const done = new Set(data.reports.filter((r) => r.matchId === match.id).map((r) => r.playerId));
   const activeCount = data.players.filter((p) => !p.archived).length;
@@ -119,6 +132,30 @@ export default function Questionnaire() {
         {minutes > 0 && <Toggle label="Titulaire" icon="shirt-outline" value={starter} onChange={setStarter} />}
       </Card>
 
+      <Section icon="chatbubbles-outline">Questionnaire du club</Section>
+      <Card>
+        {customQuestions.map((q, i) => (
+          <View key={q.id} style={{ gap: 12 }}>
+            {q.section && q.section !== customQuestions[i - 1]?.section ? <SectionBanner title={q.section} /> : null}
+            <QuestionInput
+              q={q}
+              value={answers[q.id]}
+              onChange={(v) =>
+                setAnswers((a) => {
+                  const next = { ...a };
+                  if (v === undefined) delete next[q.id];
+                  else next[q.id] = v;
+                  return next;
+                })
+              }
+            />
+          </View>
+        ))}
+        {customQuestions.some((q) => q.section) && !customQuestions.some((q) => q.section === 'Toi') ? <SectionBanner title="Toi" /> : null}
+        <Scale label={`${SELF_RATING_LABEL} *`} hint="1 = Très mauvaise · 10 = Exceptionnel" value={selfRating} onChange={setSelfRating} min={1} max={10} />
+        <Field label={PLAYER_COMMENT_LABEL} value={playerComment} onChangeText={setPlayerComment} multiline placeholder="Votre réponse" />
+      </Card>
+
       {minutes > 0 && (
         <>
           <Section icon="stats-chart-outline">Statistiques</Section>
@@ -147,7 +184,7 @@ export default function Questionnaire() {
         </>
       )}
 
-      <Section icon="flame-outline">Effort & ressenti</Section>
+      <Section icon="flame-outline">Effort du match (RPE)</Section>
       <Card>
         <Scale
           label="Effort perçu (RPE)"
@@ -157,14 +194,6 @@ export default function Questionnaire() {
           min={0}
           max={10}
           invertColors
-        />
-        <Scale
-          label="Auto-évaluation de sa performance"
-          hint="1 = très mauvais match · 10 = match parfait"
-          value={selfRating}
-          onChange={setSelfRating}
-          min={1}
-          max={10}
         />
       </Card>
 
@@ -214,37 +243,7 @@ export default function Questionnaire() {
             )}
           </View>
         )}
-        <Field
-          label="Commentaire du joueur"
-          value={playerComment}
-          onChangeText={setPlayerComment}
-          multiline
-          placeholder="Ce qu'il a ressenti, ce qui a marché ou pas…"
-        />
       </Card>
-
-      {customQuestions.length > 0 && (
-        <>
-          <Section icon="chatbubbles-outline">Questions du club</Section>
-          <Card>
-            {customQuestions.map((q) => (
-              <QuestionInput
-                key={q.id}
-                q={q}
-                value={answers[q.id]}
-                onChange={(v) =>
-                  setAnswers((a) => {
-                    const next = { ...a };
-                    if (v === undefined) delete next[q.id];
-                    else next[q.id] = v;
-                    return next;
-                  })
-                }
-              />
-            ))}
-          </Card>
-        </>
-      )}
 
       {coach && (
         <>
@@ -259,20 +258,24 @@ export default function Questionnaire() {
       <Button
         title="Enregistrer"
         icon="checkmark"
-        onPress={() => {
-          persist();
-          router.back();
-        }}
+        onPress={() =>
+          trySave(() => {
+            persist();
+            router.back();
+          })
+        }
       />
       {coach && next && (
         <Button
           title={`Suivant : ${playerName(next)}`}
           icon="arrow-forward"
           kind="secondary"
-          onPress={() => {
-            persist();
-            router.replace({ pathname: '/questionnaire', params: { matchId: match.id, playerId: next.id } });
-          }}
+          onPress={() =>
+            trySave(() => {
+              persist();
+              router.replace({ pathname: '/questionnaire', params: { matchId: match.id, playerId: next.id } });
+            })
+          }
         />
       )}
       {coach && existing && (
@@ -289,5 +292,20 @@ export default function Questionnaire() {
         />
       )}
     </Screen>
+  );
+}
+
+/** Titre de rubrique façon Google Forms (bandeau vert + description). */
+function SectionBanner({ title }: { title: string }) {
+  const t = useTheme();
+  const desc = SECTION_DESCRIPTIONS[title];
+  return (
+    <View style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: t.primarySoft, marginTop: 4 }}>
+      <View style={{ backgroundColor: t.primary, height: 5 }} />
+      <View style={{ padding: 12, gap: 4 }}>
+        <Text style={{ color: t.primary, fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase' }}>{title}</Text>
+        {desc ? <Text style={{ color: t.text, fontSize: 13, lineHeight: 18 }}>{desc}</Text> : null}
+      </View>
+    </View>
   );
 }

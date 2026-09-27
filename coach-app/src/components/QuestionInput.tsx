@@ -4,8 +4,9 @@ import { Chips, Field, Scale, Stepper } from './ui';
 import type { Answer, CustomQuestion } from '@/lib/types';
 
 /** Champ de réponse adapté au type de la question personnalisée. */
-export function QuestionInput({ q, value, onChange }: { q: CustomQuestion; value?: Answer; onChange: (v: Answer | undefined) => void }) {
+export function QuestionInput({ q: raw, value, onChange }: { q: CustomQuestion; value?: Answer; onChange: (v: Answer | undefined) => void }) {
   const t = useTheme();
+  const q = raw.required ? { ...raw, label: `${raw.label} *` } : raw;
   switch (q.type) {
     case 'scale': {
       const min = q.min ?? 1;

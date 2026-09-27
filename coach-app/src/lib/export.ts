@@ -1,7 +1,7 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Platform, Share } from 'react-native';
-import { STAT_FIELDS, WELLNESS_FIELDS } from './constants';
+import { ATTENDANCE, STAT_FIELDS, WELLNESS_FIELDS } from './constants';
 import { formatAnswer, matchLabel, playerName, sessionLoad, wellnessScore } from './stats';
 import type { AppData } from './types';
 
@@ -59,6 +59,20 @@ export function reportsCsv(data: AppData) {
     ];
   });
   rows.sort((a, b) => String(b[0]).localeCompare(String(a[0])));
+  return toCsv([header, ...rows]);
+}
+
+export function attendanceCsv(data: AppData) {
+  const sessions = [...data.sessions].sort((a, b) => a.date.localeCompare(b.date));
+  const header = ['Joueur', ...sessions.map((x) => `${x.date}${x.theme ? ` ${x.theme}` : ''}`), 'Présences', 'Taux'];
+  const rows = data.players
+    .filter((p) => !p.archived)
+    .map((p) => {
+      const cells = sessions.map((x) => ATTENDANCE[x.attendance[p.id]]?.short ?? '');
+      const counted = sessions.filter((x) => x.attendance[p.id] && x.attendance[p.id] !== 'blesse');
+      const present = counted.filter((x) => ['present', 'retard'].includes(x.attendance[p.id])).length;
+      return [playerName(p), ...cells, `${present}/${counted.length}`, counted.length ? `${Math.round((present / counted.length) * 100)} %` : ''];
+    });
   return toCsv([header, ...rows]);
 }
 
