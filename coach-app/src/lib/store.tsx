@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { buildDemoData } from './demo';
-import type { AppData, Injury, Match, Player, PostMatchReport } from './types';
+import type { AppData, CustomQuestion, Injury, Match, Player, PostMatchReport } from './types';
 
 const STORAGE_KEY = 'coach-suivi/data/v1';
 
@@ -13,6 +13,7 @@ export const emptyData = (): AppData => ({
   matches: [],
   reports: [],
   injuries: [],
+  questions: [],
 });
 
 export const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -31,6 +32,9 @@ type Store = {
   deleteReport: (id: string) => void;
   saveInjury: (i: Upsert<Injury>) => Injury;
   deleteInjury: (id: string) => void;
+  saveQuestion: (q: Omit<CustomQuestion, 'id'> & { id?: string }) => void;
+  deleteQuestion: (id: string) => void;
+  moveQuestion: (id: string, delta: -1 | 1) => void;
   replaceAll: (d: AppData) => void;
   loadDemo: () => void;
 };
@@ -145,6 +149,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       deleteReport,
       saveInjury,
       deleteInjury,
+      saveQuestion: (q) => setData((d) => ({ ...d, questions: upsert(d.questions, { ...q, id: q.id ?? newId() }) })),
+      deleteQuestion: (id) => setData((d) => ({ ...d, questions: d.questions.filter((q) => q.id !== id) })),
+      moveQuestion: (id, delta) =>
+        setData((d) => {
+          const i = d.questions.findIndex((q) => q.id === id);
+          const j = i + delta;
+          if (i === -1 || j < 0 || j >= d.questions.length) return d;
+          const questions = d.questions.slice();
+          [questions[i], questions[j]] = [questions[j], questions[i]];
+          return { ...d, questions };
+        }),
       replaceAll: (d) => setData({ ...emptyData(), ...d }),
       loadDemo: () => setData(buildDemoData()),
     }),

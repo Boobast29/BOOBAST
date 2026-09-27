@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Button, Card, Field, Screen, Section, Txt } from '@/components/ui';
 import { confirm, notify } from '@/lib/confirm';
@@ -33,6 +34,15 @@ export default function Settings() {
       <Section>Équipe</Section>
       <Card>
         <Field label="Nom de l'équipe" value={team} onChangeText={setTeam} onEndEditing={() => setTeamName(team.trim() || 'Mon équipe')} onBlur={() => setTeamName(team.trim() || 'Mon équipe')} />
+      </Card>
+
+      <Section>Questionnaire d’après-match</Section>
+      <Card>
+        <Txt muted size={13}>
+          Ajoutez vos propres questions (échelle, oui/non, choix, texte…) ou piochez dans les modèles.{' '}
+          {data.questions.filter((q) => q.active).length} question(s) perso active(s).
+        </Txt>
+        <Button title="Gérer les questions" kind="secondary" onPress={() => router.push('/questions')} />
       </Card>
 
       <Section>Exporter (Excel / Numbers / Sheets)</Section>

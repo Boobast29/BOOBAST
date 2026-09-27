@@ -1,4 +1,5 @@
-import type { AppData, Injury, Match, Player, PostMatchReport } from './types';
+import { QUESTION_TEMPLATES } from './constants';
+import type { AppData, CustomQuestion, Injury, Match, Player, PostMatchReport } from './types';
 
 const iso = (daysAgo: number) => {
   const d = new Date();
@@ -40,6 +41,8 @@ export function buildDemoData(): AppData {
     return min + Math.floor((seed / 233280) * (max - min + 1));
   };
 
+  const questions: CustomQuestion[] = [0, 1, 4, 7, 8, 17].map((i, n) => ({ ...QUESTION_TEMPLATES[i], id: `q${n}`, active: true }));
+
   const reports: PostMatchReport[] = [];
   for (const m of matches) {
     for (const p of players) {
@@ -72,6 +75,14 @@ export function buildDemoData(): AppData {
         selfRating: rnd(5, 8),
         coachRating: rnd(5, 8),
         pain: false,
+        answers: {
+          q0: rnd(2, 5),
+          q1: starter ? rnd(3, 5) : rnd(1, 3),
+          q2: rnd(0, 3) > 0,
+          q3: ['Bonne intensité dans les duels', 'Bons appels en profondeur', 'Solide défensivement', 'Bonne relance'][rnd(0, 3)],
+          q4: ['Le jeu de tête', 'La finition', 'Le placement sur coups de pied arrêtés', 'La communication'][rnd(0, 3)],
+          q5: questions[5].options![rnd(0, 2)],
+        },
         createdAt: created,
         updatedAt: created,
       });
@@ -98,5 +109,5 @@ export function buildDemoData(): AppData {
     },
   ];
 
-  return { version: 1, teamName: 'Équipe démo', players, matches, reports, injuries };
+  return { version: 1, teamName: 'Équipe démo', players, matches, reports, injuries, questions };
 }

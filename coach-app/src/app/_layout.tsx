@@ -30,6 +30,8 @@ function RootStack() {
       <Stack.Screen name="match/[id]" options={{ title: 'Match' }} />
       <Stack.Screen name="questionnaire" options={{ presentation: 'modal', title: "Questionnaire d'après-match" }} />
       <Stack.Screen name="blessure/edit" options={{ presentation: 'modal', title: 'Blessure' }} />
+      <Stack.Screen name="questions/index" options={{ title: 'Questions perso' }} />
+      <Stack.Screen name="questions/edit" options={{ presentation: 'modal', title: 'Question' }} />
     </Stack>
   );
 }

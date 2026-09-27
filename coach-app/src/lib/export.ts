@@ -2,7 +2,7 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Platform, Share } from 'react-native';
 import { STAT_FIELDS, WELLNESS_FIELDS } from './constants';
-import { matchLabel, playerName, sessionLoad, wellnessScore } from './stats';
+import { formatAnswer, matchLabel, playerName, sessionLoad, wellnessScore } from './stats';
 import type { AppData } from './types';
 
 const cell = (v: unknown) => {
@@ -33,6 +33,7 @@ export function reportsCsv(data: AppData) {
     'Intensité douleur',
     'Commentaire joueur',
     'Commentaire coach',
+    ...data.questions.map((q) => q.label),
   ];
   const rows = data.reports.map((r) => {
     const m = matches.get(r.matchId);
@@ -54,6 +55,7 @@ export function reportsCsv(data: AppData) {
       r.painLevel,
       r.playerComment,
       r.coachComment,
+      ...data.questions.map((q) => formatAnswer(r.answers?.[q.id])),
     ];
   });
   rows.sort((a, b) => String(b[0]).localeCompare(String(a[0])));

@@ -62,6 +62,8 @@ export type PostMatchReport = {
   painLevel?: number; // 0–10
   playerComment?: string;
   coachComment?: string;
+  /** Réponses aux questions personnalisées (clé = id de la question) */
+  answers?: Record<string, Answer>;
   createdAt: string;
   updatedAt: string;
 };
@@ -93,4 +95,25 @@ export type AppData = {
   matches: Match[];
   reports: PostMatchReport[];
   injuries: Injury[];
+  questions: CustomQuestion[];
 };
+
+export type QuestionType = 'scale' | 'yesno' | 'choice' | 'multi' | 'number' | 'text';
+
+/** Question créée par le coach, posée en plus du questionnaire standard. */
+export type CustomQuestion = {
+  id: ID;
+  label: string;
+  type: QuestionType;
+  help?: string;
+  /** Échelle */
+  min?: number;
+  max?: number;
+  minLabel?: string;
+  maxLabel?: string;
+  /** Choix unique / multiple */
+  options?: string[];
+  active: boolean;
+};
+
+export type Answer = number | boolean | string | string[];

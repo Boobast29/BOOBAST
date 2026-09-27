@@ -4,7 +4,7 @@ import { useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Empty, Row, Screen, Section, StatBox, Title, Txt } from '@/components/ui';
 import { INJURY_STATUS_LABEL, INJURY_STATUS_TONE, STAT_FIELDS } from '@/lib/constants';
 import { useStore } from '@/lib/store';
-import { byDateDesc, fmt, formatDate, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, wellnessScore } from '@/lib/stats';
+import { byDateDesc, fmt, formatAnswer, formatDate, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, wellnessScore } from '@/lib/stats';
 
 export default function PlayerDetail() {
   const t = useTheme();
@@ -120,6 +120,15 @@ export default function PlayerDetail() {
                 .join(' · ') || '—'}
             </Txt>
             {r.playerComment ? <Txt muted size={13}>« {r.playerComment} »</Txt> : null}
+            {data.questions
+              .filter((q) => formatAnswer(r.answers?.[q.id]))
+              .map((q) => (
+                <Txt key={q.id} size={13}>
+                  <Txt muted size={13}>{q.label} </Txt>
+                  {formatAnswer(r.answers?.[q.id])}
+                  {q.type === 'scale' ? `/${q.max ?? 5}` : ''}
+                </Txt>
+              ))}
           </Card>
         );
       })}

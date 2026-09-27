@@ -11,6 +11,9 @@ Application mobile pour qu'un coach suive ses joueurs après chaque match :
   - **bien-être** (fraîcheur, sommeil, courbatures, stress, moral — 1 à 5) ;
   - auto-évaluation du joueur, note et commentaire du coach ;
   - **douleur** (zone + intensité) avec raccourci « Déclarer une blessure ».
+  - **questions perso du club**, comme dans un Google Forms (échelle, oui/non, choix unique,
+    choix multiples, nombre, texte libre) : Réglages → Gérer les questions. ~20 modèles prêts
+    à l'emploi (vécu du match, temps de jeu, consignes, points forts / à travailler, message au coach…) ;
   - bouton « Enregistrer et passer au joueur suivant » pour enchaîner tout l'effectif.
 - **Blessures** : zone, côté, type, gravité, statut (indisponible / en reprise / guérie), retour prévu, traitement.
 - **Tableau de bord** : joueurs disponibles/blessés, progression des questionnaires du dernier match,
@@ -51,7 +54,7 @@ npx eas-cli@latest submit --platform ios                        # envoi sur Test
 
 - **Statistiques suivies** (autre sport : rugby, hand, basket…) : `src/lib/constants.ts` → `STAT_FIELDS`
   (ajouter aussi la clé dans `StatKey` de `src/lib/types.ts`).
-- Postes, zones du corps, types de blessures, seuils d'alerte : `src/lib/constants.ts`.
+- Postes, zones du corps, types de blessures, seuils d'alerte, modèles de questions (`QUESTION_TEMPLATES`) : `src/lib/constants.ts`.
 - Couleurs : `src/components/theme.ts`.
 
 ## Organisation du code

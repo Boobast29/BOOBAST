@@ -1,5 +1,5 @@
 import { ALERTS, STAT_FIELDS, WELLNESS_FIELDS } from './constants';
-import type { AppData, Injury, Match, Player, PostMatchReport, StatKey } from './types';
+import type { Answer, AppData, Injury, Match, Player, PostMatchReport, StatKey } from './types';
 
 export const today = () => new Date().toISOString().slice(0, 10);
 
@@ -151,4 +151,11 @@ export function computeAlerts(data: AppData): Alert[] {
       });
   }
   return alerts.sort((a, b) => (a.level === b.level ? 0 : a.level === 'high' ? -1 : 1));
+}
+
+export function formatAnswer(a: Answer | undefined): string {
+  if (a === undefined || a === '') return '';
+  if (typeof a === 'boolean') return a ? 'Oui' : 'Non';
+  if (Array.isArray(a)) return a.join(', ');
+  return String(a);
 }

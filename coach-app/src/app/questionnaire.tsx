@@ -1,13 +1,14 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
+import { QuestionInput } from '@/components/QuestionInput';
 import { Button, Card, Chips, Empty, Field, Scale, Screen, Section, Stepper, Toggle, Txt } from '@/components/ui';
 import { confirm } from '@/lib/confirm';
 import { BODY_ZONES, STAT_FIELDS, WELLNESS_FIELDS } from '@/lib/constants';
 import type { WellnessKey } from '@/lib/constants';
 import { useStore } from '@/lib/store';
 import { matchLabel, playerName } from '@/lib/stats';
-import type { Stats } from '@/lib/types';
+import type { Answer, Stats } from '@/lib/types';
 
 const RPE_LABELS: Record<number, string> = {
   0: 'Repos',
@@ -46,6 +47,7 @@ export default function Questionnaire() {
   const [painLevel, setPainLevel] = useState(existing?.painLevel);
   const [playerComment, setPlayerComment] = useState(existing?.playerComment ?? '');
   const [coachComment, setCoachComment] = useState(existing?.coachComment ?? '');
+  const [answers, setAnswers] = useState<Record<string, Answer>>(existing?.answers ?? {});
 
   if (!match || !player) return <Empty text="Match ou joueur introuvable." />;
 
@@ -66,7 +68,11 @@ export default function Questionnaire() {
       painLevel: pain ? painLevel : undefined,
       playerComment: playerComment.trim() || undefined,
       coachComment: coachComment.trim() || undefined,
+      answers,
     });
+
+  // Questions actives + questions désactivées auxquelles ce joueur a déjà répondu
+  const customQuestions = data.questions.filter((q) => q.active || answers[q.id] !== undefined);
 
   // Joueur suivant sans questionnaire pour ce match
   const done = new Set(data.reports.filter((r) => r.matchId === match.id).map((r) => r.playerId));
@@ -136,6 +142,29 @@ export default function Questionnaire() {
         )}
         <Field label="Commentaire du joueur" value={playerComment} onChangeText={setPlayerComment} multiline placeholder="Ce qu'il a ressenti, ce qui a marché ou pas…" />
       </Card>
+
+      {customQuestions.length > 0 && (
+        <>
+          <Section>Questions du club</Section>
+          <Card>
+            {customQuestions.map((q) => (
+              <QuestionInput
+                key={q.id}
+                q={q}
+                value={answers[q.id]}
+                onChange={(v) =>
+                  setAnswers((a) => {
+                    const next = { ...a };
+                    if (v === undefined) delete next[q.id];
+                    else next[q.id] = v;
+                    return next;
+                  })
+                }
+              />
+            ))}
+          </Card>
+        </>
+      )}
 
       <Section>Évaluation du coach</Section>
       <Card>
