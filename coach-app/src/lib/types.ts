@@ -91,6 +91,8 @@ export type Injury = {
 export type AppData = {
   version: 1;
   teamName: string;
+  /** Logo personnalisé (sinon logo du club intégré à l'appli) */
+  logoUri?: string;
   players: Player[];
   matches: Match[];
   reports: PostMatchReport[];

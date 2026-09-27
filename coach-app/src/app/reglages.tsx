@@ -1,18 +1,31 @@
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
+import { View } from 'react-native';
+import { ClubLogo } from '@/components/ClubLogo';
 import { useState } from 'react';
-import { Button, Card, Field, Screen, Section, Txt } from '@/components/ui';
+import { Button, Card, Field, Row, Screen, Section, Txt } from '@/components/ui';
 import { confirm, notify } from '@/lib/confirm';
 import { injuriesCsv, reportsCsv, shareText } from '@/lib/export';
+import { buildDemoData } from '@/lib/demo';
+import { persistFile } from '@/lib/media';
 import { emptyData, useStore } from '@/lib/store';
 import { today } from '@/lib/stats';
 import type { AppData } from '@/lib/types';
 
+const DEFAULT_TEAM = emptyData().teamName;
+
 export default function Settings() {
-  const { data, setTeamName, replaceAll, loadDemo } = useStore();
+  const { data, setTeamName, setLogo, replaceAll, loadDemo } = useStore();
   const [team, setTeam] = useState(data.teamName);
   const [backup, setBackup] = useState('');
 
   const run = (fn: () => Promise<void>) => fn().catch((e) => notify('Erreur', String(e?.message ?? e)));
+
+  const pickLogo = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.9 });
+    if (res.canceled || !res.assets?.length) return;
+    setLogo(persistFile(res.assets[0].uri));
+  };
 
   const importBackup = () => {
     try {
@@ -33,7 +46,14 @@ export default function Settings() {
     <Screen>
       <Section icon="shield-outline">Équipe</Section>
       <Card>
-        <Field label="Nom de l'équipe" value={team} onChangeText={setTeam} onEndEditing={() => setTeamName(team.trim() || 'Mon équipe')} onBlur={() => setTeamName(team.trim() || 'Mon équipe')} />
+        <Row style={{ gap: 14 }}>
+          <ClubLogo size={72} />
+          <View style={{ flex: 1, gap: 8 }}>
+            <Button small kind="secondary" icon="image-outline" title="Changer le logo" onPress={() => run(pickLogo)} />
+            {data.logoUri ? <Button small kind="ghost" title="Logo du club par défaut" onPress={() => setLogo(undefined)} /> : null}
+          </View>
+        </Row>
+        <Field label="Nom de l'équipe" value={team} onChangeText={setTeam} onEndEditing={() => setTeamName(team.trim() || DEFAULT_TEAM)} onBlur={() => setTeamName(team.trim() || DEFAULT_TEAM)} />
       </Card>
 
       <Section icon="clipboard-outline">Questionnaire d’après-match</Section>
@@ -74,13 +94,13 @@ export default function Settings() {
           title="Charger les données de démo"
           icon="sparkles-outline"
           kind="secondary"
-          onPress={() => confirm('Charger la démo ?', 'Les données actuelles seront remplacées.', () => { loadDemo(); setTeam('Équipe démo'); }, 'Charger')}
+          onPress={() => confirm('Charger la démo ?', 'Les données actuelles seront remplacées.', () => { loadDemo(); setTeam(buildDemoData().teamName); }, 'Charger')}
         />
         <Button
           title="Tout effacer"
           icon="trash-outline"
           kind="danger"
-          onPress={() => confirm('Tout effacer ?', 'Joueurs, matchs, questionnaires et blessures seront supprimés définitivement.', () => { replaceAll(emptyData()); setTeam('Mon équipe'); })}
+          onPress={() => confirm('Tout effacer ?', 'Joueurs, matchs, questionnaires et blessures seront supprimés définitivement.', () => { replaceAll(emptyData()); setTeam(DEFAULT_TEAM); })}
         />
       </Card>
     </Screen>

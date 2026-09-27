@@ -1,7 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Tabs } from 'expo-router';
-import { Platform, Pressable } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import type { ColorValue } from 'react-native';
+import { ClubLogo } from '@/components/ClubLogo';
 import { useTheme } from '@/components/theme';
 import type { IconName } from '@/components/ui';
 
@@ -36,7 +37,12 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Accueil',
-          headerTitle: 'Coach Suivi',
+          headerTitle: () => (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <ClubLogo size={34} ring={false} />
+              <Text style={{ color: t.text, fontWeight: '800', fontSize: 20 }}>Coach</Text>
+            </View>
+          ),
           tabBarIcon: icon('home-outline', 'home'),
           headerRight: () => (
             <Pressable onPress={() => router.push('/reglages')} hitSlop={10} style={{ marginRight: 16 }} accessibilityLabel="Réglages">

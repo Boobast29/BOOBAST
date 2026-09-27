@@ -69,7 +69,7 @@ illisibles) vont dans **Non classé**.
 
 ---
 
-## Autre projet du dépôt : Coach Suivi (appli iPhone / Android)
+## Autre projet du dépôt : QEA Coach (appli iPhone / Android du Quimper Ergué Armel FC)
 
 Le dossier [`coach-app/`](coach-app/README.md) contient une application mobile
 pour suivre les joueurs d'une équipe : questionnaires d'après-match, statistiques,

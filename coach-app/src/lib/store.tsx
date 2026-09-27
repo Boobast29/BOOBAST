@@ -8,7 +8,7 @@ const STORAGE_KEY = 'coach-suivi/data/v1';
 
 export const emptyData = (): AppData => ({
   version: 1,
-  teamName: 'Mon équipe',
+  teamName: 'Quimper Ergué Armel FC',
   players: [],
   matches: [],
   reports: [],
@@ -25,6 +25,7 @@ type Store = {
   data: AppData;
   ready: boolean;
   setTeamName: (name: string) => void;
+  setLogo: (uri: string | undefined) => void;
   savePlayer: (p: Upsert<Player>) => Player;
   deletePlayer: (id: string) => void;
   saveMatch: (m: Upsert<Match>) => Match;
@@ -152,6 +153,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       data,
       ready,
       setTeamName: (teamName) => setData((d) => ({ ...d, teamName })),
+      setLogo: (logoUri) => setData((d) => ({ ...d, logoUri })),
       savePlayer,
       deletePlayer,
       saveMatch,
@@ -174,7 +176,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       saveMedia,
       deleteMedia: (id) => setData((d) => ({ ...d, media: d.media.filter((m) => m.id !== id) })),
       replaceAll: (d) => setData({ ...emptyData(), ...d }),
-      loadDemo: () => setData(buildDemoData()),
+      loadDemo: () => setData((d) => ({ ...buildDemoData(), logoUri: d.logoUri })),
     }),
     [data, ready, saveMedia, savePlayer, deletePlayer, saveMatch, deleteMatch, saveReport, deleteReport, saveInjury, deleteInjury],
   );

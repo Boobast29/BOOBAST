@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { ClubLogo } from '@/components/ClubLogo';
 import { MediaStrip } from '@/components/Media';
 import { ScorePill } from '@/components/ScorePill';
 import { useTheme } from '@/components/theme';
@@ -38,7 +39,7 @@ export default function Dashboard() {
     return (
       <Screen>
         <LinearGradient colors={t.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 24, padding: 24, gap: 12 }}>
-          <IconCircle icon="football" tone="success" size={56} />
+          <ClubLogo size={84} />
           <Text style={{ color: t.heroText, fontSize: 26, fontWeight: '800' }}>Bienvenue coach 👋</Text>
           <Text style={{ color: t.heroMuted, fontSize: 15, lineHeight: 22 }}>
             Suivez vos joueurs après chaque match : ressenti, charge (RPE), statistiques, blessures et vidéos — tout au même endroit.
@@ -72,10 +73,11 @@ export default function Dashboard() {
     <Screen>
       {/* Bandeau équipe */}
       <LinearGradient colors={t.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 24, padding: 20, gap: 16 }}>
-        <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Row style={{ justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <ClubLogo size={60} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ color: t.heroMuted, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 }}>Saison en cours</Text>
-            <Text style={{ color: t.heroText, fontSize: 26, fontWeight: '800' }} numberOfLines={1}>
+            <Text style={{ color: t.heroText, fontSize: 21, fontWeight: '800' }} numberOfLines={2}>
               {data.teamName}
             </Text>
           </View>

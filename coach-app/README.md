@@ -1,4 +1,4 @@
-# Coach Suivi — appli iPhone & Android
+# QEA Coach — appli iPhone & Android du Quimper Ergué Armel FC
 
 Application mobile pour qu'un coach suive ses joueurs après chaque match :
 
@@ -61,7 +61,8 @@ npx eas-cli@latest submit --platform ios                        # envoi sur Test
 - **Statistiques suivies** (autre sport : rugby, hand, basket…) : `src/lib/constants.ts` → `STAT_FIELDS`
   (ajouter aussi la clé dans `StatKey` de `src/lib/types.ts`).
 - Postes, zones du corps, types de blessures, seuils d'alerte, modèles de questions (`QUESTION_TEMPLATES`) : `src/lib/constants.ts`.
-- Couleurs : `src/components/theme.ts`.
+- Couleurs (vert du club) : `src/components/theme.ts`.
+- Logo : `assets/club-logo.png` (icônes de l'appli dans `assets/`), ou directement dans l'appli : Réglages → Changer le logo.
 
 ## Organisation du code
 

@@ -9,7 +9,7 @@ import type { MediaItem } from '@/lib/types';
 import { shadow, useTheme } from './theme';
 
 const CATEGORY_GRADIENT: Record<MediaItem['category'], [string, string]> = {
-  Match: ['#0B3D2E', '#1FA971'],
+  Match: ['#0A4A1B', '#1FA971'],
   Entraînement: ['#1E3A8A', '#3B82F6'],
   Analyse: ['#4C1D95', '#8B5CF6'],
   Adversaire: ['#7F1D1D', '#EF4444'],
@@ -31,7 +31,7 @@ export function MediaCover({ m, height = 180, rounded = 16 }: { m: MediaItem; he
       <LinearGradient colors={['transparent', 'rgba(0,0,0,0.55)']} style={StyleSheet.absoluteFill} />
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <View style={{ width: height > 120 ? 58 : 38, height: height > 120 ? 58 : 38, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name={m.kind === 'video' ? 'play' : m.kind === 'photo' ? 'expand' : 'open-outline'} size={height > 120 ? 28 : 18} color="#0B3D2E" style={m.kind === 'video' ? { marginLeft: 3 } : undefined} />
+          <Ionicons name={m.kind === 'video' ? 'play' : m.kind === 'photo' ? 'expand' : 'open-outline'} size={height > 120 ? 28 : 18} color="#0A4A1B" style={m.kind === 'video' ? { marginLeft: 3 } : undefined} />
         </View>
       </View>
       <View style={{ position: 'absolute', top: 8, left: 8, flexDirection: 'row', gap: 6 }}>

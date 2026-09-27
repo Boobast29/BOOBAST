@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
+import { ClubLogo } from '@/components/ClubLogo';
 import { MediaStrip } from '@/components/Media';
 import { useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, Link, Progress, Row, Screen, Section, Txt } from '@/components/ui';
@@ -139,9 +140,13 @@ function Team({ name, us }: { name: string; us: boolean }) {
   const t = useTheme();
   return (
     <View style={{ flex: 1, alignItems: 'center', gap: 6 }}>
-      <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: us ? '#fff' : 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-        <Ionicons name={us ? 'shield' : 'shield-outline'} size={24} color={us ? '#12805C' : '#fff'} />
-      </View>
+      {us ? (
+        <ClubLogo size={56} />
+      ) : (
+        <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="shield-outline" size={26} color="#fff" />
+        </View>
+      )}
       <Text style={{ color: t.heroText, fontWeight: '700', textAlign: 'center', fontSize: 13 }} numberOfLines={2}>
         {name}
       </Text>

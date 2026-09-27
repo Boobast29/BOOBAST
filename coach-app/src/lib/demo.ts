@@ -166,5 +166,5 @@ export function buildDemoData(): AppData {
     },
   ];
 
-  return { version: 1, teamName: 'Équipe démo', players, matches, reports, injuries, questions, media };
+  return { version: 1, teamName: 'Quimper Ergué Armel FC', players, matches, reports, injuries, questions, media };
 }

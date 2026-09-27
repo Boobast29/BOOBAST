@@ -9,9 +9,9 @@ const light = {
   text: '#0F1B17',
   muted: '#6B7A74',
   border: '#E3E8E6',
-  primary: '#12805C',
+  primary: '#107B2D',
   primaryText: '#FFFFFF',
-  primarySoft: '#DDF3EA',
+  primarySoft: '#DCF2E1',
   accent: '#F5B400',
   accentSoft: '#FFF4CC',
   danger: '#DC3B2F',
@@ -24,7 +24,7 @@ const light = {
   violetSoft: '#EDE4FE',
   input: '#F4F7F6',
   /** Dégradé du bandeau d'accueil */
-  hero: ['#0B3D2E', '#12805C', '#1FA971'] as readonly [string, string, ...string[]],
+  hero: ['#0A4A1B', '#107B2D', '#1E9A45'] as readonly [string, string, ...string[]],
   heroText: '#FFFFFF',
   heroMuted: 'rgba(255,255,255,0.75)',
 };
@@ -37,9 +37,9 @@ const dark: typeof light = {
   text: '#EEF3F1',
   muted: '#8FA19A',
   border: '#24302B',
-  primary: '#34D399',
-  primaryText: '#04130D',
-  primarySoft: '#0F2E23',
+  primary: '#3DCB6B',
+  primaryText: '#04130A',
+  primarySoft: '#0E2E17',
   accent: '#FACC15',
   accentSoft: '#332A08',
   danger: '#F87171',
@@ -51,7 +51,7 @@ const dark: typeof light = {
   violet: '#A78BFA',
   violetSoft: '#241A40',
   input: '#1B2521',
-  hero: ['#06231A', '#0B5A40', '#12805C'],
+  hero: ['#062A10', '#0B5A22', '#107B2D'],
   heroText: '#FFFFFF',
   heroMuted: 'rgba(255,255,255,0.7)',
 };
@@ -67,14 +67,14 @@ export function shadow(t: Theme, level: 1 | 2 = 1): ViewStyle {
   if (t.dark) return {};
   if (Platform.OS === 'android') return { elevation: level * 2 };
   return {
-    shadowColor: '#0B3D2E',
+    shadowColor: '#0A4A1B',
     shadowOpacity: level === 1 ? 0.06 : 0.12,
     shadowRadius: level === 1 ? 10 : 18,
     shadowOffset: { width: 0, height: level === 1 ? 3 : 8 },
   };
 }
 
-const AVATAR_COLORS = ['#12805C', '#2563EB', '#7C3AED', '#DB2777', '#EA580C', '#0891B2', '#65A30D', '#CA8A04', '#DC2626', '#4F46E5'];
+const AVATAR_COLORS = ['#107B2D', '#2563EB', '#7C3AED', '#DB2777', '#EA580C', '#0891B2', '#65A30D', '#CA8A04', '#DC2626', '#4F46E5'];
 
 /** Couleur stable par joueur */
 export function colorFor(key: string) {

@@ -8,7 +8,7 @@ import type { MediaKind } from './types';
 export type PickedMedia = { kind: 'video' | 'photo'; uri: string; thumbnail?: string; duration?: number | null };
 
 /** Copie le fichier choisi dans le dossier de l'appli pour qu'il ne disparaisse pas du cache. */
-function persist(uri: string): string {
+export function persistFile(uri: string): string {
   if (Platform.OS === 'web') return uri;
   try {
     const dir = new Directory(Paths.document, 'medias');
@@ -27,7 +27,7 @@ async function thumbnailFor(uri: string): Promise<string | undefined> {
   if (Platform.OS === 'web') return undefined;
   try {
     const { uri: thumb } = await VideoThumbnails.getThumbnailAsync(uri, { time: 1000, quality: 0.6 });
-    return persist(thumb);
+    return persistFile(thumb);
   } catch {
     return undefined;
   }
@@ -37,7 +37,7 @@ async function handle(result: ImagePicker.ImagePickerResult): Promise<PickedMedi
   if (result.canceled || !result.assets?.length) return undefined;
   const a = result.assets[0];
   const kind = a.type === 'video' ? 'video' : 'photo';
-  const uri = persist(a.uri);
+  const uri = persistFile(a.uri);
   return { kind, uri, duration: a.duration, thumbnail: kind === 'video' ? await thumbnailFor(uri) : undefined };
 }
 
