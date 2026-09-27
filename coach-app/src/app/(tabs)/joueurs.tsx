@@ -3,6 +3,8 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { InjuryList } from '@/components/InjuryList';
+import { playerAttributes, tierFor } from '@/lib/rating';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Empty, Field, Row, Screen, Section, Toggle, Txt } from '@/components/ui';
 import { POSITIONS } from '@/lib/constants';
@@ -127,9 +129,9 @@ export default function Players() {
                         <Badge text="Archivé" />
                       ) : inj ? (
                         <Badge text={inj.status === 'active' ? 'Blessé' : 'Reprise'} tone={inj.status === 'active' ? 'danger' : 'warning'} icon="medkit" />
-                      ) : s.avgWellness != null ? (
-                        <FormGauge value={s.avgWellness} />
-                      ) : null}
+                      ) : (
+                        <OverallChip value={playerAttributes(data, p).overall} />
+                      )}
                     </Row>
                   </Card>
                 );
@@ -152,14 +154,13 @@ function Mini({ icon, value }: { icon: keyof typeof Ionicons.glyphMap; value: st
   );
 }
 
-/** Jauge de forme (moyenne bien-être /5). */
-function FormGauge({ value }: { value: number }) {
-  const t = useTheme();
-  const color = value < 2.5 ? t.danger : value < 3.5 ? t.warning : t.primary;
+/** Note globale de la carte joueur, aux couleurs de son niveau (bronze, argent, or, QEA). */
+function OverallChip({ value }: { value?: number }) {
+  const tier = tierFor(value);
   return (
-    <View style={{ alignItems: 'center', gap: 2 }}>
-      <Text style={{ color, fontWeight: '800', fontSize: 16 }}>{fmt(value)}</Text>
-      <Text style={{ color: t.muted, fontSize: 10, fontWeight: '600' }}>FORME</Text>
-    </View>
+    <LinearGradient colors={tier.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: 46, height: 52, borderRadius: 12, borderTopLeftRadius: 18, borderTopRightRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ color: tier.text, fontWeight: '900', fontSize: 18 }}>{value ?? '–'}</Text>
+      <Text style={{ color: tier.text, fontWeight: '800', fontSize: 8, opacity: 0.8 }}>{tier.name.toUpperCase()}</Text>
+    </LinearGradient>
   );
 }

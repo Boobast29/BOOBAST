@@ -1,5 +1,9 @@
 # QEA Coach — appli iPhone & Android du Quimper Ergué Armel FC
 
+> **Nouveau** : plusieurs équipes par club (Seniors A/B/C, U19→U11, Féminines, Vétérans), cloud Supabase
+> (chaque joueur sur son téléphone, données retrouvées après réinstallation, notifications push), carte joueur
+> façon « Ultimate Team » avec radar, météo du groupe. Activation du cloud : [docs/CLOUD.md](docs/CLOUD.md).
+
 Application mobile pour qu'un coach suive ses joueurs après chaque match :
 
 - **Effectif** : fiche joueur (numéro, poste, date de naissance, notes), archivage.
@@ -55,6 +59,14 @@ Application mobile pour qu'un coach suive ses joueurs après chaque match :
   (YouTube, Drive, Hudl, Veo, .mp4). Catégories (match, entraînement, analyse, adversaire, exercice),
   lien vers un match, **joueurs tagués**, notes/consignes, et **temps forts** horodatés (ex. 12:30 « pressing réussi »)
   : un appui fait sauter la vidéo au bon moment. Les vidéos apparaissent aussi dans la fiche joueur et le détail du match.
+- **Équipes du club** : Seniors A/B/C, jeunes, féminines… chaque équipe a ses joueurs, matchs, séances et suivi ;
+  choix de l'équipe à la connexion ; changement d'équipe depuis l'en-tête.
+- **Cloud (optionnel)** : code d'équipe + code joueur pour rejoindre depuis son téléphone, données retrouvées après
+  réinstallation, synchronisation hors connexion, coach adjoint, **notifications** (à remplir, compo/préparation publiées,
+  rappel à 18 h, douleur signalée au coach). Voir [docs/CLOUD.md](docs/CLOUD.md).
+- **Carte joueur** (bronze / argent / or / QEA) : note globale et 6 attributs calculés à partir du suivi — PER performance,
+  FOR forme, ENG engagement, ASS assiduité, PRO progression, MEN mental — avec radar ; **météo du groupe** (forme,
+  qualité des séances, assiduité) en jauges animées.
 - **Tableau de bord** : bilan de la saison (V/N/D, buts, forme sur 5 matchs), raccourcis, joueurs disponibles/blessés, progression des questionnaires du dernier match,
   **alertes** automatiques (douleur, bien-être bas, RPE élevé, pic de charge 7 j / 28 j, blessure), classements.
 - **Fiche joueur** : stats cumulées, moyennes, courbe de forme, historique des questionnaires et blessures.
@@ -125,6 +137,8 @@ src/
 ```bash
 npm run typecheck   # vérification TypeScript
 npm run lint        # ESLint
+npm test            # logique cloud (vues joueur, fusion des réponses)
+npm run test:sql    # schéma Supabase et droits d'accès sur un Postgres local
 ```
 
 ## Pistes pour la suite

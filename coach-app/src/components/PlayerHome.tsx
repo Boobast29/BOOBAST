@@ -11,6 +11,7 @@ import { daysBetween, fmt, formatDate, initials, matchLabel, playerName, reports
 import { ClubLogo } from './ClubLogo';
 import { PlayerFeedback } from './Feedback';
 import { MediaStrip } from './Media';
+import { PlayerCard } from './PlayerCard';
 import { useTheme } from './theme';
 import { Avatar, Badge, Button, Card, Empty, HeroStat, IconCircle, Progress, Row, Screen, Section, StatBox, Txt } from './ui';
 import type { IconName, Tone } from './ui';
@@ -75,6 +76,9 @@ export function PlayerHome({ playerId }: { playerId: string }) {
           <HeroStat value={s.minutes} label="Minutes" />
         </Row>
       </LinearGradient>
+
+      <Section icon="card-outline">Ma carte</Section>
+      <PlayerCard data={data} player={player} width={230} />
 
       {todoCount > 0 && (
         <>

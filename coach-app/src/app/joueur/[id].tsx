@@ -4,6 +4,9 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import { PlayerFeedback } from '@/components/Feedback';
 import { MediaStrip } from '@/components/Media';
+import { PlayerCard } from '@/components/PlayerCard';
+import { Radar } from '@/components/Radar';
+import { playerAttributes } from '@/lib/rating';
 import { useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, Link, Progress, Row, Screen, Section, StatBox, Txt } from '@/components/ui';
 import { INJURY_STATUS_LABEL, INJURY_STATUS_TONE, STAT_FIELDS, statsForPosition } from '@/lib/constants';
@@ -66,6 +69,14 @@ export default function PlayerDetail() {
           <HeroStat value={s.minutes} label="Minutes" />
         </Row>
       </LinearGradient>
+
+      <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
+        <PlayerCard data={data} player={player} width={220} />
+        <Radar attrs={playerAttributes(data, player).attrs} size={280} />
+        <Txt muted size={12}>
+          PER performance · FOR forme · ENG engagement · ASS assiduité · PRO progression · MEN mental — calculés à partir du suivi.
+        </Txt>
+      </Card>
 
       {player.notes ? (
         <Card>

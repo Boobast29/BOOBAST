@@ -6,6 +6,8 @@ import { Pressable, Text, View } from 'react-native';
 import { ClubLogo } from '@/components/ClubLogo';
 import { StrengthsWeaknesses } from '@/components/Feedback';
 import { MediaStrip } from '@/components/Media';
+import { Ring } from '@/components/Ring';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { PlayerHome } from '@/components/PlayerHome';
 import { ScorePill } from '@/components/ScorePill';
 import { useTheme } from '@/components/theme';
@@ -13,7 +15,21 @@ import { ActionTile, Avatar, HeroStat, Badge, Button, Card, Empty, IconCircle, L
 import type { IconName, Tone } from '@/components/ui';
 import { PREP_FIELDS } from '@/lib/constants';
 import { useStore } from '@/lib/store';
-import { avg, byDateDesc, computeAlerts, isoDaysAgo, fmt, formatDate, initials, playerName, seasonRecord, sessionPresent, summarizePlayer, today } from '@/lib/stats';
+import {
+  avg,
+  byDateDesc,
+  computeAlerts,
+  isoDaysAgo,
+  wellnessScore,
+  fmt,
+  formatDate,
+  initials,
+  playerName,
+  seasonRecord,
+  sessionPresent,
+  summarizePlayer,
+  today,
+} from '@/lib/stats';
 import type { AlertKind } from '@/lib/stats';
 
 const ALERT_ICON: Record<AlertKind, IconName> = {
@@ -45,6 +61,16 @@ function Dashboard() {
   const nextMatch = data.matches.filter((m) => m.scoreFor == null && m.date >= today()).sort((a, b) => a.date.localeCompare(b.date))[0];
   const since = isoDaysAgo(14);
   const recentFb = data.sessions.filter((x) => x.date >= since).flatMap((x) => Object.values(x.feedback ?? {}));
+  const recentSessions = data.sessions.filter((x) => x.date >= since && x.date <= today());
+  const recentMatchIds = new Set(data.matches.filter((m) => m.date >= since).map((m) => m.id));
+  const weather = {
+    form: avg(data.reports.filter((r) => recentMatchIds.has(r.matchId)).map(wellnessScore)),
+    quality: avg(recentFb.map((f) => f.quality)),
+    attendance: recentSessions.length
+      ? recentSessions.reduce((a, x) => a + sessionPresent(x) / Math.max(1, Object.values(x.attendance).filter((v) => v !== 'blesse').length), 0) /
+        recentSessions.length
+      : undefined,
+  };
   const lastSession = [...data.sessions].sort(byDateDesc).find((x) => x.date <= today()) ?? [...data.sessions].sort((a, b) => a.date.localeCompare(b.date))[0];
   const players = new Map(data.players.map((p) => [p.id, p]));
   const recentMedia = [...data.media].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
@@ -103,7 +129,10 @@ function Dashboard() {
               <Text style={{ color: t.heroMuted, fontSize: 11, fontWeight: '600' }}>FORME</Text>
               <Row style={{ gap: 4 }}>
                 {[...record.form].reverse().map((f) => (
-                  <View key={f.id} style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: formColor[f.tone], alignItems: 'center', justifyContent: 'center' }}>
+                  <View
+                    key={f.id}
+                    style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: formColor[f.tone], alignItems: 'center', justifyContent: 'center' }}
+                  >
                     <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{FORM_LETTER[f.tone]}</Text>
                   </View>
                 ))}
@@ -122,13 +151,49 @@ function Dashboard() {
             <Text style={{ color: t.heroText, fontWeight: '700' }}>
               <Ionicons name="people" size={14} color={t.heroText} /> {active.length - injured}/{active.length} disponibles
             </Text>
-            {injured > 0 && <Text style={{ color: t.heroMuted, fontWeight: '600' }}>{injured} blessé{injured > 1 ? 's' : ''}</Text>}
+            {injured > 0 && (
+              <Text style={{ color: t.heroMuted, fontWeight: '600' }}>
+                {injured} blessé{injured > 1 ? 's' : ''}
+              </Text>
+            )}
           </Row>
           <View style={{ height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.25)', overflow: 'hidden' }}>
-            <View style={{ height: 8, borderRadius: 4, backgroundColor: '#fff', width: `${active.length ? ((active.length - injured) / active.length) * 100 : 0}%` }} />
+            <View
+              style={{
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: '#fff',
+                width: `${active.length ? ((active.length - injured) / active.length) * 100 : 0}%`,
+              }}
+            />
           </View>
         </View>
       </LinearGradient>
+
+      {/* Météo du groupe */}
+      {(weather.form != null || weather.quality != null || weather.attendance != null) && (
+        <Animated.View entering={FadeInDown.delay(80).springify()}>
+          <Card>
+            <Row>
+              <Ionicons name="partly-sunny" size={18} color={t.accent} />
+              <Txt bold>Météo du groupe · 14 derniers jours</Txt>
+            </Row>
+            <Row style={{ justifyContent: 'space-around', alignItems: 'flex-start' }}>
+              <Ring
+                value={weather.form != null ? (weather.form - 1) / 4 : undefined}
+                display={weather.form != null ? fmt(weather.form) : '–'}
+                label="Forme /5"
+              />
+              <Ring
+                value={weather.quality != null ? weather.quality / 10 : undefined}
+                display={weather.quality != null ? fmt(weather.quality) : '–'}
+                label="Qualité séances /10"
+              />
+              <Ring value={weather.attendance} display={weather.attendance != null ? `${Math.round(weather.attendance * 100)}%` : '–'} label="Assiduité" />
+            </Row>
+          </Card>
+        </Animated.View>
+      )}
 
       {/* Actions rapides */}
       <Row style={{ gap: 10 }}>
@@ -163,7 +228,9 @@ function Dashboard() {
             </Row>
             <View style={{ gap: 6 }}>
               <Row style={{ justifyContent: 'space-between' }}>
-                <Txt muted size={13}>Questionnaires remplis</Txt>
+                <Txt muted size={13}>
+                  Questionnaires remplis
+                </Txt>
                 <Txt bold size={13}>
                   {lastMatchReports}/{active.length}
                 </Txt>
@@ -256,24 +323,32 @@ function Dashboard() {
           const p = players.get(a.playerId);
           const tone: Tone = a.level === 'high' ? 'danger' : 'warning';
           return (
-            <Card key={i} onPress={() => router.push(`/joueur/${a.playerId}`)} style={{ paddingVertical: 12 }}>
-              <Row>
-                <IconCircle icon={ALERT_ICON[a.kind]} tone={tone} />
-                <View style={{ flex: 1, gap: 2 }}>
-                  <Txt bold>{playerName(p)}</Txt>
-                  <Txt muted size={13}>
-                    {a.text}
-                  </Txt>
-                </View>
-                <Badge text={a.level === 'high' ? 'Prioritaire' : 'À surveiller'} tone={tone} />
-              </Row>
-            </Card>
+            <Animated.View key={i} entering={FadeInDown.delay(120 + i * 50).springify()}>
+              <Card onPress={() => router.push(`/joueur/${a.playerId}`)} style={{ paddingVertical: 12 }}>
+                <Row>
+                  <IconCircle icon={ALERT_ICON[a.kind]} tone={tone} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Txt bold>{playerName(p)}</Txt>
+                    <Txt muted size={13}>
+                      {a.text}
+                    </Txt>
+                  </View>
+                  <Badge text={a.level === 'high' ? 'Prioritaire' : 'À surveiller'} tone={tone} />
+                </Row>
+              </Card>
+            </Animated.View>
           );
         })
       )}
 
       {alerts.length > 5 && (
-        <Button small kind="ghost" icon={showAll ? 'chevron-up' : 'chevron-down'} title={showAll ? 'Réduire' : `Voir les ${alerts.length} alertes`} onPress={() => setShowAll((v) => !v)} />
+        <Button
+          small
+          kind="ghost"
+          icon={showAll ? 'chevron-up' : 'chevron-down'}
+          title={showAll ? 'Réduire' : `Voir les ${alerts.length} alertes`}
+          onPress={() => setShowAll((v) => !v)}
+        />
       )}
 
       {recentMedia.length > 0 && (
@@ -293,12 +368,13 @@ function Dashboard() {
         {top('assists').length > 0 && (
           <Leaderboard title="Passeurs" icon="git-branch" rows={top('assists').map((s) => [s.player.id, s.player, String(s.totals.assists)])} />
         )}
-        {topRated.length > 0 && <Leaderboard title="Note coach (moyenne)" icon="star" rows={topRated.map((s) => [s.player.id, s.player, fmt(s.avgCoachRating)])} />}
+        {topRated.length > 0 && (
+          <Leaderboard title="Note coach (moyenne)" icon="star" rows={topRated.map((s) => [s.player.id, s.player, fmt(s.avgCoachRating)])} />
+        )}
       </View>
     </Screen>
   );
 }
-
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 function Leaderboard({ title, icon, rows }: { title: string; icon: IconName; rows: [string, Parameters<typeof initials>[0], string][] }) {
