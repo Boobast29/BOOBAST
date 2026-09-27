@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { ClubLogo } from '@/components/ClubLogo';
 import { MediaStrip } from '@/components/Media';
+import { PlayerHome } from '@/components/PlayerHome';
 import { ScorePill } from '@/components/ScorePill';
 import { useTheme } from '@/components/theme';
 import { ActionTile, Avatar, HeroStat, Badge, Button, Card, Empty, IconCircle, Link, Progress, Row, Screen, Section, Txt } from '@/components/ui';
@@ -22,7 +23,13 @@ const ALERT_ICON: Record<AlertKind, IconName> = {
 };
 const FORM_LETTER = { win: 'V', draw: 'N', loss: 'D', none: '–' } as const;
 
-export default function Dashboard() {
+export default function Home() {
+  const { session } = useStore();
+  if (session?.role === 'player') return <PlayerHome playerId={session.playerId} />;
+  return <Dashboard />;
+}
+
+function Dashboard() {
   const t = useTheme();
   const { data, loadDemo } = useStore();
   const active = useMemo(() => data.players.filter((p) => !p.archived), [data.players]);
@@ -122,7 +129,7 @@ export default function Dashboard() {
           tone="info"
           onPress={() => (lastMatch ? router.push(`/match/${lastMatch.id}`) : router.push('/match/edit'))}
         />
-        <ActionTile icon="medkit" label="Blessure" tone="danger" onPress={() => router.push('/blessure/edit')} />
+        <ActionTile icon="grid" label="Compo" tone="accent" onPress={() => router.push('/compo')} />
         <ActionTile icon="videocam" label="Vidéo" tone="violet" onPress={() => router.push({ pathname: '/media/edit', params: { source: 'library' } })} />
       </Row>
 

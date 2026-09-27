@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { ClubLogo } from '@/components/ClubLogo';
 import { useState } from 'react';
 import { Button, Card, Field, Row, Screen, Section, Txt } from '@/components/ui';
+import { hashPin, PIN_LENGTH } from '@/lib/auth';
 import { confirm, notify } from '@/lib/confirm';
 import { injuriesCsv, reportsCsv, shareText } from '@/lib/export';
 import { buildDemoData } from '@/lib/demo';
@@ -15,7 +16,9 @@ import type { AppData } from '@/lib/types';
 const DEFAULT_TEAM = emptyData().teamName;
 
 export default function Settings() {
-  const { data, setTeamName, setLogo, replaceAll, loadDemo } = useStore();
+  const { data, setTeamName, setLogo, replaceAll, loadDemo, setCoachPin, logout } = useStore();
+  const [pin1, setPin1] = useState('');
+  const [pin2, setPin2] = useState('');
   const [team, setTeam] = useState(data.teamName);
   const [backup, setBackup] = useState('');
 
@@ -25,6 +28,15 @@ export default function Settings() {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.9 });
     if (res.canceled || !res.assets?.length) return;
     setLogo(persistFile(res.assets[0].uri));
+  };
+
+  const changePin = async () => {
+    if (!new RegExp(`^\\d{${PIN_LENGTH}}$`).test(pin1)) return notify('Code invalide', `Le code doit faire ${PIN_LENGTH} chiffres.`);
+    if (pin1 !== pin2) return notify('Les deux codes ne correspondent pas');
+    setCoachPin(await hashPin(pin1, 'coach'));
+    setPin1('');
+    setPin2('');
+    notify('Code coach modifié');
   };
 
   const importBackup = () => {
@@ -54,6 +66,27 @@ export default function Settings() {
           </View>
         </Row>
         <Field label="Nom de l'équipe" value={team} onChangeText={setTeam} onEndEditing={() => setTeamName(team.trim() || DEFAULT_TEAM)} onBlur={() => setTeamName(team.trim() || DEFAULT_TEAM)} />
+      </Card>
+
+      <Section icon="lock-closed-outline">Accès & sécurité</Section>
+      <Card>
+        <Txt muted size={13}>
+          Le coach voit tout. Les joueurs n’ont accès qu’à leur espace : leurs questionnaires, leurs stats, les compos publiées et les vidéos
+          partagées. Les codes joueurs se règlent dans la fiche de chaque joueur ({data.players.filter((p) => p.pinHash).length}/{data.players.length} avec code).
+        </Txt>
+        <Field label="Nouveau code coach" value={pin1} onChangeText={(v) => setPin1(v.replace(/\D/g, '').slice(0, PIN_LENGTH))} keyboardType="number-pad" secureTextEntry maxLength={PIN_LENGTH} placeholder="••••" />
+        <Field label="Confirmer le code" value={pin2} onChangeText={(v) => setPin2(v.replace(/\D/g, '').slice(0, PIN_LENGTH))} keyboardType="number-pad" secureTextEntry maxLength={PIN_LENGTH} placeholder="••••" />
+        <Button small kind="secondary" icon="key-outline" title="Changer le code coach" onPress={() => run(changePin)} disabled={pin1.length < PIN_LENGTH} />
+        <Button
+          small
+          kind="ghost"
+          icon="log-out-outline"
+          title="Se déconnecter / passer la main à un joueur"
+          onPress={() => {
+            logout();
+            router.replace('/connexion');
+          }}
+        />
       </Card>
 
       <Section icon="clipboard-outline">Questionnaire d’après-match</Section>

@@ -1,10 +1,11 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
+import { Locked } from '@/components/Locked';
 import { QuestionInput } from '@/components/QuestionInput';
 import { Avatar, Badge, Button, Card, Chips, Empty, Field, Progress, Row, Scale, Screen, Section, Stepper, Toggle, Txt } from '@/components/ui';
 import { confirm } from '@/lib/confirm';
-import { BODY_ZONES, STAT_FIELDS, WELLNESS_FIELDS } from '@/lib/constants';
+import { BODY_ZONES, STAT_FIELDS, statsForPosition, WELLNESS_FIELDS } from '@/lib/constants';
 import type { WellnessKey } from '@/lib/constants';
 import { useStore } from '@/lib/store';
 import { initials, matchLabel, playerName } from '@/lib/stats';
@@ -28,7 +29,8 @@ const rpeLabel = (v?: number) => {
 
 export default function Questionnaire() {
   const { matchId, playerId } = useLocalSearchParams<{ matchId: string; playerId: string }>();
-  const { data, saveReport, deleteReport } = useStore();
+  const { data, session, saveReport, deleteReport } = useStore();
+  const coach = session?.role === 'coach';
   const match = data.matches.find((m) => m.id === matchId);
   const player = data.players.find((p) => p.id === playerId);
   const existing = data.reports.find((r) => r.matchId === matchId && r.playerId === playerId);
@@ -48,7 +50,9 @@ export default function Questionnaire() {
   const [playerComment, setPlayerComment] = useState(existing?.playerComment ?? '');
   const [coachComment, setCoachComment] = useState(existing?.coachComment ?? '');
   const [answers, setAnswers] = useState<Record<string, Answer>>(existing?.answers ?? {});
+  const [allStats, setAllStats] = useState(false);
 
+  if (!coach && session?.playerId !== playerId) return <Locked text="Tu ne peux remplir que ton propre questionnaire." />;
   if (!match || !player) return <Empty text="Match ou joueur introuvable." />;
 
   const persist = () =>
@@ -71,15 +75,17 @@ export default function Questionnaire() {
       answers,
     });
 
+  // Stats du poste + stats déjà saisies hors poste
+  const posFields = statsForPosition(player.position);
+  const statFields = allStats ? STAT_FIELDS : STAT_FIELDS.filter((f) => posFields.includes(f) || (stats[f.key] ?? 0) > 0);
+
   // Questions actives + questions désactivées auxquelles ce joueur a déjà répondu
   const customQuestions = data.questions.filter((q) => q.active || answers[q.id] !== undefined);
 
   // Joueur suivant sans questionnaire pour ce match
   const done = new Set(data.reports.filter((r) => r.matchId === match.id).map((r) => r.playerId));
   const activeCount = data.players.filter((p) => !p.archived).length;
-  const next = data.players
-    .filter((p) => !p.archived && p.id !== player.id && !done.has(p.id))
-    .sort((a, b) => (a.number ?? 999) - (b.number ?? 999))[0];
+  const next = data.players.filter((p) => !p.archived && p.id !== player.id && !done.has(p.id)).sort((a, b) => (a.number ?? 999) - (b.number ?? 999))[0];
 
   return (
     <Screen>
@@ -97,12 +103,14 @@ export default function Questionnaire() {
           </View>
           {existing ? <Badge text="Rempli" tone="success" icon="checkmark" /> : null}
         </Row>
-        <View style={{ gap: 4 }}>
-          <Progress value={activeCount ? done.size / activeCount : 0} height={6} />
-          <Txt muted size={12}>
-            {done.size}/{activeCount} questionnaires remplis pour ce match
-          </Txt>
-        </View>
+        {coach && (
+          <View style={{ gap: 4 }}>
+            <Progress value={activeCount ? done.size / activeCount : 0} height={6} />
+            <Txt muted size={12}>
+              {done.size}/{activeCount} questionnaires remplis pour ce match
+            </Txt>
+          </View>
+        )}
       </Card>
 
       <Section icon="time-outline">Temps de jeu</Section>
@@ -115,9 +123,26 @@ export default function Questionnaire() {
         <>
           <Section icon="stats-chart-outline">Statistiques</Section>
           <Card>
-            {STAT_FIELDS.map((f) => (
-              <Stepper key={f.key} icon={f.icon} label={f.label} value={stats[f.key] ?? 0} onChange={(v) => setStats((s) => ({ ...s, [f.key]: v }))} max={f.key === 'redCards' ? 1 : f.key === 'yellowCards' ? 2 : 99} />
+            {player.position ? <Badge text={`Stats ${player.position.toLowerCase()}`} tone="success" icon="shirt-outline" /> : null}
+            {statFields.map((f) => (
+              <Stepper
+                key={f.key}
+                icon={f.icon}
+                label={f.label}
+                value={stats[f.key] ?? 0}
+                onChange={(v) => setStats((s) => ({ ...s, [f.key]: v }))}
+                max={f.max ?? 99}
+              />
             ))}
+            {statFields.length < STAT_FIELDS.length && (
+              <Button
+                small
+                kind="ghost"
+                icon={allStats ? 'chevron-up' : 'chevron-down'}
+                title={allStats ? 'Stats du poste uniquement' : 'Toutes les stats'}
+                onPress={() => setAllStats((v) => !v)}
+              />
+            )}
           </Card>
         </>
       )}
@@ -126,20 +151,35 @@ export default function Questionnaire() {
       <Card>
         <Scale
           label="Effort perçu (RPE)"
-          hint={rpe != null ? `${rpeLabel(rpe)} — charge = ${rpe * minutes} UA` : "Dureté de la séance/du match, 0 = repos · 10 = maximal"}
+          hint={rpe != null ? `${rpeLabel(rpe)} — charge = ${rpe * minutes} UA` : 'Dureté de la séance/du match, 0 = repos · 10 = maximal'}
           value={rpe}
           onChange={setRpe}
           min={0}
           max={10}
           invertColors
         />
-        <Scale label="Auto-évaluation de sa performance" hint="1 = très mauvais match · 10 = match parfait" value={selfRating} onChange={setSelfRating} min={1} max={10} />
+        <Scale
+          label="Auto-évaluation de sa performance"
+          hint="1 = très mauvais match · 10 = match parfait"
+          value={selfRating}
+          onChange={setSelfRating}
+          min={1}
+          max={10}
+        />
       </Card>
 
       <Section icon="heart-outline">Bien-être</Section>
       <Card>
         {WELLNESS_FIELDS.map((f) => (
-          <Scale key={f.key} label={f.label} hint={f.hint} value={wellness[f.key]} onChange={(v) => setWellness((w) => ({ ...w, [f.key]: v }))} min={1} max={5} />
+          <Scale
+            key={f.key}
+            label={f.label}
+            hint={f.hint}
+            value={wellness[f.key]}
+            onChange={(v) => setWellness((w) => ({ ...w, [f.key]: v }))}
+            min={1}
+            max={5}
+          />
         ))}
       </Card>
 
@@ -149,18 +189,38 @@ export default function Questionnaire() {
         {pain && (
           <View style={{ gap: 12 }}>
             <Chips label="Zone" options={BODY_ZONES} value={painZone} onChange={setPainZone} allowEmpty />
-            <Scale label="Intensité de la douleur" hint="0 = aucune · 10 = insupportable" value={painLevel} onChange={setPainLevel} min={0} max={10} invertColors />
-            <Button
-              title="Déclarer une blessure"
-              kind="secondary"
-              onPress={() => {
-                persist();
-                router.push({ pathname: '/blessure/edit', params: { playerId: player.id, matchId: match.id, zone: painZone ?? '' } });
-              }}
+            <Scale
+              label="Intensité de la douleur"
+              hint="0 = aucune · 10 = insupportable"
+              value={painLevel}
+              onChange={setPainLevel}
+              min={0}
+              max={10}
+              invertColors
             />
+            {coach ? (
+              <Button
+                title="Déclarer une blessure"
+                kind="secondary"
+                onPress={() => {
+                  persist();
+                  router.push({ pathname: '/blessure/edit', params: { playerId: player.id, matchId: match.id, zone: painZone ?? '' } });
+                }}
+              />
+            ) : (
+              <Txt muted size={13}>
+                Le coach sera prévenu de ta douleur dès l’enregistrement.
+              </Txt>
+            )}
           </View>
         )}
-        <Field label="Commentaire du joueur" value={playerComment} onChangeText={setPlayerComment} multiline placeholder="Ce qu'il a ressenti, ce qui a marché ou pas…" />
+        <Field
+          label="Commentaire du joueur"
+          value={playerComment}
+          onChangeText={setPlayerComment}
+          multiline
+          placeholder="Ce qu'il a ressenti, ce qui a marché ou pas…"
+        />
       </Card>
 
       {customQuestions.length > 0 && (
@@ -186,11 +246,15 @@ export default function Questionnaire() {
         </>
       )}
 
-      <Section icon="star-outline">Évaluation du coach</Section>
-      <Card>
-        <Scale label="Note du coach" value={coachRating} onChange={setCoachRating} min={1} max={10} />
-        <Field label="Commentaire du coach" value={coachComment} onChangeText={setCoachComment} multiline placeholder="Points forts, axes de progrès…" />
-      </Card>
+      {coach && (
+        <>
+          <Section icon="star-outline">Évaluation du coach</Section>
+          <Card>
+            <Scale label="Note du coach" value={coachRating} onChange={setCoachRating} min={1} max={10} />
+            <Field label="Commentaire du coach" value={coachComment} onChangeText={setCoachComment} multiline placeholder="Points forts, axes de progrès…" />
+          </Card>
+        </>
+      )}
 
       <Button
         title="Enregistrer"
@@ -200,7 +264,7 @@ export default function Questionnaire() {
           router.back();
         }}
       />
-      {next && (
+      {coach && next && (
         <Button
           title={`Suivant : ${playerName(next)}`}
           icon="arrow-forward"
@@ -211,7 +275,7 @@ export default function Questionnaire() {
           }}
         />
       )}
-      {existing && (
+      {coach && existing && (
         <Button
           title="Supprimer ce questionnaire"
           icon="trash-outline"

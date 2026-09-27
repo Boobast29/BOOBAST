@@ -10,6 +10,8 @@ import { MediaCover } from '@/components/Media';
 import { useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Chips, Empty, Field, HeaderButton, Row, Screen, Section, Title, Txt } from '@/components/ui';
 import { confirm, notify } from '@/lib/confirm';
+import { Locked } from '@/components/Locked';
+import { canSeeMedia } from '@/lib/access';
 import { formatTime, parseTime, youtubeId } from '@/lib/media';
 import { newId, useStore } from '@/lib/store';
 import { formatDate, matchLabel, playerName } from '@/lib/stats';
@@ -24,7 +26,8 @@ function playFrom(player: VideoPlayer, seconds: number) {
 export default function MediaViewer() {
   const t = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, saveMedia } = useStore();
+  const { data, session, saveMedia } = useStore();
+  const coach = session?.role === 'coach';
   const m = data.media.find((x) => x.id === id);
   const player = useVideoPlayer(m?.kind === 'video' ? m.uri : null);
 
@@ -34,6 +37,7 @@ export default function MediaViewer() {
   const [markerPlayer, setMarkerPlayer] = useState<string>();
 
   if (!m) return <Empty text="Média introuvable." />;
+  if (!canSeeMedia(session, m)) return <Locked text="Cette vidéo n’est pas partagée avec toi." />;
 
   const players = new Map(data.players.map((p) => [p.id, p]));
   const match = data.matches.find((x) => x.id === m.matchId);
@@ -86,7 +90,7 @@ export default function MediaViewer() {
       <Stack.Screen
         options={{
           title: m.category,
-          headerRight: () => <HeaderButton icon="create-outline" label="Modifier" onPress={() => router.push({ pathname: '/media/edit', params: { id: m.id } })} />,
+          headerRight: !coach ? undefined : () => <HeaderButton icon="create-outline" label="Modifier" onPress={() => router.push({ pathname: '/media/edit', params: { id: m.id } })} />,
         }}
       />
 
@@ -104,7 +108,7 @@ export default function MediaViewer() {
       {m.kind === 'link' && <Button title="Ouvrir la vidéo" icon="open-outline" onPress={() => open()} />}
 
       {match && (
-        <Card onPress={() => router.push(`/match/${match.id}`)}>
+        <Card onPress={coach ? () => router.push(`/match/${match.id}`) : undefined}>
           <Row>
             <Ionicons name="football" size={20} color={t.primary} />
             <Txt bold>{matchLabel(match)}</Txt>
@@ -126,7 +130,7 @@ export default function MediaViewer() {
 
       {m.kind !== 'photo' && (
         <>
-          <Section icon="flag-outline" action={!adding ? <Button small kind="ghost" icon="add" title="Temps fort" onPress={startAdding} /> : undefined}>
+          <Section icon="flag-outline" action={coach && !adding ? <Button small kind="ghost" icon="add" title="Temps fort" onPress={startAdding} /> : undefined}>
             Temps forts ({markers.length})
           </Section>
           {adding && (
@@ -146,7 +150,7 @@ export default function MediaViewer() {
               </Row>
             </Card>
           )}
-          {markers.length === 0 && !adding && (
+          {coach && markers.length === 0 && !adding && (
             <Txt muted size={14}>
               Repérez les actions clés (buts, erreurs, bons placements) pour y revenir en un appui pendant la séance vidéo.
             </Txt>
@@ -163,16 +167,20 @@ export default function MediaViewer() {
                   <Txt bold>{k.label}</Txt>
                   {k.playerId && players.has(k.playerId) ? <Txt muted size={13}>{playerName(players.get(k.playerId))}</Txt> : null}
                 </View>
-                <Pressable onPress={() => removeMarker(k.id)} hitSlop={10} accessibilityLabel="Supprimer le temps fort">
-                  <Ionicons name="close-circle-outline" size={22} color={t.muted} />
-                </Pressable>
+                {coach ? (
+                  <Pressable onPress={() => removeMarker(k.id)} hitSlop={10} accessibilityLabel="Supprimer le temps fort">
+                    <Ionicons name="close-circle-outline" size={22} color={t.muted} />
+                  </Pressable>
+                ) : (
+                  <Ionicons name="play-circle" size={24} color={t.primary} />
+                )}
               </Row>
             </Card>
           ))}
         </>
       )}
 
-      {m.playerIds.length > 0 && (
+      {coach && m.playerIds.length > 0 && (
         <>
           <Section icon="people-outline">Joueurs concernés</Section>
           <Card>
@@ -202,9 +210,11 @@ export default function MediaViewer() {
         <View style={{ flex: 1 }}>
           <Button kind="secondary" icon="share-outline" title="Partager" onPress={share} />
         </View>
-        <View style={{ flex: 1 }}>
-          <Button kind="secondary" icon="create-outline" title="Modifier" onPress={() => router.push({ pathname: '/media/edit', params: { id: m.id } })} />
-        </View>
+        {coach && (
+          <View style={{ flex: 1 }}>
+            <Button kind="secondary" icon="create-outline" title="Modifier" onPress={() => router.push({ pathname: '/media/edit', params: { id: m.id } })} />
+          </View>
+        )}
       </Row>
     </Screen>
   );

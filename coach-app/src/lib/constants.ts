@@ -1,19 +1,38 @@
 import type { IconName } from '../components/ui';
 import type { CustomQuestion, InjuryStatus, MediaCategory, QuestionType, StatKey } from './types';
 
-/** Statistiques saisies après chaque match. Modifier cette liste pour l'adapter au sport. */
-export const STAT_FIELDS: { key: StatKey; label: string; short: string; icon: IconName }[] = [
-  { key: 'goals', label: 'Buts', short: 'B', icon: 'football-outline' },
-  { key: 'assists', label: 'Passes décisives', short: 'PD', icon: 'git-branch-outline' },
-  { key: 'shots', label: 'Tirs', short: 'T', icon: 'locate-outline' },
-  { key: 'shotsOnTarget', label: 'Tirs cadrés', short: 'TC', icon: 'radio-button-on-outline' },
-  { key: 'tackles', label: 'Tacles / récupérations', short: 'Réc', icon: 'shield-half-outline' },
-  { key: 'saves', label: 'Arrêts (gardien)', short: 'Arr', icon: 'hand-left-outline' },
-  { key: 'yellowCards', label: 'Cartons jaunes', short: 'CJ', icon: 'square' },
-  { key: 'redCards', label: 'Cartons rouges', short: 'CR', icon: 'square' },
+export const POSITIONS = ['Gardien', 'Défenseur', 'Milieu', 'Attaquant'];
+type Position = 'Gardien' | 'Défenseur' | 'Milieu' | 'Attaquant';
+
+const FIELD: Position[] = ['Défenseur', 'Milieu', 'Attaquant'];
+
+/**
+ * Statistiques saisies après chaque match. `positions` = postes pour lesquels la stat est proposée
+ * (absent = tous les postes). Modifier cette liste pour l'adapter au sport.
+ */
+export const STAT_FIELDS: { key: StatKey; label: string; short: string; icon: IconName; positions?: Position[]; max?: number }[] = [
+  { key: 'goals', label: 'Buts', short: 'B', icon: 'football-outline', positions: FIELD },
+  { key: 'assists', label: 'Passes décisives', short: 'PD', icon: 'git-branch-outline', positions: FIELD },
+  { key: 'shots', label: 'Tirs', short: 'T', icon: 'locate-outline', positions: FIELD },
+  { key: 'shotsOnTarget', label: 'Tirs cadrés', short: 'TC', icon: 'radio-button-on-outline', positions: ['Milieu', 'Attaquant'] },
+  { key: 'keyPasses', label: 'Passes clés', short: 'PC', icon: 'key-outline', positions: ['Milieu', 'Attaquant'] },
+  { key: 'dribbles', label: 'Dribbles réussis', short: 'Dr', icon: 'flash-outline', positions: ['Milieu', 'Attaquant'] },
+  { key: 'offsides', label: 'Hors-jeu', short: 'HJ', icon: 'flag-outline', positions: ['Attaquant'] },
+  { key: 'tackles', label: 'Tacles / récupérations', short: 'Réc', icon: 'shield-half-outline', positions: ['Défenseur', 'Milieu'] },
+  { key: 'interceptions', label: 'Interceptions', short: 'Int', icon: 'hand-right-outline', positions: ['Défenseur', 'Milieu'] },
+  { key: 'duelsWon', label: 'Duels gagnés', short: 'Duel', icon: 'barbell-outline', positions: FIELD },
+  { key: 'clearances', label: 'Dégagements', short: 'Dég', icon: 'arrow-up-circle-outline', positions: ['Défenseur'] },
+  { key: 'saves', label: 'Arrêts', short: 'Arr', icon: 'hand-left-outline', positions: ['Gardien'] },
+  { key: 'goalsConceded', label: 'Buts encaissés', short: 'BE', icon: 'alert-circle-outline', positions: ['Gardien'] },
+  { key: 'highClaims', label: 'Sorties aériennes', short: 'Sort', icon: 'arrow-up-outline', positions: ['Gardien'] },
+  { key: 'penaltiesSaved', label: 'Penaltys arrêtés', short: 'PA', icon: 'shield-checkmark-outline', positions: ['Gardien'] },
+  { key: 'yellowCards', label: 'Cartons jaunes', short: 'CJ', icon: 'square', max: 2 },
+  { key: 'redCards', label: 'Cartons rouges', short: 'CR', icon: 'square', max: 1 },
 ];
 
-export const POSITIONS = ['Gardien', 'Défenseur', 'Milieu', 'Attaquant'];
+/** Stats proposées pour un poste (toutes si le poste n'est pas renseigné). */
+export const statsForPosition = (position?: string) =>
+  POSITIONS.includes(position ?? '') ? STAT_FIELDS.filter((f) => !f.positions || f.positions.includes(position as Position)) : STAT_FIELDS;
 
 export const BODY_ZONES = [
   'Tête',

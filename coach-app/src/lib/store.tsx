@@ -2,9 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { buildDemoData } from './demo';
-import type { AppData, CustomQuestion, Injury, Match, MediaItem, Player, PostMatchReport } from './types';
+import type { AppData, CustomQuestion, Injury, Lineup, Match, MediaItem, Player, PostMatchReport, Session } from './types';
 
 const STORAGE_KEY = 'coach-suivi/data/v1';
+const SESSION_KEY = 'coach-suivi/session/v1';
 
 export const emptyData = (): AppData => ({
   version: 1,
@@ -15,6 +16,7 @@ export const emptyData = (): AppData => ({
   injuries: [],
   questions: [],
   media: [],
+  lineups: [],
 });
 
 export const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -24,6 +26,12 @@ type Upsert<T> = Omit<T, 'id' | 'createdAt'> & Partial<Pick<T & { id: string; cr
 type Store = {
   data: AppData;
   ready: boolean;
+  session: Session | null;
+  login: (s: Session) => void;
+  logout: () => void;
+  setCoachPin: (hash: string | undefined) => void;
+  saveLineup: (l: Omit<Lineup, 'updatedAt'>) => void;
+  deleteLineup: (matchId: string) => void;
   setTeamName: (name: string) => void;
   setLogo: (uri: string | undefined) => void;
   savePlayer: (p: Upsert<Player>) => Player;
@@ -56,13 +64,15 @@ function upsert<T extends { id: string }>(list: T[], item: T): T[] {
 export function DataProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(emptyData);
   const [ready, setReady] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
   const loaded = useRef(false);
   const dataRef = useRef(data);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => {
+    Promise.all([AsyncStorage.getItem(STORAGE_KEY), AsyncStorage.getItem(SESSION_KEY)])
+      .then(([raw, rawSession]) => {
         if (raw) setData({ ...emptyData(), ...JSON.parse(raw) });
+        if (rawSession) setSession(JSON.parse(rawSession));
       })
       .catch((e) => console.warn('Lecture des données impossible', e))
       .finally(() => {
@@ -94,6 +104,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       reports: d.reports.filter((r) => r.playerId !== id),
       injuries: d.injuries.filter((i) => i.playerId !== id),
       media: d.media.map((m) => ({ ...m, playerIds: m.playerIds.filter((p) => p !== id) })),
+      lineups: d.lineups.map((l) => ({
+        ...l,
+        slots: l.slots.map((s) => (s === id ? null : s)),
+        bench: l.bench.filter((b) => b !== id),
+        captainId: l.captainId === id ? undefined : l.captainId,
+      })),
     }));
   }, []);
 
@@ -110,6 +126,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       reports: d.reports.filter((r) => r.matchId !== id),
       injuries: d.injuries.map((i) => (i.matchId === id ? { ...i, matchId: undefined } : i)),
       media: d.media.map((m) => (m.matchId === id ? { ...m, matchId: undefined } : m)),
+      lineups: d.lineups.filter((l) => l.matchId !== id),
     }));
   }, []);
 
@@ -148,10 +165,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return item;
   }, []);
 
+  const persistSession = useCallback((s: Session | null) => {
+    setSession(s);
+    (s ? AsyncStorage.setItem(SESSION_KEY, JSON.stringify(s)) : AsyncStorage.removeItem(SESSION_KEY)).catch(() => {});
+  }, []);
+
   const value = useMemo<Store>(
     () => ({
       data,
       ready,
+      session,
+      login: persistSession,
+      logout: () => persistSession(null),
+      setCoachPin: (coachPinHash) => setData((d) => ({ ...d, coachPinHash })),
+      saveLineup: (l) =>
+        setData((d) => ({
+          ...d,
+          lineups: [...d.lineups.filter((x) => x.matchId !== l.matchId), { ...l, updatedAt: now() }],
+        })),
+      deleteLineup: (matchId) => setData((d) => ({ ...d, lineups: d.lineups.filter((x) => x.matchId !== matchId) })),
       setTeamName: (teamName) => setData((d) => ({ ...d, teamName })),
       setLogo: (logoUri) => setData((d) => ({ ...d, logoUri })),
       savePlayer,
@@ -175,10 +207,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }),
       saveMedia,
       deleteMedia: (id) => setData((d) => ({ ...d, media: d.media.filter((m) => m.id !== id) })),
-      replaceAll: (d) => setData({ ...emptyData(), ...d }),
-      loadDemo: () => setData((d) => ({ ...buildDemoData(), logoUri: d.logoUri })),
+      replaceAll: (d) => setData((cur) => ({ ...emptyData(), ...d, coachPinHash: d.coachPinHash ?? cur.coachPinHash })),
+      loadDemo: () => setData((d) => ({ ...buildDemoData(), logoUri: d.logoUri, coachPinHash: d.coachPinHash })),
     }),
-    [data, ready, saveMedia, savePlayer, deletePlayer, saveMatch, deleteMatch, saveReport, deleteReport, saveInjury, deleteInjury],
+    [data, ready, session, persistSession, saveMedia, savePlayer, deletePlayer, saveMatch, deleteMatch, saveReport, deleteReport, saveInjury, deleteInjury],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

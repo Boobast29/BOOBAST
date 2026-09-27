@@ -5,7 +5,7 @@ import { Text, View } from 'react-native';
 import { MediaStrip } from '@/components/Media';
 import { useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, Link, Row, Screen, Section, StatBox, Txt } from '@/components/ui';
-import { INJURY_STATUS_LABEL, INJURY_STATUS_TONE, STAT_FIELDS } from '@/lib/constants';
+import { INJURY_STATUS_LABEL, INJURY_STATUS_TONE, STAT_FIELDS, statsForPosition } from '@/lib/constants';
 import { useStore } from '@/lib/store';
 import { byDateDesc, fmt, formatAnswer, formatDate, initials, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, wellnessScore } from '@/lib/stats';
 
@@ -84,7 +84,7 @@ export default function PlayerDetail() {
 
       <Section icon="stats-chart-outline">Statistiques cumulées</Section>
       <Card>
-        {STAT_FIELDS.map((f) => (
+        {STAT_FIELDS.filter((f) => statsForPosition(player.position).includes(f) || s.totals[f.key] > 0).map((f) => (
           <Row key={f.key} style={{ justifyContent: 'space-between' }}>
             <Txt>{f.label}</Txt>
             <Txt bold>{s.totals[f.key]}</Txt>

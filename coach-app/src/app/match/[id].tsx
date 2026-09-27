@@ -5,7 +5,7 @@ import { Text, View } from 'react-native';
 import { ClubLogo } from '@/components/ClubLogo';
 import { MediaStrip } from '@/components/Media';
 import { useTheme } from '@/components/theme';
-import { Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, Link, Progress, Row, Screen, Section, Txt } from '@/components/ui';
+import { Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, IconCircle, Link, Progress, Row, Screen, Section, Txt } from '@/components/ui';
 import { STAT_FIELDS } from '@/lib/constants';
 import { useStore } from '@/lib/store';
 import { activeInjury, avg, fmt, formatDate, initials, matchResult, playerName, sessionLoad, wellnessScore } from '@/lib/stats';
@@ -75,6 +75,26 @@ export default function MatchDetail() {
           </Row>
         </Card>
       ) : null}
+
+      {(() => {
+        const l = data.lineups.find((x) => x.matchId === match.id);
+        const placed = l ? l.slots.filter(Boolean).length : 0;
+        return (
+          <Card onPress={() => router.push({ pathname: '/compo', params: { matchId: match.id } })}>
+            <Row style={{ gap: 12 }}>
+              <IconCircle icon="grid" tone="accent" />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Txt bold>Composition</Txt>
+                <Txt muted size={13}>
+                  {l ? `${l.formation} · ${placed}/${l.slots.length} titulaires · ${l.bench.length} remplaçants` : 'Pas encore préparée'}
+                </Txt>
+              </View>
+              {l?.published ? <Badge text="Publiée" tone="success" icon="eye" /> : null}
+              <Ionicons name="chevron-forward" size={20} color={t.muted} />
+            </Row>
+          </Card>
+        );
+      })()}
 
       <Section icon="play-circle-outline" action={<Link title="+ Ajouter" onPress={() => router.push({ pathname: '/media/edit', params: { source: 'library', matchId: match.id } })} />}>
         Vidéos du match ({media.length})

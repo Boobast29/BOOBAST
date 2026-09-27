@@ -1,7 +1,8 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { MediaCover } from '@/components/Media';
-import { Button, Card, Chips, Empty, Field, MultiChips, Row, Screen, Section } from '@/components/ui';
+import { Locked } from '@/components/Locked';
+import { Button, Card, Chips, Empty, Field, MultiChips, Row, Screen, Section, Toggle, Txt } from '@/components/ui';
 import { confirm, notify } from '@/lib/confirm';
 import { MEDIA_CATEGORIES } from '@/lib/constants';
 import { deleteMediaFile, isDirectVideo, linkThumbnail, pickFromLibrary, recordWithCamera } from '@/lib/media';
@@ -13,7 +14,7 @@ import { View } from 'react-native';
 
 export default function EditMedia() {
   const params = useLocalSearchParams<{ id?: string; source?: 'library' | 'camera' | 'link'; matchId?: string; playerId?: string }>();
-  const { data, saveMedia, deleteMedia } = useStore();
+  const { data, session, saveMedia, deleteMedia } = useStore();
   const existing = data.media.find((m) => m.id === params.id);
   const initialMatch = data.matches.find((m) => m.id === params.matchId);
 
@@ -26,6 +27,7 @@ export default function EditMedia() {
   const [matchId, setMatchId] = useState(existing?.matchId ?? params.matchId);
   const [playerIds, setPlayerIds] = useState<string[]>(existing?.playerIds ?? (params.playerId ? [params.playerId] : []));
   const [notes, setNotes] = useState(existing?.notes ?? '');
+  const [shared, setShared] = useState(existing?.shared ?? category === 'Exercice');
 
   const apply = (p?: PickedMedia) => {
     if (!p) return;
@@ -39,7 +41,7 @@ export default function EditMedia() {
   // Ouvre directement la galerie / la caméra à l'arrivée sur l'écran
   const launched = useRef(false);
   useEffect(() => {
-    if (existing || launched.current) return;
+    if (existing || launched.current || session?.role !== 'coach') return;
     launched.current = true;
     if (params.source === 'library' || params.source === 'camera') pick(params.source);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -66,11 +68,14 @@ export default function EditMedia() {
       matchId,
       playerIds,
       notes: notes.trim() || undefined,
+      shared,
       markers: existing?.markers ?? [],
     });
     if (existing) router.back();
     else router.replace(`/media/${item.id}`);
   };
+
+  if (session?.role !== 'coach') return <Locked />;
 
   const preview: MediaItem | undefined = uri
     ? { id: 'apercu', kind: kind ?? 'video', uri, thumbnail: kind === 'link' ? linkThumbnail(uri) : thumbnail, title, category, date, playerIds, markers: existing?.markers ?? [], createdAt: '' }
@@ -160,6 +165,10 @@ export default function EditMedia() {
 
       <Card>
         <Field label="Notes / consignes" value={notes} onChangeText={setNotes} multiline placeholder="Ce qu’il faut regarder, les points à corriger…" />
+        <Toggle label="Visible par tous les joueurs" icon="eye-outline" value={shared} onChange={setShared} />
+        <Txt muted size={12}>
+          {shared ? 'Tous les joueurs verront cette vidéo dans leur espace.' : 'Seuls les joueurs tagués la verront.'}
+        </Txt>
       </Card>
 
       <Button title="Enregistrer" icon="checkmark" onPress={save} />

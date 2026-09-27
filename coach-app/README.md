@@ -15,6 +15,16 @@ Application mobile pour qu'un coach suive ses joueurs après chaque match :
     choix multiples, nombre, texte libre) : Réglages → Gérer les questions. ~20 modèles prêts
     à l'emploi (vécu du match, temps de jeu, consignes, points forts / à travailler, message au coach…) ;
   - bouton « Enregistrer et passer au joueur suivant » pour enchaîner tout l'effectif.
+- **Accès coach / joueurs** : au lancement, « Je suis le coach » (code à 4 chiffres, accès complet) ou « Je suis joueur ».
+  Un joueur (avec un code perso optionnel, réglé dans sa fiche) ne voit que **son** espace : ses questionnaires à remplir
+  (sans la partie évaluation du coach), ses stats, les compos publiées et les vidéos partagées ou où il est tagué.
+  Pas d'accès aux autres joueurs, aux notes du coach, aux blessures des autres ni aux réglages.
+- **Stats selon le poste** : gardien (arrêts, buts encaissés, sorties aériennes, penaltys arrêtés), défenseur
+  (tacles, interceptions, duels, dégagements), milieu (passes clés, dribbles, récupérations…), attaquant (buts, tirs, hors-jeu…).
+- **Compo** : terrain interactif avec 7 formations (4-4-2, 4-3-3, 4-2-3-1, 4-1-4-1, 3-5-2, 3-4-3, 5-3-2).
+  Touchez un poste pour placer un joueur (suggestions du bon poste d'abord), touchez deux joueurs pour les échanger,
+  capitaine, banc (7 remplaçants), non convoqués, **compo auto** (note, forme, blessures), alertes (blessé, douleur,
+  joueur hors poste), consignes tactiques, publication aux joueurs et **partage en image** (WhatsApp…).
 - **Blessures** : zone, côté, type, gravité, statut (indisponible / en reprise / guérie), retour prévu, traitement.
 - **Vidéos** : vidéothèque de l'équipe — importer depuis la galerie, **filmer** directement, ou coller un lien
   (YouTube, Drive, Hudl, Veo, .mp4). Catégories (match, entraînement, analyse, adversaire, exercice),
@@ -69,7 +79,8 @@ npx eas-cli@latest submit --platform ios                        # envoi sur Test
 ```
 src/
   app/                  écrans (Expo Router : chaque fichier = un écran)
-    (tabs)/             onglets Accueil, Joueurs, Matchs, Vidéos, Blessures
+    connexion.tsx       choix coach / joueur + codes
+    (tabs)/             onglets Accueil, Joueurs, Matchs, Compo, Vidéos, Blessés (joueur : Moi, Compo, Vidéos)
     reglages.tsx        réglages (icône ⚙️ de l'accueil)
     media/[id].tsx      lecteur vidéo + temps forts   media/edit.tsx   ajout/modif d'un média
     questions/          questions perso du questionnaire
@@ -93,3 +104,11 @@ npm run lint        # ESLint
 - Synchronisation en ligne (ex. Supabase/Firebase) pour plusieurs coachs / staff médical.
 - Lien envoyé aux joueurs pour qu'ils remplissent eux-mêmes leur questionnaire.
 - Suivi des entraînements (charge hebdomadaire complète), graphiques plus poussés, notifications.
+
+## Sécurité : ce qu'il faut savoir
+
+Les données restent **sur l'appareil**. Les codes sont stockés hachés : c'est une protection d'usage, pratique quand le
+coach prête sa tablette ou son téléphone aux joueurs, pas un coffre-fort. En cas d'oubli du code coach, la seule
+solution est de tout réinitialiser (puis de restaurer une sauvegarde) : un joueur ne peut donc pas prendre l'accès coach.
+Pour que chaque joueur remplisse depuis **son propre téléphone**, il faudra ajouter une synchronisation en ligne
+(ex. Supabase) avec de vrais comptes.

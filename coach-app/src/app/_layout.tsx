@@ -1,12 +1,32 @@
-import { Stack } from 'expo-router';
+import { router, Stack, useSegments } from 'expo-router';
+import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import { useTheme } from '@/components/theme';
+import { PLAYER_ROUTES, PLAYER_TABS } from '@/lib/access';
 import { DataProvider, useStore } from '@/lib/store';
 
 function RootStack() {
   const t = useTheme();
-  const { ready } = useStore();
+  const { ready, session, data, logout } = useStore();
+  const segments = useSegments() as string[];
+
+  // Contrôle d'accès : connexion obligatoire, pages coach interdites aux joueurs
+  useEffect(() => {
+    if (!ready) return;
+    const [first, second] = segments;
+    if (session?.role === 'player' && !data.players.some((p) => p.id === session.playerId && !p.archived)) {
+      logout();
+      return;
+    }
+    if (!session) {
+      if (first !== 'connexion') router.replace('/connexion');
+    } else if (first === 'connexion') router.replace('/');
+    else if (session.role === 'player' && (!PLAYER_ROUTES.has(first ?? '(tabs)') || (first === '(tabs)' && second && !PLAYER_TABS.has(second)))) {
+      router.replace('/');
+    }
+  }, [ready, session, segments, data.players, logout]);
+
   if (!ready)
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.bg }}>
@@ -25,6 +45,7 @@ function RootStack() {
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="connexion" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
       <Stack.Screen name="joueur/edit" options={{ presentation: 'modal', title: 'Joueur' }} />
       <Stack.Screen name="joueur/[id]" options={{ title: 'Fiche joueur' }} />
       <Stack.Screen name="match/edit" options={{ presentation: 'modal', title: 'Match' }} />

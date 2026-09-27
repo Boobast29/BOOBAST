@@ -9,6 +9,8 @@ export type Player = {
   birthDate?: string; // AAAA-MM-JJ
   notes?: string;
   archived?: boolean;
+  /** Code d'accès joueur (haché) ; absent = accès sans code */
+  pinHash?: string;
   createdAt: string;
 };
 
@@ -30,8 +32,17 @@ export type StatKey =
   | 'assists'
   | 'shots'
   | 'shotsOnTarget'
+  | 'keyPasses'
+  | 'dribbles'
   | 'tackles'
+  | 'interceptions'
+  | 'duelsWon'
+  | 'clearances'
   | 'saves'
+  | 'goalsConceded'
+  | 'penaltiesSaved'
+  | 'highClaims'
+  | 'offsides'
   | 'yellowCards'
   | 'redCards';
 
@@ -93,13 +104,31 @@ export type AppData = {
   teamName: string;
   /** Logo personnalisé (sinon logo du club intégré à l'appli) */
   logoUri?: string;
+  /** Code d'accès coach (haché) */
+  coachPinHash?: string;
   players: Player[];
   matches: Match[];
   reports: PostMatchReport[];
   injuries: Injury[];
   questions: CustomQuestion[];
   media: MediaItem[];
+  lineups: Lineup[];
 };
+
+/** Composition d'équipe pour un match. `slots` suit l'ordre des postes de la formation. */
+export type Lineup = {
+  matchId: ID;
+  formation: string;
+  slots: (ID | null)[];
+  bench: ID[];
+  captainId?: ID;
+  notes?: string;
+  /** Visible par les joueurs */
+  published: boolean;
+  updatedAt: string;
+};
+
+export type Session = { role: 'coach' } | { role: 'player'; playerId: ID };
 
 export type MediaKind = 'video' | 'photo' | 'link';
 export type MediaCategory = 'Match' | 'Entraînement' | 'Analyse' | 'Adversaire' | 'Exercice' | 'Autre';
@@ -124,6 +153,8 @@ export type MediaItem = {
   matchId?: ID;
   playerIds: ID[];
   notes?: string;
+  /** Visible par tous les joueurs (sinon seulement par les joueurs tagués) */
+  shared?: boolean;
   markers: MediaMarker[];
   createdAt: string;
 };

@@ -1,4 +1,5 @@
-import { QUESTION_TEMPLATES } from './constants';
+import { QUESTION_TEMPLATES, statsForPosition } from './constants';
+import { autoLineup } from './formations';
 import type { AppData, CustomQuestion, Injury, Match, MediaItem, Player, PostMatchReport } from './types';
 
 const iso = (daysAgo: number) => {
@@ -18,6 +19,15 @@ export function buildDemoData(): AppData {
     ['Enzo', 'Richard', 10, 'Milieu'],
     ['Louis', 'Durand', 9, 'Attaquant'],
     ['Jules', 'Leroy', 11, 'Attaquant'],
+    ['Maël', 'Le Gall', 16, 'Gardien'],
+    ['Erwan', 'Quéré', 2, 'Défenseur'],
+    ['Yann', 'Le Bihan', 3, 'Défenseur'],
+    ['Gabriel', 'Tanguy', 6, 'Défenseur'],
+    ['Noah', 'Kerjean', 7, 'Milieu'],
+    ['Tom', 'Le Roux', 14, 'Milieu'],
+    ['Mathis', 'Guéguen', 17, 'Milieu'],
+    ['Arthur', 'Le Floch', 19, 'Attaquant'],
+    ['Paul', 'Morvan', 20, 'Attaquant'],
   ];
   const players: Player[] = names.map(([firstName, lastName, number, position], i) => ({
     id: `p${i}`,
@@ -32,6 +42,7 @@ export function buildDemoData(): AppData {
     { id: 'm0', date: iso(20), opponent: 'US Quimper', home: true, competition: 'Championnat', scoreFor: 2, scoreAgainst: 1, createdAt: created },
     { id: 'm1', date: iso(13), opponent: 'Stade Brestois B', home: false, competition: 'Championnat', scoreFor: 0, scoreAgainst: 0, createdAt: created },
     { id: 'm2', date: iso(6), opponent: 'FC Lorient U19', home: true, competition: 'Coupe', scoreFor: 3, scoreAgainst: 2, createdAt: created },
+    { id: 'm3', date: iso(-5), opponent: 'Vannes OC', home: false, competition: 'Championnat', createdAt: created },
   ];
 
   // Générateur pseudo-aléatoire déterministe
@@ -45,6 +56,7 @@ export function buildDemoData(): AppData {
 
   const reports: PostMatchReport[] = [];
   for (const m of matches) {
+    if (m.scoreFor == null) continue;
     for (const p of players) {
       const starter = rnd(0, 4) > 0;
       const minutesPlayed = starter ? rnd(60, 90) : rnd(10, 30);
@@ -56,16 +68,30 @@ export function buildDemoData(): AppData {
         playerId: p.id,
         starter,
         minutesPlayed,
-        stats: {
-          goals: attacker ? rnd(0, 1) : 0,
-          assists: attacker ? rnd(0, 1) : 0,
-          shots,
-          shotsOnTarget: attacker ? Math.min(shots, rnd(0, 2)) : 0,
-          tackles: rnd(0, 6),
-          saves: p.position === 'Gardien' ? rnd(2, 7) : 0,
-          yellowCards: rnd(0, 6) === 0 ? 1 : 0,
-          redCards: 0,
-        },
+        stats: Object.fromEntries(
+          statsForPosition(p.position).map((f) => {
+            const v: Record<string, number> = {
+              goals: attacker ? rnd(0, 1) : rnd(0, 6) === 0 ? 1 : 0,
+              assists: attacker ? rnd(0, 1) : 0,
+              shots,
+              shotsOnTarget: Math.min(shots, rnd(0, 2)),
+              keyPasses: rnd(0, 3),
+              dribbles: rnd(0, 4),
+              offsides: rnd(0, 2),
+              tackles: rnd(1, 6),
+              interceptions: rnd(0, 4),
+              duelsWon: rnd(2, 9),
+              clearances: rnd(1, 6),
+              saves: rnd(2, 7),
+              goalsConceded: m.scoreAgainst ?? 0,
+              highClaims: rnd(0, 4),
+              penaltiesSaved: rnd(0, 8) === 0 ? 1 : 0,
+              yellowCards: rnd(0, 6) === 0 ? 1 : 0,
+              redCards: 0,
+            };
+            return [f.key, v[f.key]];
+          }),
+        ),
         rpe: rnd(5, 9),
         fatigue: rnd(2, 5),
         sleep: rnd(2, 5),
@@ -122,6 +148,7 @@ export function buildDemoData(): AppData {
       matchId: 'm2',
       playerIds: ['p4', 'p5', 'p6'],
       notes: 'Bon pressing haut en 1re période, relâchement après le 2-0.',
+      shared: true,
       markers: [
         { id: 'k0', seconds: 3, label: 'Récupération haute', playerId: 'p4' },
         { id: 'k1', seconds: 7, label: 'But — appel en profondeur', playerId: 'p5' },
@@ -138,6 +165,7 @@ export function buildDemoData(): AppData {
       date: iso(3),
       playerIds: [],
       notes: 'Terrain 30×25 m, 2 touches max. 4 × 3 min, récup 1 min.',
+      shared: true,
       markers: [],
       createdAt: created,
     },
@@ -166,5 +194,11 @@ export function buildDemoData(): AppData {
     },
   ];
 
-  return { version: 1, teamName: 'Quimper Ergué Armel FC', players, matches, reports, injuries, questions, media };
+  const data: AppData = { version: 1, teamName: 'Quimper Ergué Armel FC', players, matches, reports, injuries, questions, media, lineups: [] };
+  const stamp = new Date().toISOString();
+  data.lineups = [
+    { ...autoLineup(data, 'm2', '4-3-3'), captainId: 'p4', published: true, updatedAt: stamp },
+    { ...autoLineup(data, 'm3', '4-2-3-1'), captainId: 'p4', published: true, notes: 'Bloc médian, pressing déclenché sur leur 6. Transitions rapides côté gauche.', updatedAt: stamp },
+  ];
+  return data;
 }
