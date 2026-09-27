@@ -1,15 +1,16 @@
-import type { CustomQuestion, InjuryStatus, QuestionType, StatKey } from './types';
+import type { IconName } from '../components/ui';
+import type { CustomQuestion, InjuryStatus, MediaCategory, QuestionType, StatKey } from './types';
 
 /** Statistiques saisies après chaque match. Modifier cette liste pour l'adapter au sport. */
-export const STAT_FIELDS: { key: StatKey; label: string; short: string }[] = [
-  { key: 'goals', label: 'Buts', short: 'B' },
-  { key: 'assists', label: 'Passes décisives', short: 'PD' },
-  { key: 'shots', label: 'Tirs', short: 'T' },
-  { key: 'shotsOnTarget', label: 'Tirs cadrés', short: 'TC' },
-  { key: 'tackles', label: 'Tacles / récupérations', short: 'Réc' },
-  { key: 'saves', label: 'Arrêts (gardien)', short: 'Arr' },
-  { key: 'yellowCards', label: 'Cartons jaunes', short: 'CJ' },
-  { key: 'redCards', label: 'Cartons rouges', short: 'CR' },
+export const STAT_FIELDS: { key: StatKey; label: string; short: string; icon: IconName }[] = [
+  { key: 'goals', label: 'Buts', short: 'B', icon: 'football-outline' },
+  { key: 'assists', label: 'Passes décisives', short: 'PD', icon: 'git-branch-outline' },
+  { key: 'shots', label: 'Tirs', short: 'T', icon: 'locate-outline' },
+  { key: 'shotsOnTarget', label: 'Tirs cadrés', short: 'TC', icon: 'radio-button-on-outline' },
+  { key: 'tackles', label: 'Tacles / récupérations', short: 'Réc', icon: 'shield-half-outline' },
+  { key: 'saves', label: 'Arrêts (gardien)', short: 'Arr', icon: 'hand-left-outline' },
+  { key: 'yellowCards', label: 'Cartons jaunes', short: 'CJ', icon: 'square' },
+  { key: 'redCards', label: 'Cartons rouges', short: 'CR', icon: 'square' },
 ];
 
 export const POSITIONS = ['Gardien', 'Défenseur', 'Milieu', 'Attaquant'];
@@ -104,3 +105,5 @@ export const QUESTION_TEMPLATES: Omit<CustomQuestion, 'id' | 'active'>[] = [
   { label: 'Te sens-tu prêt pour le prochain entraînement ?', type: 'choice', options: ['Oui, à 100 %', 'Oui, mais fatigué', 'Pas sûr', 'Non'] },
   { label: 'Un message pour le coach ?', type: 'text' },
 ];
+
+export const MEDIA_CATEGORIES: MediaCategory[] = ['Match', 'Entraînement', 'Analyse', 'Adversaire', 'Exercice', 'Autre'];

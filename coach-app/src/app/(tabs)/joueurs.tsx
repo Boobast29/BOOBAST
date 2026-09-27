@@ -1,61 +1,113 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Avatar, Badge, Button, Card, Empty, Field, Row, Screen, Toggle, Txt } from '@/components/ui';
+import { Text, View } from 'react-native';
+import { useTheme } from '@/components/theme';
+import { Avatar, Badge, Button, Card, Empty, Field, Row, Screen, Section, Toggle, Txt } from '@/components/ui';
+import { POSITIONS } from '@/lib/constants';
 import { useStore } from '@/lib/store';
-import { fmt, playerName, summarizePlayer } from '@/lib/stats';
-import { View } from 'react-native';
+import { fmt, initials, playerName, summarizePlayer } from '@/lib/stats';
+import type { PlayerSummary } from '@/lib/stats';
+
+const POSITION_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
+  Gardien: 'hand-left-outline',
+  Défenseur: 'shield-outline',
+  Milieu: 'swap-horizontal-outline',
+  Attaquant: 'flash-outline',
+};
 
 export default function Players() {
+  const t = useTheme();
   const { data } = useStore();
   const [q, setQ] = useState('');
   const [showArchived, setShowArchived] = useState(false);
 
-  const list = useMemo(
-    () =>
-      data.players
-        .filter((p) => showArchived || !p.archived)
-        .filter((p) => `${p.firstName} ${p.lastName} ${p.position ?? ''} ${p.number ?? ''}`.toLowerCase().includes(q.toLowerCase()))
-        .sort((a, b) => (a.number ?? 999) - (b.number ?? 999) || a.lastName.localeCompare(b.lastName))
-        .map((p) => summarizePlayer(data, p)),
-    [data, q, showArchived],
-  );
+  const groups = useMemo(() => {
+    const list = data.players
+      .filter((p) => showArchived || !p.archived)
+      .filter((p) => `${p.firstName} ${p.lastName} ${p.position ?? ''} ${p.number ?? ''}`.toLowerCase().includes(q.toLowerCase()))
+      .sort((a, b) => (a.number ?? 999) - (b.number ?? 999) || a.lastName.localeCompare(b.lastName))
+      .map((p) => summarizePlayer(data, p));
+    const order = [...POSITIONS, 'Sans poste'];
+    const byPos = new Map<string, PlayerSummary[]>();
+    for (const s of list) {
+      const key = s.player.position && POSITIONS.includes(s.player.position) ? s.player.position : 'Sans poste';
+      byPos.set(key, [...(byPos.get(key) ?? []), s]);
+    }
+    return order.filter((k) => byPos.has(k)).map((k) => [k, byPos.get(k)!] as const);
+  }, [data, q, showArchived]);
+
+  const total = groups.reduce((a, [, l]) => a + l.length, 0);
 
   return (
     <Screen>
-      <Button title="+ Ajouter un joueur" onPress={() => router.push('/joueur/edit')} />
+      <Button title="Ajouter un joueur" icon="person-add" onPress={() => router.push('/joueur/edit')} />
       {data.players.length > 5 && <Field label="Rechercher" value={q} onChangeText={setQ} placeholder="Nom, poste, numéro…" />}
-      {data.players.some((p) => p.archived) && <Toggle label="Afficher les joueurs archivés" value={showArchived} onChange={setShowArchived} />}
-      {list.length === 0 && <Empty text="Aucun joueur pour le moment." />}
-      {list.map((s) => {
-        const p = s.player;
-        const inj = s.activeInjury;
-        return (
-          <Card key={p.id} onPress={() => router.push(`/joueur/${p.id}`)}>
-            <Row>
-              <Avatar label={p.number != null ? String(p.number) : (p.firstName[0] ?? '?') + (p.lastName[0] ?? '')} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <Txt bold>{playerName(p)}</Txt>
-                <Txt muted size={13}>
-                  {[p.position, `${s.matchesPlayed} match${s.matchesPlayed > 1 ? 's' : ''}`, `${s.minutes} min`].filter(Boolean).join(' · ')}
-                </Txt>
-              </View>
-              {p.archived ? (
-                <Badge text="Archivé" />
-              ) : inj ? (
-                <Badge text={inj.status === 'active' ? 'Blessé' : 'Reprise'} tone={inj.status === 'active' ? 'danger' : 'warning'} />
-              ) : (
-                <Badge text="Dispo" tone="success" />
-              )}
-            </Row>
-            <Row style={{ gap: 14 }}>
-              <Txt muted size={13}>⚽ {s.totals.goals}</Txt>
-              <Txt muted size={13}>🅰️ {s.totals.assists}</Txt>
-              <Txt muted size={13}>Note {fmt(s.avgCoachRating)}</Txt>
-              <Txt muted size={13}>Forme {fmt(s.avgWellness)}/5</Txt>
-            </Row>
-          </Card>
-        );
-      })}
+      {data.players.some((p) => p.archived) && <Toggle label="Afficher les joueurs archivés" icon="archive-outline" value={showArchived} onChange={setShowArchived} />}
+      {total === 0 && <Empty icon="people-outline" text="Aucun joueur pour le moment. Ajoutez votre effectif pour commencer le suivi." />}
+
+      {groups.map(([pos, list]) => (
+        <View key={pos} style={{ gap: 10 }}>
+          <Section icon={POSITION_ICON[pos] ?? 'person-outline'}>
+            {pos === 'Sans poste' ? pos : `${pos}s`} · {list.length}
+          </Section>
+          {list.map((s) => {
+            const p = s.player;
+            const inj = s.activeInjury;
+            const status = p.archived ? t.muted : inj ? (inj.status === 'active' ? t.danger : t.warning) : t.primary;
+            return (
+              <Card key={p.id} onPress={() => router.push(`/joueur/${p.id}`)} style={{ paddingVertical: 14 }}>
+                <Row style={{ gap: 12 }}>
+                  <View>
+                    <Avatar label={initials(p)} colorKey={p.id} size={48} />
+                    <View style={{ position: 'absolute', right: -1, bottom: -1, width: 16, height: 16, borderRadius: 8, backgroundColor: status, borderWidth: 3, borderColor: t.card }} />
+                  </View>
+                  <View style={{ flex: 1, gap: 3 }}>
+                    <Txt bold size={16}>
+                      {playerName(p)}
+                    </Txt>
+                    <Row style={{ gap: 12 }}>
+                      <Mini icon="football-outline" value={s.totals.goals} />
+                      <Mini icon="git-branch-outline" value={s.totals.assists} />
+                      <Mini icon="time-outline" value={`${s.minutes}′`} />
+                      <Mini icon="star-outline" value={fmt(s.avgCoachRating)} />
+                    </Row>
+                  </View>
+                  {p.archived ? (
+                    <Badge text="Archivé" />
+                  ) : inj ? (
+                    <Badge text={inj.status === 'active' ? 'Blessé' : 'Reprise'} tone={inj.status === 'active' ? 'danger' : 'warning'} icon="medkit" />
+                  ) : s.avgWellness != null ? (
+                    <FormGauge value={s.avgWellness} />
+                  ) : null}
+                </Row>
+              </Card>
+            );
+          })}
+        </View>
+      ))}
     </Screen>
+  );
+}
+
+function Mini({ icon, value }: { icon: keyof typeof Ionicons.glyphMap; value: string | number }) {
+  const t = useTheme();
+  return (
+    <Row style={{ gap: 3 }}>
+      <Ionicons name={icon} size={13} color={t.muted} />
+      <Text style={{ color: t.muted, fontSize: 13, fontWeight: '600' }}>{value}</Text>
+    </Row>
+  );
+}
+
+/** Jauge de forme (moyenne bien-être /5). */
+function FormGauge({ value }: { value: number }) {
+  const t = useTheme();
+  const color = value < 2.5 ? t.danger : value < 3.5 ? t.warning : t.primary;
+  return (
+    <View style={{ alignItems: 'center', gap: 2 }}>
+      <Text style={{ color, fontWeight: '800', fontSize: 16 }}>{fmt(value)}</Text>
+      <Text style={{ color: t.muted, fontSize: 10, fontWeight: '600' }}>FORME</Text>
+    </View>
   );
 }

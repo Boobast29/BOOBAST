@@ -81,11 +81,12 @@ export default function EditQuestion() {
         <QuestionInput q={draft} value={preview} onChange={setPreview} />
       </Card>
 
-      <Button title="Enregistrer" onPress={save} />
+      <Button title="Enregistrer" icon="checkmark" onPress={save} />
       {existing && (
         <Button
           title="Supprimer la question"
           kind="danger"
+          icon="trash-outline"
           onPress={() =>
             confirm('Supprimer cette question ?', 'Les réponses déjà données restent dans les questionnaires mais ne seront plus affichées. Pour la garder, désactivez-la plutôt.', () => {
               deleteQuestion(existing.id);

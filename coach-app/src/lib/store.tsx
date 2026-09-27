@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { buildDemoData } from './demo';
-import type { AppData, CustomQuestion, Injury, Match, Player, PostMatchReport } from './types';
+import type { AppData, CustomQuestion, Injury, Match, MediaItem, Player, PostMatchReport } from './types';
 
 const STORAGE_KEY = 'coach-suivi/data/v1';
 
@@ -14,6 +14,7 @@ export const emptyData = (): AppData => ({
   reports: [],
   injuries: [],
   questions: [],
+  media: [],
 });
 
 export const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -35,6 +36,8 @@ type Store = {
   saveQuestion: (q: Omit<CustomQuestion, 'id'> & { id?: string }) => void;
   deleteQuestion: (id: string) => void;
   moveQuestion: (id: string, delta: -1 | 1) => void;
+  saveMedia: (m: Upsert<MediaItem>) => MediaItem;
+  deleteMedia: (id: string) => void;
   replaceAll: (d: AppData) => void;
   loadDemo: () => void;
 };
@@ -89,6 +92,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       players: d.players.filter((p) => p.id !== id),
       reports: d.reports.filter((r) => r.playerId !== id),
       injuries: d.injuries.filter((i) => i.playerId !== id),
+      media: d.media.map((m) => ({ ...m, playerIds: m.playerIds.filter((p) => p !== id) })),
     }));
   }, []);
 
@@ -104,6 +108,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       matches: d.matches.filter((m) => m.id !== id),
       reports: d.reports.filter((r) => r.matchId !== id),
       injuries: d.injuries.map((i) => (i.matchId === id ? { ...i, matchId: undefined } : i)),
+      media: d.media.map((m) => (m.matchId === id ? { ...m, matchId: undefined } : m)),
     }));
   }, []);
 
@@ -136,6 +141,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData((d) => ({ ...d, injuries: d.injuries.filter((i) => i.id !== id) }));
   }, []);
 
+  const saveMedia = useCallback((m: Upsert<MediaItem>) => {
+    const item = { ...m, id: m.id ?? newId(), createdAt: m.createdAt ?? now() } as MediaItem;
+    setData((d) => ({ ...d, media: upsert(d.media, item) }));
+    return item;
+  }, []);
+
   const value = useMemo<Store>(
     () => ({
       data,
@@ -160,10 +171,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
           [questions[i], questions[j]] = [questions[j], questions[i]];
           return { ...d, questions };
         }),
+      saveMedia,
+      deleteMedia: (id) => setData((d) => ({ ...d, media: d.media.filter((m) => m.id !== id) })),
       replaceAll: (d) => setData({ ...emptyData(), ...d }),
       loadDemo: () => setData(buildDemoData()),
     }),
-    [data, ready, savePlayer, deletePlayer, saveMatch, deleteMatch, saveReport, deleteReport, saveInjury, deleteInjury],
+    [data, ready, saveMedia, savePlayer, deletePlayer, saveMatch, deleteMatch, saveReport, deleteReport, saveInjury, deleteInjury],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

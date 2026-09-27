@@ -58,11 +58,12 @@ export default function EditMatch() {
         )}
         <Field label="Notes du match" value={notes} onChangeText={setNotes} multiline placeholder="Tactique, conditions, faits marquants…" />
       </Card>
-      <Button title={existing ? 'Enregistrer' : 'Créer et remplir les questionnaires'} onPress={save} />
+      <Button title={existing ? 'Enregistrer' : 'Créer et remplir les questionnaires'} icon="checkmark" onPress={save} />
       {existing && (
         <Button
           title="Supprimer le match"
           kind="danger"
+          icon="trash-outline"
           onPress={() =>
             confirm('Supprimer ce match ?', 'Tous les questionnaires de ce match seront supprimés.', () => {
               deleteMatch(existing.id);

@@ -48,11 +48,12 @@ export default function EditPlayer() {
         <Field label="Notes" value={notes} onChangeText={setNotes} multiline placeholder="Pied fort, antécédents, contact…" />
         {existing && <Toggle label="Archivé (n'apparaît plus dans l'effectif)" value={archived} onChange={setArchived} />}
       </Card>
-      <Button title="Enregistrer" onPress={save} />
+      <Button title="Enregistrer" icon="checkmark" onPress={save} />
       {existing && (
         <Button
           title="Supprimer le joueur"
           kind="danger"
+          icon="trash-outline"
           onPress={() =>
             confirm('Supprimer ce joueur ?', 'Ses questionnaires et blessures seront aussi supprimés. Pour le garder dans l’historique, archivez-le plutôt.', () => {
               deletePlayer(existing.id);

@@ -95,7 +95,8 @@ export function summarizePlayer(data: AppData, player: Player): PlayerSummary {
   };
 }
 
-export type Alert = { playerId: string; level: 'high' | 'medium'; text: string };
+export type AlertKind = 'injury' | 'pain' | 'wellness' | 'rpe' | 'load';
+export type Alert = { playerId: string; level: 'high' | 'medium'; text: string; kind: AlertKind };
 
 /** Alertes basées sur le dernier questionnaire et la charge des 7 vs 28 derniers jours. */
 export function computeAlerts(data: AppData): Alert[] {
@@ -109,6 +110,7 @@ export function computeAlerts(data: AppData): Alert[] {
       const back = inj.expectedReturn ? ` · retour prévu ${formatDate(inj.expectedReturn)}` : '';
       alerts.push({
         playerId: p.id,
+        kind: 'injury',
         level: inj.status === 'active' ? 'high' : 'medium',
         text: `${inj.status === 'active' ? 'Blessé' : 'En reprise'} : ${inj.type} ${inj.bodyZone.toLowerCase()}${back}`,
       });
@@ -120,14 +122,15 @@ export function computeAlerts(data: AppData): Alert[] {
       if (last.pain && !inj)
         alerts.push({
           playerId: p.id,
+          kind: 'pain',
           level: 'high',
           text: `Douleur signalée${last.painZone ? ` (${last.painZone})` : ''}${last.painLevel != null ? ` ${last.painLevel}/10` : ''}`,
         });
       const w = wellnessScore(last);
       if (w != null && w < ALERTS.wellnessLow)
-        alerts.push({ playerId: p.id, level: 'medium', text: `Bien-être bas (${fmt(w)}/5)` });
+        alerts.push({ playerId: p.id, kind: 'wellness', level: 'medium', text: `Bien-être bas (${fmt(w)}/5)` });
       if ((last.rpe ?? 0) >= ALERTS.rpeHigh)
-        alerts.push({ playerId: p.id, level: 'medium', text: `Effort très élevé (RPE ${last.rpe}/10)` });
+        alerts.push({ playerId: p.id, kind: 'rpe', level: 'medium', text: `Effort très élevé (RPE ${last.rpe}/10)` });
     }
 
     // Ratio charge aiguë (7 j) / chronique (moyenne hebdo sur 28 j)
@@ -146,6 +149,7 @@ export function computeAlerts(data: AppData): Alert[] {
     if (chronicWeekly > 0 && acute / chronicWeekly >= ALERTS.loadSpike)
       alerts.push({
         playerId: p.id,
+        kind: 'load',
         level: 'medium',
         text: `Pic de charge (ratio ${fmt(acute / chronicWeekly, 2)})`,
       });
@@ -159,3 +163,20 @@ export function formatAnswer(a: Answer | undefined): string {
   if (Array.isArray(a)) return a.join(', ');
   return String(a);
 }
+
+/** Bilan de la saison : victoires, nuls, défaites, buts, 5 derniers résultats (du plus récent au plus ancien). */
+export function seasonRecord(data: AppData) {
+  const played = data.matches.filter((m) => m.scoreFor != null && m.scoreAgainst != null).sort(byDateDesc);
+  const res = played.map((m) => matchResult(m).tone);
+  return {
+    played: played.length,
+    wins: res.filter((r) => r === 'win').length,
+    draws: res.filter((r) => r === 'draw').length,
+    losses: res.filter((r) => r === 'loss').length,
+    goalsFor: played.reduce((a, m) => a + (m.scoreFor ?? 0), 0),
+    goalsAgainst: played.reduce((a, m) => a + (m.scoreAgainst ?? 0), 0),
+    form: played.slice(0, 5).map((m) => ({ id: m.id, tone: matchResult(m).tone })),
+  };
+}
+
+export const initials = (p: Player) => (p.number != null ? String(p.number) : `${p.firstName[0] ?? ''}${p.lastName[0] ?? ''}`.toUpperCase() || '?');

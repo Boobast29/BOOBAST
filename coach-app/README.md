@@ -16,11 +16,17 @@ Application mobile pour qu'un coach suive ses joueurs après chaque match :
     à l'emploi (vécu du match, temps de jeu, consignes, points forts / à travailler, message au coach…) ;
   - bouton « Enregistrer et passer au joueur suivant » pour enchaîner tout l'effectif.
 - **Blessures** : zone, côté, type, gravité, statut (indisponible / en reprise / guérie), retour prévu, traitement.
-- **Tableau de bord** : joueurs disponibles/blessés, progression des questionnaires du dernier match,
+- **Vidéos** : vidéothèque de l'équipe — importer depuis la galerie, **filmer** directement, ou coller un lien
+  (YouTube, Drive, Hudl, Veo, .mp4). Catégories (match, entraînement, analyse, adversaire, exercice),
+  lien vers un match, **joueurs tagués**, notes/consignes, et **temps forts** horodatés (ex. 12:30 « pressing réussi »)
+  : un appui fait sauter la vidéo au bon moment. Les vidéos apparaissent aussi dans la fiche joueur et le détail du match.
+- **Tableau de bord** : bilan de la saison (V/N/D, buts, forme sur 5 matchs), raccourcis, joueurs disponibles/blessés, progression des questionnaires du dernier match,
   **alertes** automatiques (douleur, bien-être bas, RPE élevé, pic de charge 7 j / 28 j, blessure), classements.
 - **Fiche joueur** : stats cumulées, moyennes, courbe de forme, historique des questionnaires et blessures.
 - **Export CSV** (Excel / Numbers / Google Sheets) et **sauvegarde/restauration** JSON.
-- Mode clair / sombre, données stockées **sur le téléphone** (hors ligne, rien n'est envoyé sur internet).
+- Design soigné, mode clair / sombre automatique, retours haptiques.
+- Données stockées **sur le téléphone** (hors ligne, rien n'est envoyé sur internet). Les vidéos importées sont copiées dans l'appli ;
+  la sauvegarde JSON contient leurs titres, tags et temps forts mais pas les fichiers vidéo eux-mêmes.
 
 Construit avec [Expo](https://expo.dev) (React Native + Expo Router + TypeScript) : un seul code pour iOS et Android.
 
@@ -62,7 +68,10 @@ npx eas-cli@latest submit --platform ios                        # envoi sur Test
 ```
 src/
   app/                  écrans (Expo Router : chaque fichier = un écran)
-    (tabs)/             onglets Accueil, Joueurs, Matchs, Blessures, Réglages
+    (tabs)/             onglets Accueil, Joueurs, Matchs, Vidéos, Blessures
+    reglages.tsx        réglages (icône ⚙️ de l'accueil)
+    media/[id].tsx      lecteur vidéo + temps forts   media/edit.tsx   ajout/modif d'un média
+    questions/          questions perso du questionnaire
     joueur/[id].tsx     fiche joueur          joueur/edit.tsx   ajout/modif joueur
     match/[id].tsx      détail d'un match     match/edit.tsx    ajout/modif match
     questionnaire.tsx   questionnaire d'après-match

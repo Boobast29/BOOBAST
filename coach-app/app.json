@@ -26,7 +26,27 @@
     },
     "scheme": "coachsuivi",
     "plugins": [
-      "expo-router"
-    ]
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Coach Suivi accède à vos photos et vidéos pour les ajouter à la vidéothèque de l’équipe.",
+          "cameraPermission": "Coach Suivi utilise l’appareil photo pour filmer les matchs et entraînements.",
+          "microphonePermission": "Coach Suivi utilise le micro pour enregistrer le son des vidéos."
+        }
+      ],
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": false,
+          "supportsPictureInPicture": true
+        }
+      ]
+    ],
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B3D2E"
+    }
   }
 }

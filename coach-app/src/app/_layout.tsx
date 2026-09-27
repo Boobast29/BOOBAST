@@ -16,9 +16,10 @@ function RootStack() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: t.card },
+        headerStyle: { backgroundColor: t.bg },
+        headerShadowVisible: false,
         headerTintColor: t.primary,
-        headerTitleStyle: { color: t.text },
+        headerTitleStyle: { color: t.text, fontWeight: '700' },
         contentStyle: { backgroundColor: t.bg },
         headerBackButtonDisplayMode: 'minimal',
       }}
@@ -31,6 +32,9 @@ function RootStack() {
       <Stack.Screen name="questionnaire" options={{ presentation: 'modal', title: "Questionnaire d'après-match" }} />
       <Stack.Screen name="blessure/edit" options={{ presentation: 'modal', title: 'Blessure' }} />
       <Stack.Screen name="questions/index" options={{ title: 'Questions perso' }} />
+      <Stack.Screen name="reglages" options={{ title: 'Réglages' }} />
+      <Stack.Screen name="media/[id]" options={{ title: 'Vidéo' }} />
+      <Stack.Screen name="media/edit" options={{ presentation: 'modal', title: 'Média' }} />
       <Stack.Screen name="questions/edit" options={{ presentation: 'modal', title: 'Question' }} />
     </Stack>
   );

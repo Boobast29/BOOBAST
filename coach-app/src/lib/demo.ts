@@ -1,5 +1,5 @@
 import { QUESTION_TEMPLATES } from './constants';
-import type { AppData, CustomQuestion, Injury, Match, Player, PostMatchReport } from './types';
+import type { AppData, CustomQuestion, Injury, Match, MediaItem, Player, PostMatchReport } from './types';
 
 const iso = (daysAgo: number) => {
   const d = new Date();
@@ -109,5 +109,62 @@ export function buildDemoData(): AppData {
     },
   ];
 
-  return { version: 1, teamName: 'Équipe démo', players, matches, reports, injuries, questions };
+  // Vidéos d'exemple (échantillons publics) pour découvrir la vidéothèque
+  const sample = (name: string) => `https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/${name}.mp4`;
+  const media: MediaItem[] = [
+    {
+      id: 'v0',
+      kind: 'video',
+      title: 'Résumé vs FC Lorient U19',
+      uri: sample('ForBiggerBlazes'),
+      category: 'Match',
+      date: iso(6),
+      matchId: 'm2',
+      playerIds: ['p4', 'p5', 'p6'],
+      notes: 'Bon pressing haut en 1re période, relâchement après le 2-0.',
+      markers: [
+        { id: 'k0', seconds: 3, label: 'Récupération haute', playerId: 'p4' },
+        { id: 'k1', seconds: 7, label: 'But — appel en profondeur', playerId: 'p5' },
+        { id: 'k2', seconds: 11, label: 'Mauvais repli défensif' },
+      ],
+      createdAt: created,
+    },
+    {
+      id: 'v1',
+      kind: 'video',
+      title: 'Exercice : conservation 4c4 + 2 jokers',
+      uri: sample('ForBiggerEscapes'),
+      category: 'Exercice',
+      date: iso(3),
+      playerIds: [],
+      notes: 'Terrain 30×25 m, 2 touches max. 4 × 3 min, récup 1 min.',
+      markers: [],
+      createdAt: created,
+    },
+    {
+      id: 'v2',
+      kind: 'video',
+      title: 'Analyse : sorties de balle',
+      uri: sample('ForBiggerJoyrides'),
+      category: 'Analyse',
+      date: iso(12),
+      matchId: 'm1',
+      playerIds: ['p1', 'p2', 'p0'],
+      markers: [{ id: 'k3', seconds: 5, label: 'Relance courte gardien', playerId: 'p0' }],
+      createdAt: created,
+    },
+    {
+      id: 'v3',
+      kind: 'link',
+      title: 'Idées d’exercices de pressing (YouTube)',
+      uri: 'https://www.youtube.com/results?search_query=exercice+pressing+football',
+      category: 'Exercice',
+      date: iso(1),
+      playerIds: [],
+      markers: [],
+      createdAt: created,
+    },
+  ];
+
+  return { version: 1, teamName: 'Équipe démo', players, matches, reports, injuries, questions, media };
 }

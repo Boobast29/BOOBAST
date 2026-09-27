@@ -96,6 +96,34 @@ export type AppData = {
   reports: PostMatchReport[];
   injuries: Injury[];
   questions: CustomQuestion[];
+  media: MediaItem[];
+};
+
+export type MediaKind = 'video' | 'photo' | 'link';
+export type MediaCategory = 'Match' | 'Entraînement' | 'Analyse' | 'Adversaire' | 'Exercice' | 'Autre';
+
+/** Temps fort repéré dans une vidéo (ex. 12:30 « pressing réussi »). */
+export type MediaMarker = {
+  id: ID;
+  seconds: number;
+  label: string;
+  playerId?: ID;
+};
+
+/** Vidéo, photo ou lien (YouTube, Drive, Hudl…) ajouté par le coach. */
+export type MediaItem = {
+  id: ID;
+  kind: MediaKind;
+  title: string;
+  uri: string;
+  thumbnail?: string;
+  category: MediaCategory;
+  date: string; // AAAA-MM-JJ
+  matchId?: ID;
+  playerIds: ID[];
+  notes?: string;
+  markers: MediaMarker[];
+  createdAt: string;
 };
 
 export type QuestionType = 'scale' | 'yesno' | 'choice' | 'multi' | 'number' | 'text';

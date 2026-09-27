@@ -111,11 +111,12 @@ export default function EditInjury() {
         <Field label="Notes" value={notes} onChangeText={setNotes} multiline />
       </Card>
 
-      <Button title="Enregistrer" onPress={save} />
+      <Button title="Enregistrer" icon="checkmark" onPress={save} />
       {existing && (
         <Button
           title="Supprimer la blessure"
           kind="danger"
+          icon="trash-outline"
           onPress={() =>
             confirm('Supprimer cette blessure ?', 'Cette action est définitive.', () => {
               deleteInjury(existing.id);
