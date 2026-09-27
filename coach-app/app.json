@@ -8,7 +8,12 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.boobast.coachsuivi"
+      "bundleIdentifier": "com.boobast.coachsuivi",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -41,6 +46,13 @@
           "supportsBackgroundPlayback": false,
           "supportsPictureInPicture": true
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#107B2D",
+          "defaultChannel": "default"
+        }
       ]
     ],
     "splash": {
@@ -52,6 +64,9 @@
         "backgroundColor": "#0A2A14"
       }
     },
-    "primaryColor": "#107B2D"
+    "primaryColor": "#107B2D",
+    "extra": {
+      "eas": {}
+    }
   }
 }

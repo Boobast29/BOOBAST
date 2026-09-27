@@ -243,6 +243,14 @@ export type Team = {
   cloudId?: string;
   /** Code que les joueurs saisissent pour rejoindre l'équipe (cloud) */
   joinCode?: string;
+  /** Code pour ajouter un coach adjoint (cloud) */
+  coachCode?: string;
+  /** Dernière version synchronisée (cloud) */
+  cloudVersion?: number;
+  /** Équipe rejointe comme joueur sur cet appareil (cloud) */
+  joinedAs?: 'player';
+  /** Joueur connecté sur cet appareil pour cette équipe (cloud) */
+  playerId?: string;
   createdAt: string;
 };
 

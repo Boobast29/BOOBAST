@@ -38,9 +38,10 @@ export default function Connexion() {
     login({ role: 'coach', teamId });
     router.replace('/');
   };
+  const coachTeams = club.teams.filter((x) => x.joinedAs !== 'player');
   const afterCoachAuth = () => {
-    if (club.teams.length === 0) openTeamCreation();
-    else if (club.teams.length === 1) enterCoach(club.teams[0].id);
+    if (coachTeams.length === 0) openTeamCreation();
+    else if (coachTeams.length === 1) enterCoach(coachTeams[0].id);
     else setStep({ k: 'coach-teams' });
   };
   // Session coach sans équipe : donne accès à la création de la première équipe
@@ -65,9 +66,9 @@ export default function Connexion() {
     .filter((p) => playerName(p).toLowerCase().includes(q.toLowerCase()))
     .sort((a, b) => a.lastName.localeCompare(b.lastName));
 
-  const teamGrid = (onPick: (tm: Team) => void) => (
+  const teamGrid = (onPick: (tm: Team) => void, teams: Team[] = club.teams) => (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-      {club.teams.map((tm, i) => (
+      {teams.map((tm, i) => (
         <Animated.View key={tm.id} entering={FadeInDown.delay(i * 50).springify()} style={{ width: '47%', flexGrow: 1 }}>
           <Pressable
             onPress={() => onPick(tm)}
@@ -198,7 +199,7 @@ export default function Connexion() {
             <Txt bold size={24}>
               Quelle équipe ?
             </Txt>
-            {teamGrid((tm) => enterCoach(tm.id))}
+            {teamGrid((tm) => enterCoach(tm.id), coachTeams)}
           </View>
         )}
 
@@ -209,7 +210,11 @@ export default function Connexion() {
             </Txt>
             {teamGrid(async (tm) => {
               await selectTeam(tm.id);
-              setStep({ k: 'players' });
+              // Équipe rejointe via le cloud sur ce téléphone : connexion directe
+              if (tm.joinedAs === 'player' && tm.playerId) {
+                login({ role: 'player', teamId: tm.id, playerId: tm.playerId });
+                router.replace('/');
+              } else setStep({ k: 'players' });
             })}
           </View>
         )}

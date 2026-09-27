@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import { useTheme } from '@/components/theme';
 import { PLAYER_ROUTES, PLAYER_TABS } from '@/lib/access';
+import { CloudSync } from '@/lib/cloud/CloudSync';
 import { DataProvider, useStore } from '@/lib/store';
 
 function RootStack() {
@@ -15,7 +16,8 @@ function RootStack() {
   useEffect(() => {
     if (!ready) return;
     const [first, second] = segments;
-    if (session?.role === 'player' && !data.players.some((p) => p.id === session.playerId && !p.archived)) {
+    // Joueur retiré de l'effectif → déconnexion (sauf équipe cloud pas encore téléchargée)
+    if (session?.role === 'player' && data.players.length > 0 && !data.players.some((p) => p.id === session.playerId && !p.archived)) {
       logout();
       return;
     }
@@ -58,6 +60,7 @@ function RootStack() {
       <Stack.Screen name="questions/index" options={{ title: 'Questions perso' }} />
       <Stack.Screen name="reglages" options={{ title: 'Réglages' }} />
       <Stack.Screen name="equipes" options={{ title: 'Équipes du club' }} />
+      <Stack.Screen name="cloud" options={{ title: 'Cloud & notifications' }} />
       <Stack.Screen name="prepa" options={{ title: 'Préparation' }} />
       <Stack.Screen name="ressenti-seance" options={{ presentation: 'modal', title: 'Ressenti' }} />
       <Stack.Screen name="sondage/[id]" options={{ title: 'Questionnaire' }} />
@@ -76,8 +79,10 @@ function RootStack() {
 export default function RootLayout() {
   return (
     <DataProvider>
-      <StatusBar style="auto" />
-      <RootStack />
+      <CloudSync>
+        <StatusBar style="auto" />
+        <RootStack />
+      </CloudSync>
     </DataProvider>
   );
 }

@@ -48,6 +48,9 @@ export const emptyData = (teamName = 'Seniors A'): AppData => ({
   surveyResponses: [],
 });
 
+/** Forme canonique des données d'une équipe (même ordre de clés partout, pour comparer). */
+export const normalizeData = (d: Partial<AppData>, teamName: string): AppData => ({ ...emptyData(teamName), ...d, teamName });
+
 const emptyClub = (): Club => ({ name: DEFAULT_CLUB_NAME, teams: [] });
 
 export const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -141,7 +144,7 @@ async function loadClub(): Promise<Club> {
 
 async function loadTeamData(team: Team): Promise<AppData> {
   const d = await readJSON<AppData>(teamKey(team.id));
-  return { ...emptyData(team.name), ...d, teamName: team.name };
+  return normalizeData(d ?? {}, team.name);
 }
 
 export function DataProvider({ children }: { children: ReactNode }) {
@@ -322,7 +325,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setClubName: (name) => setClub((c) => ({ ...c, name })),
       setCoachPin: (coachPinHash) => setClub((c) => ({ ...c, coachPinHash })),
       setLogo: (logoUri) => setClub((c) => ({ ...c, logoUri })),
-      replaceAll: (d) => setData({ ...emptyData(team?.name), ...d, teamName: team?.name ?? d.teamName }),
+      replaceAll: (d) => setData(normalizeData(d, team?.name ?? d.teamName)),
       loadDemo: () => setData({ ...buildDemoData(), teamName: team?.name ?? 'Seniors A' }),
       resetEverything: async () => {
         const keys = [CLUB_KEY, SESSION_KEY, LEGACY_DATA_KEY, ...club.teams.map((x) => teamKey(x.id))];

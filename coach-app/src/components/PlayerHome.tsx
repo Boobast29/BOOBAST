@@ -12,7 +12,7 @@ import { ClubLogo } from './ClubLogo';
 import { PlayerFeedback } from './Feedback';
 import { MediaStrip } from './Media';
 import { useTheme } from './theme';
-import { Avatar, Badge, Button, Card, HeroStat, IconCircle, Progress, Row, Screen, Section, StatBox, Txt } from './ui';
+import { Avatar, Badge, Button, Card, Empty, HeroStat, IconCircle, Progress, Row, Screen, Section, StatBox, Txt } from './ui';
 import type { IconName, Tone } from './ui';
 
 /** Accueil d'un joueur connecté : uniquement ses propres données. */
@@ -20,7 +20,12 @@ export function PlayerHome({ playerId }: { playerId: string }) {
   const t = useTheme();
   const { data, session } = useStore();
   const player = data.players.find((p) => p.id === playerId);
-  if (!player) return null;
+  if (!player)
+    return (
+      <Screen>
+        <Empty icon="cloud-download-outline" text="Chargement de ton espace… (connexion internet nécessaire la première fois)" />
+      </Screen>
+    );
 
   const s = summarizePlayer(data, player);
   const reports = reportsForPlayer(data, player.id);
