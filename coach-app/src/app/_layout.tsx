@@ -8,7 +8,7 @@ import { DataProvider, useStore } from '@/lib/store';
 
 function RootStack() {
   const t = useTheme();
-  const { ready, session, data, logout } = useStore();
+  const { ready, session, data, club, logout } = useStore();
   const segments = useSegments() as string[];
 
   // Contrôle d'accès : connexion obligatoire, pages coach interdites aux joueurs
@@ -20,12 +20,15 @@ function RootStack() {
       return;
     }
     if (!session) {
-      if (first !== 'connexion') router.replace('/connexion');
+      if (first !== 'connexion' && first !== 'cloud') router.replace('/connexion');
+    } else if (session.role === 'coach' && !club.teams.some((x) => x.id === session.teamId)) {
+      // Coach sans équipe (premier lancement) : création d'équipe obligatoire
+      if (first !== 'equipes') router.replace({ pathname: '/equipes', params: { first: '1' } });
     } else if (first === 'connexion') router.replace('/');
     else if (session.role === 'player' && (!PLAYER_ROUTES.has(first ?? '(tabs)') || (first === '(tabs)' && second && !PLAYER_TABS.has(second)))) {
       router.replace('/');
     }
-  }, [ready, session, segments, data.players, logout]);
+  }, [ready, session, segments, data.players, club.teams, logout]);
 
   if (!ready)
     return (
@@ -54,6 +57,7 @@ function RootStack() {
       <Stack.Screen name="blessure/edit" options={{ presentation: 'modal', title: 'Blessure' }} />
       <Stack.Screen name="questions/index" options={{ title: 'Questions perso' }} />
       <Stack.Screen name="reglages" options={{ title: 'Réglages' }} />
+      <Stack.Screen name="equipes" options={{ title: 'Équipes du club' }} />
       <Stack.Screen name="prepa" options={{ title: 'Préparation' }} />
       <Stack.Screen name="ressenti-seance" options={{ presentation: 'modal', title: 'Ressenti' }} />
       <Stack.Screen name="sondage/[id]" options={{ title: 'Questionnaire' }} />

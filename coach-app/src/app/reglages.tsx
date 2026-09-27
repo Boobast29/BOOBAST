@@ -7,16 +7,20 @@ import { Button, Card, Field, Row, Screen, Section, Txt } from '@/components/ui'
 import { hashPin, PIN_LENGTH } from '@/lib/auth';
 import { confirm, notify } from '@/lib/confirm';
 import { attendanceCsv, injuriesCsv, reportsCsv, shareText } from '@/lib/export';
-import { buildDemoData } from '@/lib/demo';
 import { persistFile } from '@/lib/media';
-import { emptyData, useStore } from '@/lib/store';
+import { DEFAULT_CLUB_NAME, emptyData, useStore } from '@/lib/store';
+import { isCloudConfigured } from '@/lib/cloud/config';
+import { useTheme } from '@/components/theme';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { today } from '@/lib/stats';
 import type { AppData } from '@/lib/types';
 
-const DEFAULT_TEAM = emptyData().teamName;
+const DEFAULT_TEAM = 'Seniors A';
 
 export default function Settings() {
-  const { data, setTeamName, setLogo, replaceAll, loadDemo, setCoachPin, logout } = useStore();
+  const { data, club, team: currentTeam, setTeamName, setClubName, setLogo, replaceAll, loadDemo, setCoachPin, logout } = useStore();
+  const [clubName, setClubNameInput] = useState(club.name);
+  const t = useTheme();
   const [pin1, setPin1] = useState('');
   const [pin2, setPin2] = useState('');
   const [team, setTeam] = useState(data.teamName);
@@ -56,16 +60,38 @@ export default function Settings() {
 
   return (
     <Screen>
-      <Section icon="shield-outline">Équipe</Section>
+      <Section icon="shield-outline">Club</Section>
       <Card>
         <Row style={{ gap: 14 }}>
           <ClubLogo size={72} />
           <View style={{ flex: 1, gap: 8 }}>
             <Button small kind="secondary" icon="image-outline" title="Changer le logo" onPress={() => run(pickLogo)} />
-            {data.logoUri ? <Button small kind="ghost" title="Logo du club par défaut" onPress={() => setLogo(undefined)} /> : null}
+            {club.logoUri ? <Button small kind="ghost" title="Logo du club par défaut" onPress={() => setLogo(undefined)} /> : null}
           </View>
         </Row>
+        <Field label="Nom du club" value={clubName} onChangeText={setClubNameInput} onBlur={() => setClubName(clubName.trim() || DEFAULT_CLUB_NAME)} onEndEditing={() => setClubName(clubName.trim() || DEFAULT_CLUB_NAME)} />
+        <Button small kind="secondary" icon="shield-half-outline" title={`Gérer les équipes (${club.teams.length})`} onPress={() => router.push('/equipes')} />
+      </Card>
+
+      <Section icon="people-outline">Équipe active{currentTeam ? ` · ${currentTeam.name}` : ''}</Section>
+      <Card>
         <Field label="Nom de l'équipe" value={team} onChangeText={setTeam} onEndEditing={() => setTeamName(team.trim() || DEFAULT_TEAM)} onBlur={() => setTeamName(team.trim() || DEFAULT_TEAM)} />
+      </Card>
+
+      <Section icon="cloud-outline">Cloud & notifications</Section>
+      <Card onPress={() => router.push('/cloud')}>
+        <Row>
+          <Ionicons name={isCloudConfigured() ? 'cloud-done' : 'cloud-offline-outline'} size={22} color={isCloudConfigured() ? t.primary : t.muted} />
+          <View style={{ flex: 1 }}>
+            <Txt bold>{isCloudConfigured() ? 'Synchronisation en ligne' : 'Mode local (sur cet appareil)'}</Txt>
+            <Txt muted size={13}>
+              {isCloudConfigured()
+                ? 'Chaque joueur sur son téléphone, données sauvegardées en ligne, notifications.'
+                : 'Activez le cloud pour que chaque joueur ait l’appli sur son téléphone et retrouve ses données.'}
+            </Txt>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={t.muted} />
+        </Row>
       </Card>
 
       <Section icon="lock-closed-outline">Accès & sécurité</Section>
@@ -128,13 +154,13 @@ export default function Settings() {
           title="Charger les données de démo"
           icon="sparkles-outline"
           kind="secondary"
-          onPress={() => confirm('Charger la démo ?', 'Les données actuelles seront remplacées.', () => { loadDemo(); setTeam(buildDemoData().teamName); }, 'Charger')}
+          onPress={() => confirm('Charger la démo ?', 'Les données actuelles seront remplacées.', () => { loadDemo(); setTeam(currentTeam?.name ?? DEFAULT_TEAM); }, 'Charger')}
         />
         <Button
           title="Tout effacer"
           icon="trash-outline"
           kind="danger"
-          onPress={() => confirm('Tout effacer ?', 'Joueurs, matchs, questionnaires et blessures seront supprimés définitivement.', () => { replaceAll(emptyData()); setTeam(DEFAULT_TEAM); })}
+          onPress={() => confirm('Tout effacer ?', 'Joueurs, matchs, questionnaires et blessures seront supprimés définitivement.', () => { replaceAll(emptyData(currentTeam?.name)); setTeam(currentTeam?.name ?? DEFAULT_TEAM); })}
         />
       </Card>
     </Screen>

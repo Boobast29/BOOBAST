@@ -3,6 +3,7 @@ import { router, Tabs } from 'expo-router';
 import { Platform, Pressable, Text, View } from 'react-native';
 import type { ColorValue } from 'react-native';
 import { ClubLogo } from '@/components/ClubLogo';
+import { TeamBadge } from '@/components/TeamBadge';
 import { useTheme } from '@/components/theme';
 import type { IconName } from '@/components/ui';
 import { confirm } from '@/lib/confirm';
@@ -15,7 +16,7 @@ const icon = (outline: IconName, filled: IconName) =>
 
 export default function TabsLayout() {
   const t = useTheme();
-  const { session, logout } = useStore();
+  const { session, logout, team, club } = useStore();
   const coach = session?.role === 'coach';
   // Onglets réservés au coach : masqués pour les joueurs
   const coachOnly = coach ? {} : { href: null };
@@ -52,10 +53,19 @@ export default function TabsLayout() {
           title: coach ? 'Accueil' : 'Moi',
           tabBarIcon: coach ? icon('home-outline', 'home') : icon('person-circle-outline', 'person-circle'),
           headerTitle: () => (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Pressable
+              disabled={!coach}
+              onPress={() => router.push('/equipes')}
+              accessibilityLabel="Changer d’équipe"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+            >
               <ClubLogo size={34} ring={false} />
-              <Text style={{ color: t.text, fontWeight: '800', fontSize: 20 }}>{coach ? 'Coach' : 'Espace joueur'}</Text>
-            </View>
+              {team ? <TeamBadge team={team} size={26} /> : null}
+              <Text style={{ color: t.text, fontWeight: '800', fontSize: 20 }} numberOfLines={1}>
+                {team?.name ?? (coach ? 'Coach' : 'Espace joueur')}
+              </Text>
+              {coach && club.teams.length > 1 ? <Ionicons name="chevron-down" size={18} color={t.muted} /> : null}
+            </Pressable>
           ),
           headerRight: () => (
             <View style={{ flexDirection: 'row', gap: 18, marginRight: 16 }}>

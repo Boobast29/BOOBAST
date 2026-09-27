@@ -34,14 +34,14 @@ export default function Home() {
 
 function Dashboard() {
   const t = useTheme();
-  const { data, loadDemo } = useStore();
+  const { data, club, loadDemo } = useStore();
   const active = useMemo(() => data.players.filter((p) => !p.archived), [data.players]);
   const alerts = useMemo(() => computeAlerts(data), [data]);
   const summaries = useMemo(() => active.map((p) => summarizePlayer(data, p)), [data, active]);
   const record = useMemo(() => seasonRecord(data), [data]);
   const [showAll, setShowAll] = useState(false);
   const injured = summaries.filter((s) => s.activeInjury?.status === 'active').length;
-  const lastMatch = [...data.matches].sort(byDateDesc)[0];
+  const lastMatch = [...data.matches].filter((m) => m.date <= today() || m.scoreFor != null).sort(byDateDesc)[0];
   const nextMatch = data.matches.filter((m) => m.scoreFor == null && m.date >= today()).sort((a, b) => a.date.localeCompare(b.date))[0];
   const since = isoDaysAgo(14);
   const recentFb = data.sessions.filter((x) => x.date >= since).flatMap((x) => Object.values(x.feedback ?? {}));
@@ -91,8 +91,10 @@ function Dashboard() {
         <Row style={{ justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <ClubLogo size={60} />
           <View style={{ flex: 1, gap: 2 }}>
-            <Text style={{ color: t.heroMuted, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 }}>Saison en cours</Text>
-            <Text style={{ color: t.heroText, fontSize: 21, fontWeight: '800' }} numberOfLines={2}>
+            <Text style={{ color: t.heroMuted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 }} numberOfLines={1}>
+              {club.name}
+            </Text>
+            <Text style={{ color: t.heroText, fontSize: 26, fontWeight: '900' }} numberOfLines={1}>
               {data.teamName}
             </Text>
           </View>

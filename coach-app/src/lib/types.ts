@@ -229,7 +229,30 @@ export type SurveyResponse = {
   updatedAt: string;
 };
 
-export type Session = { role: 'coach' } | { role: 'player'; playerId: ID };
+export type Session = { role: 'coach'; teamId: ID } | { role: 'player'; teamId: ID; playerId: ID };
+
+export type TeamCategory = 'Seniors' | 'Jeunes' | 'Féminines' | 'Vétérans' | 'Loisir';
+
+/** Une équipe du club (Seniors A, U17…). Ses données (AppData) sont stockées à part. */
+export type Team = {
+  id: ID;
+  name: string;
+  category: TeamCategory;
+  color: string;
+  /** Identifiant de l'équipe dans le cloud (si synchronisée) */
+  cloudId?: string;
+  /** Code que les joueurs saisissent pour rejoindre l'équipe (cloud) */
+  joinCode?: string;
+  createdAt: string;
+};
+
+export type Club = {
+  name: string;
+  logoUri?: string;
+  /** Code coach (haché) pour l'accès local à l'appli */
+  coachPinHash?: string;
+  teams: Team[];
+};
 
 export type MediaKind = 'video' | 'photo' | 'link';
 export type MediaCategory = 'Match' | 'Entraînement' | 'Analyse' | 'Adversaire' | 'Exercice' | 'Autre';
