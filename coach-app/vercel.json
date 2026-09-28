@@ -1,7 +1,5 @@
 {
-  "cleanUrls": true,
-  "trailingSlash": false,
   "rewrites": [
-    { "source": "/((?!_expo|assets|favicon).*)", "destination": "/index.html" }
+    { "source": "/((?!_expo|assets|favicon|metadata).*)", "destination": "/index.html" }
   ]
 }
