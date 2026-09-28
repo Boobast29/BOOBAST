@@ -66,3 +66,11 @@ illisibles) vont dans **Non classé**.
   `.doc` et `.ppt` ne sont pas lus (convertis-les au préalable).
 - **Pas d'écrasement :** si un fichier du même nom existe déjà dans la
   catégorie cible, un suffixe ` (1)`, ` (2)`… est ajouté.
+
+---
+
+## Autre projet du dépôt : QEA Coach (appli iPhone / Android du Quimper Ergué Armel FC)
+
+Le dossier [`coach-app/`](coach-app/README.md) contient une application mobile
+pour suivre les joueurs d'une équipe : questionnaires d'après-match, statistiques,
+charge (RPE), bien-être et blessures.

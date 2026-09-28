@@ -1,0 +1,74 @@
+{
+  "expo": {
+    "name": "QEA Coach",
+    "slug": "coach-suivi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.boobast.coachsuivi",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.boobast.coachsuivi"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "scheme": "coachsuivi",
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Coach Suivi accède à vos photos et vidéos pour les ajouter à la vidéothèque de l’équipe.",
+          "cameraPermission": "Coach Suivi utilise l’appareil photo pour filmer les matchs et entraînements.",
+          "microphonePermission": "Coach Suivi utilise le micro pour enregistrer le son des vidéos."
+        }
+      ],
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": false,
+          "supportsPictureInPicture": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#107B2D",
+          "defaultChannel": "default"
+        }
+      ]
+    ],
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF",
+      "dark": {
+        "image": "./assets/splash-icon.png",
+        "backgroundColor": "#0A2A14"
+      }
+    },
+    "primaryColor": "#107B2D",
+    "extra": {
+      "eas": {
+        "projectId": "3987fee1-dce3-473d-b73d-a05ebf48043e"
+      }
+    }
+  }
+}
