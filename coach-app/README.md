@@ -1,8 +1,8 @@
 # QEA Coach — appli iPhone & Android du Quimper Ergué Armel FC
 
 > **Nouveau** : plusieurs équipes par club (Seniors A/B/C, U19→U11, Féminines, Vétérans), cloud Supabase
-> (chaque joueur sur son téléphone, données retrouvées après réinstallation, notifications push), carte joueur
-> façon « Ultimate Team » avec radar, météo du groupe. Activation du cloud : [docs/CLOUD.md](docs/CLOUD.md).
+> (chaque joueur sur son téléphone, données retrouvées après réinstallation, notifications push),
+> météo du groupe. Activation du cloud : [docs/CLOUD.md](docs/CLOUD.md).
 
 Application mobile pour qu'un coach suive ses joueurs après chaque match :
 
@@ -64,9 +64,7 @@ Application mobile pour qu'un coach suive ses joueurs après chaque match :
 - **Cloud (optionnel)** : code d'équipe + code joueur pour rejoindre depuis son téléphone, données retrouvées après
   réinstallation, synchronisation hors connexion, coach adjoint, **notifications** (à remplir, compo/préparation publiées,
   rappel à 18 h, douleur signalée au coach). Voir [docs/CLOUD.md](docs/CLOUD.md).
-- **Carte joueur** (bronze / argent / or / QEA) : note globale et 6 attributs calculés à partir du suivi — PER performance,
-  FOR forme, ENG engagement, ASS assiduité, PRO progression, MEN mental — avec radar ; **météo du groupe** (forme,
-  qualité des séances, assiduité) en jauges animées.
+- **Météo du groupe** (forme, qualité des séances, assiduité) en jauges animées sur l'accueil.
 - **Tableau de bord** : bilan de la saison (V/N/D, buts, forme sur 5 matchs), raccourcis, joueurs disponibles/blessés, progression des questionnaires du dernier match,
   **alertes** automatiques (douleur, bien-être bas, RPE élevé, pic de charge 7 j / 28 j, blessure), classements.
 - **Fiche joueur** : stats cumulées, moyennes, courbe de forme, historique des questionnaires et blessures.
