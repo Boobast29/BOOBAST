@@ -25,9 +25,18 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.boobast.coachsuivi"
     },
-    "web": {
-      "favicon": "./assets/favicon.png",
-      "bundler": "metro"
+   "web": {
+  "favicon": "./assets/favicon.png",
+  "bundler": "metro",
+  "name": "QEA Coach",
+  "shortName": "QEA Coach",
+  "themeColor": "#107B2D",
+  "backgroundColor": "#FFFFFF",
+  "display": "standalone",
+  "orientation": "portrait",
+  "startUrl": "/",
+  "scope": "/"
+},
     },
     "scheme": "coachsuivi",
     "plugins": [
