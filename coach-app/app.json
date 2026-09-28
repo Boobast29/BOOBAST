@@ -10,9 +10,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.boobast.coachsuivi",
       "infoPlist": {
-        "UIBackgroundModes": [
-          "remote-notification"
-        ]
+        "UIBackgroundModes": ["remote-notification"]
       }
     },
     "android": {
@@ -25,18 +23,17 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.boobast.coachsuivi"
     },
-   "web": {
-  "favicon": "./assets/favicon.png",
-  "bundler": "metro",
-  "name": "QEA Coach",
-  "shortName": "QEA Coach",
-  "themeColor": "#107B2D",
-  "backgroundColor": "#FFFFFF",
-  "display": "standalone",
-  "orientation": "portrait",
-  "startUrl": "/",
-  "scope": "/"
-},
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "name": "QEA Coach",
+      "shortName": "QEA Coach",
+      "themeColor": "#107B2D",
+      "backgroundColor": "#FFFFFF",
+      "display": "standalone",
+      "orientation": "portrait",
+      "startUrl": "/",
+      "scope": "/"
     },
     "scheme": "coachsuivi",
     "plugins": [
@@ -44,8 +41,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Coach Suivi accède à vos photos et vidéos pour les ajouter à la vidéothèque de l’équipe.",
-          "cameraPermission": "Coach Suivi utilise l’appareil photo pour filmer les matchs et entraînements.",
+          "photosPermission": "Coach Suivi accède à vos photos et vidéos pour les ajouter à la vidéothèque de l'équipe.",
+          "cameraPermission": "Coach Suivi utilise l'appareil photo pour filmer les matchs et entraînements.",
           "microphonePermission": "Coach Suivi utilise le micro pour enregistrer le son des vidéos."
         }
       ],
