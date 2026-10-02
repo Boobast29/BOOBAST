@@ -6,6 +6,7 @@ import { InjuryList } from '@/components/InjuryList';
 import { useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Empty, Field, Row, Screen, Section, Toggle, Txt } from '@/components/ui';
 import { POSITIONS } from '@/lib/constants';
+import { normalizeSearchText } from '@/lib/search';
 import { useStore } from '@/lib/store';
 import { fmt, initials, playerName, summarizePlayer } from '@/lib/stats';
 import type { PlayerSummary } from '@/lib/stats';
@@ -23,12 +24,22 @@ export default function Players() {
   const [q, setQ] = useState('');
   const [showArchived, setShowArchived] = useState(false);
   const [tab, setTab] = useState<'effectif' | 'infirmerie'>('effectif');
+  const [positionFilter, setPositionFilter] = useState('Tous');
   const injuredCount = data.injuries.filter((i) => i.status !== 'guérie').length;
+  const normalizedQuery = normalizeSearchText(q);
+  const matchingPlayers = useMemo(
+    () =>
+      data.players.filter(
+        (p) =>
+          (showArchived || !p.archived) &&
+          (!normalizedQuery || normalizeSearchText(`${p.firstName} ${p.lastName} ${p.position ?? ''} ${p.number ?? ''}`).includes(normalizedQuery)),
+      ),
+    [data.players, normalizedQuery, showArchived],
+  );
 
   const groups = useMemo(() => {
-    const list = data.players
-      .filter((p) => showArchived || !p.archived)
-      .filter((p) => `${p.firstName} ${p.lastName} ${p.position ?? ''} ${p.number ?? ''}`.toLowerCase().includes(q.toLowerCase()))
+    const list = matchingPlayers
+      .filter((p) => positionFilter === 'Tous' || (p.position ?? 'Sans poste') === positionFilter)
       .sort((a, b) => (a.number ?? 999) - (b.number ?? 999) || a.lastName.localeCompare(b.lastName))
       .map((p) => summarizePlayer(data, p));
     const order = [...POSITIONS, 'Sans poste'];
@@ -38,9 +49,11 @@ export default function Players() {
       byPos.set(key, [...(byPos.get(key) ?? []), s]);
     }
     return order.filter((k) => byPos.has(k)).map((k) => [k, byPos.get(k)!] as const);
-  }, [data, q, showArchived]);
+  }, [data, matchingPlayers, positionFilter]);
 
   const total = groups.reduce((a, [, l]) => a + l.length, 0);
+  const positionCount = (position: string) =>
+    position === 'Tous' ? matchingPlayers.length : matchingPlayers.filter((p) => (p.position ?? 'Sans poste') === position).length;
 
   return (
     <Screen>
@@ -56,6 +69,8 @@ export default function Players() {
             <Pressable
               key={k}
               onPress={() => setTab(k)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
               style={{
                 flex: 1,
                 flexDirection: 'row',
@@ -78,11 +93,56 @@ export default function Players() {
       ) : (
         <>
           <Button title="Ajouter un joueur" icon="person-add" onPress={() => router.push('/joueur/edit')} />
-          {data.players.length > 5 && <Field label="Rechercher" value={q} onChangeText={setQ} placeholder="Nom, poste, numéro…" />}
+          {data.players.length > 0 && <Field label="Rechercher dans l’effectif" value={q} onChangeText={setQ} placeholder="Nom, poste ou numéro…" />}
           {data.players.some((p) => p.archived) && (
             <Toggle label="Afficher les joueurs archivés" icon="archive-outline" value={showArchived} onChange={setShowArchived} />
           )}
-          {total === 0 && <Empty icon="people-outline" text="Aucun joueur pour le moment. Ajoutez votre effectif pour commencer le suivi." />}
+          {data.players.length > 0 && (
+            <View style={{ gap: 8 }}>
+              <Txt muted size={12}>{total} joueur{total === 1 ? '' : 's'} affiché{total === 1 ? '' : 's'}</Txt>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
+                {['Tous', ...POSITIONS, 'Sans poste'].map((position) => {
+                  const count = positionCount(position);
+                  if (position !== 'Tous' && count === 0) return null;
+                  const selected = positionFilter === position;
+                  return (
+                    <Pressable
+                      key={position}
+                      onPress={() => setPositionFilter(position)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 5,
+                        paddingHorizontal: 11,
+                        paddingVertical: 8,
+                        borderRadius: 999,
+                        backgroundColor: selected ? t.primary : t.card,
+                        borderWidth: 1,
+                        borderColor: selected ? t.primary : t.border,
+                      }}
+                    >
+                      <Text style={{ color: selected ? t.primaryText : t.text, fontWeight: selected ? '800' : '600', fontSize: 12 }}>{position}</Text>
+                      <Text style={{ color: selected ? t.primaryText : t.muted, fontWeight: '700', fontSize: 11 }}>{count}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+          {total === 0 && (
+            <Empty
+              icon="people-outline"
+              text={
+                data.players.length === 0
+                  ? 'Aucun joueur pour le moment. Ajoutez votre effectif pour commencer le suivi.'
+                  : normalizedQuery
+                    ? 'Aucun joueur ne correspond à cette recherche.'
+                    : 'Aucun joueur dans ce filtre. Essayez une autre position ou affichez les joueurs archivés.'
+              }
+            />
+          )}
 
           {groups.map(([pos, list]) => (
             <View key={pos} style={{ gap: 10 }}>

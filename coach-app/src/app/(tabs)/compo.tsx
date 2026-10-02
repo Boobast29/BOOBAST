@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import { ClubLogo } from '@/components/ClubLogo';
 import { Pitch } from '@/components/Pitch';
@@ -13,6 +13,7 @@ import { Avatar, Badge, Button, Card, Empty, Field, IconCircle, Row, Screen, Sec
 import { confirm, notify } from '@/lib/confirm';
 import { useCloud } from '@/lib/cloud/CloudSync';
 import { autoLineup, DEFAULT_FORMATION, emptyLineup, FORMATION_KEYS, FORMATIONS, MAX_BENCH, remapFormation, selectionScore } from '@/lib/formations';
+import { normalizeSearchText } from '@/lib/search';
 import { useStore } from '@/lib/store';
 import { activeInjury, avg, byDateDesc, fmt, formatDate, initials, playerName, reportsForPlayer, summarizePlayer, today } from '@/lib/stats';
 import type { AppData, Lineup, LineupGuestPlayer, Match, Player, Team, TeamCategory } from '@/lib/types';
@@ -354,11 +355,16 @@ export default function Compo() {
     <Screen>
       {isCoach ? <TeamScopeSelector /> : null}
       {/* Choix du match */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
-        {matches.map((m) => (
-          <MatchChip key={m.id} m={m} active={m.id === matchId} hasLineup={data.lineups.some((l) => l.matchId === m.id)} onPress={() => { setSel(null); setPicked(m.id); }} />
-        ))}
-      </ScrollView>
+      <View style={{ gap: 8 }}>
+        <Section icon="calendar-outline" action={isCoach ? <Badge text={`${xi.length}/${def.length} titulaires`} tone={xi.length === def.length ? 'success' : 'warning'} /> : undefined}>
+          Match à composer
+        </Section>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
+          {matches.map((m) => (
+            <MatchChip key={m.id} m={m} active={m.id === matchId} hasLineup={data.lineups.some((l) => l.matchId === m.id)} onPress={() => { setSel(null); setPicked(m.id); }} />
+          ))}
+        </ScrollView>
+      </View>
 
       {myStatus && (
         <Card>
@@ -378,24 +384,43 @@ export default function Compo() {
 
       {/* Formation */}
       {isCoach && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {FORMATION_KEYS.map((f) => {
-            const on = f === lineup.formation;
-            return (
-              <Pressable
-                key={f}
-                onPress={() => {
-                  tap();
-                  setSel(null);
-                  update(remapFormation(lineup, f));
-                }}
-                style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14, backgroundColor: on ? t.primary : t.card, borderWidth: t.dark ? 1 : 0, borderColor: t.border, ...shadow(t) }}
-              >
-                <Text style={{ color: on ? t.primaryText : t.text, fontWeight: '800', fontSize: 15 }}>{f}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        <View style={{ gap: 8 }}>
+          <Section icon="git-network-outline">Formation</Section>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            {FORMATION_KEYS.map((f) => {
+              const on = f === lineup.formation;
+              return (
+                <Pressable
+                  key={f}
+                  onPress={() => {
+                    tap();
+                    setSel(null);
+                    update(remapFormation(lineup, f));
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  style={({ pressed }) => ({
+                    minWidth: 76,
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: 14,
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: 6,
+                    backgroundColor: on ? t.primary : pressed ? t.primarySoft : t.card,
+                    borderWidth: on || t.dark ? 1 : 0,
+                    borderColor: on ? t.primary : t.border,
+                    ...shadow(t),
+                  })}
+                >
+                  {on ? <Ionicons name="checkmark-circle" size={15} color={t.primaryText} /> : null}
+                  <Text style={{ color: on ? t.primaryText : t.text, fontWeight: on ? '800' : '700', fontSize: 14 }}>{f}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
       )}
 
       {/* Terrain */}
@@ -614,14 +639,18 @@ function TeamScopeSelector() {
   return (
     <>
       <Pressable onPress={() => setVisible(true)} accessibilityRole="button" accessibilityLabel={`Équipe de la composition : ${team?.name ?? 'aucune'}`}>
-        <Card style={{ paddingVertical: 11 }}>
+        <Card style={{ paddingVertical: 12, borderLeftWidth: 4, borderLeftColor: team?.color ?? t.primary }}>
           <Row style={{ gap: 10 }}>
             {team ? <TeamBadge team={team} size={38} /> : <Ionicons name="shield-outline" size={26} color={t.primary} />}
             <View style={{ flex: 1, gap: 2 }}>
-              <Txt muted size={11}>COMPOSITION POUR</Txt>
+              <Txt muted size={10}>ÉQUIPE DE LA COMPOSITION</Txt>
               <Txt bold>{team?.name ?? 'Choisir une équipe'}</Txt>
+              {team ? <Txt muted size={11}>{team.category} · {teams.length} équipe{teams.length > 1 ? 's' : ''} accessible{teams.length > 1 ? 's' : ''}</Txt> : null}
             </View>
-            <Ionicons name="chevron-down" size={20} color={t.muted} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: t.primarySoft, paddingHorizontal: 9, paddingVertical: 7, borderRadius: 999 }}>
+              <Text style={{ color: t.primary, fontWeight: '700', fontSize: 12 }}>Changer</Text>
+              <Ionicons name="chevron-down" size={16} color={t.primary} />
+            </View>
           </Row>
         </Card>
       </Pressable>
@@ -630,7 +659,7 @@ function TeamScopeSelector() {
           <Row style={{ justifyContent: 'space-between', padding: 16, paddingBottom: 8 }}>
             <View>
               <Txt bold size={20}>Équipe à composer</Txt>
-              <Txt muted size={13}>Le match et sa composition seront ceux de cette équipe.</Txt>
+              <Txt muted size={13}>Chaque équipe conserve ses propres matchs et compositions.</Txt>
             </View>
             <Pressable onPress={() => setVisible(false)} hitSlop={10} accessibilityLabel="Fermer">
               <Ionicons name="close-circle" size={30} color={t.muted} />
@@ -651,7 +680,7 @@ function TeamScopeSelector() {
                           <Txt bold>{item.name}</Txt>
                           <Txt muted size={12}>{item.category}</Txt>
                         </View>
-                        {item.id === team?.id ? <Badge text="Sélectionnée" tone="success" icon="checkmark" /> : null}
+                        {item.id === team?.id ? <Badge text="En cours" tone="success" icon="checkmark" /> : <Ionicons name="chevron-forward" size={19} color={t.muted} />}
                       </Row>
                     </Card>
                   ))}
@@ -720,10 +749,26 @@ function PlayerPicker({
   onPick: (id: string) => void;
 }) {
   const t = useTheme();
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<TeamCategory | 'Toutes'>('Toutes');
+  const normalizedSearch = normalizeSearchText(search);
+  useEffect(() => {
+    if (!visible) return;
+    setSearch('');
+    setCategoryFilter('Toutes');
+  }, [visible]);
   const grouped = TEAM_CATEGORY_ORDER.map((category) => ({
     category,
     players: roster
-      .filter((entry) => entry.team.category === category && !exclude.has(entry.player.id))
+      .filter((entry) => {
+        const name = normalizeSearchText(playerName(entry.player));
+        const teamName = normalizeSearchText(entry.team.name);
+        const number = entry.player.number == null ? '' : String(entry.player.number);
+        return entry.team.category === category &&
+          (categoryFilter === 'Toutes' || categoryFilter === category) &&
+          !exclude.has(entry.player.id) &&
+          (!normalizedSearch || name.includes(normalizedSearch) || teamName.includes(normalizedSearch) || number.includes(normalizedSearch));
+      })
       .map(({ player, team, data }) => ({
         p: player,
         team,
@@ -733,22 +778,74 @@ function PlayerPicker({
       .sort((a, b) => Number(b.p.position === group) - Number(a.p.position === group) || b.score - a.score),
   })).filter((category) => category.players.length > 0);
   const playerCount = grouped.reduce((total, category) => total + category.players.length, 0);
+  const categoryCounts = new Map(
+    TEAM_CATEGORY_ORDER.map((category) => [category, roster.filter((entry) => entry.team.category === category && !exclude.has(entry.player.id)).length]),
+  );
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" transparent={Platform.OS === 'web'} onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: t.bg, marginTop: Platform.OS === 'web' ? 60 : 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden' }}>
-        <Row style={{ justifyContent: 'space-between', padding: 16, paddingBottom: 8 }}>
-          <View>
-            <Txt bold size={20}>
-              {title}
-            </Txt>
-            <Txt muted size={13}>{group ? `Suggestions : ${group.toLowerCase()}s en premier · ` : ''}effectifs séparés par catégorie</Txt>
+        <View style={{ paddingHorizontal: 16, paddingTop: 18, paddingBottom: 10, gap: 12, borderBottomWidth: 1, borderBottomColor: t.border, backgroundColor: t.card }}>
+          <Row style={{ justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Txt bold size={20}>
+                {title}
+              </Txt>
+              <Txt muted size={13}>{group ? `${group} suggéré en premier` : 'Choisis dans les effectifs du club'}</Txt>
+            </View>
+            <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Fermer">
+              <Ionicons name="close-circle" size={30} color={t.muted} />
+            </Pressable>
+          </Row>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 12, borderRadius: 12, backgroundColor: t.input, borderWidth: 1, borderColor: t.border }}>
+            <Ionicons name="search-outline" size={19} color={t.muted} />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Rechercher un nom, une équipe ou un numéro"
+              placeholderTextColor={t.muted}
+              returnKeyType="search"
+              accessibilityLabel="Rechercher un joueur"
+              style={{ flex: 1, minHeight: 44, paddingVertical: 8, color: t.text, fontSize: 14 }}
+            />
+            {search ? (
+              <Pressable onPress={() => setSearch('')} hitSlop={8} accessibilityLabel="Effacer la recherche">
+                <Ionicons name="close-circle" size={18} color={t.muted} />
+              </Pressable>
+            ) : null}
           </View>
-          <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Fermer">
-            <Ionicons name="close-circle" size={30} color={t.muted} />
-          </Pressable>
-        </Row>
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}>
-          {playerCount === 0 && <Empty text="Tous les joueurs du club sont déjà placés." />}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
+            {(['Toutes', ...TEAM_CATEGORY_ORDER] as const).map((category) => {
+              const active = categoryFilter === category;
+              const count = category === 'Toutes' ? Array.from(categoryCounts.values()).reduce((sum, value) => sum + value, 0) : categoryCounts.get(category) ?? 0;
+              if (category !== 'Toutes' && count === 0) return null;
+              return (
+                <Pressable
+                  key={category}
+                  onPress={() => setCategoryFilter(category)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, backgroundColor: active ? t.primary : t.cardAlt, borderWidth: 1, borderColor: active ? t.primary : t.border }}
+                >
+                  <Text style={{ color: active ? t.primaryText : t.text, fontSize: 12, fontWeight: active ? '800' : '600' }}>{category}</Text>
+                  <Text style={{ color: active ? t.primaryText : t.muted, fontSize: 11, fontWeight: '700' }}>{count}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+          <Txt muted size={12}>{playerCount} joueur{playerCount === 1 ? '' : 's'} disponible{playerCount === 1 ? '' : 's'}</Txt>
+        </View>
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+          {playerCount === 0 && (
+            <Empty
+              text={
+                normalizedSearch
+                  ? 'Aucun joueur ne correspond à cette recherche.'
+                  : roster.length
+                    ? 'Tous les joueurs de ces catégories sont déjà dans le groupe.'
+                    : 'Aucun effectif n’est disponible. Vérifiez les équipes accessibles à votre compte coach.'
+              }
+            />
+          )}
           {grouped.map(({ category, players: categoryPlayers }) => (
             <View key={category} style={{ gap: 8 }}>
               <Section icon="people-outline">{category} · {categoryPlayers.length}</Section>
@@ -756,20 +853,25 @@ function PlayerPicker({
                 const ti = info.get(p.id);
                 const match = p.position === group;
                 return (
-                  <Card key={`${team.id}:${p.id}`} onPress={() => onPick(p.id)} style={{ paddingVertical: 12 }} stripe={ti?.injured === 'active' ? t.danger : match ? t.primary : undefined}>
+                  <Card key={`${team.id}:${p.id}`} onPress={() => onPick(p.id)} style={{ paddingVertical: 11 }} stripe={ti?.injured === 'active' ? t.danger : match ? t.primary : undefined}>
                     <Row style={{ gap: 12 }}>
                       <Avatar size={42} colorKey={p.id} photo={p.photoUri} label={initials(p)} />
                       <View style={{ flex: 1, gap: 3 }}>
                         <Txt bold>{playerName(p)}</Txt>
                         <Row style={{ flexWrap: 'wrap', gap: 6 }}>
-                          <Badge text={team.name} />
+                          <Badge text={`${team.category} · ${team.name}`} />
                           <Badge text={p.position ?? 'Sans poste'} tone={match ? 'success' : 'neutral'} />
-                          {s.avgCoachRating != null && <Badge text={`Note ${fmt(s.avgCoachRating)}`} tone="accent" icon="star" />}
-                          {s.avgWellness != null && <Badge text={`Forme ${fmt(s.avgWellness)}`} tone="info" icon="heart" />}
                           {bench.has(p.id) && <Badge text="Remplaçant" icon="people" />}
                           {ti?.injured && <Badge text={ti.injured === 'active' ? 'Blessé' : 'Reprise'} tone={ti.injured === 'active' ? 'danger' : 'warning'} icon="medkit" />}
                           {!ti?.injured && ti?.pain && <Badge text="Douleur" tone="warning" icon="bandage" />}
                         </Row>
+                        {s.avgCoachRating != null || s.avgWellness != null ? (
+                          <Txt muted size={11}>
+                            {s.avgCoachRating != null ? `Note ${fmt(s.avgCoachRating)}` : ''}
+                            {s.avgCoachRating != null && s.avgWellness != null ? ' · ' : ''}
+                            {s.avgWellness != null ? `Forme ${fmt(s.avgWellness)}/5` : ''}
+                          </Txt>
+                        ) : null}
                       </View>
                       <Ionicons name="add-circle" size={26} color={t.primary} />
                     </Row>
