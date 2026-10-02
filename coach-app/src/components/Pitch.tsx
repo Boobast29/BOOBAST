@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import { forwardRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { LayoutChangeEvent } from 'react-native';
@@ -134,8 +135,21 @@ function Token({ ti, role, size, captain, selected, highlight, keeper }: { ti: T
           borderColor: glow,
         }}
       >
-        <Ionicons name="shirt" size={size} color={shirt} style={styles.shirtShadow} />
-        <Text style={{ position: 'absolute', color: numberColor, fontWeight: '900', fontSize: size * 0.34, top: (size + 8) * 0.36 }}>{ti.player.number ?? role}</Text>
+        {ti.player.photoUri ? (
+          <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', borderWidth: 2, borderColor: shirt, backgroundColor: keeper ? '#FACC15' : '#fff' }}>
+            <Image source={{ uri: ti.player.photoUri }} style={{ width: '100%', height: '100%' }} contentFit="cover" accessibilityLabel={`Photo de ${ti.player.firstName} ${ti.player.lastName}`} />
+          </View>
+        ) : (
+          <>
+            <Ionicons name="shirt" size={size} color={shirt} style={styles.shirtShadow} />
+            <Text style={{ position: 'absolute', color: numberColor, fontWeight: '900', fontSize: size * 0.34, top: (size + 8) * 0.36 }}>{ti.player.number ?? role}</Text>
+          </>
+        )}
+        {ti.player.photoUri ? (
+          <View style={{ position: 'absolute', bottom: 0, minWidth: 17, height: 17, paddingHorizontal: 3, borderRadius: 9, backgroundColor: keeper ? '#FACC15' : '#fff', alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: '#1F2937', fontSize: 9, fontWeight: '900' }}>{ti.player.number ?? role}</Text>
+          </View>
+        ) : null}
         {/* Forme */}
         <View style={[styles.dot, { left: 2, top: 2, backgroundColor: formColor(ti.form) }]} />
         {captain && (

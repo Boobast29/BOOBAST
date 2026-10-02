@@ -18,6 +18,9 @@ import type { Lineup, Match } from '@/lib/types';
 type Draft = Omit<Lineup, 'updatedAt'>;
 type Sel = { kind: 'slot'; index: number } | { kind: 'bench'; id: string } | null;
 
+const escapeHtml = (value: string) =>
+  value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 export default function Compo() {
   const t = useTheme();
   const params = useLocalSearchParams<{ matchId?: string }>();
@@ -142,6 +145,116 @@ export default function Compo() {
     }
   };
 
+  const printLineup = () => {
+    if (Platform.OS !== 'web') return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      notify('Impression impossible', 'Autorisez l’ouverture de la fenêtre d’impression dans votre navigateur.');
+      return;
+    }
+
+    const markers = def.map((slot, index) => {
+      const player = players.get(lineup.slots[index] ?? '');
+      const number = player?.number == null ? slot.role : String(player.number);
+      const portrait = player?.photoUri
+        ? `<img class="portrait" src="${escapeHtml(player.photoUri)}" alt="">`
+        : `<span class="portrait fallback">${escapeHtml(number)}</span>`;
+      const captain = player?.id === lineup.captainId ? '<span class="captain">C</span>' : '';
+      const left = 3 + slot.x * 94;
+      const top = 3 + (1 - slot.y) * 94;
+      return `<div class="marker" style="left:${left}%;top:${top}%">${portrait}${captain}<span class="player-name">${escapeHtml(player ? player.lastName || player.firstName : slot.role)}</span><span class="player-role">${escapeHtml(player ? number : 'Poste libre')}</span></div>`;
+    }).join('');
+
+    const bench = lineup.bench.map((id) => {
+      const player = players.get(id);
+      if (!player) return '';
+      const portrait = player.photoUri
+        ? `<img class="bench-photo" src="${escapeHtml(player.photoUri)}" alt="">`
+        : `<span class="bench-photo bench-fallback">${escapeHtml(player.number == null ? '—' : String(player.number))}</span>`;
+      return `<div class="bench-player">${portrait}<span><strong>${escapeHtml(playerName(player))}</strong><small>${escapeHtml([player.number != null ? `N° ${player.number}` : '', player.position ?? 'Poste non renseigné'].filter(Boolean).join(' · '))}</small></span></div>`;
+    }).join('') || '<p class="empty">Aucun remplaçant</p>';
+
+    const title = `${match.home ? 'vs' : '@'} ${match.opponent}`;
+    const notes = lineup.notes?.trim()
+      ? `<section class="instructions"><h2>Consignes tactiques</h2><p>${escapeHtml(lineup.notes.trim())}</p></section>`
+      : '';
+
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html>
+      <html lang="fr">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Composition — ${escapeHtml(title)}</title>
+          <style>
+            @page { size: A4 landscape; margin: 8mm; }
+            * { box-sizing: border-box; }
+            html, body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; color: #142019; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .sheet { width: 281mm; height: 194mm; margin: 0 auto; display: grid; grid-template-rows: 15mm 1fr; gap: 4mm; overflow: hidden; }
+            header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #d9e2dc; padding-bottom: 2mm; }
+            h1 { margin: 0; font-size: 17pt; line-height: 1.1; }
+            .subtitle { margin-top: 1mm; color: #64736a; font-size: 9pt; }
+            .formation { border-radius: 99px; padding: 2mm 5mm; background: #e1f2e5; color: #107b2d; font-weight: 800; font-size: 12pt; }
+            main { min-height: 0; display: grid; grid-template-columns: 43% 1fr; gap: 7mm; }
+            .pitch { min-height: 0; position: relative; overflow: hidden; border: 1.2mm solid #fff; outline: .35mm solid #9bc5a4; border-radius: 3mm; background: repeating-linear-gradient(to bottom, #197a35 0, #197a35 10%, #20853c 10%, #20853c 20%); }
+            .line { position: absolute; border: .35mm solid rgba(255,255,255,.82); }
+            .boundary { inset: 3%; }
+            .halfway { top: 50%; left: 3%; right: 3%; border-width: .25mm 0 0; }
+            .center-circle { position: absolute; width: 27%; aspect-ratio: 1; left: 50%; top: 50%; transform: translate(-50%,-50%); border: .3mm solid rgba(255,255,255,.82); border-radius: 50%; }
+            .area { position: absolute; left: 21%; width: 58%; height: 14%; border: .3mm solid rgba(255,255,255,.82); }
+            .area.top { top: 3%; border-top: 0; }
+            .area.bottom { bottom: 3%; border-bottom: 0; }
+            .marker { position: absolute; z-index: 1; transform: translate(-50%,-50%); width: 21mm; display: flex; flex-direction: column; align-items: center; text-align: center; }
+            .portrait { display: block; width: 9mm; height: 9mm; border: .6mm solid white; border-radius: 50%; object-fit: cover; background: white; }
+            .fallback { display: grid; place-items: center; color: #107b2d; font-weight: 800; font-size: 8pt; }
+            .captain { position: absolute; top: -1mm; right: 4mm; display: grid; place-items: center; width: 4mm; height: 4mm; border: .3mm solid white; border-radius: 50%; background: #facc15; font-size: 7pt; font-weight: 900; }
+            .player-name, .player-role { max-width: 21mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: .5mm 1mm; color: white; background: rgba(0,0,0,.7); font-size: 6.5pt; line-height: 1.15; }
+            .player-name { margin-top: .5mm; border-radius: 1mm 1mm 0 0; font-weight: 700; }
+            .player-role { border-radius: 0 0 1mm 1mm; font-size: 5.5pt; color: #dce9df; }
+            aside { min-height: 0; display: flex; flex-direction: column; gap: 3mm; }
+            h2 { margin: 0 0 2mm; color: #107b2d; font-size: 10pt; }
+            .bench { display: grid; grid-template-columns: 1fr 1fr; gap: 2mm 4mm; }
+            .bench-player { min-width: 0; display: flex; align-items: center; gap: 2mm; font-size: 8pt; }
+            .bench-photo { flex: none; display: block; width: 9mm; height: 9mm; border-radius: 50%; object-fit: cover; background: #e1f2e5; }
+            .bench-fallback { display: grid; place-items: center; color: #107b2d; font-weight: 800; }
+            .bench-player span { min-width: 0; }
+            .bench-player strong, .bench-player small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .bench-player small { margin-top: .5mm; color: #64736a; font-size: 6.5pt; }
+            .empty { color: #64736a; font-size: 8pt; }
+            .instructions { min-height: 0; border-top: .3mm solid #d9e2dc; padding-top: 2mm; }
+            .instructions p { margin: 0; max-height: 36mm; overflow: hidden; white-space: pre-wrap; font-size: 8pt; line-height: 1.35; }
+            @media screen { body { background: #e8ece9; padding: 12px; } .sheet { background: white; padding: 5mm; box-shadow: 0 4px 24px #0002; } }
+            @media print { .sheet { margin: 0; } }
+          </style>
+        </head>
+        <body>
+          <article class="sheet">
+            <header><div><h1>${escapeHtml(data.teamName || 'Composition d’équipe')} · ${escapeHtml(title)}</h1><div class="subtitle">${escapeHtml(formatDate(match.date))}${match.competition ? ` · ${escapeHtml(match.competition)}` : ''}</div></div><div class="formation">${escapeHtml(lineup.formation)}</div></header>
+            <main>
+              <section class="pitch" aria-label="Terrain et titulaires">
+                <div class="line boundary"></div><div class="line halfway"></div><div class="center-circle"></div>
+                <div class="area top"></div><div class="area bottom"></div>
+                ${markers}
+              </section>
+              <aside>
+                <section><h2>Remplaçants · ${lineup.bench.length}</h2><div class="bench">${bench}</div></section>
+                ${lineup.captainId && players.has(lineup.captainId) ? `<section><h2>Capitaine</h2><div class="bench-player"><strong>${escapeHtml(playerName(players.get(lineup.captainId)))}</strong></div></section>` : ''}
+                ${notes}
+              </aside>
+            </main>
+          </article>
+          <script>
+            window.addEventListener('load', () => {
+              Promise.all(Array.from(document.images, image => typeof image.decode === 'function' ? image.decode().catch(() => undefined) : Promise.resolve()))
+                .then(() => setTimeout(() => window.print(), 250));
+            });
+          </script>
+        </body>
+      </html>`);
+    printWindow.document.close();
+  };
+
   // ---------- Indicateurs ----------
   const xi = lineup.slots.filter(Boolean) as string[];
   const avgNote = avg(xi.map((id) => summarizePlayer(data, players.get(id)!).avgCoachRating));
@@ -213,7 +326,7 @@ export default function Compo() {
       )}
 
       {/* Terrain */}
-      <View style={[{ borderRadius: 22 }, shadow(t, 2)]}>
+      <View style={[{ width: '100%', maxWidth: 560, alignSelf: 'center', borderRadius: 22 }, shadow(t, 2)]}>
         <Pitch
           ref={pitchRef}
           formation={lineup.formation}
@@ -371,7 +484,12 @@ export default function Compo() {
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Button icon="share-social-outline" kind="secondary" title="Partager" onPress={share} />
+              <Button
+                icon={Platform.OS === 'web' ? 'print-outline' : 'share-social-outline'}
+                kind="secondary"
+                title={Platform.OS === 'web' ? 'Imprimer A4' : 'Partager'}
+                onPress={Platform.OS === 'web' ? printLineup : share}
+              />
             </View>
           </Row>
           <Button
