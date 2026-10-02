@@ -54,6 +54,7 @@ Application mobile pour qu'un coach suive ses joueurs après chaque match :
   Touchez un poste pour placer un joueur (suggestions du bon poste d'abord), touchez deux joueurs pour les échanger,
   capitaine, banc (7 remplaçants), non convoqués, **compo auto** (note, forme, blessures), alertes (blessé, douleur,
   joueur hors poste), photos des joueurs sur le terrain, consignes tactiques, publication aux joueurs,
+  choix de l'équipe à composer et joueurs sélectionnables dans tous les effectifs du club (listes Seniors, Jeunes… séparées),
   **impression A4** depuis le navigateur et **partage en image** (WhatsApp…) depuis l'appli mobile.
 - **Blessures** : zone, côté, type, gravité, statut (indisponible / en reprise / guérie), retour prévu, traitement.
 - **Vidéos** : vidéothèque de l'équipe — importer depuis la galerie, **filmer** directement, ou coller un lien
@@ -62,8 +63,8 @@ Application mobile pour qu'un coach suive ses joueurs après chaque match :
   : un appui fait sauter la vidéo au bon moment. Les vidéos apparaissent aussi dans la fiche joueur et le détail du match.
 - **Équipes du club** : Seniors A/B/C, jeunes, féminines… chaque équipe a ses joueurs, matchs, séances et suivi ;
   choix de l'équipe à la connexion ; changement d'équipe depuis l'en-tête.
-- **Cloud (optionnel)** : code d'équipe + code joueur pour rejoindre depuis son téléphone, données retrouvées après
-  réinstallation, synchronisation hors connexion, coach adjoint, **notifications** (à remplir, compo/préparation publiées,
+- **Cloud (optionnel)** : compte personnel nommé par coach (e-mail + mot de passe), code d'équipe + code joueur pour rejoindre depuis son téléphone,
+  données retrouvées après réinstallation, synchronisation hors connexion, coach adjoint, **notifications** (à remplir, compo/préparation publiées,
   rappel à 18 h, douleur signalée au coach). Voir [docs/CLOUD.md](docs/CLOUD.md).
 - **Météo du groupe** (forme, qualité des séances, assiduité) en jauges animées sur l'accueil.
 - **Tableau de bord** : bilan de la saison (V/N/D, buts, forme sur 5 matchs), raccourcis, joueurs disponibles/blessés, progression des questionnaires du dernier match,

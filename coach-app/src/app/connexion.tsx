@@ -117,7 +117,7 @@ export default function Connexion() {
               <RoleCard
                 icon="clipboard"
                 title="Je suis coach"
-                subtitle={club.coachPinHash ? 'Accès complet, toutes les équipes' : 'Créer le code d’accès coach'}
+                subtitle={club.coachPinHash ? 'Accès coach sur cet appareil' : 'Créer le code coach de cet appareil'}
                 onPress={() => setStep(club.coachPinHash ? { k: 'coach' } : { k: 'coach-create' })}
               />
             </Animated.View>
@@ -143,7 +143,7 @@ export default function Connexion() {
             <ClubLogo size={72} />
             <PinPad
               title="Accès coach"
-              subtitle="Entrez votre code"
+              subtitle="Code coach de cet appareil"
               onComplete={async (pin) => {
                 if (await checkPin(pin, 'coach', club.coachPinHash)) afterCoachAuth();
                 else return false;
@@ -176,7 +176,7 @@ export default function Connexion() {
             <PinPad
               key={step.first ? 'confirm' : 'new'}
               title={step.first ? 'Confirmez le code' : 'Créez votre code coach'}
-              subtitle={step.first ? 'Saisissez-le une seconde fois' : '4 chiffres, à ne pas donner aux joueurs'}
+              subtitle={step.first ? 'Saisissez-le une seconde fois' : '4 chiffres pour protéger cet appareil'}
               onComplete={async (pin) => {
                 if (!step.first) {
                   setStep({ k: 'coach-create', first: pin });

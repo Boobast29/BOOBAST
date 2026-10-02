@@ -98,11 +98,12 @@ export default function Settings() {
       <Card>
         <Txt muted size={13}>
           Le coach voit tout. Les joueurs n’ont accès qu’à leur espace : leurs questionnaires, leurs stats, les compos publiées et les vidéos
-          partagées. Les codes joueurs se règlent dans la fiche de chaque joueur ({data.players.filter((p) => p.pinHash).length}/{data.players.length} avec code).
+          partagées. Le code ci-dessous protège cet appareil ; le compte cloud personnel de chaque coach se règle dans Cloud & notifications.
+          Les codes joueurs se règlent dans la fiche de chaque joueur ({data.players.filter((p) => p.pinHash).length}/{data.players.length} avec code).
         </Txt>
-        <Field label="Nouveau code coach" value={pin1} onChangeText={(v) => setPin1(v.replace(/\D/g, '').slice(0, PIN_LENGTH))} keyboardType="number-pad" secureTextEntry maxLength={PIN_LENGTH} placeholder="••••" />
+        <Field label="Nouveau code local coach" value={pin1} onChangeText={(v) => setPin1(v.replace(/\D/g, '').slice(0, PIN_LENGTH))} keyboardType="number-pad" secureTextEntry maxLength={PIN_LENGTH} placeholder="••••" />
         <Field label="Confirmer le code" value={pin2} onChangeText={(v) => setPin2(v.replace(/\D/g, '').slice(0, PIN_LENGTH))} keyboardType="number-pad" secureTextEntry maxLength={PIN_LENGTH} placeholder="••••" />
-        <Button small kind="secondary" icon="key-outline" title="Changer le code coach" onPress={() => run(changePin)} disabled={pin1.length < PIN_LENGTH} />
+        <Button small kind="secondary" icon="key-outline" title="Changer le code de cet appareil" onPress={() => run(changePin)} disabled={pin1.length < PIN_LENGTH} />
         <Button
           small
           kind="ghost"

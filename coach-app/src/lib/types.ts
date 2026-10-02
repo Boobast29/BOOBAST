@@ -170,11 +170,20 @@ export type Lineup = {
   formation: string;
   slots: (ID | null)[];
   bench: ID[];
+  /** Joueurs d'une autre équipe du club retenus dans cette composition. */
+  guestPlayers?: LineupGuestPlayer[];
   captainId?: ID;
   notes?: string;
   /** Visible par les joueurs */
   published: boolean;
   updatedAt: string;
+};
+
+/** Informations publiques minimales d'un joueur invité dans une composition. */
+export type LineupGuestPlayer = Pick<Player, 'id' | 'firstName' | 'lastName' | 'number' | 'position' | 'photoUri' | 'createdAt'> & {
+  sourceTeamId: ID;
+  sourceTeamName: string;
+  sourceTeamCategory: TeamCategory;
 };
 
 export type TrainingFeedback = {

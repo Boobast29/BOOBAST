@@ -43,10 +43,19 @@ export async function coachSignIn(email: string, password: string) {
   if (error) throw error;
 }
 
-export async function coachSignUp(email: string, password: string) {
-  const { data, error } = await sb().auth.signUp({ email: email.trim(), password });
+export async function coachSignUp(email: string, password: string, name: string) {
+  const { data, error } = await sb().auth.signUp({
+    email: email.trim(),
+    password,
+    options: { data: { full_name: name.trim() } },
+  });
   if (error) throw error;
   return { needsConfirmation: !data.session };
+}
+
+export async function updateCoachName(name: string) {
+  const { error } = await sb().auth.updateUser({ data: { full_name: name.trim() } });
+  if (error) throw error;
 }
 
 export async function signOut() {

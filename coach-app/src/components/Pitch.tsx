@@ -13,6 +13,8 @@ export type TokenInfo = {
   form?: number;
   injured?: 'active' | 'reprise';
   pain?: boolean;
+  sourceTeamName?: string;
+  sourceTeamCategory?: string;
 };
 
 type Props = {

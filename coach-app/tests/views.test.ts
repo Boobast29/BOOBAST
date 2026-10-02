@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { buildDemoData } from '../src/lib/demo';
 import { buildPlayerView, mergeEntries, rosterFor } from '../src/lib/cloud/views';
 import type { Entry } from '../src/lib/cloud/views';
+import type { Lineup } from '../src/lib/types';
 
 let ok = 0;
 const test = (name: string, fn: () => void) => {
@@ -28,6 +29,33 @@ test('ressentis d’entraînement : seulement les siens', () => assert.ok(v.sess
 test('objectifs : seulement les siens', () => assert.ok(v.objectives.every((o) => o.playerId === 'p1')));
 test('réponses aux questionnaires : seulement les siennes', () => assert.ok(v.surveyResponses.every((r) => r.playerId === 'p1')));
 test('compos : seulement publiées', () => assert.ok(v.lineups.every((l) => l.published)));
+const guestId = 'guest-u17';
+const guestPlayer = (id: string, photoUri?: string) => ({
+  id,
+  firstName: 'Alex',
+  lastName: 'Martin',
+  photoUri,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  sourceTeamId: 'team-u17',
+  sourceTeamName: 'U17',
+  sourceTeamCategory: 'Jeunes' as const,
+});
+const guestLineup: Lineup = {
+  matchId: 'm3',
+  formation: '4-3-3',
+  slots: [guestId],
+  bench: [],
+  guestPlayers: [guestPlayer(guestId, 'https://images.example.test/alex.jpg'), guestPlayer('not-selected', 'file:///private/photo.jpg')],
+  published: true,
+  updatedAt: '2026-01-01T00:00:00.000Z',
+};
+const guestView = buildPlayerView({ ...data, lineups: [guestLineup] }, 'p1');
+test('compo publiée : seuls les joueurs invités retenus sont transmis', () => assert.deepEqual(guestView.lineups[0].guestPlayers?.map((p) => p.id), [guestId]));
+test('compo publiée : photos cloud conservées et URI locales masquées', () => {
+  assert.equal(guestView.lineups[0].guestPlayers?.[0].photoUri, 'https://images.example.test/alex.jpg');
+  const localPhotoLineup: Lineup = { ...guestLineup, guestPlayers: [guestPlayer(guestId, 'file:///private/photo.jpg')] };
+  assert.equal(buildPlayerView({ ...data, lineups: [localPhotoLineup] }, 'p1').lineups[0].guestPlayers?.[0].photoUri, undefined);
+});
 test('vidéos : partagées ou où il est tagué', () => assert.ok(v.media.every((m) => m.shared || m.playerIds.includes('p1') || m.markers.some((k) => k.playerId === 'p1'))));
 test('la vidéo non partagée (lien d’exercice) est masquée', () => assert.ok(!v.media.some((m) => m.id === 'v3')));
 test('tâches calculées (ressenti de la dernière séance)', () => assert.ok(v.todos.some((t) => t.key.startsWith('seance:'))));
