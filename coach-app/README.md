@@ -53,7 +53,8 @@ Application mobile pour qu'un coach suive ses joueurs après chaque match :
 - **Compo** : terrain interactif avec 7 formations (4-4-2, 4-3-3, 4-2-3-1, 4-1-4-1, 3-5-2, 3-4-3, 5-3-2).
   Touchez un poste pour placer un joueur (suggestions du bon poste d'abord), touchez deux joueurs pour les échanger,
   capitaine, banc (7 remplaçants), non convoqués, **compo auto** (note, forme, blessures), alertes (blessé, douleur,
-  joueur hors poste), consignes tactiques, publication aux joueurs et **partage en image** (WhatsApp…).
+  joueur hors poste), photos des joueurs sur le terrain, consignes tactiques, publication aux joueurs,
+  **impression A4** depuis le navigateur et **partage en image** (WhatsApp…) depuis l'appli mobile.
 - **Blessures** : zone, côté, type, gravité, statut (indisponible / en reprise / guérie), retour prévu, traitement.
 - **Vidéos** : vidéothèque de l'équipe — importer depuis la galerie, **filmer** directement, ou coller un lien
   (YouTube, Drive, Hudl, Veo, .mp4). Catégories (match, entraînement, analyse, adversaire, exercice),
