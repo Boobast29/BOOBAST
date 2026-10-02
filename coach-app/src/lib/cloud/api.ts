@@ -127,7 +127,7 @@ export async function joinAsPlayer(joinCode: string, playerId: string, pin: stri
 export async function coachPull(teamCloudId: string, since?: string) {
   const c = sb();
   const [{ data: team, error: e1 }, { data: entries, error: e2 }] = await Promise.all([
-    c.from('teams').select('data, version, join_code, coach_code, name, color, category').eq('id', teamCloudId).single(),
+    c.from('teams').select('data, version, join_code, coach_code, name, color, category').eq('id', teamCloudId).maybeSingle(),
     (since ? c.from('player_entries').select('*').eq('team_id', teamCloudId).gt('updated_at', since) : c.from('player_entries').select('*').eq('team_id', teamCloudId)),
   ]);
   if (e1) throw e1;
