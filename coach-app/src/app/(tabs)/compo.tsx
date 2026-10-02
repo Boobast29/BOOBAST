@@ -1,22 +1,26 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import { ClubLogo } from '@/components/ClubLogo';
 import { Pitch } from '@/components/Pitch';
 import type { TokenInfo } from '@/components/Pitch';
+import { TeamBadge } from '@/components/TeamBadge';
 import { shadow, useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Empty, Field, IconCircle, Row, Screen, Section, StatBox, tap, Toggle, Txt } from '@/components/ui';
 import { confirm, notify } from '@/lib/confirm';
+import { useCloud } from '@/lib/cloud/CloudSync';
 import { autoLineup, DEFAULT_FORMATION, emptyLineup, FORMATION_KEYS, FORMATIONS, MAX_BENCH, remapFormation, selectionScore } from '@/lib/formations';
 import { useStore } from '@/lib/store';
 import { activeInjury, avg, byDateDesc, fmt, formatDate, initials, playerName, reportsForPlayer, summarizePlayer, today } from '@/lib/stats';
-import type { Lineup, Match } from '@/lib/types';
+import type { AppData, Lineup, LineupGuestPlayer, Match, Player, Team, TeamCategory } from '@/lib/types';
 
 type Draft = Omit<Lineup, 'updatedAt'>;
 type Sel = { kind: 'slot'; index: number } | { kind: 'bench'; id: string } | null;
+type TeamRoster = { team: Team; data: AppData };
+type AvailablePlayer = { player: Player; team: Team; data: AppData };
 
 const escapeHtml = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -24,10 +28,52 @@ const escapeHtml = (value: string) =>
 export default function Compo() {
   const t = useTheme();
   const params = useLocalSearchParams<{ matchId?: string }>();
-  const { data, session, saveLineup } = useStore();
+  const { data, session, team, club, saveLineup, loadClubRosters } = useStore();
+  const { loadClubRosters: loadSyncedClubRosters } = useCloud();
   const isCoach = session?.role === 'coach';
   const me = session?.role === 'player' ? session.playerId : undefined;
   const pitchRef = useRef<View>(null);
+  const [clubRosters, setClubRosters] = useState<TeamRoster[]>([]);
+
+  useEffect(() => {
+    if (!isCoach) return;
+    let active = true;
+    loadSyncedClubRosters()
+      .then(({ rosters, errors }) => {
+        if (active) {
+          setClubRosters(rosters);
+          if (errors.length) notify('Certains effectifs n’ont pas pu être synchronisés', errors.join('\n'));
+        }
+      })
+      .catch((e) => {
+        if (active) {
+          loadClubRosters().then(setClubRosters).catch(() => setClubRosters(team ? [{ team, data }] : []));
+          notify('Effectifs indisponibles', String((e as Error)?.message ?? e));
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [isCoach, team?.id, club.teams, data.players, loadClubRosters, loadSyncedClubRosters]);
+
+  const availablePlayers = useMemo<AvailablePlayer[]>(() => {
+    const rosters = clubRosters.length ? clubRosters : team ? [{ team, data }] : [];
+    return [...rosters].sort((a, b) => Number(b.team.id === team?.id) - Number(a.team.id === team?.id)).flatMap((roster) =>
+      roster.data.players
+        .filter((player) => !player.archived)
+        .map((player) => ({ player, team: roster.team, data: roster.data })),
+    );
+  }, [clubRosters, team, data]);
+
+  const selectionData = useMemo<AppData>(() => {
+    const rosterData = new Map(availablePlayers.map((entry) => [entry.team.id, entry.data]));
+    return {
+      ...data,
+      players: availablePlayers.map(({ player }) => player),
+      reports: [...rosterData.values()].flatMap((roster) => roster.reports),
+      injuries: [...rosterData.values()].flatMap((roster) => roster.injuries),
+    };
+  }, [data, availablePlayers]);
 
   // Matchs proposés : à venir d'abord (le plus proche), puis joués (le plus récent)
   const matches = useMemo(() => {
@@ -48,21 +94,28 @@ export default function Compo() {
 
   const info = useMemo(() => {
     const m = new Map<string, TokenInfo>();
-    for (const p of data.players) {
-      const inj = activeInjury(data, p.id);
-      m.set(p.id, {
-        player: p,
-        form: summarizePlayer(data, p).avgWellness,
+    for (const entry of availablePlayers) {
+      const { player, team: sourceTeam, data: sourceData } = entry;
+      const inj = activeInjury(sourceData, player.id);
+      m.set(player.id, {
+        player,
+        form: summarizePlayer(sourceData, player).avgWellness,
         injured: inj?.status === 'active' ? 'active' : inj?.status === 'reprise' ? 'reprise' : undefined,
-        pain: reportsForPlayer(data, p.id)[0]?.pain,
+        pain: reportsForPlayer(sourceData, player.id)[0]?.pain,
+        sourceTeamName: sourceTeam.name,
+        sourceTeamCategory: sourceTeam.category,
       });
     }
+    for (const guest of data.lineups.find((l) => l.matchId === matchId)?.guestPlayers ?? []) {
+      if (!m.has(guest.id)) m.set(guest.id, { player: guest, sourceTeamName: guest.sourceTeamName, sourceTeamCategory: guest.sourceTeamCategory });
+    }
     return m;
-  }, [data]);
+  }, [availablePlayers, data, matchId]);
 
   if (!match || !lineup)
     return (
       <Screen>
+        {isCoach ? <TeamScopeSelector /> : null}
         <Empty
           icon="grid-outline"
           text={isCoach ? 'Créez un match pour préparer sa composition.' : 'Aucune composition publiée par le coach pour le moment.'}
@@ -73,9 +126,28 @@ export default function Compo() {
 
   const def = FORMATIONS[lineup.formation] ?? FORMATIONS[DEFAULT_FORMATION];
   const update = (l: Draft) => {
-    saveLineup(l);
+    const selected = new Set([...l.slots.filter((id): id is string => !!id), ...l.bench]);
+    const knownGuests = new Map<string, LineupGuestPlayer>();
+    for (const entry of availablePlayers) {
+      if (!selected.has(entry.player.id) || entry.team.id === team?.id) continue;
+      knownGuests.set(entry.player.id, {
+        id: entry.player.id,
+        firstName: entry.player.firstName,
+        lastName: entry.player.lastName,
+        number: entry.player.number,
+        position: entry.player.position,
+        photoUri: entry.player.photoUri,
+        createdAt: entry.player.createdAt,
+        sourceTeamId: entry.team.cloudId ?? entry.team.id,
+        sourceTeamName: entry.team.name,
+        sourceTeamCategory: entry.team.category,
+      });
+    }
+    for (const guest of l.guestPlayers ?? []) if (selected.has(guest.id) && !knownGuests.has(guest.id)) knownGuests.set(guest.id, guest);
+    saveLineup({ ...l, guestPlayers: [...knownGuests.values()] });
   };
-  const players = new Map(data.players.map((p) => [p.id, p]));
+  const guestPlayers = stored?.guestPlayers ?? [];
+  const players = new Map<string, Player>([...guestPlayers, ...data.players].map((p) => [p.id, p]));
   const inXI = new Set(lineup.slots.filter(Boolean) as string[]);
   const inBench = new Set(lineup.bench);
   const notCalled = data.players.filter((p) => !p.archived && !inXI.has(p.id) && !inBench.has(p.id));
@@ -280,6 +352,7 @@ export default function Compo() {
 
   return (
     <Screen>
+      {isCoach ? <TeamScopeSelector /> : null}
       {/* Choix du match */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
         {matches.map((m) => (
@@ -476,7 +549,7 @@ export default function Compo() {
                 onPress={() => {
                   const go = () => {
                     setSel(null);
-                    update(autoLineup(data, match.id, lineup.formation, stored));
+                    update(autoLineup(selectionData, match.id, lineup.formation, stored));
                   };
                   if (xi.length) confirm('Compo automatique ?', 'La composition actuelle sera remplacée par les meilleurs joueurs disponibles (note, forme, blessures).', go, 'Remplacer');
                   else go();
@@ -509,6 +582,7 @@ export default function Compo() {
         exclude={pickerFor === 'bench' ? new Set([...inXI, ...inBench]) : new Set(inXI)}
         bench={inBench}
         info={info}
+        roster={availablePlayers}
         onClose={() => setPickerFor(null)}
         onPick={(id) => {
           if (pickerFor === 'bench') update({ ...lineup, bench: [...lineup.bench, id] });
@@ -517,6 +591,78 @@ export default function Compo() {
         }}
       />
     </Screen>
+  );
+}
+
+const TEAM_CATEGORY_ORDER: TeamCategory[] = ['Seniors', 'Jeunes', 'Féminines', 'Vétérans', 'Loisir'];
+
+function TeamScopeSelector() {
+  const t = useTheme();
+  const { club, team, selectTeam } = useStore();
+  const [visible, setVisible] = useState(false);
+  const teams = club.teams.filter((item) => item.joinedAs !== 'player');
+  const choose = async (id: string) => {
+    setVisible(false);
+    if (id === team?.id) return;
+    try {
+      await selectTeam(id);
+    } catch (e) {
+      notify('Équipe indisponible', String((e as Error)?.message ?? e));
+    }
+  };
+
+  return (
+    <>
+      <Pressable onPress={() => setVisible(true)} accessibilityRole="button" accessibilityLabel={`Équipe de la composition : ${team?.name ?? 'aucune'}`}>
+        <Card style={{ paddingVertical: 11 }}>
+          <Row style={{ gap: 10 }}>
+            {team ? <TeamBadge team={team} size={38} /> : <Ionicons name="shield-outline" size={26} color={t.primary} />}
+            <View style={{ flex: 1, gap: 2 }}>
+              <Txt muted size={11}>COMPOSITION POUR</Txt>
+              <Txt bold>{team?.name ?? 'Choisir une équipe'}</Txt>
+            </View>
+            <Ionicons name="chevron-down" size={20} color={t.muted} />
+          </Row>
+        </Card>
+      </Pressable>
+      <Modal visible={visible} transparent={Platform.OS === 'web'} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setVisible(false)}>
+        <View style={{ flex: 1, backgroundColor: t.bg, marginTop: Platform.OS === 'web' ? 60 : 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden' }}>
+          <Row style={{ justifyContent: 'space-between', padding: 16, paddingBottom: 8 }}>
+            <View>
+              <Txt bold size={20}>Équipe à composer</Txt>
+              <Txt muted size={13}>Le match et sa composition seront ceux de cette équipe.</Txt>
+            </View>
+            <Pressable onPress={() => setVisible(false)} hitSlop={10} accessibilityLabel="Fermer">
+              <Ionicons name="close-circle" size={30} color={t.muted} />
+            </Pressable>
+          </Row>
+          <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}>
+            {TEAM_CATEGORY_ORDER.map((category) => {
+              const members = teams.filter((item) => item.category === category);
+              if (!members.length) return null;
+              return (
+                <View key={category} style={{ gap: 8 }}>
+                  <Section icon="people-outline">{category} · {members.length}</Section>
+                  {members.map((item) => (
+                    <Card key={item.id} onPress={() => choose(item.id)} stripe={item.color} style={{ paddingVertical: 11 }}>
+                      <Row style={{ gap: 10 }}>
+                        <TeamBadge team={item} size={38} />
+                        <View style={{ flex: 1 }}>
+                          <Txt bold>{item.name}</Txt>
+                          <Txt muted size={12}>{item.category}</Txt>
+                        </View>
+                        {item.id === team?.id ? <Badge text="Sélectionnée" tone="success" icon="checkmark" /> : null}
+                      </Row>
+                    </Card>
+                  ))}
+                </View>
+              );
+            })}
+            {!teams.length ? <Empty text="Aucune autre équipe du club n’est configurée." /> : null}
+          </ScrollView>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -559,6 +705,7 @@ function PlayerPicker({
   exclude,
   bench,
   info,
+  roster,
   onClose,
   onPick,
 }: {
@@ -568,15 +715,24 @@ function PlayerPicker({
   exclude: Set<string>;
   bench: Set<string>;
   info: Map<string, TokenInfo>;
+  roster: AvailablePlayer[];
   onClose: () => void;
   onPick: (id: string) => void;
 }) {
   const t = useTheme();
-  const { data } = useStore();
-  const list = data.players
-    .filter((p) => !p.archived && !exclude.has(p.id))
-    .map((p) => ({ p, score: selectionScore(data, p), s: summarizePlayer(data, p) }))
-    .sort((a, b) => Number(b.p.position === group) - Number(a.p.position === group) || b.score - a.score);
+  const grouped = TEAM_CATEGORY_ORDER.map((category) => ({
+    category,
+    players: roster
+      .filter((entry) => entry.team.category === category && !exclude.has(entry.player.id))
+      .map(({ player, team, data }) => ({
+        p: player,
+        team,
+        s: summarizePlayer(data, player),
+        score: selectionScore(data, player),
+      }))
+      .sort((a, b) => Number(b.p.position === group) - Number(a.p.position === group) || b.score - a.score),
+  })).filter((category) => category.players.length > 0);
+  const playerCount = grouped.reduce((total, category) => total + category.players.length, 0);
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" transparent={Platform.OS === 'web'} onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: t.bg, marginTop: Platform.OS === 'web' ? 60 : 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden' }}>
@@ -585,37 +741,43 @@ function PlayerPicker({
             <Txt bold size={20}>
               {title}
             </Txt>
-            {group ? <Txt muted size={13}>Suggestions : {group.toLowerCase()}s en premier</Txt> : null}
+            <Txt muted size={13}>{group ? `Suggestions : ${group.toLowerCase()}s en premier · ` : ''}effectifs séparés par catégorie</Txt>
           </View>
           <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Fermer">
             <Ionicons name="close-circle" size={30} color={t.muted} />
           </Pressable>
         </Row>
         <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}>
-          {list.length === 0 && <Empty text="Tous les joueurs sont déjà placés." />}
-          {list.map(({ p, s }) => {
-            const ti = info.get(p.id);
-            const match = p.position === group;
-            return (
-              <Card key={p.id} onPress={() => onPick(p.id)} style={{ paddingVertical: 12 }} stripe={ti?.injured === 'active' ? t.danger : match ? t.primary : undefined}>
-                <Row style={{ gap: 12 }}>
-                  <Avatar size={42} colorKey={p.id} photo={p.photoUri} label={initials(p)} />
-                  <View style={{ flex: 1, gap: 3 }}>
-                    <Txt bold>{playerName(p)}</Txt>
-                    <Row style={{ flexWrap: 'wrap', gap: 6 }}>
-                      <Badge text={p.position ?? 'Sans poste'} tone={match ? 'success' : 'neutral'} />
-                      {s.avgCoachRating != null && <Badge text={`Note ${fmt(s.avgCoachRating)}`} tone="accent" icon="star" />}
-                      {s.avgWellness != null && <Badge text={`Forme ${fmt(s.avgWellness)}`} tone="info" icon="heart" />}
-                      {bench.has(p.id) && <Badge text="Remplaçant" icon="people" />}
-                      {ti?.injured && <Badge text={ti.injured === 'active' ? 'Blessé' : 'Reprise'} tone={ti.injured === 'active' ? 'danger' : 'warning'} icon="medkit" />}
-                      {!ti?.injured && ti?.pain && <Badge text="Douleur" tone="warning" icon="bandage" />}
+          {playerCount === 0 && <Empty text="Tous les joueurs du club sont déjà placés." />}
+          {grouped.map(({ category, players: categoryPlayers }) => (
+            <View key={category} style={{ gap: 8 }}>
+              <Section icon="people-outline">{category} · {categoryPlayers.length}</Section>
+              {categoryPlayers.map(({ p, team, s }) => {
+                const ti = info.get(p.id);
+                const match = p.position === group;
+                return (
+                  <Card key={`${team.id}:${p.id}`} onPress={() => onPick(p.id)} style={{ paddingVertical: 12 }} stripe={ti?.injured === 'active' ? t.danger : match ? t.primary : undefined}>
+                    <Row style={{ gap: 12 }}>
+                      <Avatar size={42} colorKey={p.id} photo={p.photoUri} label={initials(p)} />
+                      <View style={{ flex: 1, gap: 3 }}>
+                        <Txt bold>{playerName(p)}</Txt>
+                        <Row style={{ flexWrap: 'wrap', gap: 6 }}>
+                          <Badge text={team.name} />
+                          <Badge text={p.position ?? 'Sans poste'} tone={match ? 'success' : 'neutral'} />
+                          {s.avgCoachRating != null && <Badge text={`Note ${fmt(s.avgCoachRating)}`} tone="accent" icon="star" />}
+                          {s.avgWellness != null && <Badge text={`Forme ${fmt(s.avgWellness)}`} tone="info" icon="heart" />}
+                          {bench.has(p.id) && <Badge text="Remplaçant" icon="people" />}
+                          {ti?.injured && <Badge text={ti.injured === 'active' ? 'Blessé' : 'Reprise'} tone={ti.injured === 'active' ? 'danger' : 'warning'} icon="medkit" />}
+                          {!ti?.injured && ti?.pain && <Badge text="Douleur" tone="warning" icon="bandage" />}
+                        </Row>
+                      </View>
+                      <Ionicons name="add-circle" size={26} color={t.primary} />
                     </Row>
-                  </View>
-                  <Ionicons name="add-circle" size={26} color={t.primary} />
-                </Row>
-              </Card>
-            );
-          })}
+                  </Card>
+                );
+              })}
+            </View>
+          ))}
         </ScrollView>
       </View>
     </Modal>

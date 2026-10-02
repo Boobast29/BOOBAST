@@ -75,6 +75,8 @@ type Store = {
   logout: () => void;
   /** Coach : change d'équipe (charge ses données) */
   selectTeam: (teamId: string) => Promise<void>;
+  /** Coach : charge les effectifs des équipes gérées du club, sans changer l'équipe active. */
+  loadClubRosters: () => Promise<{ team: Team; data: AppData }[]>;
   createTeam: (t: Omit<Team, 'id' | 'createdAt'>) => Team;
   updateTeam: (id: string, patch: Partial<Team>) => void;
   deleteTeam: (id: string) => Promise<void>;
@@ -219,6 +221,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const loadClubRosters = useCallback(
+    async () =>
+      Promise.all(
+        clubRef.current.teams
+          .filter((x) => x.joinedAs !== 'player')
+          .map(async (team) => ({
+            team,
+            data: team.id === teamIdRef.current ? normalizeData(dataRef.current, team.name) : await loadTeamData(team),
+          })),
+      ),
+    [],
+  );
+
   const savePlayer = useCallback((p: Upsert<Player>) => {
     const player = { ...p, id: p.id ?? newId(), createdAt: p.createdAt ?? now() } as Player;
     setData((d) => ({ ...d, players: upsert(d.players, player) }));
@@ -296,6 +311,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await switchTo(id, clubRef.current.teams);
         if (session?.role === 'coach') persistSession({ role: 'coach', teamId: id });
       },
+      loadClubRosters,
       createTeam: (t) => {
         const created: Team = { ...t, id: newId(), createdAt: now() };
         const next = { ...clubRef.current, teams: [...clubRef.current.teams, created] };
@@ -398,7 +414,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       saveMedia,
       deleteMedia: (id) => setData((d) => ({ ...d, media: d.media.filter((m) => m.id !== id) })),
     }),
-    [data, ready, session, club, team, persistSession, switchTo, saveSession, saveMedia, savePlayer, deletePlayer, saveMatch, deleteMatch, saveReport],
+    [data, ready, session, club, team, persistSession, switchTo, loadClubRosters, saveSession, saveMedia, savePlayer, deletePlayer, saveMatch, deleteMatch, saveReport],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

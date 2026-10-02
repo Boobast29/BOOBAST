@@ -8,16 +8,32 @@ import { notify } from '../confirm';
 import { getPushToken, onNotificationTap, setBadge } from '../notifications';
 import { normalizeData, useStore } from '../store';
 import type { PlayerWrite } from '../store';
-import { coachPull, coachPush, humanError, playerPull, pushEntry, savePushToken, uploadImage } from './api';
+import type { AppData, Team } from '../types';
+import { coachPull, coachPush, humanError, myTeams, playerPull, pushEntry, savePushToken, uploadImage } from './api';
 import { supabase } from './client';
 import { isCloudConfigured } from './config';
 import { mergeEntries } from './views';
 import type { Entry } from './views';
 
 type Status = 'off' | 'idle' | 'syncing' | 'offline' | 'error';
-type CloudState = { enabled: boolean; status: Status; lastSync?: string; error?: string; user: User | null; syncNow: () => Promise<void> };
+type TeamRoster = { team: Team; data: AppData };
+type CloudState = {
+  enabled: boolean;
+  status: Status;
+  lastSync?: string;
+  error?: string;
+  user: User | null;
+  syncNow: () => Promise<void>;
+  loadClubRosters: () => Promise<{ rosters: TeamRoster[]; errors: string[] }>;
+};
 
-const Ctx = createContext<CloudState>({ enabled: false, status: 'off', user: null, syncNow: async () => {} });
+const Ctx = createContext<CloudState>({
+  enabled: false,
+  status: 'off',
+  user: null,
+  syncNow: async () => {},
+  loadClubRosters: async () => ({ rosters: [], errors: [] }),
+});
 export const useCloud = () => useContext(Ctx);
 
 const OUTBOX_KEY = 'qea/outbox/v1';
@@ -31,7 +47,7 @@ type OutboxItem = { teamCloudId: string; playerId: string; kind: Entry['kind']; 
  */
 export function CloudSync({ children }: { children: ReactNode }) {
   const enabled = isCloudConfigured();
-  const { data, session, team, replaceAll, updateTeam, onPlayerWrite, savePlayer } = useStore();
+  const { data, session, team, replaceAll, updateTeam, onPlayerWrite, savePlayer, loadClubRosters: loadLocalClubRosters } = useStore();
   const [status, setStatus] = useState<Status>(enabled ? 'idle' : 'off');
   const [error, setError] = useState<string>();
   const [lastSync, setLastSync] = useState<string>();
@@ -156,6 +172,33 @@ export function CloudSync({ children }: { children: ReactNode }) {
     }
   }, [enabled, uploadPhotos, replaceAll, updateTeam, registerPush, flushOutbox]);
 
+  const loadClubRosters = useCallback(async () => {
+    const rosters = await loadLocalClubRosters();
+    if (!enabled || !user || user.is_anonymous || sessionRef.current?.role !== 'coach') return { rosters, errors: [] };
+
+    let allowedTeams: Set<string>;
+    try {
+      allowedTeams = new Set((await myTeams()).filter((membership) => membership.role === 'coach').map((membership) => membership.team_id));
+    } catch (e) {
+      return { rosters, errors: [humanError(e)] };
+    }
+
+    const errors: string[] = [];
+    const updated = await Promise.all(rosters.map(async (roster) => {
+      const cloudId = roster.team.cloudId;
+      if (!cloudId || roster.team.id === team?.id || !allowedTeams.has(cloudId)) return roster;
+      try {
+        const remote = await coachPull(cloudId);
+        const base = normalizeData(remote.team.data ?? roster.data, roster.team.name);
+        return { ...roster, data: mergeEntries(base, remote.entries).data };
+      } catch (e) {
+        errors.push(`${roster.team.name} : ${humanError(e)}`);
+        return roster;
+      }
+    }));
+    return { rosters: updated, errors };
+  }, [enabled, loadLocalClubRosters, team?.id, user]);
+
   useEffect(() => {
     syncRef.current = sync;
   }, [sync]);
@@ -199,5 +242,5 @@ export function CloudSync({ children }: { children: ReactNode }) {
   // Toucher une notification ouvre le bon écran
   useEffect(() => onNotificationTap((route) => router.push(route as never)), []);
 
-  return <Ctx.Provider value={{ enabled, status, error, lastSync, user, syncNow: sync }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ enabled, status, error, lastSync, user, syncNow: sync, loadClubRosters }}>{children}</Ctx.Provider>;
 }

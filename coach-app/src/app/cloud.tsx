@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, Share, Text, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ClubLogo } from '@/components/ClubLogo';
@@ -9,7 +9,7 @@ import { PinPad } from '@/components/PinPad';
 import { TeamBadge } from '@/components/TeamBadge';
 import { useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Field, IconCircle, Row, Screen, Section, Txt } from '@/components/ui';
-import { coachSignIn, coachSignUp, createCloudTeam, humanError, joinAsCoach, joinAsPlayer, myTeams, signOut, teamRoster } from '@/lib/cloud/api';
+import { coachSignIn, coachSignUp, createCloudTeam, humanError, joinAsCoach, joinAsPlayer, myTeams, signOut, teamRoster, updateCoachName } from '@/lib/cloud/api';
 import type { RosterRow } from '@/lib/cloud/api';
 import { useCloud } from '@/lib/cloud/CloudSync';
 import { isCloudConfigured } from '@/lib/cloud/config';
@@ -83,7 +83,7 @@ function SyncStatus() {
         <View style={{ flex: 1 }}>
           <Txt bold>{team?.cloudId ? label : 'Équipe pas encore en ligne'}</Txt>
           <Txt muted size={12}>
-            {user ? (user.is_anonymous ? 'Compte joueur sur cet appareil' : user.email) : 'Non connecté'}
+            {user ? (user.is_anonymous ? 'Compte joueur sur cet appareil' : String(user.user_metadata?.full_name || user.email || 'Compte coach')) : 'Non connecté'}
             {lastSync ? ` · dernière synchro ${new Date(lastSync).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : ''}
           </Txt>
         </View>
@@ -108,11 +108,16 @@ function CoachCloud() {
   const { user, syncNow } = useCloud();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [coachName, setCoachName] = useState('');
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [busy, setBusy] = useState(false);
   const [coachCode, setCoachCode] = useState('');
   const coachAccount = user && !user.is_anonymous;
   const localTeams = club.teams.filter((x) => x.joinedAs !== 'player');
+
+  useEffect(() => {
+    setCoachName(String(user?.user_metadata?.full_name ?? ''));
+  }, [user?.id, user?.user_metadata?.full_name]);
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -157,19 +162,20 @@ function CoachCloud() {
         <Section icon="person-circle-outline">Compte coach</Section>
         <Card>
           <Txt muted size={13}>
-            Un compte (e-mail + mot de passe) relie vos équipes au cloud. Vous le retrouvez sur n’importe quel téléphone ou tablette.
+            Chaque coach crée son compte personnel avec son nom, son e-mail et son mot de passe. Il pourra retrouver les équipes auxquelles il est autorisé sur son téléphone.
           </Txt>
+          {mode === 'signup' ? <Field label="Nom du coach" value={coachName} onChangeText={setCoachName} autoCapitalize="words" placeholder="Ex. : Alex Martin" /> : null}
           <Field label="E-mail" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="coach@qea.fr" />
           <Field label="Mot de passe" value={password} onChangeText={setPassword} secureTextEntry placeholder="8 caractères minimum" />
           <Button
             icon={mode === 'signin' ? 'log-in-outline' : 'person-add-outline'}
             title={mode === 'signin' ? 'Se connecter' : 'Créer mon compte coach'}
-            disabled={busy || !email || password.length < 8}
+            disabled={busy || !email || password.length < 8 || (mode === 'signup' && !coachName.trim())}
             onPress={() =>
               run(async () => {
                 if (mode === 'signin') await coachSignIn(email, password);
                 else {
-                  const r = await coachSignUp(email, password);
+                  const r = await coachSignUp(email, password, coachName);
                   if (r.needsConfirmation) notify('Vérifiez vos e-mails', 'Cliquez sur le lien de confirmation, puis connectez-vous ici.');
                 }
               })
@@ -182,6 +188,22 @@ function CoachCloud() {
 
   return (
     <>
+      <Section icon="person-circle-outline">Profil coach</Section>
+      <Card>
+        <Txt muted size={13}>Nom associé à ce compte coach. Chaque entraîneur conserve son propre e-mail et son mot de passe sur ses appareils.</Txt>
+        <Field label="Nom du coach" value={coachName} onChangeText={setCoachName} autoCapitalize="words" placeholder="Ex. : Alex Martin" />
+        <Button
+          small
+          kind="secondary"
+          icon="save-outline"
+          title="Enregistrer mon profil"
+          disabled={busy || !coachName.trim() || coachName.trim() === String(user?.user_metadata?.full_name ?? '')}
+          onPress={() => run(async () => {
+            await updateCoachName(coachName);
+            notify('Profil mis à jour', `Le nom « ${coachName.trim()} » est enregistré pour ce compte coach.`);
+          })}
+        />
+      </Card>
       <Section icon="shield-outline" action={<Button small kind="ghost" icon="download-outline" title="Récupérer" onPress={importTeams} disabled={busy} />}>
         Équipes en ligne
       </Section>
@@ -216,6 +238,7 @@ function CoachCloud() {
 
       <Section icon="people-outline">Coach adjoint</Section>
       <Card>
+        <Txt muted size={13}>Chaque coach utilise son compte personnel. Pour accéder à plusieurs équipes et composer avec leurs effectifs, il doit rejoindre chaque équipe avec son code coach.</Txt>
         <Field label="Rejoindre une équipe avec un code coach" value={coachCode} onChangeText={(v) => setCoachCode(v.toUpperCase())} autoCapitalize="characters" placeholder="Ex. : K7PQ2MXA" />
         <Button
           small

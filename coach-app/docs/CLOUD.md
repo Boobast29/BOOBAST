@@ -6,7 +6,9 @@ Sans cloud, QEA Coach fonctionne entièrement sur un appareil (celui du coach). 
 - un joueur qui **supprime l'appli** et la réinstalle retrouve tout en saisissant à nouveau ses codes ;
 - **notifications** : questionnaire à remplir, ressenti d'entraînement, nouveau questionnaire, point à travailler,
   préparation/compo publiée, **rappel quotidien** tant que ce n'est pas rempli, et au coach : **douleur signalée** ;
-- plusieurs **coachs** par équipe (code coach adjoint) et toutes les **équipes du club** (Seniors A/B/C, U19…U11…).
+- plusieurs **coachs nommés**, chacun avec son compte e-mail/mot de passe personnel, par équipe (code coach adjoint) et toutes les **équipes du club** (Seniors A/B/C, U19…U11…).
+- compositions d'une équipe avec sélection possible dans les effectifs des autres équipes du club, regroupés par catégorie ;
+  seuls les joueurs retenus et leurs informations publiques sont intégrés à la composition publiée.
 
 Ce qui reste privé : chaque joueur ne reçoit qu'une **vue filtrée** calculée par l'appli du coach (ses questionnaires sans la
 note du coach, ses blessures, ses objectifs, les compos et préparations publiées, les vidéos partagées). Le document
@@ -43,9 +45,11 @@ Chaque téléphone enregistre automatiquement son jeton à la première synchron
 
 ## 4. Utilisation
 
-**Coach** : Réglages > *Cloud & notifications* > créer son compte (e-mail + mot de passe) > **Mettre l'équipe en ligne**
-pour chaque équipe. L'écran affiche le **code joueurs** (à partager sur le groupe de l'équipe) et le **code coach adjoint**.
-Sur un autre téléphone ou après réinstallation : se connecter puis **Récupérer**.
+**Coach** : Réglages > *Cloud & notifications* > créer son compte personnel (nom, e-mail + mot de passe) ou se connecter
+avec son propre compte. Le premier coach met chaque équipe en ligne et partage son **code coach adjoint** aux autres
+coachs. Chaque coach rejoint ensuite les équipes avec ce code depuis son téléphone ; son nom et ses identifiants restent
+attachés à son compte. L'écran affiche aussi le **code joueurs** à partager sur le groupe de l'équipe.
+Pour une composition, choisir l'équipe cible puis ajouter des joueurs depuis les effectifs du club, triés par catégorie.
 
 **Joueur** : écran d'accueil > *J'ai un code d'équipe* > code > son nom > son code joueur (réglé par le coach dans la fiche
 du joueur ; 5 essais max puis blocage 15 minutes).

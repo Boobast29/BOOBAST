@@ -91,7 +91,14 @@ export function buildPlayerView(data: AppData, playerId: string): PlayerViewData
     injuries: data.injuries.filter((i) => i.playerId === playerId),
     questions: data.questions,
     media: data.media.filter((m) => canSeeMedia(session, m)),
-    lineups: data.lineups.filter((l) => l.published),
+    lineups: data.lineups
+      .filter((l) => l.published)
+      .map((l) => ({
+        ...l,
+        guestPlayers: l.guestPlayers
+          ?.filter((p) => l.slots.includes(p.id) || l.bench.includes(p.id))
+          .map((p) => ({ ...p, photoUri: p.photoUri && /^https?:/.test(p.photoUri) ? p.photoUri : undefined })),
+      })),
     sessions: data.sessions.map((x) => ({
       id: x.id,
       date: x.date,
