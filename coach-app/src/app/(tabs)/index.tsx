@@ -57,7 +57,7 @@ function Dashboard() {
   const record = useMemo(() => seasonRecord(data), [data]);
   const [showAll, setShowAll] = useState(false);
   const injured = summaries.filter((s) => s.activeInjury?.status === 'active').length;
-  const lastMatch = [...data.matches].filter((m) => m.date <= today() || m.scoreFor != null).sort(byDateDesc)[0];
+  const lastMatch = [...data.matches].filter((m) => m.scoreFor != null).sort(byDateDesc)[0];
   const nextMatch = data.matches.filter((m) => m.scoreFor == null && m.date >= today()).sort((a, b) => a.date.localeCompare(b.date))[0];
   const since = isoDaysAgo(14);
   const recentFb = data.sessions.filter((x) => x.date >= since).flatMap((x) => Object.values(x.feedback ?? {}));
