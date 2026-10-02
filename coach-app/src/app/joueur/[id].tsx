@@ -1,36 +1,39 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import { PlayerFeedback } from '@/components/Feedback';
 import { MediaStrip } from '@/components/Media';
 import { useTheme } from '@/components/theme';
-import { Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, Link, Progress, Row, Screen, Section, StatBox, Txt } from '@/components/ui';
+import { TrendChart } from '@/components/TrendChart';
+import { Hero, Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, Link, List, ListRow, Progress, Row, Screen, Section, StatBox, Txt } from '@/components/ui';
 import { INJURY_STATUS_LABEL, INJURY_STATUS_TONE, STAT_FIELDS, statsForPosition } from '@/lib/constants';
+import { coachAlerts, playerTimeline, playingTime } from '@/lib/insights';
+import { notify } from '@/lib/confirm';
+import { sharePlayerReport } from '@/lib/report';
 import { useStore } from '@/lib/store';
-import { attendanceRate, avg, byDateDesc, fmt, formatAnswer, formatDate, initials, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, wellnessScore } from '@/lib/stats';
+import { attendanceRate, byDateDesc, fmt, formatAnswer, formatDate, initials, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, wellnessScore } from '@/lib/stats';
 
 export default function PlayerDetail() {
   const t = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data } = useStore();
+  const { data, club } = useStore();
   const player = data.players.find((p) => p.id === id);
   if (!player) return <Empty text="Joueur introuvable." />;
 
   const s = summarizePlayer(data, player);
   const att = attendanceRate(data, player.id);
   const objectives = data.objectives.filter((o) => o.playerId === player.id);
-  const trainingFb = data.sessions
-    .map((x) => x.feedback?.[player.id])
-    .filter((f): f is NonNullable<typeof f> => !!f);
   const reports = reportsForPlayer(data, player.id);
   const injuries = data.injuries.filter((i) => i.playerId === player.id).sort(byDateDesc);
   const matches = new Map(data.matches.map((m) => [m.id, m]));
   const media = data.media
     .filter((m) => m.playerIds.includes(player.id) || m.markers.some((k) => k.playerId === player.id))
     .sort((a, b) => b.date.localeCompare(a.date));
-  // Évolution du bien-être sur les 8 derniers questionnaires (plus ancien → plus récent)
-  const trend = reports.slice(0, 8).reverse();
+  const tl = playerTimeline(data, player.id);
+  const pt = playingTime(data);
+  const myTime = pt.rows.find((r) => r.playerId === player.id);
+  const signals = coachAlerts(data).filter((a) => a.playerId === player.id);
+  const interviews = data.interviews.filter((i) => i.playerId === player.id).sort(byDateDesc);
   const edit = () => router.push({ pathname: '/joueur/edit', params: { id: player.id } });
 
   return (
@@ -42,7 +45,7 @@ export default function PlayerDetail() {
         }}
       />
 
-      <LinearGradient colors={t.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 24, padding: 20, gap: 16 }}>
+      <Hero style={{ padding: 20, gap: 16 }}>
         <Row style={{ gap: 14 }}>
           <Avatar label={initials(player)} colorKey={player.id} photo={player.photoUri} size={72} ring="rgba(255,255,255,0.9)" />
           <View style={{ flex: 1, gap: 4 }}>
@@ -65,7 +68,7 @@ export default function PlayerDetail() {
           <HeroStat value={s.totals.assists} label="Passes D." />
           <HeroStat value={s.minutes} label="Minutes" />
         </Row>
-      </LinearGradient>
+      </Hero>
 
       {player.notes ? (
         <Card>
@@ -76,12 +79,70 @@ export default function PlayerDetail() {
         </Card>
       ) : null}
 
+      {signals.length > 0 && (
+        <List>
+          {signals.map((a, i) => (
+            <ListRow
+              key={i}
+              first={i === 0}
+              left={<Ionicons name={a.level === 'high' ? 'alert-circle' : 'information-circle'} size={22} color={a.level === 'high' ? t.danger : t.warning} />}
+              title={a.text}
+            />
+          ))}
+        </List>
+      )}
+
+      <Row style={{ gap: 10 }}>
+        <View style={{ flex: 1 }}>
+          <Button small icon="chatbubbles-outline" title="Entretien" onPress={() => router.push({ pathname: '/entretien', params: { playerId: player.id } })} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Button small kind="secondary" icon="flag-outline" title="Objectif" onPress={() => router.push({ pathname: '/objectif/edit', params: { playerId: player.id } })} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Button
+            small
+            kind="secondary"
+            icon="document-text-outline"
+            title="Bilan PDF"
+            onPress={() => sharePlayerReport(data, player.id, club.name).catch((e) => notify('Bilan impossible', String((e as Error)?.message ?? e)))}
+          />
+        </View>
+      </Row>
+
+      {(tl.form.length > 1 || tl.trainingPerf.length > 1) && (
+        <>
+          <Section>Évolution</Section>
+          <Card style={{ gap: 18 }}>
+            {tl.form.length > 1 && <TrendChart title="Forme après match" points={tl.form} min={1} max={5} unit="/5" />}
+            {tl.selfRating.some((p) => p.value != null) && <TrendChart title="Sa perf perso (match)" points={tl.selfRating} min={1} max={10} unit="/10" />}
+            {tl.coachRating.some((p) => p.value != null) && <TrendChart title="Votre note (match)" points={tl.coachRating} min={1} max={10} unit="/10" />}
+            {tl.trainingPerf.length > 1 && <TrendChart title="Sa perf perso (entraînement)" points={tl.trainingPerf} min={1} max={10} unit="/10" />}
+          </Card>
+        </>
+      )}
+
       <Row style={{ flexWrap: 'wrap', gap: 10 }}>
         <StatBox label="Note coach" value={fmt(s.avgCoachRating)} icon="star" tone="accent" />
         <StatBox label="Auto-éval." value={fmt(s.avgSelfRating)} icon="person" tone="info" />
         <StatBox label="RPE moyen" value={fmt(s.avgRpe)} icon="flame" tone="warning" />
         <StatBox label="Forme /5" value={fmt(s.avgWellness)} icon="heart" tone="success" />
       </Row>
+      {myTime && pt.played > 0 && (
+        <Card>
+          <Row style={{ justifyContent: 'space-between' }}>
+            <Txt bold>Temps de jeu</Txt>
+            <Txt bold color={myTime.share < 0.3 ? t.warning : t.primary}>
+              {Math.round(myTime.share * 100)} %
+            </Txt>
+          </Row>
+          <Progress value={myTime.share} color={myTime.share < 0.3 ? t.warning : t.primary} />
+          <Txt muted size={12}>
+            {myTime.minutes}′ sur {pt.available}′ possibles · {myTime.starts} titularisation{myTime.starts > 1 ? 's' : ''} · derniers matchs :{' '}
+            {myTime.last.map((m) => (m == null ? '–' : `${m}′`)).join(', ')}
+          </Txt>
+        </Card>
+      )}
       {att.total > 0 && (
         <Card>
           <Row style={{ justifyContent: 'space-between' }}>
@@ -125,14 +186,20 @@ export default function PlayerDetail() {
         </Card>
       ))}
 
-      {trainingFb.length > 0 && (
+      {interviews.length > 0 && (
         <>
-          <Section icon="fitness-outline">Ressenti à l’entraînement ({trainingFb.length} séances)</Section>
-          <Row style={{ gap: 10 }}>
-            <StatBox label="Qualité séance" value={fmt(avg(trainingFb.map((f) => f.quality)))} icon="star" tone="success" />
-            <StatBox label="Perf perso" value={fmt(avg(trainingFb.map((f) => f.selfPerf)))} icon="person" tone="accent" />
-            <StatBox label="Intensité" value={fmt(avg(trainingFb.map((f) => f.intensity)))} icon="flame" tone="warning" />
-          </Row>
+          <Section action={<Link title="+ Nouveau" onPress={() => router.push({ pathname: '/entretien', params: { playerId: player.id } })} />}>Entretiens</Section>
+          <List>
+            {interviews.map((iv, i) => (
+              <ListRow
+                key={iv.id}
+                first={i === 0}
+                title={`Entretien du ${formatDate(iv.date)}`}
+                subtitle={iv.decisions || iv.issues || iv.positives || 'Sans notes'}
+                onPress={() => router.push({ pathname: '/entretien', params: { playerId: player.id, id: iv.id } })}
+              />
+            ))}
+          </List>
         </>
       )}
 
@@ -154,31 +221,10 @@ export default function PlayerDetail() {
         )}
       </Card>
 
-      {trend.length > 1 && (
+      {reports.length > 1 && (
         <>
-          <Section icon="analytics-outline">Questionnaire du club — tendances</Section>
+          <Section>Questionnaire du club, tendances</Section>
           <PlayerFeedback data={data} reports={reports} />
-          <Section icon="pulse-outline">Forme — derniers matchs</Section>
-          <Card>
-            <Row style={{ alignItems: 'flex-end', height: 110, gap: 8 }}>
-              {trend.map((r) => {
-                const w = wellnessScore(r);
-                const color = w == null ? t.border : w < 2.5 ? t.danger : w < 3.5 ? t.warning : t.primary;
-                const m = matches.get(r.matchId);
-                return (
-                  <View key={r.id} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
-                    <Txt size={11} bold color={color}>
-                      {fmt(w)}
-                    </Txt>
-                    <View style={{ width: '100%', height: ((w ?? 0) / 5) * 64 + 4, backgroundColor: color, borderRadius: 8 }} />
-                    <Txt size={10} muted numberOfLines={1}>
-                      {m ? formatDate(m.date).slice(0, 5) : ''}
-                    </Txt>
-                  </View>
-                );
-              })}
-            </Row>
-          </Card>
         </>
       )}
 

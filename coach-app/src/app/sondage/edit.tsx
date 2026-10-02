@@ -147,7 +147,7 @@ export default function EditSurvey() {
         <Field label="Titre" value={title} onChangeText={setTitle} placeholder="Ex. : Bilan mi-saison" />
         <Field label="Présentation (optionnel)" value={description} onChangeText={setDescription} multiline placeholder="Pourquoi ce questionnaire, comment répondre…" />
         <Field label="À rendre avant le (optionnel)" value={dueDate} onChangeText={setDueDate} placeholder="AAAA-MM-JJ" />
-        <Toggle label="Ouvert aux réponses" icon="lock-open-outline" value={open} onChange={setOpen} />
+        {existing?.dispatch ? <Toggle label="Ouvert aux réponses" icon="lock-open-outline" value={open} onChange={setOpen} /> : null}
         <Toggle label="Pour tous les joueurs" icon="people-outline" value={all} onChange={setAll} />
         {!all && (
           <MultiChips
@@ -223,7 +223,12 @@ export default function EditSurvey() {
         </View>
       </Card>
 
-      <Button title="Enregistrer" icon="checkmark" onPress={save} />
+      <Button title={existing ? 'Enregistrer' : 'Enregistrer, puis envoyer'} icon={existing ? 'checkmark' : 'arrow-forward'} onPress={save} />
+      {!existing && (
+        <Txt muted size={12}>
+          Rien ne part tout de suite : vous relisez, puis vous appuyez sur « Envoyer ».
+        </Txt>
+      )}
       {existing && (
         <Button
           title="Supprimer le questionnaire"

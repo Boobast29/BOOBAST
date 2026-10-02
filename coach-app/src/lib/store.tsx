@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react';
 import { QEA_QUESTIONS } from './constants';
 import { buildDemoData } from './demo';
+import { migrateToSendModel } from './requests';
 import type {
   AppData,
   Club,
@@ -11,6 +12,7 @@ import type {
   Lineup,
   Match,
   MediaItem,
+  Interview,
   Objective,
   Player,
   PostMatchReport,
@@ -44,12 +46,17 @@ export const emptyData = (teamName = 'Seniors A'): AppData => ({
   lineups: [],
   sessions: [],
   objectives: [],
+  interviews: [],
   surveys: [],
   surveyResponses: [],
+  sendModel: 1,
 });
 
 /** Forme canonique des données d'une équipe (même ordre de clés partout, pour comparer). */
-export const normalizeData = (d: Partial<AppData>, teamName: string): AppData => ({ ...emptyData(teamName), ...d, teamName });
+export const normalizeData = (d: Partial<AppData>, teamName: string): AppData => {
+  const base: AppData = { ...emptyData(teamName), ...d, teamName };
+  return d.sendModel === 1 ? base : migrateToSendModel({ ...base, sendModel: undefined });
+};
 
 const emptyClub = (): Club => ({ name: DEFAULT_CLUB_NAME, teams: [] });
 
@@ -95,6 +102,8 @@ type Store = {
   saveTrainingFeedback: (sessionId: string, playerId: string, f: Omit<TrainingFeedback, 'updatedAt'>) => void;
   saveObjective: (o: Upsert<Objective>) => Objective;
   deleteObjective: (id: string) => void;
+  saveInterview: (i: Omit<Interview, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; createdAt?: string }) => Interview;
+  deleteInterview: (id: string) => void;
   saveSurvey: (s: Upsert<Survey>) => Survey;
   deleteSurvey: (id: string) => void;
   saveSurveyResponse: (r: Omit<SurveyResponse, 'id' | 'updatedAt'>) => void;
@@ -248,6 +257,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       injuries: d.injuries.filter((i) => i.playerId !== id),
       media: d.media.map((m) => ({ ...m, playerIds: m.playerIds.filter((p) => p !== id) })),
       objectives: d.objectives.filter((o) => o.playerId !== id),
+      interviews: d.interviews.filter((o) => o.playerId !== id),
       surveyResponses: d.surveyResponses.filter((r) => r.playerId !== id),
       lineups: d.lineups.map((l) => ({
         ...l,
@@ -370,6 +380,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return item;
       },
       deleteObjective: (id) => setData((d) => ({ ...d, objectives: d.objectives.filter((x) => x.id !== id) })),
+      saveInterview: (x) => {
+        const item: Interview = { ...x, id: x.id ?? newId(), createdAt: x.createdAt ?? now(), updatedAt: now() };
+        setData((d) => ({ ...d, interviews: upsert(d.interviews, item) }));
+        return item;
+      },
+      deleteInterview: (id) => setData((d) => ({ ...d, interviews: d.interviews.filter((x) => x.id !== id) })),
       saveSurvey: (x) => {
         const item = { ...x, id: x.id ?? newId(), createdAt: x.createdAt ?? now() } as Survey;
         setData((d) => ({ ...d, surveys: upsert(d.surveys, item) }));
