@@ -1,14 +1,17 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Share, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Locked } from '@/components/Locked';
+import { SendPanel } from '@/components/SendPanel';
+import type { RecipientGroup } from '@/components/SendPanel';
 import { QuestionInput } from '@/components/QuestionInput';
 import { useTheme } from '@/components/theme';
-import { Avatar, Badge, Button, Card, Empty, HeaderButton, Progress, Row, Screen, Section, Title, Toggle, Txt } from '@/components/ui';
+import { Badge, Button, Card, Empty, HeaderButton, Progress, Row, Screen, Section, Title, Toggle, Txt } from '@/components/ui';
 import { notify } from '@/lib/confirm';
 import { useStore } from '@/lib/store';
-import { avg, fmt, formatAnswer, formatDate, initials, playerName } from '@/lib/stats';
+import { avg, fmt, formatAnswer, formatDate, playerName } from '@/lib/stats';
+import { surveyRequest } from '@/lib/requests';
 import { surveyTargets } from '@/lib/surveys';
 import type { Answer, CustomQuestion, SurveyResponse } from '@/lib/types';
 
@@ -18,7 +21,7 @@ export default function SurveyScreen() {
   const s = data.surveys.find((x) => x.id === id);
   if (!s) return <Empty text="Questionnaire introuvable." />;
   if (session?.role === 'coach') return <SurveyResults surveyId={s.id} />;
-  if (session?.role !== 'player' || !surveyTargets(data, s).some((p) => p.id === session.playerId)) return <Locked text="Ce questionnaire ne t’est pas destiné." />;
+  if (session?.role !== 'player' || !s.dispatch || !surveyTargets(data, s).some((p) => p.id === session.playerId)) return <Locked text="Ce questionnaire ne t’est pas destiné." />;
   return <SurveyAnswer surveyId={s.id} playerId={session.playerId} />;
 }
 
@@ -76,15 +79,17 @@ function SurveyAnswer({ surveyId, playerId }: { surveyId: string; playerId: stri
 function SurveyResults({ surveyId }: { surveyId: string }) {
   const { data, saveSurvey } = useStore();
   const s = data.surveys.find((x) => x.id === surveyId)!;
-  const targets = surveyTargets(data, s);
+  const targets = surveyRequest(data, s).recipients;
   const responses = data.surveyResponses.filter((r) => r.surveyId === s.id && targets.some((p) => p.id === r.playerId));
-  const missing = targets.filter((p) => !responses.some((r) => r.playerId === p.id));
   const name = (pid: string) => playerName(data.players.find((p) => p.id === pid));
 
-  const remind = () =>
-    Share.share({
-      message: `📋 ${data.teamName} — « ${s.title} »\nMerci de répondre dans l’appli QEA Coach (espace joueur)${s.dueDate ? ` avant le ${formatDate(s.dueDate)}` : ''} :\n${missing.map((p) => `• ${playerName(p)}`).join('\n')}`,
-    }).catch(() => {});
+  const groups: RecipientGroup[] =
+    s.target === 'all'
+      ? [{ label: 'Tout l’effectif', to: 'all' }]
+      : [
+          { label: 'Joueurs choisis', to: s.target },
+          { label: 'Tout l’effectif', to: 'all' },
+        ];
 
   return (
     <Screen>
@@ -92,21 +97,13 @@ function SurveyResults({ surveyId }: { surveyId: string }) {
       <Card>
         <Title>{s.title}</Title>
         {s.description ? <Txt muted>{s.description}</Txt> : null}
-        <Row style={{ flexWrap: 'wrap', gap: 6 }}>
-          <Badge text={s.open ? 'Ouvert' : 'Fermé'} tone={s.open ? 'success' : 'neutral'} icon={s.open ? 'lock-open' : 'lock-closed'} />
-          <Badge text={s.target === 'all' ? 'Tous les joueurs' : `${targets.length} joueurs`} icon="people" />
-          {s.dueDate ? <Badge text={`Avant le ${formatDate(s.dueDate)}`} icon="calendar-outline" tone="warning" /> : null}
-        </Row>
-        <Row style={{ justifyContent: 'space-between' }}>
-          <Txt bold>Réponses</Txt>
-          <Txt bold>
-            {responses.length}/{targets.length}
-          </Txt>
-        </Row>
-        <Progress value={targets.length ? responses.length / targets.length : 0} />
-        <Toggle label="Ouvert aux réponses" value={s.open} onChange={(open) => saveSurvey({ ...s, open })} />
-        {missing.length > 0 && <Button small kind="secondary" icon="notifications-outline" title={`Relancer (${missing.length})`} onPress={remind} />}
+        <Txt muted size={13}>
+          {s.questions.length} question{s.questions.length > 1 ? 's' : ''}
+          {s.dueDate ? ` · à rendre avant le ${formatDate(s.dueDate)}` : ''}
+        </Txt>
+        {s.dispatch && <Toggle label="Ouvert aux réponses" value={s.open} onChange={(open) => saveSurvey({ ...s, open })} />}
       </Card>
+      <SendPanel request={surveyRequest(data, s)} groups={groups} title="Envoi aux joueurs" />
 
       {responses.length === 0 ? (
         <Empty icon="hourglass-outline" text="Pas encore de réponse." />
@@ -121,19 +118,6 @@ function SurveyResults({ surveyId }: { surveyId: string }) {
         ))
       )}
 
-      {missing.length > 0 && (
-        <>
-          <Section icon="hourglass-outline">Pas encore répondu ({missing.length})</Section>
-          <Card>
-            {missing.map((p) => (
-              <Row key={p.id}>
-                <Avatar size={30} colorKey={p.id} photo={p.photoUri} label={initials(p)} />
-                <Txt>{playerName(p)}</Txt>
-              </Row>
-            ))}
-          </Card>
-        </>
-      )}
       <View style={{ height: 4 }} />
       <Txt muted size={12}>
         <Ionicons name="information-circle-outline" size={12} /> Les curseurs sont convertis en notes chiffrées : les joueurs ne voient pas les chiffres.

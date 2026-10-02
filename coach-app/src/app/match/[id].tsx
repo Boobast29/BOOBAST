@@ -1,16 +1,18 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Share, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { StrengthsWeaknesses, TeamFeedback } from '@/components/Feedback';
 import { ClubLogo } from '@/components/ClubLogo';
 import { MediaStrip } from '@/components/Media';
 import { useTheme } from '@/components/theme';
-import { Avatar, Badge, Button, Card, Empty, Field, HeaderButton, HeroStat, IconCircle, Link, Progress, Row, Screen, Section, Txt } from '@/components/ui';
+import { SendPanel } from '@/components/SendPanel';
+import type { RecipientGroup } from '@/components/SendPanel';
+import { Avatar, Badge, Button, Card, Empty, Field, HeaderButton, HeroStat, IconCircle, Link, List, ListRow, Row, Screen, Section, Txt } from '@/components/ui';
 import { DEBRIEF_FIELDS, PREP_FIELDS, STAT_FIELDS } from '@/lib/constants';
 import { SliderScale } from '@/components/Slider';
 import { useStore } from '@/lib/store';
-import { activeInjury, avg, fmt, formatDate, initials, matchResult, playerName, sessionLoad, wellnessScore } from '@/lib/stats';
+import { defaultMatchRecipients, matchRequest } from '@/lib/requests';
+import { activeInjury, avg, fmt, formatDate, initials, matchResult, playerName, sessionLoad, today, wellnessScore } from '@/lib/stats';
 
 const RESULT_LABEL = { win: 'Victoire', draw: 'Match nul', loss: 'Défaite', none: 'À jouer' } as const;
 
@@ -31,14 +33,14 @@ export default function MatchDetail() {
   const res = matchResult(match);
   const media = data.media.filter((m) => m.matchId === match.id);
   const edit = () => router.push({ pathname: '/match/edit', params: { id: match.id } });
-  const firstMissing = players.find((p) => !byPlayer.has(p.id));
-  const missing = players.filter((p) => !p.archived && !byPlayer.has(p.id));
-  const remind = () =>
-    Share.share({
-      message: `⚽ ${data.teamName}\nQuestionnaire d’après-match — ${match.home ? 'vs' : '@'} ${match.opponent} (${formatDate(match.date)})\n\nMerci de le remplir dans l’appli QEA Coach (espace joueur) :\n${missing
-        .map((p) => `• ${playerName(p)}`)
-        .join('\n')}`,
-    }).catch(() => {});
+  const request = matchRequest(data, match);
+  const lineup = data.lineups.find((x) => x.matchId === match.id);
+  const lineupIds = defaultMatchRecipients(data, match);
+  const groups: RecipientGroup[] = [
+    ...(lineup && lineupIds !== 'all' ? [{ label: 'Joueurs de la compo', to: lineupIds }] : []),
+    { label: 'Tout l’effectif', to: 'all' as const },
+  ];
+  const played_ = match.scoreFor != null || match.date <= today();
 
   return (
     <Screen>
@@ -49,7 +51,7 @@ export default function MatchDetail() {
         }}
       />
 
-      <LinearGradient colors={t.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 24, padding: 20, gap: 14 }}>
+      <View style={{ backgroundColor: t.heroSolid, borderRadius: 14, padding: 20, gap: 14 }}>
         <Row style={{ justifyContent: 'space-between' }}>
           <Text style={{ color: t.heroMuted, fontSize: 13, fontWeight: '600' }}>
             {formatDate(match.date)}
@@ -74,7 +76,7 @@ export default function MatchDetail() {
             <HeroStat value={reports.filter((r) => r.pain).length} label="Douleurs" />
           </Row>
         )}
-      </LinearGradient>
+      </View>
 
       {match.notes ? (
         <Card>
@@ -85,39 +87,25 @@ export default function MatchDetail() {
         </Card>
       ) : null}
 
-      {(() => {
-        const l = data.lineups.find((x) => x.matchId === match.id);
-        const placed = l ? l.slots.filter(Boolean).length : 0;
-        return (
-          <Card onPress={() => router.push({ pathname: '/compo', params: { matchId: match.id } })}>
-            <Row style={{ gap: 12 }}>
-              <IconCircle icon="grid" tone="accent" />
-              <View style={{ flex: 1, gap: 2 }}>
-                <Txt bold>Composition</Txt>
-                <Txt muted size={13}>
-                  {l ? `${l.formation} · ${placed}/${l.slots.length} titulaires · ${l.bench.length} remplaçants` : 'Pas encore préparée'}
-                </Txt>
-              </View>
-              {l?.published ? <Badge text="Publiée" tone="success" icon="eye" /> : null}
-              <Ionicons name="chevron-forward" size={20} color={t.muted} />
-            </Row>
-          </Card>
-        );
-      })()}
+      {played_ && <SendPanel request={request} groups={groups} />}
 
-      <Card onPress={() => router.push({ pathname: '/prepa', params: { matchId: match.id } })}>
-        <Row style={{ gap: 12 }}>
-          <IconCircle icon="clipboard" tone="info" />
-          <View style={{ flex: 1, gap: 2 }}>
-            <Txt bold>Préparation du match</Txt>
-            <Txt muted size={13}>
-              {PREP_FIELDS.filter((f) => match.prep?.[f.key]?.trim()).length}/{PREP_FIELDS.length} rubriques · adversaire, consignes, objectifs
-            </Txt>
-          </View>
-          {match.prep?.published ? <Badge text="Publiée" tone="success" icon="eye" /> : null}
-          <Ionicons name="chevron-forward" size={20} color={t.muted} />
-        </Row>
-      </Card>
+      <List>
+        <ListRow
+          first
+          left={<IconCircle icon="grid" tone="accent" size={34} />}
+          title="Composition"
+          subtitle={lineup ? `${lineup.formation} · ${lineup.slots.filter(Boolean).length}/${lineup.slots.length} titulaires · ${lineup.bench.length} remplaçants` : 'Pas encore préparée'}
+          right={lineup?.published ? <Badge text="Publiée" tone="success" /> : null}
+          onPress={() => router.push({ pathname: '/compo', params: { matchId: match.id } })}
+        />
+        <ListRow
+          left={<IconCircle icon="clipboard" tone="info" size={34} />}
+          title="Préparation du match"
+          subtitle={`${PREP_FIELDS.filter((f) => match.prep?.[f.key]?.trim()).length}/${PREP_FIELDS.length} rubriques · adversaire, consignes`}
+          right={match.prep?.published ? <Badge text="Publiée" tone="success" /> : null}
+          onPress={() => router.push({ pathname: '/prepa', params: { matchId: match.id } })}
+        />
+      </List>
 
       {match.scoreFor != null && (
         <>
@@ -179,60 +167,52 @@ export default function MatchDetail() {
         </>
       )}
 
-      <Section
-        icon="clipboard-outline"
-        action={
-          missing.length > 0 && match.scoreFor != null ? <Button small kind="ghost" icon="notifications-outline" title={`Relancer (${missing.length})`} onPress={remind} /> : undefined
-        }
-      >
-        Questionnaires ({reports.length}/{players.length})
-      </Section>
-      {players.length > 0 && <Progress value={players.length ? reports.length / players.length : 0} />}
-      {firstMissing && (
-        <Button
-          title={reports.length ? 'Continuer les questionnaires' : 'Commencer les questionnaires'}
-          icon="play"
-          onPress={() => router.push({ pathname: '/questionnaire', params: { matchId: match.id, playerId: firstMissing.id } })}
-        />
+      {played_ && players.length > 0 && (
+        <>
+          <Section>Réponses joueur par joueur</Section>
+          <Txt muted size={13}>
+            Touchez un joueur pour voir ses réponses, ou les saisir à sa place.
+          </Txt>
+          <List>
+            {players.map((p, i) => {
+              const r = byPlayer.get(p.id);
+              const inj = activeInjury(data, p.id);
+              return (
+                <ListRow
+                  key={p.id}
+                  first={i === 0}
+                  left={<Avatar label={initials(p)} colorKey={p.id} photo={p.photoUri} size={34} />}
+                  title={playerName(p)}
+                  subtitle={
+                    r
+                      ? `${r.minutesPlayed}′ · RPE ${fmt(r.rpe)}${r.coachRating != null ? ` · note ${fmt(r.coachRating)}` : ''}${STAT_FIELDS.filter((f) => (r.stats[f.key] ?? 0) > 0)
+                          .map((f) => ` · ${r.stats[f.key]} ${f.short}`)
+                          .join('')}`
+                      : request.recipients.some((x) => x.id === p.id)
+                        ? request.dispatch
+                          ? 'En attente de sa réponse'
+                          : 'Pas encore envoyé'
+                        : 'Non concerné'
+                  }
+                  right={
+                    r?.pain ? (
+                      <Badge text="Douleur" tone="danger" />
+                    ) : r ? (
+                      <Ionicons name="checkmark-circle" size={22} color={t.primary} />
+                    ) : inj ? (
+                      <Badge text="Blessé" tone="warning" />
+                    ) : null
+                  }
+                  onPress={() => router.push({ pathname: '/questionnaire', params: { matchId: match.id, playerId: p.id } })}
+                />
+              );
+            })}
+          </List>
+        </>
       )}
       {players.length === 0 && (
         <Empty text="Ajoutez d'abord des joueurs à l'effectif." action={<Button title="Ajouter un joueur" icon="person-add" onPress={() => router.push('/joueur/edit')} />} />
       )}
-      {players.map((p) => {
-        const r = byPlayer.get(p.id);
-        const inj = activeInjury(data, p.id);
-        return (
-          <Card key={p.id} style={{ paddingVertical: 12 }} onPress={() => router.push({ pathname: '/questionnaire', params: { matchId: match.id, playerId: p.id } })}>
-            <Row style={{ gap: 12 }}>
-              <Avatar label={initials(p)} colorKey={p.id} photo={p.photoUri} size={40} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <Txt bold>{playerName(p)}</Txt>
-                {r ? (
-                  <Txt muted size={13}>
-                    {r.minutesPlayed}′ · RPE {fmt(r.rpe)} · note {fmt(r.coachRating)}
-                    {STAT_FIELDS.filter((f) => (r.stats[f.key] ?? 0) > 0)
-                      .map((f) => ` · ${r.stats[f.key]} ${f.short}`)
-                      .join('')}
-                  </Txt>
-                ) : (
-                  <Txt color={t.primary} size={13} bold>
-                    Remplir le questionnaire →
-                  </Txt>
-                )}
-              </View>
-              {r?.pain ? (
-                <Badge text="Douleur" tone="danger" icon="bandage" />
-              ) : r ? (
-                <Ionicons name="checkmark-circle" size={24} color={t.primary} />
-              ) : inj ? (
-                <Badge text="Blessé" tone="warning" icon="medkit" />
-              ) : (
-                <Ionicons name="ellipse-outline" size={24} color={t.border} />
-              )}
-            </Row>
-          </Card>
-        );
-      })}
 
       <Button title="Modifier le match" icon="create-outline" kind="secondary" onPress={edit} />
     </Screen>

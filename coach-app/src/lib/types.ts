@@ -26,7 +26,21 @@ export type Match = {
   notes?: string;
   prep?: MatchPrep;
   debrief?: MatchDebrief;
+  /** Questionnaire d'après-match envoyé par le coach */
+  questionnaire?: Dispatch;
   createdAt: string;
+};
+
+/**
+ * Envoi d'un questionnaire aux joueurs. Tant que le coach n'a pas appuyé sur « Envoyer »,
+ * les joueurs ne voient rien. Chaque relance renvoie une notification à ceux qui n'ont pas répondu.
+ */
+export type Dispatch = {
+  sentAt: string; // ISO
+  /** 'all' = tout l'effectif actif, sinon liste de joueurs */
+  to: 'all' | ID[];
+  reminders?: number;
+  remindedAt?: string;
 };
 
 /** Préparation d'un match à venir (visible par les joueurs si publiée). */
@@ -143,6 +157,8 @@ export type AppData = {
   objectives: Objective[];
   surveys: Survey[];
   surveyResponses: SurveyResponse[];
+  /** 1 = les questionnaires partent quand le coach appuie sur « Envoyer » (absent : anciennes données à migrer) */
+  sendModel?: 1;
 };
 
 export type Attendance = 'present' | 'retard' | 'absent' | 'excuse' | 'blesse';
@@ -161,6 +177,8 @@ export type TrainingSession = {
   playerRpe: Record<ID, number>;
   /** Ressenti des joueurs après la séance */
   feedback?: Record<ID, TrainingFeedback>;
+  /** Demande de ressenti envoyée par le coach */
+  feedbackRequest?: Dispatch;
   createdAt: string;
 };
 
@@ -227,6 +245,8 @@ export type Survey = {
   target: 'all' | ID[];
   dueDate?: string;
   open: boolean;
+  /** Absent = brouillon (invisible pour les joueurs) */
+  dispatch?: Dispatch;
   createdAt: string;
 };
 

@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import { PlayerFeedback } from '@/components/Feedback';
@@ -42,7 +41,7 @@ export default function PlayerDetail() {
         }}
       />
 
-      <LinearGradient colors={t.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 24, padding: 20, gap: 16 }}>
+      <View style={{ backgroundColor: t.heroSolid, borderRadius: 14, padding: 20, gap: 16 }}>
         <Row style={{ gap: 14 }}>
           <Avatar label={initials(player)} colorKey={player.id} photo={player.photoUri} size={72} ring="rgba(255,255,255,0.9)" />
           <View style={{ flex: 1, gap: 4 }}>
@@ -65,7 +64,7 @@ export default function PlayerDetail() {
           <HeroStat value={s.totals.assists} label="Passes D." />
           <HeroStat value={s.minutes} label="Minutes" />
         </Row>
-      </LinearGradient>
+      </View>
 
       {player.notes ? (
         <Card>

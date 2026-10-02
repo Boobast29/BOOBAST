@@ -30,7 +30,7 @@ export function InjuryList() {
       </Row>
       <Button title="Déclarer une blessure" icon="add-circle" onPress={() => router.push('/blessure/edit')} disabled={!data.players.length} />
       <Chips options={FILTERS} value={filter} onChange={(v) => v && setFilter(v)} />
-      {list.length === 0 && <Empty icon="fitness-outline" text={filter === 'En cours' ? 'Aucune blessure en cours 💪' : 'Aucune blessure enregistrée.'} />}
+      {list.length === 0 && <Empty icon="fitness-outline" text={filter === 'En cours' ? 'Aucune blessure en cours.' : 'Aucune blessure enregistrée.'} />}
       {list.map((i) => {
         const p = players.get(i.playerId);
         const end = i.returnDate ?? today();

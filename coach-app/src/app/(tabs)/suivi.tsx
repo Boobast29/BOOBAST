@@ -1,27 +1,30 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useTheme } from '@/components/theme';
-import { Avatar, Badge, Button, Card, Chips, Empty, IconCircle, Progress, Row, Screen, Section, Txt } from '@/components/ui';
+import { useDispatchWriter } from '@/components/SendPanel';
+import { Avatar, Badge, Button, Card, Chips, Empty, List, ListRow, Progress, Row, Screen, Section, SmallButton, Txt } from '@/components/ui';
 import { OBJECTIVE_STATUS_TONE } from '@/lib/constants';
 import { useStore } from '@/lib/store';
 import { formatDate, initials, playerName, today } from '@/lib/stats';
-import { surveyTargets } from '@/lib/surveys';
+import { allRequests, awaiting, coachRoute, KIND_LABEL, newDispatch, remind, surveyRequest, toSend } from '@/lib/requests';
+import type { Request } from '@/lib/requests';
 import type { ObjectiveStatus } from '@/lib/types';
 
 type View_ = 'objectifs' | 'questionnaires';
 
 export default function Suivi() {
   const t = useTheme();
-  const [view, setView] = useState<View_>('objectifs');
+  const [view, setView] = useState<View_>('questionnaires');
   return (
     <Screen>
       <View style={{ flexDirection: 'row', backgroundColor: t.input, borderRadius: 14, padding: 4 }}>
         {(
           [
-            ['objectifs', 'Points à travailler', 'fitness'],
             ['questionnaires', 'Questionnaires', 'document-text'],
+            ['objectifs', 'Points à travailler', 'fitness'],
           ] as const
         ).map(([k, label, icon]) => {
           const on = view === k;
@@ -118,64 +121,92 @@ function Objectives() {
 function Surveys() {
   const t = useTheme();
   const { data } = useStore();
-  const list = [...data.surveys].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const write = useDispatchWriter();
+  const pendingSend = toSend(data);
+  const waiting = awaiting(data);
+  const drafts = data.surveys.filter((s) => !s.dispatch).map((s) => surveyRequest(data, s));
+  const done = allRequests(data)
+    .filter((r) => r.dispatch && !waiting.some((w) => w.kind === r.kind && w.id === r.id))
+    .slice(0, 12);
   const postMatchCount = data.questions.filter((q) => q.active).length;
+
+  const rows = (list: Request[], right: (r: Request) => ReactNode) => (
+    <List>
+      {list.map((r, i) => (
+        <ListRow
+          key={`${r.kind}:${r.id}`}
+          first={i === 0}
+          title={r.kind === 'sondage' ? r.title : r.subtitle}
+          subtitle={`${KIND_LABEL[r.kind]}${r.dispatch ? ` · ${r.answered.size >= r.recipients.length ? 'complet' : `${r.recipients.filter((p) => r.answered.has(p.id)).length}/${r.recipients.length} réponses`}` : ` · ${r.recipients.length} joueurs`}`}
+          right={right(r)}
+          chevron={false}
+          onPress={() => router.push(coachRoute(r) as never)}
+        />
+      ))}
+    </List>
+  );
+
   return (
     <>
-      <Button title="Nouveau questionnaire" icon="add-circle" onPress={() => router.push('/sondage/edit')} />
-      <Card onPress={() => router.push('/questions')}>
-        <Row style={{ gap: 12 }}>
-          <IconCircle icon="football" tone="success" />
-          <View style={{ flex: 1 }}>
-            <Txt bold>Questionnaire d’après-match</Txt>
-            <Txt muted size={13}>
-              Envoyé automatiquement après chaque match · {postMatchCount} question{postMatchCount > 1 ? 's' : ''} du club
-            </Txt>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={t.muted} />
-        </Row>
-      </Card>
-      <Card>
-        <Row style={{ gap: 12 }}>
-          <IconCircle icon="fitness" tone="info" />
-          <View style={{ flex: 1 }}>
-            <Txt bold>Ressenti d’entraînement</Txt>
-            <Txt muted size={13}>
-              Qualité de la séance, performance perso, intensité : proposé aux présents après chaque séance.
-            </Txt>
-          </View>
-        </Row>
-      </Card>
-      <Section icon="document-text-outline">Questionnaires ponctuels ({list.length})</Section>
-      {list.length === 0 && <Empty icon="document-text-outline" text="Bilan mi-saison, ressenti de la semaine, vie de groupe… Créez vos questionnaires : les joueurs répondent au curseur, vous obtenez des notes chiffrées." />}
-      {list.map((s) => {
-        const targets = surveyTargets(data, s);
-        const n = data.surveyResponses.filter((r) => r.surveyId === s.id && targets.some((p) => p.id === r.playerId)).length;
-        return (
-          <Card key={s.id} onPress={() => router.push(`/sondage/${s.id}`)} stripe={s.open ? t.primary : t.border}>
-            <Row>
-              <Txt bold size={16}>
-                {s.title}
-              </Txt>
-              <View style={{ flex: 1 }} />
-              <Badge text={s.open ? 'Ouvert' : 'Fermé'} tone={s.open ? 'success' : 'neutral'} />
-            </Row>
-            <Row style={{ gap: 6, flexWrap: 'wrap' }}>
-              <Badge text={`${s.questions.length} questions`} icon="list" />
-              <Badge text={s.target === 'all' ? 'Tous' : `${targets.length} joueurs`} icon="people" />
-              {s.dueDate ? <Badge text={`Avant le ${formatDate(s.dueDate)}`} icon="calendar-outline" tone="warning" /> : null}
-            </Row>
-            <Row style={{ gap: 10 }}>
-              <View style={{ flex: 1 }}>
-                <Progress value={targets.length ? n / targets.length : 0} height={6} />
-              </View>
-              <Txt muted size={12}>
-                {n}/{targets.length} réponses
-              </Txt>
-            </Row>
-          </Card>
-        );
-      })}
+      <Row style={{ gap: 8 }}>
+        <View style={{ flex: 1 }}>
+          <Button title="Nouveau questionnaire" icon="add" onPress={() => router.push('/sondage/edit')} />
+        </View>
+      </Row>
+
+      {pendingSend.length > 0 && (
+        <>
+          <Section>À envoyer</Section>
+          <Txt muted size={13}>
+            Matchs joués et séances passées : les joueurs ne reçoivent rien tant que vous n’avez pas envoyé.
+          </Txt>
+          {rows(pendingSend, (r) => (
+            <SmallButton label="Envoyer" icon="paper-plane" onPress={() => write(r, newDispatch(r.recipients.length === data.players.filter((p) => !p.archived).length ? 'all' : r.recipients.map((p) => p.id)))} />
+          ))}
+        </>
+      )}
+
+      {waiting.length > 0 && (
+        <>
+          <Section>En attente de réponses</Section>
+          {rows(waiting, (r) => (
+            <SmallButton label="Relancer" icon="notifications-outline" kind="secondary" onPress={() => r.dispatch && write(r, remind(r.dispatch))} />
+          ))}
+        </>
+      )}
+
+      {drafts.length > 0 && (
+        <>
+          <Section>Brouillons</Section>
+          {rows(drafts, () => (
+            <Text style={{ color: t.muted, fontSize: 13 }}>Non envoyé</Text>
+          ))}
+        </>
+      )}
+
+      {pendingSend.length + waiting.length + drafts.length === 0 && (
+        <Empty icon="checkmark-done-outline" text="Rien en attente. Après un match ou une séance, envoyez le questionnaire depuis sa fiche ou d’ici." />
+      )}
+
+      <Section>Modèles</Section>
+      <List>
+        <ListRow
+          first
+          title="Questions d’après-match"
+          subtitle={`${postMatchCount} question${postMatchCount > 1 ? 's' : ''} · envoyées avec chaque questionnaire de match`}
+          onPress={() => router.push('/questions')}
+        />
+        <ListRow title="Ressenti d’entraînement" subtitle="Qualité de la séance, performance perso, intensité" chevron={false} />
+      </List>
+
+      {done.length > 0 && (
+        <>
+          <Section>Historique</Section>
+          {rows(done, (r) => (
+            <Text style={{ color: t.muted, fontSize: 13 }}>{formatDate(r.date)}</Text>
+          ))}
+        </>
+      )}
     </>
   );
 }

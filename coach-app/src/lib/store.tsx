@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react';
 import { QEA_QUESTIONS } from './constants';
 import { buildDemoData } from './demo';
+import { migrateToSendModel } from './requests';
 import type {
   AppData,
   Club,
@@ -46,10 +47,14 @@ export const emptyData = (teamName = 'Seniors A'): AppData => ({
   objectives: [],
   surveys: [],
   surveyResponses: [],
+  sendModel: 1,
 });
 
 /** Forme canonique des données d'une équipe (même ordre de clés partout, pour comparer). */
-export const normalizeData = (d: Partial<AppData>, teamName: string): AppData => ({ ...emptyData(teamName), ...d, teamName });
+export const normalizeData = (d: Partial<AppData>, teamName: string): AppData => {
+  const base: AppData = { ...emptyData(teamName), ...d, teamName };
+  return d.sendModel === 1 ? base : migrateToSendModel({ ...base, sendModel: undefined });
+};
 
 const emptyClub = (): Club => ({ name: DEFAULT_CLUB_NAME, teams: [] });
 

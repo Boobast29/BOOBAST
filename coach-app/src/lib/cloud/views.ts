@@ -1,8 +1,8 @@
 import { canSeeMedia } from '../access';
 import { FORMATIONS } from '../formations';
-import { daysBetween, formatDate, today } from '../stats';
-import { pendingSurveys, pendingTrainingFeedback } from '../surveys';
-import type { AppData, Objective, Player, PostMatchReport, SurveyResponse, TrainingFeedback } from '../types';
+import { formatDate, today } from '../stats';
+import { answerRoute, notifKey, playerPending } from '../requests';
+import type { AppData, Dispatch, Objective, Player, PostMatchReport, SurveyResponse, TrainingFeedback } from '../types';
 
 /** Élément de notification : clé stable (dédoublonnage côté serveur), texte, écran à ouvrir. */
 export type NotifItem = { key: string; title: string; body: string; route: string };
@@ -30,31 +30,19 @@ const publicPlayer = (p: Player): Player => ({
 
 /** Tâches à faire (notifiées puis rappelées chaque jour tant qu'elles ne sont pas faites). */
 export function playerTodos(data: AppData, playerId: string): NotifItem[] {
-  const done = new Set(data.reports.filter((r) => r.playerId === playerId).map((r) => r.matchId));
-  const matches: NotifItem[] = data.matches
-    .filter((m) => m.scoreFor != null && !done.has(m.id) && m.date <= today() && daysBetween(m.date, today()) <= 30)
-    .map((m) => ({
-      key: `match:${m.id}`,
-      title: '⚽ Questionnaire d’après-match',
-      body: `${m.home ? 'vs' : '@'} ${m.opponent} : donne ton ressenti au coach.`,
-      route: `/questionnaire?matchId=${m.id}&playerId=${playerId}`,
-    }));
-  const trainings: NotifItem[] = pendingTrainingFeedback(data, playerId).map((x) => ({
-    key: `seance:${x.id}`,
-    title: '🏃 Ressenti de l’entraînement',
-    body: `Séance du ${formatDate(x.date)}${x.theme ? ` (${x.theme})` : ''} : qualité, perf, intensité.`,
-    route: `/ressenti-seance?sessionId=${x.id}&playerId=${playerId}`,
+  return playerPending(data, playerId).map((r) => ({
+    key: notifKey(r),
+    title: r.dispatch?.reminders ? `Rappel : ${r.title.toLowerCase()}` : r.title,
+    body:
+      r.kind === 'match'
+        ? `${r.subtitle} : donne ton ressenti au coach.`
+        : r.kind === 'seance'
+          ? `${r.subtitle} : qualité, perf perso, intensité.`
+          : r.dueDate
+            ? `Le coach t’a envoyé un questionnaire, à rendre avant le ${formatDate(r.dueDate)}.`
+            : 'Le coach t’a envoyé un questionnaire.',
+    route: answerRoute(r, playerId),
   }));
-  const surveys: NotifItem[] = pendingSurveys(data, playerId).map((s) => ({
-    key: `sondage:${s.id}`,
-    title: `📋 ${s.title}`,
-    body: s.dueDate ? `Nouveau questionnaire du coach, à rendre avant le ${formatDate(s.dueDate)}.` : 'Nouveau questionnaire du coach.',
-    route: `/sondage/${s.id}`,
-  }));
-  const objectives: NotifItem[] = data.objectives
-    .filter((o) => o.playerId === playerId && o.status === 'en cours' && o.playerProgress == null)
-    .map((o) => ({ key: `objectif:${o.id}`, title: '🎯 Nouveau point à travailler', body: `${o.title} : dis au coach où tu en es.`, route: `/objectif/${o.id}` }));
-  return [...matches, ...trainings, ...surveys, ...objectives];
 }
 
 /** Informations (notifiées une seule fois) : préparation et compo publiées. */
@@ -63,12 +51,12 @@ export function playerNews(data: AppData, playerId: string): NotifItem[] {
   const news: NotifItem[] = [];
   for (const m of upcoming) {
     const label = `${m.home ? 'vs' : '@'} ${m.opponent}`;
-    if (m.prep?.published) news.push({ key: `prepa:${m.id}`, title: '📝 Préparation du match', body: `Le coach a publié les consignes pour ${label}.`, route: `/prepa?matchId=${m.id}` });
+    if (m.prep?.published) news.push({ key: `prepa:${m.id}`, title: 'Préparation du match', body: `Le coach a publié les consignes pour ${label}.`, route: `/prepa?matchId=${m.id}` });
     const l = data.lineups.find((x) => x.matchId === m.id && x.published);
     if (l) {
       const i = l.slots.indexOf(playerId);
       const status = i >= 0 ? `Tu es titulaire (${FORMATIONS[l.formation]?.[i]?.role ?? ''})` : l.bench.includes(playerId) ? 'Tu es remplaçant' : 'Tu n’es pas retenu cette fois';
-      news.push({ key: `compo:${m.id}`, title: '📣 Compo publiée', body: `${label} : ${status}.`, route: `/compo?matchId=${m.id}` });
+      news.push({ key: `compo:${m.id}`, title: 'Compo publiée', body: `${label} : ${status}.`, route: `/compo?matchId=${m.id}` });
     }
   }
   return news;
@@ -86,7 +74,11 @@ export function buildPlayerView(data: AppData, playerId: string): PlayerViewData
     version: data.version,
     teamName: data.teamName,
     players: data.players.filter((p) => !p.archived || p.id === playerId).map((p) => (p.id === playerId && me ? { ...publicPlayer(me) } : publicPlayer(p))),
-    matches: data.matches.map(({ debrief: _debrief, prep, notes: _notes, ...m }) => ({ ...m, prep: prep?.published ? prep : undefined })),
+    matches: data.matches.map(({ debrief: _debrief, prep, notes: _notes, questionnaire, ...m }) => ({
+      ...m,
+      prep: prep?.published ? prep : undefined,
+      questionnaire: onlyMe(questionnaire, playerId),
+    })),
     reports: data.reports.filter((r) => r.playerId === playerId).map(({ coachRating: _cr, coachComment: _cc, ...r }) => r),
     injuries: data.injuries.filter((i) => i.playerId === playerId),
     questions: data.questions,
@@ -109,14 +101,24 @@ export function buildPlayerView(data: AppData, playerId: string): PlayerViewData
       attendance: x.attendance[playerId] ? { [playerId]: x.attendance[playerId] } : {},
       playerRpe: x.playerRpe[playerId] != null ? { [playerId]: x.playerRpe[playerId] } : {},
       feedback: x.feedback?.[playerId] ? { [playerId]: x.feedback[playerId] } : {},
+      feedbackRequest: onlyMe(x.feedbackRequest, playerId),
       createdAt: x.createdAt,
     })),
     objectives: data.objectives.filter((o) => o.playerId === playerId),
-    surveys: data.surveys.filter((s) => s.target === 'all' || s.target.includes(playerId)),
+    surveys: data.surveys
+      .filter((s) => s.dispatch && (s.dispatch.to === 'all' || s.dispatch.to.includes(playerId)))
+      .map((s) => ({ ...s, target: [playerId], dispatch: onlyMe(s.dispatch, playerId) })),
     surveyResponses: data.surveyResponses.filter((r) => r.playerId === playerId),
+    sendModel: 1,
     todos: playerTodos(data, playerId),
     news: playerNews(data, playerId),
   };
+}
+
+/** Un joueur ne voit que les envois qui le concernent, avec lui seul comme destinataire. */
+function onlyMe(d: Dispatch | undefined, playerId: string): Dispatch | undefined {
+  if (!d || (d.to !== 'all' && !d.to.includes(playerId))) return undefined;
+  return { ...d, to: [playerId] };
 }
 
 const newer = (a?: string, b?: string) => !b || (a ?? '') >= b;

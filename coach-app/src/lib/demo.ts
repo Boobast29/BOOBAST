@@ -1,3 +1,4 @@
+import { migrateToSendModel } from './requests';
 import { QEA_QUESTIONS, QUESTION_TEMPLATES, statsForPosition } from './constants';
 import { autoLineup } from './formations';
 import type { AppData, Attendance, CustomQuestion, Objective, Survey, SurveyResponse, TrainingFeedback, TrainingSession, Injury, Match, MediaItem, Player, PostMatchReport } from './types';
@@ -296,5 +297,8 @@ export function buildDemoData(): AppData {
     { ...autoLineup(data, 'm2', '4-3-3'), captainId: 'p4', published: true, updatedAt: stamp },
     { ...autoLineup(data, 'm3', '4-2-3-1'), captainId: 'p4', published: true, notes: 'Bloc médian, pressing déclenché sur leur 6. Transitions rapides côté gauche.', updatedAt: stamp },
   ];
-  return data;
+  // Questionnaires déjà envoyés, sauf le ressenti de la dernière séance (à envoyer par le coach)
+  const sent = migrateToSendModel(data);
+  sent.sessions = sent.sessions.map((x) => (x.id === 's5' ? { ...x, feedbackRequest: undefined } : x));
+  return sent;
 }

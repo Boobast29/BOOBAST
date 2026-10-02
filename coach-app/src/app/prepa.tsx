@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import { ClubLogo } from '@/components/ClubLogo';
@@ -25,7 +24,7 @@ export default function MatchPrepScreen() {
   const filled = PREP_FIELDS.filter((f) => prep[f.key]?.trim());
 
   const header = (
-    <LinearGradient colors={t.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 24, padding: 20, gap: 8 }}>
+    <View style={{ backgroundColor: t.heroSolid, borderRadius: 14, padding: 20, gap: 8 }}>
       <Row style={{ gap: 12 }}>
         <ClubLogo size={48} />
         <View style={{ flex: 1 }}>
@@ -39,7 +38,7 @@ export default function MatchPrepScreen() {
           </Text>
         </View>
       </Row>
-    </LinearGradient>
+    </View>
   );
 
   if (!coach)

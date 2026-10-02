@@ -1,7 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import type { ComponentProps, ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
@@ -15,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import type { TextInputProps, ViewStyle } from 'react-native';
-import { colorFor, shadow, useTheme } from './theme';
+import { colorFor, useTheme } from './theme';
 import type { Theme } from './theme';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -63,14 +62,13 @@ export function Card({ children, style, onPress, stripe }: { children: ReactNode
   const t = useTheme();
   const s = [
     styles.card,
-    { backgroundColor: t.card, borderColor: t.border, borderWidth: t.dark ? 1 : 0 },
-    shadow(t),
-    stripe ? { borderLeftWidth: 4, borderLeftColor: stripe } : null,
+    { backgroundColor: t.card, borderColor: t.border, borderWidth: StyleSheet.hairlineWidth },
+    stripe ? { borderLeftWidth: 3, borderLeftColor: stripe } : null,
     style,
   ];
   if (onPress)
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [...s, pressed && { opacity: 0.85, transform: [{ scale: 0.985 }] }]}>
+      <Pressable onPress={onPress} style={({ pressed }) => [...s, pressed && { backgroundColor: t.cardAlt }]}>
         {children}
       </Pressable>
     );
@@ -82,13 +80,13 @@ export function Title({ children, color }: { children: ReactNode; color?: string
   return <Text style={[styles.title, { color: color ?? t.text }]}>{children}</Text>;
 }
 
-export function Section({ children, action, icon }: { children: ReactNode; action?: ReactNode; icon?: IconName }) {
+/** Titre de rubrique. `icon` est accepté pour compatibilité mais n'est plus affiché (titres sobres). */
+export function Section({ children, action }: { children: ReactNode; action?: ReactNode; icon?: IconName }) {
   const t = useTheme();
   return (
     <View style={styles.sectionRow}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-        {icon ? <Ionicons name={icon} size={15} color={t.muted} /> : null}
-        <Text style={[styles.section, { color: t.muted }]}>{children}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.section, { color: t.text }]}>{children}</Text>
       </View>
       {action}
     </View>
@@ -134,7 +132,6 @@ export function Button({ title, onPress, kind = 'primary', disabled, icon, small
         styles.btn,
         small && { paddingVertical: 9, paddingHorizontal: 14 },
         { backgroundColor: bg, borderColor: kind === 'secondary' ? t.border : 'transparent', opacity: disabled ? 0.4 : pressed ? 0.8 : 1 },
-        kind === 'primary' && !disabled ? shadow(t) : null,
       ]}
     >
       {icon ? <Ionicons name={icon} size={small ? 16 : 19} color={fg} /> : null}
@@ -340,19 +337,18 @@ export function IconCircle({ icon, tone = 'success', size = 40 }: { icon: IconNa
   const t = useTheme();
   const [bg, fg] = toneColors(t, tone);
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ width: size, height: size, borderRadius: Math.round(size / 4), backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
       <Ionicons name={icon} size={size * 0.5} color={fg} />
     </View>
   );
 }
 
-export function StatBox({ label, value, icon, tone = 'neutral' }: { label: string; value: string | number; icon?: IconName; tone?: Tone }) {
+export function StatBox({ label, value, tone = 'neutral' }: { label: string; value: string | number; icon?: IconName; tone?: Tone }) {
   const t = useTheme();
   const [, fg] = toneColors(t, tone);
   return (
-    <View style={[styles.statBox, { backgroundColor: t.card, borderColor: t.border, borderWidth: t.dark ? 1 : 0 }, shadow(t)]}>
-      {icon ? <IconCircle icon={icon} tone={tone} size={30} /> : null}
-      <Text style={{ color: tone === 'neutral' ? t.text : fg, fontSize: 22, fontWeight: '800' }}>{value}</Text>
+    <View style={[styles.statBox, { backgroundColor: t.card, borderColor: t.border, borderWidth: StyleSheet.hairlineWidth }]}>
+      <Text style={{ color: tone === 'neutral' ? t.text : fg, fontSize: 22, fontWeight: '700' }}>{value}</Text>
       <Text style={{ color: t.muted, fontSize: 12, textAlign: 'center' }} numberOfLines={2}>
         {label}
       </Text>
@@ -360,11 +356,11 @@ export function StatBox({ label, value, icon, tone = 'neutral' }: { label: strin
   );
 }
 
-export function Empty({ text, action, icon = 'sparkles-outline' }: { text: string; action?: ReactNode; icon?: IconName }) {
+export function Empty({ text, action, icon = 'information-circle-outline' }: { text: string; action?: ReactNode; icon?: IconName }) {
   const t = useTheme();
   return (
-    <View style={{ alignItems: 'center', padding: 28, gap: 14 }}>
-      <IconCircle icon={icon} tone="success" size={64} />
+    <View style={{ alignItems: 'center', paddingVertical: 24, paddingHorizontal: 16, gap: 10 }}>
+      <Ionicons name={icon} size={30} color={t.muted} />
       <Text style={{ color: t.muted, textAlign: 'center', fontSize: 15, lineHeight: 21 }}>{text}</Text>
       {action}
     </View>
@@ -400,13 +396,11 @@ export function Avatar({ label, colorKey, size = 44, ring, photo }: { label: str
   );
 }
 
-/** Bandeau en dégradé (haut de l'accueil, fiche joueur…). */
+/** Bandeau vert du club (haut de l'accueil, fiche joueur…). */
 export function Hero({ children, style }: { children: ReactNode; style?: ViewStyle }) {
   const t = useTheme();
   return (
-    <LinearGradient colors={t.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.hero, shadow(t, 2), style]}>
-      {children}
-    </LinearGradient>
+    <View style={[styles.hero, { backgroundColor: t.heroSolid }, style]}>{children}</View>
   );
 }
 
@@ -442,11 +436,10 @@ export function ActionTile({ icon, label, onPress, tone = 'success' }: { icon: I
       }}
       style={({ pressed }) => [
         styles.tile,
-        { backgroundColor: t.card, borderColor: t.border, borderWidth: t.dark ? 1 : 0, opacity: pressed ? 0.8 : 1 },
-        shadow(t),
+        { backgroundColor: pressed ? t.cardAlt : t.card, borderColor: t.border, borderWidth: StyleSheet.hairlineWidth },
       ]}
     >
-      <IconCircle icon={icon} tone={tone} size={42} />
+      <Ionicons name={icon} size={24} color={toneColors(t, tone)[1]} />
       <Text style={{ color: t.text, fontSize: 12, fontWeight: '600', textAlign: 'center' }} numberOfLines={2}>
         {label}
       </Text>
@@ -464,29 +457,104 @@ export function Progress({ value, color, height = 8 }: { value: number; color?: 
   );
 }
 
+/** Liste groupée : lignes séparées par un filet, dans un seul bloc (au lieu d'une carte par ligne). */
+export function List({ children, style }: { children: ReactNode; style?: ViewStyle }) {
+  const t = useTheme();
+  return (
+    <View style={[{ backgroundColor: t.card, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: t.border, overflow: 'hidden' }, style]}>
+      {children}
+    </View>
+  );
+}
+
+/** Ligne de liste groupée. Les lignes suivantes (`first` faux) ont un filet au-dessus. */
+export function ListRow({
+  title,
+  subtitle,
+  left,
+  right,
+  onPress,
+  first,
+  chevron = !!onPress,
+}: {
+  title: ReactNode;
+  subtitle?: ReactNode;
+  left?: ReactNode;
+  right?: ReactNode;
+  onPress?: () => void;
+  first?: boolean;
+  chevron?: boolean;
+}) {
+  const t = useTheme();
+  const body = (pressed: boolean) => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: pressed ? t.cardAlt : 'transparent' }}>
+      {left}
+      <View style={{ flex: 1, gap: 2 }}>
+        {typeof title === 'string' ? <Text style={{ color: t.text, fontSize: 15, fontWeight: '600' }}>{title}</Text> : title}
+        {typeof subtitle === 'string' ? <Text style={{ color: t.muted, fontSize: 13 }}>{subtitle}</Text> : subtitle}
+      </View>
+      {right}
+      {chevron ? <Ionicons name="chevron-forward" size={18} color={t.muted} /> : null}
+    </View>
+  );
+  return (
+    <View style={first ? null : { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.border, marginLeft: left ? 0 : 0 }}>
+      {onPress ? <Pressable onPress={onPress}>{({ pressed }) => body(pressed)}</Pressable> : body(false)}
+    </View>
+  );
+}
+
+/** Petit bouton dans une ligne de liste (Envoyer, Relancer…). */
+export function SmallButton({ label, icon, onPress, kind = 'primary' }: { label: string; icon: IconName; onPress: () => void; kind?: 'primary' | 'secondary' }) {
+  const t = useTheme();
+  const primary = kind === 'primary';
+  return (
+    <Pressable
+      onPress={() => {
+        tap();
+        onPress();
+      }}
+      hitSlop={6}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        paddingHorizontal: 10,
+        paddingVertical: 7,
+        borderRadius: 8,
+        backgroundColor: primary ? t.primary : t.input,
+        opacity: pressed ? 0.7 : 1,
+      })}
+    >
+      <Ionicons name={icon} size={14} color={primary ? t.primaryText : t.text} />
+      <Text style={{ color: primary ? t.primaryText : t.text, fontWeight: '600', fontSize: 13 }}>{label}</Text>
+    </Pressable>
+  );
+}
+
 export function Divider() {
   const t = useTheme();
   return <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: t.border, marginVertical: 2 }} />;
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 18, padding: 16, gap: 12 },
+  card: { borderRadius: 12, padding: 16, gap: 12 },
   title: { fontSize: 24, fontWeight: '800', letterSpacing: -0.3 },
-  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
-  section: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
+  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 },
+  section: { fontSize: 17, fontWeight: '700' },
   label: { fontSize: 15, fontWeight: '600' },
   input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
-  btn: { borderRadius: 14, paddingVertical: 15, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1, flexDirection: 'row', gap: 8 },
+  btn: { borderRadius: 10, paddingVertical: 15, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1, flexDirection: 'row', gap: 8 },
   stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   stepBtn: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   stepInput: { width: 48, height: 40, textAlign: 'center', fontSize: 18, fontWeight: '700' },
   scaleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  scaleItem: { minWidth: 44, height: 42, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  scaleItem: { minWidth: 44, height: 42, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   valuePill: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, borderWidth: 1.5 },
-  badge: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statBox: { flex: 1, minWidth: 72, alignSelf: 'stretch', justifyContent: 'center', borderRadius: 16, padding: 12, alignItems: 'center', gap: 4 },
-  hero: { borderRadius: 24, padding: 20, gap: 14, overflow: 'hidden' },
-  tile: { flex: 1, minWidth: 72, alignSelf: 'stretch', borderRadius: 16, paddingVertical: 14, paddingHorizontal: 6, alignItems: 'center', gap: 8 },
+  chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1.5 },
+  badge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 5, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statBox: { flex: 1, minWidth: 72, alignSelf: 'stretch', justifyContent: 'center', borderRadius: 12, padding: 12, alignItems: 'center', gap: 4 },
+  hero: { borderRadius: 14, padding: 18, gap: 14, overflow: 'hidden' },
+  tile: { flex: 1, minWidth: 72, alignSelf: 'stretch', borderRadius: 12, paddingVertical: 14, paddingHorizontal: 6, alignItems: 'center', gap: 8 },
 });
