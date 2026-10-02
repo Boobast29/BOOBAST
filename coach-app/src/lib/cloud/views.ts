@@ -1,6 +1,6 @@
 import { canSeeMedia } from '../access';
 import { FORMATIONS } from '../formations';
-import { formatDate, today } from '../stats';
+import { daysBetween, formatDate, today } from '../stats';
 import { answerRoute, notifKey, playerPending } from '../requests';
 import type { AppData, Dispatch, Objective, Player, PostMatchReport, SurveyResponse, TrainingFeedback } from '../types';
 
@@ -59,6 +59,11 @@ export function playerNews(data: AppData, playerId: string): NotifItem[] {
       news.push({ key: `compo:${m.id}`, title: 'Compo publiée', body: `${label} : ${status}.`, route: `/compo?matchId=${m.id}` });
     }
   }
+  // « Le mot du coach » des matchs de la semaine écoulée
+  for (const m of data.matches.filter((x) => x.teamMessage?.trim() && x.date <= today() && daysBetween(x.date, today()) <= 7)) {
+    const text = m.teamMessage!.trim();
+    news.push({ key: `mot:${m.id}:${text.length}`, title: 'Le mot du coach', body: text.length > 120 ? `${text.slice(0, 117)}…` : text, route: '/' });
+  }
   return news;
 }
 
@@ -109,6 +114,7 @@ export function buildPlayerView(data: AppData, playerId: string): PlayerViewData
       .filter((s) => s.dispatch && (s.dispatch.to === 'all' || s.dispatch.to.includes(playerId)))
       .map((s) => ({ ...s, target: [playerId], dispatch: onlyMe(s.dispatch, playerId) })),
     surveyResponses: data.surveyResponses.filter((r) => r.playerId === playerId),
+    interviews: [],
     sendModel: 1,
     todos: playerTodos(data, playerId),
     news: playerNews(data, playerId),

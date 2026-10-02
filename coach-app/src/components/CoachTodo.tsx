@@ -19,7 +19,16 @@ export function CoachTodo() {
   const prepDone = next ? PREP_FIELDS.filter((f) => next.prep?.[f.key]?.trim()).length : 0;
   const nextTodo = next && (!nextLineup?.published || !next.prep?.published);
 
-  const rows = send.length + wait.length + (nextTodo ? 1 : 0);
+  // Entretiens dont la date de suivi est arrivée (et pas d'entretien plus récent)
+  const followUps = data.interviews.filter(
+    (iv) =>
+      iv.followUp &&
+      iv.followUp <= today() &&
+      !data.interviews.some((x) => x.playerId === iv.playerId && x.date > iv.date) &&
+      data.players.some((p) => p.id === iv.playerId && !p.archived),
+  );
+
+  const rows = send.length + wait.length + (nextTodo ? 1 : 0) + followUps.length;
   let i = 0;
   return (
     <>
@@ -74,6 +83,18 @@ export function CoachTodo() {
               onPress={() => router.push(`/match/${next.id}`)}
             />
           )}
+          {followUps.map((iv) => {
+            const p = data.players.find((x) => x.id === iv.playerId)!;
+            return (
+              <ListRow
+                key={`i:${iv.id}`}
+                first={i++ === 0}
+                title={`Faire le point avec ${p.firstName}`}
+                subtitle={`Prévu le ${formatDate(iv.followUp)}${iv.decisions ? ` · ${iv.decisions}` : ''}`}
+                onPress={() => router.push({ pathname: '/entretien', params: { playerId: p.id } })}
+              />
+            );
+          })}
         </List>
       )}
     </>

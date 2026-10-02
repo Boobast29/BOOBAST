@@ -28,6 +28,8 @@ export type Match = {
   debrief?: MatchDebrief;
   /** Questionnaire d'après-match envoyé par le coach */
   questionnaire?: Dispatch;
+  /** « Le mot du coach » après le match : visible par tous les joueurs */
+  teamMessage?: string;
   createdAt: string;
 };
 
@@ -157,6 +159,8 @@ export type AppData = {
   objectives: Objective[];
   surveys: Survey[];
   surveyResponses: SurveyResponse[];
+  /** Entretiens individuels (privés, coach uniquement) */
+  interviews: Interview[];
   /** 1 = les questionnaires partent quand le coach appuie sur « Envoyer » (absent : anciennes données à migrer) */
   sendModel?: 1;
 };
@@ -343,3 +347,22 @@ export type CustomQuestion = {
 };
 
 export type Answer = number | boolean | string | string[];
+
+/** Entretien individuel coach / joueur (privé). */
+export type Interview = {
+  id: ID;
+  playerId: ID;
+  date: string; // AAAA-MM-JJ
+  /** Ce que le joueur dit de sa situation */
+  playerView?: string;
+  /** Ce qui va bien */
+  positives?: string;
+  /** Ce qui coince */
+  issues?: string;
+  /** Ce qu'on décide ensemble */
+  decisions?: string;
+  /** Date du prochain point */
+  followUp?: string;
+  createdAt: string;
+  updatedAt: string;
+};

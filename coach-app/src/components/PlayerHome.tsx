@@ -5,13 +5,15 @@ import { visibleMedia } from '@/lib/access';
 import { answerRoute, playerPending } from '@/lib/requests';
 import { INJURY_STATUS_LABEL, INJURY_STATUS_TONE, statsForPosition } from '@/lib/constants';
 import { FORMATIONS } from '@/lib/formations';
+import { playerTimeline } from '@/lib/insights';
 import { useStore } from '@/lib/store';
-import { fmt, formatDate, initials, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, today, wellnessScore } from '@/lib/stats';
+import { daysBetween, fmt, formatDate, initials, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, today, wellnessScore } from '@/lib/stats';
 import { ClubLogo } from './ClubLogo';
 import { PlayerFeedback } from './Feedback';
 import { MediaStrip } from './Media';
+import { TrendChart } from './TrendChart';
 import { useTheme } from './theme';
-import { Avatar, Badge, Button, Card, Empty, HeroStat, IconCircle, Progress, Row, Screen, Section, StatBox, Txt } from './ui';
+import { Hero, Avatar, Badge, Button, Card, Empty, HeroStat, IconCircle, Progress, Row, Screen, Section, StatBox, Txt } from './ui';
 import type { IconName, Tone } from './ui';
 
 /** Accueil d'un joueur connecté : uniquement ses propres données. */
@@ -45,11 +47,15 @@ export function PlayerHome({ playerId }: { playerId: string }) {
   const injuries = data.injuries.filter((i) => i.playerId === player.id && i.status !== 'guérie');
   const keeper = player.position === 'Gardien';
   const cleanSheets = reports.filter((r) => r.minutesPlayed > 0 && (r.stats.goalsConceded ?? 0) === 0 && r.stats.goalsConceded !== undefined).length;
+  const tl = playerTimeline(data, player.id);
+  const word = data.matches
+    .filter((m) => m.teamMessage?.trim() && m.date <= today() && daysBetween(m.date, today()) <= 10)
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
   const statFields = statsForPosition(player.position).filter((f) => !['yellowCards', 'redCards'].includes(f.key));
 
   return (
     <Screen>
-      <View style={{ backgroundColor: t.heroSolid, borderRadius: 14, padding: 20, gap: 16 }}>
+      <Hero style={{ padding: 20, gap: 16 }}>
         <Row style={{ gap: 14 }}>
           <Avatar size={68} colorKey={player.id} photo={player.photoUri} label={initials(player)} ring="rgba(255,255,255,0.9)" />
           <View style={{ flex: 1, gap: 3 }}>
@@ -67,7 +73,7 @@ export function PlayerHome({ playerId }: { playerId: string }) {
           {keeper ? <HeroStat value={cleanSheets} label="Clean sheets" /> : <HeroStat value={s.totals.assists} label="Passes D." />}
           <HeroStat value={s.minutes} label="Minutes" />
         </Row>
-      </View>
+      </Hero>
 
       {pending.length > 0 && (
         <>
@@ -83,6 +89,21 @@ export function PlayerHome({ playerId }: { playerId: string }) {
             />
           ))}
         </>
+      )}
+
+      {word && (
+        <Card stripe={t.primary}>
+          <Row style={{ gap: 8 }}>
+            <Ionicons name="megaphone-outline" size={18} color={t.primary} />
+            <View style={{ flex: 1 }}>
+              <Txt bold>Le mot du coach</Txt>
+              <Txt muted size={12}>
+                Après {matchLabel(word)}
+              </Txt>
+            </View>
+          </Row>
+          <Text style={{ color: t.text, fontSize: 15, lineHeight: 22 }}>{word.teamMessage}</Text>
+        </Card>
       )}
 
       {next && (
@@ -164,6 +185,20 @@ export function PlayerHome({ playerId }: { playerId: string }) {
               </Row>
             </Card>
           ))}
+        </>
+      )}
+
+      {(tl.form.length > 1 || tl.trainingPerf.length > 1) && (
+        <>
+          <Section>Ma progression</Section>
+          <Card style={{ gap: 18 }}>
+            {tl.form.length > 1 && <TrendChart title="Ma forme après match" points={tl.form} min={1} max={5} unit="/5" />}
+            {tl.selfRating.filter((p) => p.value != null).length > 1 && <TrendChart title="Ma perf en match" points={tl.selfRating} min={1} max={10} unit="/10" />}
+            {tl.trainingPerf.length > 1 && <TrendChart title="Ma perf à l’entraînement" points={tl.trainingPerf} min={1} max={10} unit="/10" />}
+            <Txt muted size={12}>
+              D’après tes réponses aux questionnaires. Touche une courbe pour voir le détail.
+            </Txt>
+          </Card>
         </>
       )}
 

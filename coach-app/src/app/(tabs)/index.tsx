@@ -10,14 +10,14 @@ import { PlayerHome } from '@/components/PlayerHome';
 import { ScorePill } from '@/components/ScorePill';
 import { useTheme } from '@/components/theme';
 import { CoachTodo } from '@/components/CoachTodo';
-import { Avatar, HeroStat, Button, Card, Empty, IconCircle, Link, List, ListRow, Progress, Row, Screen, Section, Txt } from '@/components/ui';
+import { Hero, Avatar, HeroStat, Button, Card, Empty, IconCircle, Link, List, ListRow, Progress, Row, Screen, Section, Txt } from '@/components/ui';
 import type { IconName, Tone } from '@/components/ui';
+import { coachAlerts } from '@/lib/insights';
 import { matchRequest } from '@/lib/requests';
 import { useStore } from '@/lib/store';
 import {
   avg,
   byDateDesc,
-  computeAlerts,
   isoDaysAgo,
   wellnessScore,
   fmt,
@@ -38,6 +38,8 @@ const ALERT_ICON: Record<AlertKind, IconName> = {
   rpe: 'flame',
   load: 'trending-up',
   absence: 'calendar-clear',
+  decline: 'trending-down',
+  silence: 'chatbubble-ellipses-outline',
 };
 const FORM_LETTER = { win: 'V', draw: 'N', loss: 'D', none: '–' } as const;
 
@@ -51,7 +53,7 @@ function Dashboard() {
   const t = useTheme();
   const { data, club, loadDemo } = useStore();
   const active = useMemo(() => data.players.filter((p) => !p.archived), [data.players]);
-  const alerts = useMemo(() => computeAlerts(data), [data]);
+  const alerts = useMemo(() => coachAlerts(data), [data]);
   const summaries = useMemo(() => active.map((p) => summarizePlayer(data, p)), [data, active]);
   const record = useMemo(() => seasonRecord(data), [data]);
   const [showAll, setShowAll] = useState(false);
@@ -77,13 +79,13 @@ function Dashboard() {
   if (!data.players.length && !data.matches.length)
     return (
       <Screen>
-        <View style={{ backgroundColor: t.heroSolid, borderRadius: 14, padding: 24, gap: 12 }}>
+        <Hero style={{ padding: 24, gap: 12 }}>
           <ClubLogo size={84} />
           <Text style={{ color: t.heroText, fontSize: 26, fontWeight: '800' }}>Bienvenue coach</Text>
           <Text style={{ color: t.heroMuted, fontSize: 15, lineHeight: 22 }}>
             Suivez vos joueurs après chaque match : ressenti, charge (RPE), statistiques, blessures et vidéos — tout au même endroit.
           </Text>
-        </View>
+        </Hero>
         <Empty
           icon="people-outline"
           text="Commencez par ajouter vos joueurs, ou chargez des données de démonstration pour découvrir l'appli."
@@ -111,7 +113,7 @@ function Dashboard() {
   return (
     <Screen>
       {/* Bandeau équipe */}
-      <View style={{ backgroundColor: t.heroSolid, borderRadius: 14, padding: 20, gap: 16 }}>
+      <Hero style={{ padding: 20, gap: 16 }}>
         <Row style={{ justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <ClubLogo size={60} />
           <View style={{ flex: 1, gap: 2 }}>
@@ -166,7 +168,7 @@ function Dashboard() {
             />
           </View>
         </View>
-      </View>
+      </Hero>
 
       <CoachTodo />
 

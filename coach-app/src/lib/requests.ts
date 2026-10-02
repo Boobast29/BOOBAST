@@ -78,7 +78,7 @@ export function sessionRequest(data: AppData, x: TrainingSession): Request {
     date: x.date,
     dispatch: x.feedbackRequest,
     recipients: resolve(data, x.feedbackRequest?.to ?? defaultSessionRecipients(data, x)),
-    answered: new Set(Object.keys(x.feedback ?? {})),
+    answered: new Set(Object.entries(x.feedback ?? {}).filter(([, f]) => !!f).map(([id]) => id)),
     open: stillOpen(x.feedbackRequest),
   };
 }

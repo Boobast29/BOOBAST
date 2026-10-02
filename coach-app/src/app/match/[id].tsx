@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { StrengthsWeaknesses, TeamFeedback } from '@/components/Feedback';
 import { ClubLogo } from '@/components/ClubLogo';
@@ -7,7 +8,7 @@ import { MediaStrip } from '@/components/Media';
 import { useTheme } from '@/components/theme';
 import { SendPanel } from '@/components/SendPanel';
 import type { RecipientGroup } from '@/components/SendPanel';
-import { Avatar, Badge, Button, Card, Empty, Field, HeaderButton, HeroStat, IconCircle, Link, List, ListRow, Row, Screen, Section, Txt } from '@/components/ui';
+import { Hero, Avatar, Badge, Button, Card, Empty, Field, HeaderButton, HeroStat, IconCircle, Link, List, ListRow, Row, Screen, Section, Txt } from '@/components/ui';
 import { DEBRIEF_FIELDS, PREP_FIELDS, STAT_FIELDS } from '@/lib/constants';
 import { SliderScale } from '@/components/Slider';
 import { useStore } from '@/lib/store';
@@ -51,7 +52,7 @@ export default function MatchDetail() {
         }}
       />
 
-      <View style={{ backgroundColor: t.heroSolid, borderRadius: 14, padding: 20, gap: 14 }}>
+      <Hero style={{ padding: 20, gap: 14 }}>
         <Row style={{ justifyContent: 'space-between' }}>
           <Text style={{ color: t.heroMuted, fontSize: 13, fontWeight: '600' }}>
             {formatDate(match.date)}
@@ -76,7 +77,7 @@ export default function MatchDetail() {
             <HeroStat value={reports.filter((r) => r.pain).length} label="Douleurs" />
           </Row>
         )}
-      </View>
+      </Hero>
 
       {match.notes ? (
         <Card>
@@ -88,6 +89,7 @@ export default function MatchDetail() {
       ) : null}
 
       {played_ && <SendPanel request={request} groups={groups} />}
+      {played_ && <TeamMessage matchId={match.id} />}
 
       <List>
         <ListRow
@@ -234,5 +236,49 @@ function Team({ name, us }: { name: string; us: boolean }) {
         {name}
       </Text>
     </View>
+  );
+}
+
+/** « Le mot du coach » : message à toute l'équipe après le match, notifié aux joueurs. */
+function TeamMessage({ matchId }: { matchId: string }) {
+  const t = useTheme();
+  const { data, saveMatch } = useStore();
+  const match = data.matches.find((m) => m.id === matchId)!;
+  const [draft, setDraft] = useState(match.teamMessage ?? '');
+  const [editing, setEditing] = useState(!match.teamMessage);
+  const publish = () => {
+    saveMatch({ ...match, teamMessage: draft.trim() || undefined });
+    setEditing(!draft.trim());
+  };
+  return (
+    <Card>
+      <View style={{ gap: 2 }}>
+        <Txt bold size={16}>
+          Le mot du coach
+        </Txt>
+        <Txt muted size={13}>
+          Un message à toute l’équipe : les joueurs le reçoivent en notification et le voient dans leur espace.
+        </Txt>
+      </View>
+      {editing ? (
+        <>
+          <Field label="Message" value={draft} onChangeText={setDraft} multiline placeholder="Ce que vous voulez leur dire après ce match…" />
+          <Button small icon="megaphone-outline" title={match.teamMessage ? 'Mettre à jour' : 'Publier aux joueurs'} disabled={!draft.trim()} onPress={publish} />
+        </>
+      ) : (
+        <>
+          <Text style={{ color: t.text, fontSize: 15, lineHeight: 22 }}>{match.teamMessage}</Text>
+          <Row style={{ justifyContent: 'space-between' }}>
+            <Row style={{ gap: 4 }}>
+              <Ionicons name="checkmark-circle" size={15} color={t.primary} />
+              <Txt size={13} color={t.primary}>
+                Publié aux joueurs
+              </Txt>
+            </Row>
+            <Link title="Modifier" onPress={() => setEditing(true)} />
+          </Row>
+        </>
+      )}
+    </Card>
   );
 }

@@ -32,7 +32,15 @@ Application mobile pour qu'un coach suive ses joueurs après chaque match :
   vers les joueurs que lorsque le coach appuie sur « Envoyer » (toute l'équipe, la compo, les présents ou une sélection).
   Les joueurs reçoivent une notification ; le coach voit qui a répondu et peut **relancer** ceux qui manquent.
   Tout se retrouve dans l'accueil (« À faire ») et dans Suivi → Questionnaires (à envoyer, en attente, brouillons, historique).
-- **Espace joueur** : liste « À remplir » (questionnaires envoyés par le coach),
+- **Signaux faibles** (accueil coach, fiche joueur) : ressenti ou forme en baisse sur les derniers questionnaires,
+  joueur qui ne répond plus aux questionnaires envoyés.
+- **Courbes d'évolution** par joueur : forme après match, perf perso (match et entraînement), note du coach.
+  Le joueur voit les siennes (sans la note du coach) dans « Ma progression ».
+- **Entretien individuel** (fiche joueur → Entretien) : l'appli prépare les points à aborder à partir des réponses
+  du joueur (tendances, temps de jeu, écart entre sa note et celle du coach, commentaires, dernier entretien) ;
+  le coach note ce qui est dit et décidé, avec une date de suivi rappelée dans « À faire ». Privé.
+- **Le mot du coach** (fiche match) : message à toute l'équipe après le match, notifié aux joueurs.
+- **Espace joueur** : liste « À remplir » (questionnaires envoyés par le coach, avec barre d'avancement),
   points à travailler, prochain match + préparation + compo, stats, vidéos.
 - **Entraînements** (onglet Agenda) : séances avec thème, durée, RPE, **appel** (présent, retard, absent, excusé, blessé),
   RPE individuel ; charge d'entraînement prise en compte dans les alertes ; taux d'assiduité par joueur ;

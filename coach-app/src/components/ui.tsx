@@ -400,7 +400,23 @@ export function Avatar({ label, colorKey, size = 44, ring, photo }: { label: str
 export function Hero({ children, style }: { children: ReactNode; style?: ViewStyle }) {
   const t = useTheme();
   return (
-    <View style={[styles.hero, { backgroundColor: t.heroSolid }, style]}>{children}</View>
+    <View style={[styles.hero, { backgroundColor: t.heroSolid }, style]}>
+      <PitchLines />
+      {children}
+    </View>
+  );
+}
+
+/** Lignes de terrain en filigrane (ligne médiane, rond central, surface) derrière un bandeau. */
+export function PitchLines() {
+  const line = 'rgba(255,255,255,0.07)';
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <View style={{ position: 'absolute', top: 0, bottom: 0, right: '22%', width: 2, backgroundColor: line }} />
+      <View style={{ position: 'absolute', top: '50%', right: '22%', width: 150, height: 150, marginTop: -75, marginRight: -75, borderRadius: 75, borderWidth: 2, borderColor: line }} />
+      <View style={{ position: 'absolute', top: '50%', right: '22%', width: 8, height: 8, marginTop: -4, marginRight: -3, borderRadius: 4, backgroundColor: line }} />
+      <View style={{ position: 'absolute', top: '18%', bottom: '18%', left: -2, width: 70, borderWidth: 2, borderColor: line }} />
+    </View>
   );
 }
 

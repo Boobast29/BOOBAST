@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/components/theme';
 import { SendPanel } from '@/components/SendPanel';
 import type { RecipientGroup } from '@/components/SendPanel';
-import { Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, List, Progress, Row, Screen, Section, tap, toneColors, Txt } from '@/components/ui';
+import { Avatar, Badge, Hero, Button, Card, Empty, HeaderButton, HeroStat, List, Progress, Row, Screen, Section, tap, toneColors, Txt } from '@/components/ui';
 import { ATTENDANCE } from '@/lib/constants';
 import { useStore } from '@/lib/store';
 import { defaultSessionRecipients, sessionRequest } from '@/lib/requests';
@@ -54,14 +54,7 @@ export default function SessionDetail() {
           headerRight: () => <HeaderButton icon="create-outline" label="Modifier la séance" onPress={edit} />,
         }}
       />
-      <View
-        style={{
-          backgroundColor: t.heroSolid,
-          borderRadius: 14,
-          padding: 20,
-          gap: 14,
-        }}
-      >
+      <Hero>
         <View style={{ gap: 2 }}>
           <Text style={{ color: t.heroMuted, fontSize: 13, fontWeight: '600' }}>
             Entraînement · {formatDate(s.date)}
@@ -75,7 +68,7 @@ export default function SessionDetail() {
           <HeroStat value={s.rpe ?? '–'} label="RPE" />
           <HeroStat value={load} label="Charge" />
         </Row>
-      </View>
+      </Hero>
 
       {s.notes ? (
         <Card>

@@ -4,7 +4,7 @@ import { Text, View } from 'react-native';
 import { ClubLogo } from '@/components/ClubLogo';
 import { Locked } from '@/components/Locked';
 import { useTheme } from '@/components/theme';
-import { Card, Empty, Field, Row, Screen, Section, Toggle, Txt } from '@/components/ui';
+import { Hero, Card, Empty, Field, Row, Screen, Section, Toggle, Txt } from '@/components/ui';
 import { useStore } from '@/lib/store';
 import { formatDate } from '@/lib/stats';
 import { PREP_FIELDS } from '@/lib/constants';
@@ -24,7 +24,7 @@ export default function MatchPrepScreen() {
   const filled = PREP_FIELDS.filter((f) => prep[f.key]?.trim());
 
   const header = (
-    <View style={{ backgroundColor: t.heroSolid, borderRadius: 14, padding: 20, gap: 8 }}>
+    <Hero style={{ padding: 20, gap: 8 }}>
       <Row style={{ gap: 12 }}>
         <ClubLogo size={48} />
         <View style={{ flex: 1 }}>
@@ -38,7 +38,7 @@ export default function MatchPrepScreen() {
           </Text>
         </View>
       </Row>
-    </View>
+    </Hero>
   );
 
   if (!coach)

@@ -4,10 +4,12 @@ import { Text, View } from 'react-native';
 import { PlayerFeedback } from '@/components/Feedback';
 import { MediaStrip } from '@/components/Media';
 import { useTheme } from '@/components/theme';
-import { Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, Link, Progress, Row, Screen, Section, StatBox, Txt } from '@/components/ui';
+import { TrendChart } from '@/components/TrendChart';
+import { Hero, Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, Link, List, ListRow, Progress, Row, Screen, Section, StatBox, Txt } from '@/components/ui';
 import { INJURY_STATUS_LABEL, INJURY_STATUS_TONE, STAT_FIELDS, statsForPosition } from '@/lib/constants';
+import { coachAlerts, playerTimeline } from '@/lib/insights';
 import { useStore } from '@/lib/store';
-import { attendanceRate, avg, byDateDesc, fmt, formatAnswer, formatDate, initials, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, wellnessScore } from '@/lib/stats';
+import { attendanceRate, byDateDesc, fmt, formatAnswer, formatDate, initials, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, wellnessScore } from '@/lib/stats';
 
 export default function PlayerDetail() {
   const t = useTheme();
@@ -19,17 +21,15 @@ export default function PlayerDetail() {
   const s = summarizePlayer(data, player);
   const att = attendanceRate(data, player.id);
   const objectives = data.objectives.filter((o) => o.playerId === player.id);
-  const trainingFb = data.sessions
-    .map((x) => x.feedback?.[player.id])
-    .filter((f): f is NonNullable<typeof f> => !!f);
   const reports = reportsForPlayer(data, player.id);
   const injuries = data.injuries.filter((i) => i.playerId === player.id).sort(byDateDesc);
   const matches = new Map(data.matches.map((m) => [m.id, m]));
   const media = data.media
     .filter((m) => m.playerIds.includes(player.id) || m.markers.some((k) => k.playerId === player.id))
     .sort((a, b) => b.date.localeCompare(a.date));
-  // Évolution du bien-être sur les 8 derniers questionnaires (plus ancien → plus récent)
-  const trend = reports.slice(0, 8).reverse();
+  const tl = playerTimeline(data, player.id);
+  const signals = coachAlerts(data).filter((a) => a.playerId === player.id);
+  const interviews = data.interviews.filter((i) => i.playerId === player.id).sort(byDateDesc);
   const edit = () => router.push({ pathname: '/joueur/edit', params: { id: player.id } });
 
   return (
@@ -41,7 +41,7 @@ export default function PlayerDetail() {
         }}
       />
 
-      <View style={{ backgroundColor: t.heroSolid, borderRadius: 14, padding: 20, gap: 16 }}>
+      <Hero style={{ padding: 20, gap: 16 }}>
         <Row style={{ gap: 14 }}>
           <Avatar label={initials(player)} colorKey={player.id} photo={player.photoUri} size={72} ring="rgba(255,255,255,0.9)" />
           <View style={{ flex: 1, gap: 4 }}>
@@ -64,7 +64,7 @@ export default function PlayerDetail() {
           <HeroStat value={s.totals.assists} label="Passes D." />
           <HeroStat value={s.minutes} label="Minutes" />
         </Row>
-      </View>
+      </Hero>
 
       {player.notes ? (
         <Card>
@@ -74,6 +74,40 @@ export default function PlayerDetail() {
           </Row>
         </Card>
       ) : null}
+
+      {signals.length > 0 && (
+        <List>
+          {signals.map((a, i) => (
+            <ListRow
+              key={i}
+              first={i === 0}
+              left={<Ionicons name={a.level === 'high' ? 'alert-circle' : 'information-circle'} size={22} color={a.level === 'high' ? t.danger : t.warning} />}
+              title={a.text}
+            />
+          ))}
+        </List>
+      )}
+
+      <Row style={{ gap: 10 }}>
+        <View style={{ flex: 1 }}>
+          <Button small icon="chatbubbles-outline" title="Entretien" onPress={() => router.push({ pathname: '/entretien', params: { playerId: player.id } })} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Button small kind="secondary" icon="flag-outline" title="Point à travailler" onPress={() => router.push({ pathname: '/objectif/edit', params: { playerId: player.id } })} />
+        </View>
+      </Row>
+
+      {(tl.form.length > 1 || tl.trainingPerf.length > 1) && (
+        <>
+          <Section>Évolution</Section>
+          <Card style={{ gap: 18 }}>
+            {tl.form.length > 1 && <TrendChart title="Forme après match" points={tl.form} min={1} max={5} unit="/5" />}
+            {tl.selfRating.some((p) => p.value != null) && <TrendChart title="Sa perf perso (match)" points={tl.selfRating} min={1} max={10} unit="/10" />}
+            {tl.coachRating.some((p) => p.value != null) && <TrendChart title="Votre note (match)" points={tl.coachRating} min={1} max={10} unit="/10" />}
+            {tl.trainingPerf.length > 1 && <TrendChart title="Sa perf perso (entraînement)" points={tl.trainingPerf} min={1} max={10} unit="/10" />}
+          </Card>
+        </>
+      )}
 
       <Row style={{ flexWrap: 'wrap', gap: 10 }}>
         <StatBox label="Note coach" value={fmt(s.avgCoachRating)} icon="star" tone="accent" />
@@ -124,14 +158,20 @@ export default function PlayerDetail() {
         </Card>
       ))}
 
-      {trainingFb.length > 0 && (
+      {interviews.length > 0 && (
         <>
-          <Section icon="fitness-outline">Ressenti à l’entraînement ({trainingFb.length} séances)</Section>
-          <Row style={{ gap: 10 }}>
-            <StatBox label="Qualité séance" value={fmt(avg(trainingFb.map((f) => f.quality)))} icon="star" tone="success" />
-            <StatBox label="Perf perso" value={fmt(avg(trainingFb.map((f) => f.selfPerf)))} icon="person" tone="accent" />
-            <StatBox label="Intensité" value={fmt(avg(trainingFb.map((f) => f.intensity)))} icon="flame" tone="warning" />
-          </Row>
+          <Section action={<Link title="+ Nouveau" onPress={() => router.push({ pathname: '/entretien', params: { playerId: player.id } })} />}>Entretiens</Section>
+          <List>
+            {interviews.map((iv, i) => (
+              <ListRow
+                key={iv.id}
+                first={i === 0}
+                title={`Entretien du ${formatDate(iv.date)}`}
+                subtitle={iv.decisions || iv.issues || iv.positives || 'Sans notes'}
+                onPress={() => router.push({ pathname: '/entretien', params: { playerId: player.id, id: iv.id } })}
+              />
+            ))}
+          </List>
         </>
       )}
 
@@ -153,31 +193,10 @@ export default function PlayerDetail() {
         )}
       </Card>
 
-      {trend.length > 1 && (
+      {reports.length > 1 && (
         <>
-          <Section icon="analytics-outline">Questionnaire du club — tendances</Section>
+          <Section>Questionnaire du club, tendances</Section>
           <PlayerFeedback data={data} reports={reports} />
-          <Section icon="pulse-outline">Forme — derniers matchs</Section>
-          <Card>
-            <Row style={{ alignItems: 'flex-end', height: 110, gap: 8 }}>
-              {trend.map((r) => {
-                const w = wellnessScore(r);
-                const color = w == null ? t.border : w < 2.5 ? t.danger : w < 3.5 ? t.warning : t.primary;
-                const m = matches.get(r.matchId);
-                return (
-                  <View key={r.id} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
-                    <Txt size={11} bold color={color}>
-                      {fmt(w)}
-                    </Txt>
-                    <View style={{ width: '100%', height: ((w ?? 0) / 5) * 64 + 4, backgroundColor: color, borderRadius: 8 }} />
-                    <Txt size={10} muted numberOfLines={1}>
-                      {m ? formatDate(m.date).slice(0, 5) : ''}
-                    </Txt>
-                  </View>
-                );
-              })}
-            </Row>
-          </Card>
         </>
       )}
 

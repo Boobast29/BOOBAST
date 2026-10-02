@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { buildDemoData } from '../src/lib/demo';
 import { buildPlayerView, mergeEntries, rosterFor } from '../src/lib/cloud/views';
 import type { Entry } from '../src/lib/cloud/views';
+import { insightAlerts, interviewBrief, playerTimeline } from '../src/lib/insights';
 import { newDispatch, remind } from '../src/lib/requests';
 import { normalizeData } from '../src/lib/store';
 import type { Lineup } from '../src/lib/types';
@@ -111,4 +112,30 @@ test('une ancienne réponse n’écrase pas une plus récente', () => {
   const old: Entry[] = [{ kind: 'report', player_id: 'p1', ref_id: 'm2', payload: { ...existing, rpe: 10, updatedAt: '2000-01-01T00:00:00Z' } }];
   assert.equal(mergeEntries(m.data, old).data.reports.find((r) => r.playerId === 'p1' && r.matchId === 'm2')!.rpe, 3);
 });
+
+// Signaux faibles et entretiens
+test('les entretiens ne sont jamais transmis au joueur', () => assert.deepEqual(buildPlayerView(data, 'p9').interviews, []));
+test('le mot du coach est notifié aux joueurs', () => assert.ok(v.news.some((n) => n.key.startsWith('mot:m2'))));
+{
+  const base = { ...data, reports: data.reports.map((r) => ({ ...r })), sessions: data.sessions.map((x) => ({ ...x, feedback: { ...x.feedback } })) };
+  // p3 : perf perso en chute sur les 2 derniers matchs/séances
+  const pts = playerTimeline(base, 'p3');
+  const perf = [...pts.selfRating, ...pts.trainingPerf].sort((a, b) => a.date.localeCompare(b.date));
+  const lastDates = perf.slice(-2).map((p) => p.date);
+  for (const r of base.reports.filter((r) => r.playerId === 'p3')) {
+    const d = base.matches.find((m) => m.id === r.matchId)!.date;
+    r.selfRating = lastDates.includes(d) ? 3 : 8;
+  }
+  for (const x of base.sessions) if (x.feedback?.p3) x.feedback.p3 = { ...x.feedback.p3, selfPerf: lastDates.includes(x.date) ? 3 : 8 };
+  test('alerte « ressenti en baisse »', () => assert.ok(insightAlerts(base).some((a) => a.playerId === 'p3' && a.kind === 'decline')));
+  test('entretien : points à aborder préparés', () => assert.ok(interviewBrief(base, 'p3').some((l) => l.startsWith('Perf perso ressentie'))));
+}
+{
+  const old = new Date(Date.now() - 5 * 86_400_000).toISOString();
+  const silentData = {
+    ...data,
+    sessions: data.sessions.map((x) => ({ ...x, feedbackRequest: { sentAt: old, to: [ 'p6' ] as string[] }, feedback: { ...x.feedback, p6: undefined as never } })),
+  };
+  test('alerte « ne répond plus »', () => assert.ok(insightAlerts(silentData).some((a) => a.playerId === 'p6' && a.kind === 'silence')));
+}
 console.log(`\n${ok} tests OK`);

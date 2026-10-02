@@ -9,6 +9,7 @@ import { Avatar, Badge, Button, Card, Chips, Empty, Field, Progress, Row, Scale,
 import { confirm, notify } from '@/lib/confirm';
 import { BODY_ZONES, PLAYER_COMMENT_LABEL, SECTION_DESCRIPTIONS, SELF_RATING_LABEL, STAT_FIELDS, statsForPosition, WELLNESS_FIELDS } from '@/lib/constants';
 import type { WellnessKey } from '@/lib/constants';
+import { matchRequest } from '@/lib/requests';
 import { useStore } from '@/lib/store';
 import { initials, matchLabel, playerName } from '@/lib/stats';
 import type { Answer, Stats } from '@/lib/types';
@@ -96,10 +97,14 @@ export default function Questionnaire() {
     else notify('Il manque des réponses', list);
   };
 
-  // Joueur suivant sans questionnaire pour ce match
-  const done = new Set(data.reports.filter((r) => r.matchId === match.id).map((r) => r.playerId));
-  const activeCount = data.players.filter((p) => !p.archived).length;
-  const next = data.players.filter((p) => !p.archived && p.id !== player.id && !done.has(p.id)).sort((a, b) => (a.number ?? 999) - (b.number ?? 999))[0];
+  // Joueur suivant sans questionnaire pour ce match (parmi les joueurs concernés)
+  const req = matchRequest(data, match);
+  const done = req.answered;
+  const activeCount = req.recipients.length;
+  const next = req.recipients.filter((p) => p.id !== player.id && !done.has(p.id)).sort((a, b) => (a.number ?? 999) - (b.number ?? 999))[0];
+  // Avancement du joueur : questions obligatoires (*) + sa note perso
+  const requiredTotal = customQuestions.filter((q) => q.required).length + 1;
+  const requiredDone = customQuestions.filter((q) => q.required && answers[q.id] !== undefined).length + (selfRating != null ? 1 : 0);
 
   return (
     <Screen>
@@ -117,11 +122,18 @@ export default function Questionnaire() {
           </View>
           {existing ? <Badge text="Rempli" tone="success" icon="checkmark" /> : null}
         </Row>
-        {coach && (
+        {coach ? (
           <View style={{ gap: 4 }}>
             <Progress value={activeCount ? done.size / activeCount : 0} height={6} />
             <Txt muted size={12}>
               {done.size}/{activeCount} questionnaires remplis pour ce match
+            </Txt>
+          </View>
+        ) : (
+          <View style={{ gap: 4 }}>
+            <Progress value={requiredDone / requiredTotal} height={6} />
+            <Txt muted size={12}>
+              {requiredDone === requiredTotal ? 'Tout est rempli, tu peux envoyer.' : `${requiredDone}/${requiredTotal} réponses obligatoires`}
             </Txt>
           </View>
         )}
