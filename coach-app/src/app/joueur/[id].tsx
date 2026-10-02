@@ -7,14 +7,16 @@ import { useTheme } from '@/components/theme';
 import { TrendChart } from '@/components/TrendChart';
 import { Hero, Avatar, Badge, Button, Card, Empty, HeaderButton, HeroStat, Link, List, ListRow, Progress, Row, Screen, Section, StatBox, Txt } from '@/components/ui';
 import { INJURY_STATUS_LABEL, INJURY_STATUS_TONE, STAT_FIELDS, statsForPosition } from '@/lib/constants';
-import { coachAlerts, playerTimeline } from '@/lib/insights';
+import { coachAlerts, playerTimeline, playingTime } from '@/lib/insights';
+import { notify } from '@/lib/confirm';
+import { sharePlayerReport } from '@/lib/report';
 import { useStore } from '@/lib/store';
 import { attendanceRate, byDateDesc, fmt, formatAnswer, formatDate, initials, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, wellnessScore } from '@/lib/stats';
 
 export default function PlayerDetail() {
   const t = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data } = useStore();
+  const { data, club } = useStore();
   const player = data.players.find((p) => p.id === id);
   if (!player) return <Empty text="Joueur introuvable." />;
 
@@ -28,6 +30,8 @@ export default function PlayerDetail() {
     .filter((m) => m.playerIds.includes(player.id) || m.markers.some((k) => k.playerId === player.id))
     .sort((a, b) => b.date.localeCompare(a.date));
   const tl = playerTimeline(data, player.id);
+  const pt = playingTime(data);
+  const myTime = pt.rows.find((r) => r.playerId === player.id);
   const signals = coachAlerts(data).filter((a) => a.playerId === player.id);
   const interviews = data.interviews.filter((i) => i.playerId === player.id).sort(byDateDesc);
   const edit = () => router.push({ pathname: '/joueur/edit', params: { id: player.id } });
@@ -93,7 +97,16 @@ export default function PlayerDetail() {
           <Button small icon="chatbubbles-outline" title="Entretien" onPress={() => router.push({ pathname: '/entretien', params: { playerId: player.id } })} />
         </View>
         <View style={{ flex: 1 }}>
-          <Button small kind="secondary" icon="flag-outline" title="Point à travailler" onPress={() => router.push({ pathname: '/objectif/edit', params: { playerId: player.id } })} />
+          <Button small kind="secondary" icon="flag-outline" title="Objectif" onPress={() => router.push({ pathname: '/objectif/edit', params: { playerId: player.id } })} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Button
+            small
+            kind="secondary"
+            icon="document-text-outline"
+            title="Bilan PDF"
+            onPress={() => sharePlayerReport(data, player.id, club.name).catch((e) => notify('Bilan impossible', String((e as Error)?.message ?? e)))}
+          />
         </View>
       </Row>
 
@@ -115,6 +128,21 @@ export default function PlayerDetail() {
         <StatBox label="RPE moyen" value={fmt(s.avgRpe)} icon="flame" tone="warning" />
         <StatBox label="Forme /5" value={fmt(s.avgWellness)} icon="heart" tone="success" />
       </Row>
+      {myTime && pt.played > 0 && (
+        <Card>
+          <Row style={{ justifyContent: 'space-between' }}>
+            <Txt bold>Temps de jeu</Txt>
+            <Txt bold color={myTime.share < 0.3 ? t.warning : t.primary}>
+              {Math.round(myTime.share * 100)} %
+            </Txt>
+          </Row>
+          <Progress value={myTime.share} color={myTime.share < 0.3 ? t.warning : t.primary} />
+          <Txt muted size={12}>
+            {myTime.minutes}′ sur {pt.available}′ possibles · {myTime.starts} titularisation{myTime.starts > 1 ? 's' : ''} · derniers matchs :{' '}
+            {myTime.last.map((m) => (m == null ? '–' : `${m}′`)).join(', ')}
+          </Txt>
+        </Card>
+      )}
       {att.total > 0 && (
         <Card>
           <Row style={{ justifyContent: 'space-between' }}>

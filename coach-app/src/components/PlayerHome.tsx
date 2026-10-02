@@ -32,7 +32,9 @@ export function PlayerHome({ playerId }: { playerId: string }) {
   const reports = reportsForPlayer(data, player.id);
   const matches = new Map(data.matches.map((m) => [m.id, m]));
   // Questionnaires envoyés par le coach, pas encore remplis
-  const pending = playerPending(data, player.id);
+  // Les demandes relancées par le coach passent en premier
+  const pending = playerPending(data, player.id).sort((a, b) => (b.dispatch?.reminders ?? 0) - (a.dispatch?.reminders ?? 0));
+  const reminded = pending.filter((r) => r.dispatch?.reminders);
   const objectives = data.objectives.filter((o) => o.playerId === player.id && o.status !== 'abandonné').sort((a, b) => (a.status === b.status ? 0 : a.status === 'en cours' ? -1 : 1));
   const next = data.matches.filter((m) => m.scoreFor == null && m.date >= today()).sort((a, b) => a.date.localeCompare(b.date))[0];
   const nextLineup = next && data.lineups.find((l) => l.matchId === next.id && l.published);
@@ -74,6 +76,21 @@ export function PlayerHome({ playerId }: { playerId: string }) {
           <HeroStat value={s.minutes} label="Minutes" />
         </Row>
       </Hero>
+
+      {reminded.length > 0 && (
+        <Card stripe={t.warning}>
+          <Row style={{ gap: 10 }}>
+            <Ionicons name="notifications" size={20} color={t.warning} />
+            <View style={{ flex: 1 }}>
+              <Txt bold>Le coach t’a relancé</Txt>
+              <Txt muted size={13}>
+                {reminded.length === 1 ? `« ${reminded[0].title} » t’attend.` : `${reminded.length} questionnaires t’attendent.`} Ça prend 2 minutes.
+              </Txt>
+            </View>
+          </Row>
+          <Button small icon="create-outline" title="Répondre maintenant" onPress={() => router.push(answerRoute(reminded[0], player.id) as never)} />
+        </Card>
+      )}
 
       {pending.length > 0 && (
         <>

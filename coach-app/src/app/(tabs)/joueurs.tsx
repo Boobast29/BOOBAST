@@ -4,8 +4,9 @@ import { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 import { InjuryList } from '@/components/InjuryList';
 import { useTheme } from '@/components/theme';
-import { Avatar, Badge, Button, Empty, Link, List, ListRow, Row, Screen, SearchField, Section, Segmented, Toggle } from '@/components/ui';
+import { Avatar, Badge, Button, Empty, Link, List, ListRow, Progress, Row, Screen, SearchField, Section, Segmented, Toggle, Txt } from '@/components/ui';
 import { POSITIONS } from '@/lib/constants';
+import { playingTime } from '@/lib/insights';
 import { useStore } from '@/lib/store';
 import { fmt, initials, playerName, summarizePlayer } from '@/lib/stats';
 import type { PlayerSummary } from '@/lib/stats';
@@ -15,7 +16,7 @@ export default function Players() {
   const { data } = useStore();
   const [q, setQ] = useState('');
   const [showArchived, setShowArchived] = useState(false);
-  const [tab, setTab] = useState<'effectif' | 'infirmerie'>('effectif');
+  const [tab, setTab] = useState<'effectif' | 'temps' | 'infirmerie'>('effectif');
   const injuredCount = data.injuries.filter((i) => i.status !== 'guérie').length;
 
   const groups = useMemo(() => {
@@ -42,11 +43,14 @@ export default function Players() {
         onChange={setTab}
         options={[
           ['effectif', 'Effectif', 'people'],
+          ['temps', 'Temps de jeu', 'time'],
           ['infirmerie', `Infirmerie${injuredCount ? ` (${injuredCount})` : ''}`, 'medkit'],
         ]}
       />
       {tab === 'infirmerie' ? (
         <InjuryList />
+      ) : tab === 'temps' ? (
+        <PlayingTimeList />
       ) : (
         <>
           {data.players.length > 5 && <SearchField value={q} onChangeText={setQ} placeholder="Rechercher : nom, poste, numéro…" />}
@@ -144,5 +148,64 @@ function FormGauge({ value }: { value: number }) {
       <Text style={{ color, fontWeight: '800', fontSize: 16 }}>{fmt(value)}</Text>
       <Text style={{ color: t.muted, fontSize: 11 }}>forme</Text>
     </View>
+  );
+}
+
+/** Temps de jeu cumulé : qui joue, qui joue peu. */
+function PlayingTimeList() {
+  const t = useTheme();
+  const { data } = useStore();
+  const { rows, played, available } = useMemo(() => playingTime(data), [data]);
+  const players = new Map(data.players.map((p) => [p.id, p]));
+  if (!played) return <Empty icon="time-outline" text="Le temps de jeu apparaîtra après le premier match joué (minutes saisies dans les questionnaires)." />;
+  return (
+    <>
+      <Txt muted size={13}>
+        {played} match{played > 1 ? 's' : ''} joué{played > 1 ? 's' : ''} · {available}′ possibles par joueur. Les 3 cases : minutes sur les 3 derniers matchs (du plus récent au plus ancien).
+      </Txt>
+      <List>
+        {rows.map((r, i) => {
+          const p = players.get(r.playerId)!;
+          const low = r.share < 0.3;
+          return (
+            <ListRow
+              key={r.playerId}
+              first={i === 0}
+              chevron={false}
+              onPress={() => router.push(`/joueur/${p.id}`)}
+              left={<Avatar label={initials(p)} colorKey={p.id} photo={p.photoUri} size={36} />}
+              title={playerName(p)}
+              subtitle={
+                <View style={{ gap: 5, marginTop: 2 }}>
+                  <Row style={{ gap: 8 }}>
+                    <View style={{ flex: 1 }}>
+                      <Progress value={r.share} height={6} color={low ? t.warning : t.primary} />
+                    </View>
+                    <Text style={{ color: low ? t.warning : t.muted, fontSize: 12, fontWeight: low ? '700' : '400', width: 36, textAlign: 'right' }}>
+                      {Math.round(r.share * 100)} %
+                    </Text>
+                  </Row>
+                  <Text style={{ color: t.muted, fontSize: 12 }}>
+                    {r.appearances} match{r.appearances > 1 ? 's' : ''} · {r.starts} titularisation{r.starts > 1 ? 's' : ''}
+                  </Text>
+                </View>
+              }
+              right={
+                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                  <Text style={{ color: t.text, fontSize: 16, fontWeight: '700' }}>{r.minutes}′</Text>
+                  <Row style={{ gap: 3 }}>
+                    {r.last.map((m, k) => (
+                      <View key={k} style={{ minWidth: 26, paddingHorizontal: 3, paddingVertical: 1, borderRadius: 4, backgroundColor: m == null ? t.input : m === 0 ? t.warningSoft : t.primarySoft }}>
+                        <Text style={{ color: m == null ? t.muted : m === 0 ? t.warning : t.primary, fontSize: 11, fontWeight: '600', textAlign: 'center' }}>{m == null ? '–' : m}</Text>
+                      </View>
+                    ))}
+                  </Row>
+                </View>
+              }
+            />
+          );
+        })}
+      </List>
+    </>
   );
 }

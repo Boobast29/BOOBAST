@@ -79,6 +79,15 @@ export function insightAlerts(data: AppData): Alert[] {
         text: `N’a pas répondu à ${silent.length} des ${mine.length} derniers questionnaires`,
       });
   }
+  // Peu de temps de jeu sur les 3 derniers matchs (joueur disponible)
+  const pt = playingTime(data);
+  if (pt.played >= 3)
+    for (const r of pt.rows) {
+      const known = r.last.filter((v): v is number => v != null);
+      const injured = data.injuries.some((i) => i.playerId === r.playerId && i.status !== 'guérie');
+      if (known.length === 3 && known.reduce((a, b) => a + b, 0) < 45 && !injured)
+        out.push({ playerId: r.playerId, kind: 'playtime', level: 'medium', text: `Peu de temps de jeu : ${known.map((m) => `${m}′`).join(', ')} sur les 3 derniers matchs` });
+    }
   return out;
 }
 
@@ -126,4 +135,38 @@ export function interviewBrief(data: AppData, playerId: ID): string[] {
   const last = data.interviews.filter((i) => i.playerId === playerId).sort(byDateDesc)[0];
   if (last?.decisions) lines.push(`Décidé au dernier entretien (${formatDate(last.date)}) : ${last.decisions}`);
   return lines;
+}
+
+export type PlayingTime = {
+  playerId: ID;
+  minutes: number;
+  /** Part du temps de jeu possible (matchs joués × 90′), de 0 à 1 */
+  share: number;
+  starts: number;
+  appearances: number;
+  /** Minutes sur les 3 derniers matchs joués (undefined = pas de questionnaire pour ce match) */
+  last: (number | undefined)[];
+};
+
+/** Temps de jeu cumulé sur la saison, du plus utilisé au moins utilisé. */
+export function playingTime(data: AppData): { rows: PlayingTime[]; played: number; available: number } {
+  const played = data.matches.filter((m) => m.scoreFor != null).sort(byDateDesc);
+  const available = played.length * 90;
+  const lastIds = played.slice(0, 3).map((m) => m.id);
+  const rows = data.players
+    .filter((p) => !p.archived)
+    .map((p) => {
+      const reports = data.reports.filter((r) => r.playerId === p.id && played.some((m) => m.id === r.matchId));
+      const minutes = reports.reduce((a, r) => a + r.minutesPlayed, 0);
+      return {
+        playerId: p.id,
+        minutes,
+        share: available ? Math.min(1, minutes / available) : 0,
+        starts: reports.filter((r) => r.starter && r.minutesPlayed > 0).length,
+        appearances: reports.filter((r) => r.minutesPlayed > 0).length,
+        last: lastIds.map((id) => reports.find((r) => r.matchId === id)?.minutesPlayed),
+      };
+    })
+    .sort((a, b) => b.minutes - a.minutes);
+  return { rows, played: played.length, available };
 }

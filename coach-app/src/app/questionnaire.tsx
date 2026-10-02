@@ -5,6 +5,8 @@ import { Locked } from '@/components/Locked';
 import { QuestionInput } from '@/components/QuestionInput';
 import { SliderScale } from '@/components/Slider';
 import { useTheme } from '@/components/theme';
+import { Wizard } from '@/components/Wizard';
+import type { WizardStep } from '@/components/Wizard';
 import { Avatar, Badge, Button, Card, Chips, Empty, Field, Progress, Row, Scale, Screen, Section, Stepper, Toggle, Txt } from '@/components/ui';
 import { confirm, notify } from '@/lib/confirm';
 import { BODY_ZONES, PLAYER_COMMENT_LABEL, SECTION_DESCRIPTIONS, SELF_RATING_LABEL, STAT_FIELDS, statsForPosition, WELLNESS_FIELDS } from '@/lib/constants';
@@ -105,6 +107,153 @@ export default function Questionnaire() {
   // Avancement du joueur : questions obligatoires (*) + sa note perso
   const requiredTotal = customQuestions.filter((q) => q.required).length + 1;
   const requiredDone = customQuestions.filter((q) => q.required && answers[q.id] !== undefined).length + (selfRating != null ? 1 : 0);
+
+  const setAnswer = (id: string, v: Answer | undefined) =>
+    setAnswers((a) => {
+      const next = { ...a };
+      if (v === undefined) delete next[id];
+      else next[id] = v;
+      return next;
+    });
+
+  // Joueur : une question par écran
+  if (!coach) {
+    const steps: WizardStep[] = [
+      {
+        key: 'time',
+        label: 'Temps de jeu',
+        section: 'Ton match',
+        answered: true,
+        content: (
+          <>
+            <Txt bold size={17}>
+              Combien de temps as-tu joué ?
+            </Txt>
+            <Stepper label="Minutes jouées" icon="stopwatch-outline" value={minutes} onChange={setMinutes} step={5} max={130} />
+            {minutes > 0 && <Toggle label="Titulaire" icon="shirt-outline" value={starter} onChange={setStarter} />}
+          </>
+        ),
+      },
+      ...customQuestions.map((q) => ({
+        key: q.id,
+        label: q.label,
+        section: q.section,
+        sectionHint: q.section ? SECTION_DESCRIPTIONS[q.section] : undefined,
+        required: q.required,
+        answered: answers[q.id] !== undefined,
+        content: <QuestionInput q={q} showValue={false} value={answers[q.id]} onChange={(v) => setAnswer(q.id, v)} />,
+      })),
+      {
+        key: 'self',
+        label: SELF_RATING_LABEL,
+        section: 'Toi',
+        required: true,
+        answered: selfRating != null,
+        content: <SliderScale label={`${SELF_RATING_LABEL} *`} value={selfRating} onChange={setSelfRating} min={1} max={10} />,
+      },
+      ...(minutes > 0
+        ? [
+            {
+              key: 'stats',
+              label: 'Statistiques',
+              section: 'Tes stats',
+              answered: true,
+              content: (
+                <>
+                  {statFields.map((f) => (
+                    <Stepper key={f.key} icon={f.icon} label={f.label} value={stats[f.key] ?? 0} onChange={(v) => setStats((x) => ({ ...x, [f.key]: v }))} max={f.max ?? 99} />
+                  ))}
+                </>
+              ),
+            },
+          ]
+        : []),
+      {
+        key: 'rpe',
+        label: 'Effort du match',
+        section: 'Effort',
+        answered: rpe != null,
+        content: (
+          <SliderScale
+            label="À quel point le match a été dur ?"
+            hint={rpe != null ? rpeLabel(rpe) : undefined}
+            value={rpe}
+            onChange={setRpe}
+            min={0}
+            max={10}
+            minLabel="Repos"
+            maxLabel="Maximal"
+            invert
+          />
+        ),
+      },
+      {
+        key: 'wellness',
+        label: 'Bien-être',
+        section: 'Bien-être',
+        answered: WELLNESS_FIELDS.some((f) => wellness[f.key] != null),
+        content: (
+          <>
+            {WELLNESS_FIELDS.map((f) => (
+              <SliderScale
+                key={f.key}
+                label={f.label}
+                value={wellness[f.key]}
+                onChange={(v) => setWellness((w) => ({ ...w, [f.key]: v }))}
+                min={1}
+                max={5}
+                minLabel={f.hint.split('·')[0].replace(/^1 = /, '').trim()}
+                maxLabel={f.hint.split('·')[1].replace(/^\s*5 = /, '').trim()}
+              />
+            ))}
+          </>
+        ),
+      },
+      {
+        key: 'pain',
+        label: 'Douleur',
+        section: 'Douleur',
+        answered: true,
+        content: (
+          <>
+            <Toggle label="J’ai une douleur ou une gêne" icon="alert-circle-outline" value={pain} onChange={setPain} />
+            {pain && (
+              <>
+                <Chips label="Où ?" options={BODY_ZONES} value={painZone} onChange={setPainZone} allowEmpty />
+                <SliderScale label="Intensité" value={painLevel} onChange={setPainLevel} min={0} max={10} minLabel="Aucune" maxLabel="Insupportable" invert />
+                <Txt muted size={13}>
+                  Le coach sera prévenu dès l’envoi.
+                </Txt>
+              </>
+            )}
+          </>
+        ),
+      },
+      {
+        key: 'comment',
+        label: 'Commentaire',
+        section: 'Pour finir',
+        answered: !!playerComment.trim(),
+        content: <Field label={PLAYER_COMMENT_LABEL} value={playerComment} onChangeText={setPlayerComment} multiline placeholder="Facultatif" />,
+      },
+    ];
+    return (
+      <>
+        <Stack.Screen options={{ title: matchLabel(match) }} />
+        <Wizard
+          steps={steps}
+          finishLabel={existing ? 'Mettre à jour mes réponses' : 'Envoyer au coach'}
+          onFinish={() =>
+            trySave(() => {
+              persist();
+              notify('Merci !', 'Tes réponses sont envoyées au coach.');
+              router.back();
+            })
+          }
+        />
+      </>
+    );
+  }
 
   return (
     <Screen>

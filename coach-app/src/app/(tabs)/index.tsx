@@ -40,6 +40,7 @@ const ALERT_ICON: Record<AlertKind, IconName> = {
   absence: 'calendar-clear',
   decline: 'trending-down',
   silence: 'chatbubble-ellipses-outline',
+  playtime: 'hourglass-outline',
 };
 const FORM_LETTER = { win: 'V', draw: 'N', loss: 'D', none: '–' } as const;
 

@@ -6,8 +6,10 @@ import { Locked } from '@/components/Locked';
 import { SendPanel } from '@/components/SendPanel';
 import type { RecipientGroup } from '@/components/SendPanel';
 import { QuestionInput } from '@/components/QuestionInput';
+import { Wizard } from '@/components/Wizard';
+import type { WizardStep } from '@/components/Wizard';
 import { useTheme } from '@/components/theme';
-import { Badge, Button, Card, Empty, HeaderButton, Progress, Row, Screen, Section, Title, Toggle, Txt } from '@/components/ui';
+import { Badge, Card, Empty, HeaderButton, Progress, Row, Screen, Section, Title, Toggle, Txt } from '@/components/ui';
 import { notify } from '@/lib/confirm';
 import { useStore } from '@/lib/store';
 import { avg, fmt, formatAnswer, formatDate, playerName } from '@/lib/stats';
@@ -39,40 +41,48 @@ function SurveyAnswer({ surveyId, playerId }: { surveyId: string; playerId: stri
     router.back();
   };
 
-  return (
-    <Screen>
-      <Stack.Screen options={{ title: 'Questionnaire' }} />
-      <Card>
-        <Title>{s.title}</Title>
-        {s.description ? <Txt muted>{s.description}</Txt> : null}
-        {s.dueDate ? <Badge text={`À rendre avant le ${formatDate(s.dueDate)}`} icon="calendar-outline" tone="warning" /> : null}
-      </Card>
-      {!s.open ? (
+  if (!s.open)
+    return (
+      <Screen>
+        <Stack.Screen options={{ title: 'Questionnaire' }} />
         <Empty icon="lock-closed-outline" text="Ce questionnaire est fermé." />
-      ) : (
-        <>
-          <Card>
-            {s.questions.map((q) => (
-              <QuestionInput
-                key={q.id}
-                q={q}
-                showValue={false}
-                value={answers[q.id]}
-                onChange={(v) =>
-                  setAnswers((a) => {
-                    const next = { ...a };
-                    if (v === undefined) delete next[q.id];
-                    else next[q.id] = v;
-                    return next;
-                  })
-                }
-              />
-            ))}
-          </Card>
-          <Button title={existing ? 'Mettre à jour mes réponses' : 'Envoyer'} icon="send" onPress={save} />
-        </>
-      )}
-    </Screen>
+      </Screen>
+    );
+
+  const steps: WizardStep[] = s.questions.map((q) => ({
+    key: q.id,
+    label: q.label,
+    section: s.title,
+    sectionHint: s.description,
+    required: q.required,
+    answered: answers[q.id] !== undefined,
+    content: (
+      <QuestionInput
+        q={q}
+        showValue={false}
+        value={answers[q.id]}
+        onChange={(v) =>
+          setAnswers((a) => {
+            const next = { ...a };
+            if (v === undefined) delete next[q.id];
+            else next[q.id] = v;
+            return next;
+          })
+        }
+      />
+    ),
+  }));
+
+  return (
+    <>
+      <Stack.Screen options={{ title: s.title }} />
+      <Wizard
+        steps={steps}
+        finishLabel={existing ? 'Mettre à jour mes réponses' : 'Envoyer au coach'}
+        header={s.dueDate ? <Badge text={`À rendre avant le ${formatDate(s.dueDate)}`} icon="calendar-outline" tone="warning" /> : undefined}
+        onFinish={save}
+      />
+    </>
   );
 }
 
