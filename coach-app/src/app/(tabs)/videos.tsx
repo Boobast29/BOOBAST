@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { MediaCard } from '@/components/Media';
-import { ActionTile, Chips, Empty, Field, Row, Screen, Section } from '@/components/ui';
+import { Button, Chips, Empty, Row, Screen, SearchField, Section } from '@/components/ui';
 import { MEDIA_CATEGORIES } from '@/lib/constants';
 import { visibleMedia } from '@/lib/access';
 import { useStore } from '@/lib/store';
@@ -46,14 +46,20 @@ export default function Videos() {
   return (
     <Screen>
       {coach && (
-        <Row style={{ gap: 10 }}>
-          <ActionTile icon="images" label="Depuis la galerie" onPress={() => add('library')} />
-          <ActionTile icon="videocam" label="Filmer" tone="danger" onPress={() => add('camera')} />
-          <ActionTile icon="link" label="Lien YouTube, Drive…" tone="info" onPress={() => add('link')} />
+        <Row style={{ gap: 8 }}>
+          <View style={{ flex: 1 }}>
+            <Button small icon="images-outline" title="Galerie" onPress={() => add('library')} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button small kind="secondary" icon="videocam-outline" title="Filmer" onPress={() => add('camera')} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button small kind="secondary" icon="link-outline" title="Lien" onPress={() => add('link')} />
+          </View>
         </Row>
       )}
 
-      {media.length > 3 && <Field label="Rechercher" value={q} onChangeText={setQ} placeholder="Titre, joueur, adversaire, temps fort…" />}
+      {media.length > 3 && <SearchField value={q} onChangeText={setQ} placeholder="Titre, joueur, adversaire, temps fort…" />}
       {usedCats.length > 1 && <Chips options={[ALL, ...usedCats] as const} value={cat} onChange={(v) => v && setCat(v)} />}
 
       {media.length === 0 ? (
@@ -69,21 +75,23 @@ export default function Videos() {
         <Empty icon="search" text="Aucun résultat." />
       ) : (
         <>
-          <Section icon="film-outline">
+          <Section>
             {list.length} média{list.length > 1 ? 's' : ''}
           </Section>
-          <View style={{ gap: 16 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
             {list.map((m) => (
-              <MediaCard
-                key={m.id}
-                m={m}
-                subtitle={[
-                  m.matchId ? matchLabel(matches.get(m.matchId)).split(' · ')[0] : undefined,
-                  m.playerIds.length ? `${m.playerIds.length} joueur${m.playerIds.length > 1 ? 's' : ''}` : undefined,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              />
+              <View key={m.id} style={{ width: '47%', flexGrow: 1, maxWidth: '50%' }}>
+                <MediaCard
+                  key={m.id}
+                  m={m}
+                  subtitle={[
+                    m.matchId ? matchLabel(matches.get(m.matchId)).split(' · ')[0] : undefined,
+                    m.playerIds.length ? `${m.playerIds.length} joueur${m.playerIds.length > 1 ? 's' : ''}` : undefined,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                />
+              </View>
             ))}
           </View>
         </>

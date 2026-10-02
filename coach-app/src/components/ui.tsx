@@ -44,12 +44,15 @@ export const tap = () => {
   if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
 };
 
+/** Largeur maximale du contenu (ordinateur, tablette) : au-delà, les lignes deviennent difficiles à lire. */
+export const MAX_WIDTH = 820;
+
 export function Screen({ children, padded = true }: { children: ReactNode; padded?: boolean }) {
   const t = useTheme();
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: t.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
-        contentContainerStyle={[padded && { padding: 16, gap: 12 }, { paddingBottom: 48 }]}
+        contentContainerStyle={[padded && { padding: 16, gap: 12 }, { paddingBottom: 48, width: '100%', maxWidth: MAX_WIDTH, alignSelf: 'center' }]}
         keyboardShouldPersistTaps="handled"
       >
         {children}
@@ -134,8 +137,8 @@ export function Button({ title, onPress, kind = 'primary', disabled, icon, small
         { backgroundColor: bg, borderColor: kind === 'secondary' ? t.border : 'transparent', opacity: disabled ? 0.4 : pressed ? 0.8 : 1 },
       ]}
     >
-      {icon ? <Ionicons name={icon} size={small ? 16 : 19} color={fg} /> : null}
-      <Text style={{ color: fg, fontWeight: '700', fontSize: small ? 14 : 16 }}>{title}</Text>
+      {icon ? <Ionicons name={icon} size={small ? 16 : 18} color={fg} /> : null}
+      <Text style={{ color: fg, fontWeight: '600', fontSize: small ? 14 : 15 }}>{title}</Text>
     </Pressable>
   );
 }
@@ -155,6 +158,29 @@ export function Field({ label, hint, ...props }: TextInputProps & { label: strin
         ]}
       />
       {hint ? <Text style={{ color: t.muted, fontSize: 12 }}>{hint}</Text> : null}
+    </View>
+  );
+}
+
+/** Champ de recherche compact avec loupe et bouton d'effacement. */
+export function SearchField({ value, onChangeText, placeholder }: { value: string; onChangeText: (v: string) => void; placeholder: string }) {
+  const t = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.input, borderRadius: 10, paddingHorizontal: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: t.border }}>
+      <Ionicons name="search" size={17} color={t.muted} />
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={t.muted}
+        accessibilityLabel={placeholder}
+        style={{ flex: 1, paddingVertical: 10, fontSize: 15, color: t.text }}
+      />
+      {value ? (
+        <Pressable onPress={() => onChangeText('')} hitSlop={8} accessibilityLabel="Effacer la recherche">
+          <Ionicons name="close-circle" size={18} color={t.muted} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -473,6 +499,46 @@ export function Progress({ value, color, height = 8 }: { value: number; color?: 
   );
 }
 
+/** Sélecteur à onglets (2 ou 3 vues d'un même écran). */
+export function Segmented<K extends string>({ value, onChange, options }: { value: K; onChange: (k: K) => void; options: readonly (readonly [K, string, IconName?])[] }) {
+  const t = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', backgroundColor: t.input, borderRadius: 10, padding: 3 }} accessibilityRole="tablist">
+      {options.map(([k, label, icon]) => {
+        const on = value === k;
+        return (
+          <Pressable
+            key={k}
+            onPress={() => {
+              tap();
+              onChange(k);
+            }}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: on }}
+            style={{
+              flex: 1,
+              flexDirection: 'row',
+              gap: 6,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: 8,
+              borderRadius: 8,
+              backgroundColor: on ? t.card : 'transparent',
+              borderWidth: on ? StyleSheet.hairlineWidth : 0,
+              borderColor: t.border,
+            }}
+          >
+            {icon ? <Ionicons name={icon} size={15} color={on ? t.primary : t.muted} /> : null}
+            <Text style={{ color: on ? t.text : t.muted, fontWeight: on ? '700' : '500', fontSize: 14 }} numberOfLines={1}>
+              {label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 /** Liste groupée : lignes séparées par un filet, dans un seul bloc (au lieu d'une carte par ligne). */
 export function List({ children, style }: { children: ReactNode; style?: ViewStyle }) {
   const t = useTheme();
@@ -560,7 +626,7 @@ const styles = StyleSheet.create({
   section: { fontSize: 17, fontWeight: '700' },
   label: { fontSize: 15, fontWeight: '600' },
   input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
-  btn: { borderRadius: 10, paddingVertical: 15, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1, flexDirection: 'row', gap: 8 },
+  btn: { borderRadius: 10, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1, flexDirection: 'row', gap: 8 },
   stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   stepBtn: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   stepInput: { width: 48, height: 40, textAlign: 'center', fontSize: 18, fontWeight: '700' },

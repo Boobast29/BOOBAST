@@ -5,10 +5,10 @@ import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useTheme } from '@/components/theme';
 import { useDispatchWriter } from '@/components/SendPanel';
-import { Avatar, Badge, Button, Card, Chips, Empty, List, ListRow, Progress, Row, Screen, Section, SmallButton, Txt } from '@/components/ui';
+import { Avatar, Badge, Button, Card, Chips, Empty, List, ListRow, Progress, Row, Screen, Section, Segmented, SmallButton, Txt } from '@/components/ui';
 import { OBJECTIVE_STATUS_TONE } from '@/lib/constants';
 import { useStore } from '@/lib/store';
-import { formatDate, initials, playerName, today } from '@/lib/stats';
+import { formatDate, initials, playerName } from '@/lib/stats';
 import { allRequests, awaiting, coachRoute, KIND_LABEL, newDispatch, remind, surveyRequest, toSend } from '@/lib/requests';
 import type { Request } from '@/lib/requests';
 import type { ObjectiveStatus } from '@/lib/types';
@@ -16,30 +16,17 @@ import type { ObjectiveStatus } from '@/lib/types';
 type View_ = 'objectifs' | 'questionnaires';
 
 export default function Suivi() {
-  const t = useTheme();
   const [view, setView] = useState<View_>('questionnaires');
   return (
     <Screen>
-      <View style={{ flexDirection: 'row', backgroundColor: t.input, borderRadius: 14, padding: 4 }}>
-        {(
-          [
-            ['questionnaires', 'Questionnaires', 'document-text'],
-            ['objectifs', 'Points à travailler', 'fitness'],
-          ] as const
-        ).map(([k, label, icon]) => {
-          const on = view === k;
-          return (
-            <Pressable
-              key={k}
-              onPress={() => setView(k)}
-              style={{ flex: 1, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 11, backgroundColor: on ? t.card : 'transparent' }}
-            >
-              <Ionicons name={icon} size={16} color={on ? t.primary : t.muted} />
-              <Text style={{ color: on ? t.text : t.muted, fontWeight: on ? '800' : '600', fontSize: 13 }}>{label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <Segmented
+        value={view}
+        onChange={setView}
+        options={[
+          ['questionnaires', 'Questionnaires', 'document-text'],
+          ['objectifs', 'Points à travailler', 'fitness'],
+        ]}
+      />
       {view === 'objectifs' ? <Objectives /> : <Surveys />}
     </Screen>
   );
@@ -75,36 +62,38 @@ function Objectives() {
               </Pressable>
             </Row>
           </Pressable>
-          {list
-            .filter((o) => o.playerId === p.id)
-            .map((o) => (
-              <Card key={o.id} style={{ paddingVertical: 12, gap: 8 }} onPress={() => router.push(`/objectif/${o.id}`)} stripe={o.status === 'acquis' ? t.primary : t.info}>
-                <Row>
-                  <Txt bold>{o.title}</Txt>
-                  <View style={{ flex: 1 }} />
-                  <Badge text={o.status} tone={OBJECTIVE_STATUS_TONE[o.status]} />
-                </Row>
-                <Row style={{ gap: 6, flexWrap: 'wrap' }}>
-                  {o.category ? <Badge text={o.category} tone="violet" /> : null}
-                  {o.dueDate ? <Badge text={formatDate(o.dueDate)} icon="calendar-outline" tone={o.dueDate < today() && o.status === 'en cours' ? 'danger' : 'neutral'} /> : null}
-                  {o.coachNotes.length ? <Badge text={`${o.coachNotes.length} note${o.coachNotes.length > 1 ? 's' : ''}`} icon="chatbubble-ellipses-outline" /> : null}
-                </Row>
-                <Row style={{ gap: 8 }}>
-                  <Txt muted size={12}>
-                    Coach
-                  </Txt>
-                  <View style={{ flex: 1 }}>
-                    <Progress value={(o.coachProgress ?? 0) / 10} height={6} />
-                  </View>
-                  <Txt muted size={12}>
-                    Joueur
-                  </Txt>
-                  <View style={{ flex: 1 }}>
-                    <Progress value={(o.playerProgress ?? 0) / 10} height={6} color={t.info} />
-                  </View>
-                </Row>
-              </Card>
-            ))}
+          <List>
+            {list
+              .filter((o) => o.playerId === p.id)
+              .map((o, i) => (
+                <ListRow
+                  key={o.id}
+                  first={i === 0}
+                  onPress={() => router.push(`/objectif/${o.id}`)}
+                  title={o.title}
+                  subtitle={
+                    <View style={{ gap: 6, marginTop: 2 }}>
+                      <Text style={{ color: t.muted, fontSize: 13 }} numberOfLines={1}>
+                        {[o.category, o.dueDate ? `échéance ${formatDate(o.dueDate)}` : undefined, o.coachNotes.length ? `${o.coachNotes.length} note${o.coachNotes.length > 1 ? 's' : ''}` : undefined]
+                          .filter(Boolean)
+                          .join(' · ') || 'Sans catégorie'}
+                      </Text>
+                      <Row style={{ gap: 8 }}>
+                        <Text style={{ color: t.muted, fontSize: 12, width: 44 }}>Coach</Text>
+                        <View style={{ flex: 1 }}>
+                          <Progress value={(o.coachProgress ?? 0) / 10} height={5} />
+                        </View>
+                        <Text style={{ color: t.muted, fontSize: 12, width: 44, textAlign: 'right' }}>Joueur</Text>
+                        <View style={{ flex: 1 }}>
+                          <Progress value={(o.playerProgress ?? 0) / 10} height={5} color={t.info} />
+                        </View>
+                      </Row>
+                    </View>
+                  }
+                  right={<Badge text={o.status} tone={OBJECTIVE_STATUS_TONE[o.status]} />}
+                />
+              ))}
+          </List>
         </View>
       ))}
       {filter === 'En cours' && withoutGoal.length > 0 && data.objectives.length > 0 && (
