@@ -25,7 +25,7 @@ function RootStack() {
       if (first !== 'connexion' && first !== 'cloud') router.replace('/connexion');
     } else if (session.role === 'coach' && !club.teams.some((x) => x.id === session.teamId)) {
       // Coach sans équipe (premier lancement) : création d'équipe obligatoire
-      if (first !== 'equipes') router.replace({ pathname: '/equipes', params: { first: '1' } });
+      if (first !== 'equipes' && first !== 'cloud') router.replace({ pathname: '/equipes', params: { first: '1' } });
     } else if (first === 'connexion') router.replace('/');
     else if (session.role === 'player' && (!PLAYER_ROUTES.has(first ?? '(tabs)') || (first === '(tabs)' && second && !PLAYER_TABS.has(second)))) {
       router.replace('/');
