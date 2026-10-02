@@ -132,7 +132,21 @@ export default function Connexion() {
             </Animated.View>
             {isCloudConfigured() && (
               <Animated.View entering={FadeInDown.delay(400).springify()}>
-                <RoleCard icon="cloud" title="J’ai un code d’équipe" subtitle="Retrouver mon compte sur ce téléphone" tone="violet" onPress={() => router.push('/cloud')} />
+                <RoleCard
+                  icon="cloud"
+                  title="Je suis coach avec un compte cloud"
+                  subtitle="Me connecter et récupérer mes équipes sur ce téléphone"
+                  tone="violet"
+                  onPress={() => router.push({ pathname: '/cloud', params: { mode: 'coach' } })}
+                />
+                <View style={{ height: 10 }} />
+                <RoleCard
+                  icon="person"
+                  title="J’ai un code d’équipe"
+                  subtitle="Me connecter comme joueur"
+                  tone="info"
+                  onPress={() => router.push('/cloud')}
+                />
               </Animated.View>
             )}
           </>

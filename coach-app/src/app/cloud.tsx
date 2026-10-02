@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, Share, Text, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -9,7 +9,7 @@ import { PinPad } from '@/components/PinPad';
 import { TeamBadge } from '@/components/TeamBadge';
 import { useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Field, IconCircle, Row, Screen, Section, Txt } from '@/components/ui';
-import { coachSignIn, coachSignUp, createCloudTeam, humanError, joinAsCoach, joinAsPlayer, myTeams, signOut, teamRoster, updateCoachName } from '@/lib/cloud/api';
+import { coachSignIn, coachSignUp, createCloudTeam, humanError, joinAsCoach, joinAsPlayer, myTeams, resendCoachConfirmation, signOut, teamRoster, updateCoachName } from '@/lib/cloud/api';
 import type { RosterRow } from '@/lib/cloud/api';
 import { useCloud } from '@/lib/cloud/CloudSync';
 import { isCloudConfigured } from '@/lib/cloud/config';
@@ -19,12 +19,14 @@ import type { Team, TeamCategory } from '@/lib/types';
 
 export default function CloudScreen() {
   const { session } = useStore();
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
   if (!isCloudConfigured()) return <NotConfigured />;
+  const coachMode = session?.role === 'coach' || (session?.role !== 'player' && mode === 'coach');
   return (
     <Screen>
       <Stack.Screen options={{ title: 'Cloud & notifications' }} />
       <SyncStatus />
-      {session?.role === 'coach' ? <CoachCloud /> : <PlayerJoin />}
+      {coachMode ? <CoachCloud /> : <PlayerJoin />}
     </Screen>
   );
 }
@@ -104,7 +106,7 @@ function SyncStatus() {
 
 function CoachCloud() {
   const t = useTheme();
-  const { club, createTeam, updateTeam, selectTeam, login } = useStore();
+  const { club, createTeam, updateTeam, selectTeam, login, session } = useStore();
   const { user, syncNow } = useCloud();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -112,6 +114,7 @@ function CoachCloud() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [busy, setBusy] = useState(false);
   const [coachCode, setCoachCode] = useState('');
+  const [confirmationEmail, setConfirmationEmail] = useState('');
   const coachAccount = user && !user.is_anonymous;
   const localTeams = club.teams.filter((x) => x.joinedAs !== 'player');
 
@@ -134,12 +137,28 @@ function CoachCloud() {
     run(async () => {
       const remote = (await myTeams()).filter((r) => r.role === 'coach');
       let n = 0;
+      let firstTeam = club.teams.find((x) => x.joinedAs !== 'player');
       for (const r of remote) {
-        if (club.teams.some((x) => x.cloudId === r.team_id)) continue;
-        createTeam({ name: r.team_name, category: r.team_category as TeamCategory, color: r.team_color, cloudId: r.team_id, joinCode: r.join_code ?? undefined, coachCode: r.coach_code ?? undefined, cloudVersion: 0 });
+        const existing = club.teams.find((x) => x.cloudId === r.team_id);
+        if (existing) {
+          firstTeam ??= existing;
+          continue;
+        }
+        const created = createTeam({ name: r.team_name, category: r.team_category as TeamCategory, color: r.team_color, cloudId: r.team_id, joinCode: r.join_code ?? undefined, coachCode: r.coach_code ?? undefined, cloudVersion: 0 });
+        firstTeam ??= created;
         n++;
       }
-      notify(n ? `${n} équipe(s) récupérée(s)` : 'Tout est déjà là', n ? 'Leurs données se téléchargent à l’ouverture de chaque équipe.' : undefined);
+      if (!remote.length) {
+        notify('Aucune équipe coach trouvée', 'Vérifie que tu utilises le compte du coach propriétaire ou demande le code coach de l’équipe.');
+        return;
+      }
+      const needsLocalLogin = session?.role !== 'coach' || !club.teams.some((x) => x.id === session.teamId);
+      if (needsLocalLogin && firstTeam) {
+        await selectTeam(firstTeam.id);
+        login({ role: 'coach', teamId: firstTeam.id });
+        router.replace('/');
+      }
+      notify(n ? `${n} équipe(s) récupérée(s)` : 'Tout est déjà là', n ? 'Les données se synchronisent.' : undefined);
     });
 
   const publish = (tm: Team) =>
@@ -160,6 +179,32 @@ function CoachCloud() {
     return (
       <>
         <Section icon="person-circle-outline">Compte coach</Section>
+        {confirmationEmail ? (
+          <Card stripe={t.info}>
+            <Row style={{ alignItems: 'flex-start' }}>
+              <IconCircle icon="mail-outline" tone="info" />
+              <View style={{ flex: 1, gap: 6 }}>
+                <Txt bold>Confirme ton adresse e-mail</Txt>
+                <Txt muted size={13}>
+                  Un lien a été envoyé à {confirmationEmail}. Vérifie aussi tes courriers indésirables. Après confirmation, connecte-toi avec ton e-mail et ton mot de passe.
+                </Txt>
+                <Button
+                  small
+                  kind="secondary"
+                  icon="refresh-outline"
+                  title="Renvoyer le lien de confirmation"
+                  disabled={busy}
+                  onPress={() =>
+                    run(async () => {
+                      await resendCoachConfirmation(confirmationEmail);
+                      notify('E-mail renvoyé', `Vérifie la boîte de réception de ${confirmationEmail}.`);
+                    })
+                  }
+                />
+              </View>
+            </Row>
+          </Card>
+        ) : null}
         <Card>
           <Txt muted size={13}>
             Chaque coach crée son compte personnel avec son nom, son e-mail et son mot de passe. Il pourra retrouver les équipes auxquelles il est autorisé sur son téléphone.
@@ -173,10 +218,24 @@ function CoachCloud() {
             disabled={busy || !email || password.length < 8 || (mode === 'signup' && !coachName.trim())}
             onPress={() =>
               run(async () => {
-                if (mode === 'signin') await coachSignIn(email, password);
-                else {
+                if (mode === 'signin') {
+                  try {
+                    await coachSignIn(email, password);
+                    setConfirmationEmail('');
+                  } catch (e) {
+                    if (humanError(e).includes('Adresse e-mail non confirmée')) setConfirmationEmail(email.trim());
+                    throw e;
+                  }
+                } else {
                   const r = await coachSignUp(email, password, coachName);
-                  if (r.needsConfirmation) notify('Vérifiez vos e-mails', 'Cliquez sur le lien de confirmation, puis connectez-vous ici.');
+                  if (r.needsConfirmation) {
+                    setConfirmationEmail(email.trim());
+                    setMode('signin');
+                    setPassword('');
+                    notify('Confirme ton adresse e-mail', 'Ouvre le lien reçu par e-mail, puis connecte-toi ici. Si nécessaire, tu pourras demander un nouveau lien.');
+                  } else {
+                    setConfirmationEmail('');
+                  }
                 }
               })
             }

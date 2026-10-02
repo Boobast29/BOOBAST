@@ -6,8 +6,8 @@
 
 Application mobile pour qu'un coach suive ses joueurs après chaque match :
 
-- **Effectif** : fiche joueur (numéro, poste, date de naissance, notes), archivage.
-- **Matchs** : adversaire, date, domicile/extérieur, compétition, score.
+- **Effectif** : fiche joueur (numéro, poste, date de naissance, notes), archivage, recherche sans tenir compte des accents et filtres par poste.
+- **Matchs** : adversaire, date, domicile/extérieur, compétition, score, recherche par adversaire ou compétition.
 - **Questionnaire du club (repris du Google Forms QEA)**, questions obligatoires marquées * :
   rubrique « Analyse du match » (sortie de balle, attaque de la surface, défendre sa surface, qualité du pressing,
   transition offensive, transition défensive, performance de l'équipe), état de forme physique, ta performance
@@ -54,7 +54,8 @@ Application mobile pour qu'un coach suive ses joueurs après chaque match :
   Touchez un poste pour placer un joueur (suggestions du bon poste d'abord), touchez deux joueurs pour les échanger,
   capitaine, banc (7 remplaçants), non convoqués, **compo auto** (note, forme, blessures), alertes (blessé, douleur,
   joueur hors poste), photos des joueurs sur le terrain, consignes tactiques, publication aux joueurs,
-  choix de l'équipe à composer et joueurs sélectionnables dans tous les effectifs du club (listes Seniors, Jeunes… séparées),
+  choix visible de l'équipe à composer et joueurs sélectionnables dans tous les effectifs du club (listes Seniors, Jeunes… séparées,
+  filtres par catégorie et recherche par nom, équipe ou numéro),
   **impression A4** depuis le navigateur et **partage en image** (WhatsApp…) depuis l'appli mobile.
 - **Blessures** : zone, côté, type, gravité, statut (indisponible / en reprise / guérie), retour prévu, traitement.
 - **Vidéos** : vidéothèque de l'équipe — importer depuis la galerie, **filmer** directement, ou coller un lien

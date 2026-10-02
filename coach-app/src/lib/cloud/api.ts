@@ -26,6 +26,11 @@ export function humanError(e: unknown): string {
     conflict: 'Un autre coach a modifié l’équipe entre-temps.',
     'Invalid login credentials': 'E-mail ou mot de passe incorrect.',
     'User already registered': 'Un compte existe déjà avec cet e-mail : connectez-vous.',
+    'Email not confirmed': 'Adresse e-mail non confirmée. Ouvre le lien reçu par e-mail avant de te connecter.',
+    email_not_confirmed: 'Adresse e-mail non confirmée. Ouvre le lien reçu par e-mail avant de te connecter.',
+    'Failed to fetch': 'Connexion au service cloud impossible. Vérifie ta connexion Internet puis réessaie.',
+    'Network request failed': 'Connexion au service cloud impossible. Vérifie ta connexion Internet puis réessaie.',
+    'Load failed': 'Connexion au service cloud impossible. Vérifie ta connexion Internet puis réessaie.',
   };
   const key = Object.keys(map).find((k) => m.includes(k));
   return key ? map[key] : m;
@@ -51,6 +56,11 @@ export async function coachSignUp(email: string, password: string, name: string)
   });
   if (error) throw error;
   return { needsConfirmation: !data.session };
+}
+
+export async function resendCoachConfirmation(email: string) {
+  const { error } = await sb().auth.resend({ type: 'signup', email: email.trim() });
+  if (error) throw error;
 }
 
 export async function updateCoachName(name: string) {

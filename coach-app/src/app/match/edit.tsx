@@ -17,7 +17,7 @@ export default function EditMatch() {
   const [opponent, setOpponent] = useState(existing?.opponent ?? '');
   const [home, setHome] = useState(existing?.home ?? true);
   const [competition, setCompetition] = useState(existing?.competition);
-  const [played, setPlayed] = useState(existing ? existing.scoreFor != null : true);
+  const [played, setPlayed] = useState(existing ? existing.scoreFor != null : false);
   const [scoreFor, setScoreFor] = useState(existing?.scoreFor ?? 0);
   const [scoreAgainst, setScoreAgainst] = useState(existing?.scoreAgainst ?? 0);
   const [notes, setNotes] = useState(existing?.notes ?? '');
@@ -49,7 +49,7 @@ export default function EditMatch() {
         <Chips label="Compétition" options={COMPETITIONS} value={competition} onChange={setCompetition} allowEmpty />
       </Card>
       <Card>
-        <Toggle label="Match joué (saisir le score)" value={played} onChange={setPlayed} />
+        <Toggle label="Match terminé (saisir le score)" value={played} onChange={setPlayed} />
         {played && (
           <View style={{ gap: 10 }}>
             <Stepper label="Buts marqués" value={scoreFor} onChange={setScoreFor} max={99} />
@@ -58,7 +58,7 @@ export default function EditMatch() {
         )}
         <Field label="Notes du match" value={notes} onChangeText={setNotes} multiline placeholder="Tactique, conditions, faits marquants…" />
       </Card>
-      <Button title={existing ? 'Enregistrer' : 'Créer et remplir les questionnaires'} icon="checkmark" onPress={save} />
+      <Button title={existing ? 'Enregistrer' : 'Créer le match'} icon="checkmark" onPress={save} />
       {existing && (
         <Button
           title="Supprimer le match"

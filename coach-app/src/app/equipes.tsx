@@ -9,6 +9,7 @@ import { TeamBadge } from '@/components/TeamBadge';
 import { useTheme } from '@/components/theme';
 import { Badge, Button, Card, Chips, Field, Row, Screen, Section, Txt } from '@/components/ui';
 import { confirm, notify } from '@/lib/confirm';
+import { isCloudConfigured } from '@/lib/cloud/config';
 import { TEAM_COLORS, useStore } from '@/lib/store';
 import type { Team, TeamCategory } from '@/lib/types';
 
@@ -77,6 +78,19 @@ export default function Teams() {
           Chaque équipe a son effectif, ses matchs, ses séances et son suivi. Les joueurs choisissent leur équipe à la connexion.
         </Txt>
       </Card>
+
+      {first && isCloudConfigured() ? (
+        <Card stripe={t.info}>
+          <Txt bold>Tu as déjà un compte coach sur le cloud ?</Txt>
+          <Txt muted size={13}>Connecte-toi pour récupérer les équipes existantes au lieu d’en créer une nouvelle sur ce téléphone.</Txt>
+          <Button
+            kind="secondary"
+            icon="cloud"
+            title="Me connecter et récupérer mes équipes"
+            onPress={() => router.push({ pathname: '/cloud', params: { mode: 'coach' } })}
+          />
+        </Card>
+      ) : null}
 
       {club.teams.length > 0 && <Section icon="shield-outline">Équipes ({club.teams.length})</Section>}
       {club.teams.map((tm, i) => (

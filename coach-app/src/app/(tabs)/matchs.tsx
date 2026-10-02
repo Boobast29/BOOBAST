@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { ScorePill } from '@/components/ScorePill';
 import { useTheme } from '@/components/theme';
-import { Badge, Button, Card, Empty, Progress, Row, Screen, Section, Txt } from '@/components/ui';
+import { Badge, Button, Card, Empty, Field, Progress, Row, Screen, Section, Txt } from '@/components/ui';
 import { ATTENDANCE } from '@/lib/constants';
+import { normalizeSearchText } from '@/lib/search';
 import { useStore } from '@/lib/store';
 import { byDateDesc, formatDate, matchResult, sessionPresent, today, trainingLoad } from '@/lib/stats';
 import type { Match } from '@/lib/types';
@@ -20,6 +21,12 @@ export default function Matches() {
   const past = matches.filter((m) => !upcoming.includes(m));
   const activeCount = data.players.filter((p) => !p.archived).length;
   const [view, setView] = useState<'matchs' | 'seances'>('matchs');
+  const [query, setQuery] = useState('');
+  const normalizedQuery = normalizeSearchText(query);
+  const matchesSearch = (m: Match) =>
+    !normalizedQuery || normalizeSearchText(`${m.opponent} ${m.competition ?? ''}`).includes(normalizedQuery);
+  const filteredUpcoming = upcoming.filter(matchesSearch);
+  const filteredPast = past.filter(matchesSearch);
 
   const stripe = (m: Match) => {
     const tone = matchResult(m).tone;
@@ -72,11 +79,15 @@ export default function Matches() {
       ) : (
         <>
           <Button title="Nouveau match" icon="add-circle" onPress={() => router.push('/match/edit')} />
+          {matches.length > 0 && <Field label="Rechercher un match" value={query} onChangeText={setQuery} placeholder="Adversaire ou compétition…" />}
           {matches.length === 0 && <Empty icon="football-outline" text="Aucun match enregistré. Créez votre premier match pour lancer les questionnaires." />}
-          {upcoming.length > 0 && <Section icon="calendar-outline">À venir</Section>}
-          {upcoming.map(renderMatch)}
-          {past.length > 0 && <Section icon="checkmark-done-outline">Joués · {past.length}</Section>}
-          {past.map(renderMatch)}
+          {filteredUpcoming.length > 0 && <Section icon="calendar-outline">À venir · {filteredUpcoming.length}</Section>}
+          {filteredUpcoming.map(renderMatch)}
+          {filteredPast.length > 0 && <Section icon="checkmark-done-outline">Joués · {filteredPast.length}</Section>}
+          {filteredPast.map(renderMatch)}
+          {matches.length > 0 && filteredUpcoming.length + filteredPast.length === 0 && (
+            <Empty icon="search-outline" text="Aucun match ne correspond à cette recherche." />
+          )}
         </>
       )}
     </Screen>
@@ -97,6 +108,8 @@ function Segmented({ value, onChange }: { value: 'matchs' | 'seances'; onChange:
           <Pressable
             key={k}
             onPress={() => onChange(k)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: on }}
             style={{
               flex: 1,
               flexDirection: 'row',
