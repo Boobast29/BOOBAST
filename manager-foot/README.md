@@ -1,49 +1,59 @@
 # Manager Foot
 
-Jeu de gestion d'équipe de football (original, inspiré du genre « football manager »),
-qui tourne dans le navigateur, sans installation ni connexion internet.
+Jeu de gestion de club de football, original, qui tourne dans le navigateur.
+Pas d'installation, pas besoin d'internet.
 
 ## Jouer
 
 1. Télécharge le dossier `manager-foot` (ou tout le dépôt).
-2. Double-clique sur `index.html` → le jeu s'ouvre dans Chrome / Edge / Firefox.
+2. Double-clique sur `index.html`. Le jeu s'ouvre dans Chrome, Edge ou Firefox.
 
-La partie est sauvegardée automatiquement dans le navigateur après chaque match.
-Menu **Options** → « Exporter la sauvegarde » pour garder un fichier.
+La partie se sauvegarde automatiquement dans le navigateur (IndexedDB).
+Menu **Options** → « Exporter la sauvegarde » pour garder un fichier ou changer de PC.
+
+Raccourcis : `Espace` = continuer · `1`…`9` = menus · `/` = recherche · `Échap` = fermer · `Espace` en match = pause.
 
 ## Contenu
 
-- 20 clubs fictifs, ~540 joueurs générés (attributs 1-20, potentiel, âge, nationalité, contrat).
-- **Effectif** : notes, condition, moral, stats de saison, fiche joueur détaillée.
-- **Tactique** : 7 formations, mentalité, composition par clic sur le terrain, banc de 9.
-- **Match en direct** : commentaires minute par minute, stats, 5 changements, mentalité en cours de match, blessures, cartons.
-- **Calendrier / classement** aller-retour 38 journées, buteurs, passeurs, meilleures notes.
-- **Mercato** (été J1-5, hiver J20-22) : offres, négociation salaire, agents libres, offres reçues, liste des transferts.
-- **Finances** : billetterie, droits TV, salaires.
-- **Saisons enchaînées** : vieillissement, progression, retraites, centre de formation, objectifs du président.
+- **2 divisions de 20 clubs** avec montées et descentes, plus une **coupe** à élimination directe (prolongations, tirs au but).
+- **Match en direct** avec **vue 2D animée** et commentaires minute par minute. Au programme :
+  - xG, penaltys, coups francs, corners, contres, VAR ;
+  - cartons, blessures, fatigue en temps réel ;
+  - 5 changements, causerie à la mi-temps ;
+  - consignes modifiables pendant le match.
+- **Tactique** : 10 formations, mentalité et glisser-déposer des joueurs. Consignes d'équipe (pressing, tempo, largeur, ligne défensive, style de passe) qui agissent vraiment sur le moteur. Tireurs de penaltys et de coups francs, capitaine.
+- **Entraînement** : programme de la semaine, intensité, cohésion du groupe, réunions d'équipe.
+- **Vie du vestiaire** : personnalités, moral, forme, discussions individuelles et promesses de temps de jeu.
+- **Président** : objectifs, jauge de confiance. Tu peux être licencié ou recevoir des offres d'autres clubs.
+- **Mercato** : négociation en 2 temps (indemnité puis salaire), contre-offres, liste de suivi, offres reçues avec contre-proposition, agents libres.
+- **Finances** : billetterie, sponsors, primes de coupe, droits TV, salaires, courbe du budget.
+- **Saisons enchaînées** : progression et vieillissement des joueurs, retraites, centre de formation.
+- **Récompenses** : joueur du mois, joueur de l'année, espoir, meilleur buteur, équipe type, armoire à trophées.
 
-## Mettre tes propres données (vrais joueurs, photos, logos)
+## Mettre tes propres clubs, joueurs, logos et photos
 
-Le jeu n'embarque aucune donnée réelle (droits d'image des joueurs, logos de clubs déposés,
-bases de stats propriétaires). Mais tu peux importer ta propre base pour un usage perso :
+Le jeu ne contient aucune donnée réelle : les droits d'image des joueurs, les logos (marques déposées) et les bases de stats appartiennent à leurs propriétaires.
+L'**éditeur** te permet d'y mettre ce que tu veux, pour ton usage perso.
 
-1. Écran d'accueil → **Exporter la base (modèle)** → fichier `base-ligue.json`.
-2. Modifie-le : noms des clubs/joueurs, `photo` et `logo` (URL d'image ou image `data:`),
-   attributs 1-20 (`fin, pas, dri, tec, tac, vit, phy, men, gar`) **ou** juste `"ovr": 1-100`.
-   Postes : `GB, DC, DG, DD, MDC, MC, MOC, AG, AD, BU`.
-3. Écran d'accueil → **Importer une base (JSON)**, puis choisis ton club.
+- **Éditeur** (écran d'accueil → « Éditer la base », ou menu ✏ en jeu) : renomme les clubs, joueurs et championnats, change les couleurs, notes, postes, âges…
+- **Logo / photo depuis ton PC** : bouton « depuis le PC » sur chaque club ou joueur.
+- **Photos et logos en masse** : nomme les images comme le joueur (`Prénom Nom.jpg`) ou le club (`Nom du club.png`), puis sélectionne-les toutes d'un coup.
+- **Fichier JSON** : « Exporter (JSON) » → modifie-le → « Importer (JSON) ».
 
-Exemple minimal :
+Exemple minimal de fichier JSON :
 
 ```json
 {
-  "leagueName": "Ma Ligue",
+  "leagueNames": ["Ma Ligue 1", "Ma Ligue 2"],
+  "cupName": "Ma Coupe",
   "clubs": [
-    { "name": "Mon Club", "short": "MCL", "colors": ["#003366", "#ffffff"], "rep": 80,
+    { "name": "Mon Club", "short": "MCL", "div": 1, "colors": ["#003366", "#ffffff"], "rep": 80,
       "stadium": "Stade X", "capacity": 40000, "logo": "https://…/logo.png",
-      "players": [ { "name": "Jean Dupont", "age": 24, "nat": "FRA", "pos": "BU", "ovr": 82, "photo": "https://…/photo.jpg" } ] }
+      "players": [ { "name": "Jean Dupont", "num": 9, "age": 24, "nat": "FRA", "pos": "BU", "ovr": 82, "photo": "https://…/photo.jpg" } ] }
   ]
 }
 ```
 
-Les effectifs incomplets sont complétés automatiquement (min. 4 clubs).
+- Postes : `GB, DC, DG, DD, MDC, MC, MOC, AG, AD, BU`.
+- Attributs de 1 à 20 (`fin, pas, dri, tec, tac, vit, phy, men, gar`), ou seulement `"ovr"` de 1 à 100.
+- Il faut au moins 4 clubs. Les effectifs incomplets sont complétés automatiquement.
