@@ -465,7 +465,7 @@ function applyMatch(G, mt, f) {
   f.events = mt.events.filter(e => e.type === 'goal' || e.type === 'red').map(e => ({ t: e.type, s: e.side, m: e.min, p: e.pid }));
   f.motm = mt.motm;
   f.att = mt.att;
-  const isLeague = f.comp !== 'CUP';
+  const isLeague = String(f.comp).startsWith('L');
   const played = new Set();
   for (const id in mt.pr) {
     const r = mt.pr[id], p = getPlayer(G, +id);
@@ -483,7 +483,16 @@ function applyMatch(G, mt, f) {
     p.lastRating = Math.round(r.r * 10) / 10;
     p.form = [...(p.form || []), { w: G.week, s: G.season, r: p.lastRating }].slice(-10);
   }
-  for (const e of mt.events) if (e.type === 'inj') { const p = getPlayer(G, e.pid); p.injury = e.weeks; p.injNew = true; }
+  for (const e of mt.events) if (e.type === 'inj') {
+    const p = getPlayer(G, e.pid);
+    p.injury = p.club === G.clubId ? Math.max(1, Math.round(e.weeks * (1.25 - .12 * (G.staff?.physio || 2)))) : e.weeks;
+    p.injNew = true;
+  }
+  if (f.grp) {
+    const w = fixtureWinner(f);
+    const give = (id, v) => { getClub(G, id).budget += v; if (id === G.clubId) G.fin.prize += v; };
+    if (w) give(w, 2.5e6); else { give(f.h, .8e6); give(f.a, .8e6); }
+  }
   const win = mt.winner();
   mt.sides.forEach((side, i) => {
     const won = win === i, lost = win === 1 - i;
@@ -493,13 +502,14 @@ function applyMatch(G, mt, f) {
     }
   });
   const home = getClub(G, f.h);
-  const gate = mt.att * (12 + home.rep * .45) * (f.comp === 'CUP' ? .7 : 1);
+  const gate = mt.att * (8 + home.rep * .3) * (f.comp === 'CUP' ? .7 : f.comp === 'EUR' ? 1.4 : 1);
   home.budget += gate;
   if (f.comp === 'CUP') getClub(G, f.a).budget += gate * .4;
   if (home.id === G.clubId) G.fin.gate += gate;
   if (f.comp === 'CUP' && f.a === G.clubId) G.fin.gate += gate * .4;
 }
 
+function isKO(f) { return f.comp === 'CUP' || (f.comp === 'EUR' && !f.grp); }
 function fixtureWinner(f) {
   if (!f.res) return null;
   if (f.res[0] !== f.res[1]) return f.res[0] > f.res[1] ? f.h : f.a;
@@ -526,6 +536,17 @@ function makeFixtures(clubIds, comp) {
   return [...rounds, ...second];
 }
 
+function domesticClubs(G) { return G.clubs.filter(c => !c.foreign); }
+function leagueRoundAt(G, w = G.week) { let k = 0; for (let i = 0; i < Math.min(w, G.schedule.length); i++) if (G.schedule[i].t === 'L') k++; return k; }
+function leagueRoundsTotal(G) { return G.schedule.filter(e => e.t === 'L').length; }
+function knows(G, p) { return p.club === G.clubId || p.loan?.from === G.clubId || (G.known || []).includes(p.id); }
+function estOvr(G, p) {
+  const o = playerOvr(p);
+  if (knows(G, p)) return o;
+  const m = Math.max(1, 7 - (G.staff?.scout || 2));
+  const h = ((p.id * 9301 + 49297) % 233280) / 233280 * 2 - 1;
+  return Math.round(o + h * m);
+}
 function leagueComps(G) { return Object.values(G.comps).filter(c => c.type === 'league').sort((a, b) => a.div - b.div); }
 function clubLeague(G, clubId) { return leagueComps(G).find(c => c.clubs.includes(clubId)); }
 
@@ -537,27 +558,86 @@ function cupRoundName(total, i, hasPrelim) {
 }
 
 function setupSeason(G) {
-  const divs = [...new Set(G.clubs.map(c => c.div || 1))].sort((a, b) => a - b);
+  const dom = domesticClubs(G);
+  const divs = [...new Set(dom.map(c => c.div || 1))].sort((a, b) => a - b);
   G.comps = {};
   divs.forEach((d, i) => {
     const id = 'L' + d;
-    const ids = G.clubs.filter(c => (c.div || 1) === d).map(c => c.id);
+    const ids = dom.filter(c => (c.div || 1) === d).map(c => c.id);
     G.comps[id] = { id, type: 'league', div: d, name: G.leagueNames[i] || `Division ${d}`, clubs: ids, fixtures: makeFixtures(shuffle([...ids]), id) };
   });
-  const all = G.clubs.map(c => c.id);
+  const all = dom.map(c => c.id);
   const nCup = cupRoundCount(all.length);
   let P = 1; while (P * 2 <= all.length) P *= 2;
   G.comps.CUP = { id: 'CUP', type: 'cup', name: G.cupName || 'Coupe Nationale', rounds: [], alive: all, total: nCup, prelim: all.length > P, winner: null };
   const R = Math.max(...leagueComps(G).map(l => l.fixtures.length));
-  const cupAfter = new Set(Array.from({ length: nCup }, (_, i) => Math.round((i + 1) * R / (nCup + 1)) - 1));
-  G.schedule = []; let ci = 0;
-  for (let r = 0; r < R; r++) {
-    G.schedule.push({ t: 'L', r });
-    if (cupAfter.has(r) && ci < nCup) G.schedule.push({ t: 'C', r: ci++ });
+  const mid = {};
+  const addMid = (r, entry) => { r = clamp(r, 0, R - 1); while ((mid[r] || []).length >= 1 && r < R - 1) r++; (mid[r] ||= []).push(entry); };
+  for (let i = 0; i < nCup; i++) addMid(Math.round((i + 1) * R / (nCup + 1)) - 1, { t: 'C', r: i });
+  setupEuro(G);
+  if (G.comps.EUR) {
+    for (let i = 0; i < 6; i++) addMid(1 + i * 3, { t: 'E', r: i });
+    [.62, .76, .9].forEach((x, i) => addMid(Math.round(R * x), { t: 'E', r: 6 + i }));
   }
-  while (ci < nCup) G.schedule.push({ t: 'C', r: ci++ });
+  G.schedule = [];
+  for (let r = 0; r < R; r++) { G.schedule.push({ t: 'L', r }); for (const m of (mid[r] || []).sort((a, b) => a.t.localeCompare(b.t))) G.schedule.push(m); }
   G.week = 0;
   drawCup(G);
+}
+
+const EURO_KO = ['Quarts de finale', 'Demi-finales', 'Finale'];
+function setupEuro(G) {
+  const foreign = G.clubs.filter(c => c.foreign);
+  const L1 = leagueComps(G)[0];
+  if (foreign.length < 4 || !L1) { delete G.comps.EUR; return; }
+  let dom = (G.euroQual || []).filter(id => { const c = getClub(G, id); return c && !c.foreign; });
+  if (dom.length < 4) dom = L1.clubs.slice().sort((a, b) => getClub(G, b).rep - getClub(G, a).rep).slice(0, 4);
+  const fr = foreign.map(c => ({ id: c.id, k: c.rep + rnd() * 14 })).sort((a, b) => b.k - a.k).slice(0, 12).map(x => x.id);
+  const teams = [...dom.slice(0, 4), ...fr];
+  const sorted = teams.slice().sort((a, b) => getClub(G, b).rep - getClub(G, a).rep);
+  const pots = [0, 1, 2, 3].map(i => shuffle(sorted.slice(i * 4, i * 4 + 4)));
+  const groups = 'ABCD'.split('').map((n, gi) => ({ name: n, clubs: pots.map(p => p[gi]).filter(x => x != null) }));
+  groups.forEach(g => { g.fixtures = makeFixtures(g.clubs, 'EUR').slice(0, 6); g.fixtures.flat().forEach(f => f.grp = g.name); });
+  const name = G.euroName || 'Coupe des Étoiles';
+  G.comps.EUR = { id: 'EUR', type: 'euro', name, groups, ko: [], winner: null, teams };
+  teams.forEach(id => { const c = getClub(G, id); c.budget += 3e6; if (id === G.clubId) G.fin && (G.fin.prize += 3e6); });
+  const g = groups.find(g => g.clubs.includes(G.clubId));
+  if (g) news(G, `${name} : tirage au sort ! Groupe ${g.name} avec ${g.clubs.filter(id => id !== G.clubId).map(id => getClub(G, id).name).join(', ')}. Prime de participation : 3 M€.`, 'cup');
+}
+
+function afterEuroRound(G, r) {
+  const E = G.comps.EUR; if (!E) return;
+  const me = G.clubId;
+  if (r === 5) {
+    const q = E.groups.map(g => tableOf(g.clubs, g.fixtures).map(x => x.id));
+    const pairs = [[q[0]?.[0], q[1]?.[1]], [q[1]?.[0], q[0]?.[1]], [q[2]?.[0], q[3]?.[1]], [q[3]?.[0], q[2]?.[1]]].filter(p => p[0] != null && p[1] != null);
+    E.ko.push({ name: EURO_KO[0], ties: pairs.map(([h, a]) => ({ h, a, res: null, comp: 'EUR' })) });
+    if (E.teams.includes(me)) {
+      const ok = pairs.flat().includes(me);
+      news(G, ok ? `${E.name} : qualifiés pour les quarts de finale !` : `${E.name} : éliminés en phase de groupes.`, ok ? 'trophy' : 'loss');
+      G.board.conf = clamp(G.board.conf + (ok ? 6 : -3), 0, 100);
+    }
+  } else if (r >= 6) {
+    const last = E.ko[E.ko.length - 1]; if (!last) return;
+    const winners = last.ties.map(fixtureWinner).filter(Boolean);
+    const prize = [5e6, 8e6, 15e6][E.ko.length - 1] || 0;
+    winners.forEach(id => { getClub(G, id).budget += prize; if (id === me) G.fin.prize += prize; });
+    const mineTie = last.ties.find(t => t.h === me || t.a === me);
+    if (mineTie && fixtureWinner(mineTie) !== me) news(G, `${E.name} : élimination en ${last.name.toLowerCase()}.`, 'loss');
+    if (winners.length === 1) {
+      E.winner = winners[0];
+      const wc = getClub(G, E.winner);
+      wc.trophies = [...(wc.trophies || []), { season: G.season, name: E.name }];
+      wc.rep = clamp(wc.rep + 3, 30, 97);
+      news(G, `🏆 ${wc.name} remporte la ${E.name} !`, E.winner === me ? 'trophy' : 'info', E.winner !== me);
+      if (E.winner === me) G.board.conf = clamp(G.board.conf + 20, 0, 100);
+    } else {
+      const ties = [];
+      for (let i = 0; i + 1 < winners.length; i += 2) ties.push({ h: winners[i], a: winners[i + 1], res: null, comp: 'EUR' });
+      E.ko.push({ name: EURO_KO[E.ko.length] || 'Tour', ties });
+      if (winners.includes(me)) news(G, `${E.name} : qualifiés pour les ${EURO_KO[E.ko.length - 1].toLowerCase()} !`, 'trophy');
+    }
+  }
 }
 
 function drawCup(G) {
@@ -610,30 +690,38 @@ function afterCupRound(G) {
   } else if (C.alive.length > 1) drawCup(G);
 }
 
-function weekFixtures(G) {
-  const e = G.schedule[G.week];
+function weekFixtures(G, w = G.week) {
+  const e = G.schedule[w];
   if (!e) return [];
   if (e.t === 'L') return leagueComps(G).flatMap(l => l.fixtures[e.r] || []);
+  if (e.t === 'E') { const E = G.comps.EUR; if (!E) return []; return e.r < 6 ? E.groups.flatMap(g => g.fixtures[e.r] || []) : (E.ko[e.r - 6]?.ties || []); }
   return G.comps.CUP.rounds[e.r]?.ties || [];
 }
+function compName(G, f) { return f.comp === 'CUP' ? G.comps.CUP.name : f.comp === 'EUR' ? G.comps.EUR?.name : G.comps[f.comp]?.name; }
 function weekLabel(G, w = G.week) {
   const e = G.schedule?.[w];
   if (!e) return 'Fin de saison';
   if (e.t === 'L') return `J${e.r + 1}`;
+  if (e.t === 'E') return e.r < 6 ? `Europe J${e.r + 1}` : `Europe ${EURO_KO[e.r - 6]}`;
   return G.comps.CUP.rounds[e.r]?.name || 'Coupe';
 }
 function dateOfWeek(G, w) {
   const d = new Date(G.season, 7, 9);
-  const half = Math.floor(G.schedule.length / 2);
-  d.setDate(d.getDate() + w * 7 + (w >= half ? 14 : 0));
+  const k = leagueRoundAt(G, w), e = G.schedule[w];
+  const R = leagueRoundsTotal(G);
+  const days = e && e.t !== 'L' ? (k - 1) * 7 + 3 : k * 7;
+  d.setDate(d.getDate() + Math.max(0, days) + (k >= R / 2 ? 14 : 0));
   return d;
 }
 
 function standings(G, compId) {
   const comp = G.comps[compId];
+  return tableOf(comp.clubs, comp.fixtures);
+}
+function tableOf(clubs, fixtures) {
   const T = {};
-  for (const id of comp.clubs) T[id] = { id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, form: [] };
-  for (const round of comp.fixtures) for (const f of round) {
+  for (const id of clubs) T[id] = { id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, form: [] };
+  for (const round of fixtures) for (const f of round) {
     if (!f.res) continue;
     const [h, a] = f.res, H = T[f.h], A = T[f.a];
     if (!H || !A) continue;
@@ -655,17 +743,19 @@ function bumpAttr(p, d, keys) {
   return k;
 }
 
-function weeklyUpdate(G) {
+function weeklyUpdate(G, full = true) {
   const tr = G.training || { focus: 'equilibre', intensity: 1 };
   const focus = TRAINING[tr.focus] || TRAINING.equilibre;
-  G.weekProg = [];
+  const st = G.staff || {}, fac = G.fac || {};
+  if (full) G.weekProg = [];
   for (const p of G.players) {
     const mine = p.club === G.clubId;
     let rec = 22 + p.attrs.phy * .4;
-    if (mine) rec += [8, 0, -8][tr.intensity] + (tr.focus === 'repos' ? 15 : 0);
-    p.fit = clamp(p.fit + rec, 0, 100);
-    if (p.injury > 0 && !p.injNew) { p.injury--; p.fit = Math.min(p.fit, 70); }
+    if (mine) rec += (st.physio || 2) * 1.5 + (full ? [8, 0, -8][tr.intensity] + (tr.focus === 'repos' ? 15 : 0) : 0);
+    p.fit = clamp(p.fit + rec * (full ? 1 : .45), 0, 100);
     if (p.suspNew) p.suspNew = false; else if (p.susp > 0) p.susp--;
+    if (!full) continue;
+    if (p.injury > 0 && !p.injNew) { p.injury--; p.fit = Math.min(p.fit, 70); }
     if (p.injNew) p.injNew = false;
     const target = p.pers === 'Loyal' ? 72 : 66;
     p.morale = clamp(p.morale + (target - p.morale) * .05 + (mine && tr.focus === 'repos' ? 3 : 0), 5, 100);
@@ -673,22 +763,25 @@ function weeklyUpdate(G) {
     const o = playerOvr(p);
     let chance = p.age <= 21 ? .16 : p.age <= 24 ? .11 : p.age <= 28 ? .04 : 0;
     if (p.pers === 'Professionnel') chance *= 1.25;
-    if (mine) chance *= [.6, 1, 1.4][tr.intensity] * (tr.focus === 'repos' ? 0 : 1);
+    if (p.loan) chance *= 1.15;
+    if (mine) chance *= [.6, 1, 1.4][tr.intensity] * (tr.focus === 'repos' ? 0 : 1) * (.75 + .1 * (st.coach || 2) + .07 * (fac.training || 2));
     if (o < p.pot && rnd() < chance) {
       const k = bumpAttr(p, 1, mine ? focus.keys : null);
       if (mine) G.weekProg.push({ pid: p.id, k, d: 1 });
     }
     if (p.age >= 31 && rnd() < .035 * (p.age - 29) / 2) bumpAttr(p, -1, rnd() < .6 ? ['vit', 'phy'] : null);
     if (mine && p.injury <= 0) {
-      const risk = (tr.intensity === 2 ? .004 : tr.intensity === 0 ? .0005 : .0015) + (tr.focus === 'physique' ? .002 : 0);
+      const risk = ((tr.intensity === 2 ? .004 : tr.intensity === 0 ? .0005 : .0015) + (tr.focus === 'physique' ? .002 : 0)) * (1.25 - .12 * (st.physio || 2));
       if (rnd() < risk) { p.injury = rint(1, 2); news(G, `Blessure à l'entraînement : ${p.name} (${p.injury} sem.).`, 'inj'); }
     }
   }
+  if (!full) return;
   for (const c of G.clubs) {
     const mine = c.id === G.clubId;
     c.coh = clamp((c.coh ?? 60) + 1.2 + (mine && tr.focus === 'tactique' ? 2.5 : 0), 0, 100);
-    const wages = clubPlayers(G, c.id).reduce((s, p) => s + p.wage, 0);
-    const sponsor = Math.round(c.rep * c.rep * 30 * (c.div === 1 ? 1 : .45));
+    let wages = clubPlayers(G, c.id).reduce((s, p) => s + p.wage, 0);
+    if (mine) wages += Object.values(st).reduce((s, l) => s + staffWage(l), 0);
+    const sponsor = c.foreign ? Math.round(wages * 1.02) : Math.round(c.rep * c.rep * 30 * (c.div === 1 ? 1 : .45));
     c.budget += sponsor - wages;
     if (mine) { G.fin.wages += wages; G.fin.sponsor += sponsor; }
   }
@@ -699,6 +792,36 @@ function weeklyUpdate(G) {
     if (G.week >= pr.until) { p.morale = clamp(p.morale - 25, 0, 100); news(G, `${p.name} est furieux : tu n'as pas tenu ta promesse de temps de jeu.`, 'warn'); return false; }
     return true;
   });
+  // chantiers
+  if (fac.build && leagueRoundAt(G) + 1 >= fac.build.done) {
+    const b = fac.build; delete fac.build;
+    if (b.type === 'stadium') { myClub(G).capacity += 5000; news(G, `🏗 Travaux terminés : le stade compte désormais ${myClub(G).capacity.toLocaleString('fr-FR')} places !`, 'board'); }
+    else { fac[b.type] = (fac[b.type] || 2) + 1; news(G, `🏗 Travaux terminés : ${FACILITIES[b.type].label} niveau ${fac[b.type]} !`, 'board'); }
+  }
+  // recrutement
+  G.scouting = (G.scouting || []).filter(sc => {
+    sc.left--;
+    if (sc.left > 0) return true;
+    const p = getPlayer(G, sc.pid);
+    if (p) {
+      (G.known ||= []).push(p.id);
+      const o = playerOvr(p), grade = o >= myClub(G).rep + 5 ? 'A — un renfort majeur' : o >= myClub(G).rep - 3 ? 'B — un bon élément' : 'C — pas au niveau de l\'équipe type';
+      news(G, `🔎 Rapport de recrutement : ${p.name} (${p.pos}, ${p.age} ans) — note ${o}, potentiel ${starsTxt(p.pot)}. Avis : ${grade}.`, 'scout');
+    }
+    return false;
+  });
+  // humeur des joueurs
+  for (const p of clubPlayers(G, G.clubId)) {
+    p.sad = p.morale < 30 ? (p.sad || 0) + 1 : 0;
+    if (p.sad >= 4 && !p.wantsOut) {
+      p.wantsOut = true; p.listed = true;
+      myClub(G).coh = clamp((myClub(G).coh ?? 60) - 4, 0, 100);
+      news(G, `😤 ${p.name} demande officiellement à être transféré. Il est placé sur la liste des transferts.`, 'warn');
+    } else if (p.wantsOut && p.morale > 55) {
+      p.wantsOut = false;
+      news(G, `${p.name} a retrouvé le sourire et retire sa demande de transfert.`, 'info');
+    }
+  }
   const club = myClub(G);
   if (club.budget < -5e6) G.board.conf = clamp(G.board.conf - 1.5, 0, 100);
   G.fin.hist = [...(G.fin.hist || []), Math.round(club.budget)].slice(-120);
@@ -706,8 +829,8 @@ function weeklyUpdate(G) {
 }
 
 function windowOpen(G) {
-  const n = G.schedule.length, w = G.week, mid = Math.floor(n / 2);
-  return w < 6 || (w >= mid && w < mid + 4);
+  const R = leagueRoundsTotal(G), lr = leagueRoundAt(G), mid = Math.floor(R / 2);
+  return lr < 6 || (lr >= mid && lr < mid + 4);
 }
 
 function marketValue(p) { return calcValue(p); }
@@ -721,7 +844,7 @@ function aiTransfers(G) {
     const byPos = {};
     for (const r of Object.keys(ROLES)) byPos[r] = squad.filter(p => p.pos === r).map(playerOvr).sort((a, b) => b - a)[0] || 0;
     const need = Object.keys(byPos).sort((a, b) => byPos[a] - byPos[b])[0];
-    const targets = G.players.filter(p => p.pos === need && p.club !== c.id && p.club !== G.clubId && playerOvr(p) > byPos[need] && marketValue(p) < c.budget * .4 && playerOvr(p) < c.rep + 18);
+    const targets = G.players.filter(p => p.pos === need && !p.loan && p.club !== c.id && p.club !== G.clubId && playerOvr(p) > byPos[need] && marketValue(p) < c.budget * .4 && playerOvr(p) < c.rep + 18);
     if (!targets.length) continue;
     const t = pick(targets);
     const fee = t.club != null ? marketValue(t) : 0;
@@ -736,9 +859,23 @@ function aiTransfers(G) {
 
 function aiOffers(G) {
   if (!windowOpen(G)) return;
+  const me = myClub(G);
   for (const p of clubPlayers(G, G.clubId)) {
+    if (p.loan || G.offers.some(o => o.pid === p.id)) continue;
+    const ovr = playerOvr(p);
+    if (ovr >= me.rep + 4 && p.age <= 29 && rnd() < .035) {
+      const big = G.clubs.filter(c => c.id !== G.clubId && c.rep >= me.rep + 6 && c.budget > marketValue(p) * 1.2);
+      if (big.length) {
+        const b = pick(big);
+        const fee = roundMoney(marketValue(p) * (1.3 + rnd() * .4));
+        G.offers.push({ id: Date.now() + Math.floor(rnd() * 1e6), pid: p.id, club: b.id, fee, week: G.week, max: roundMoney(fee * 1.15), star: true });
+        p.morale = clamp(p.morale + 5, 0, 100);
+        news(G, `📰 ${b.name} veut ${p.name} ! Offre de ${money(fee)}. Le joueur est flatté… attention à sa réaction si tu refuses.`, 'offer');
+        continue;
+      }
+    }
     const chance = p.listed ? .35 : .02;
-    if (rnd() > chance || G.offers.some(o => o.pid === p.id)) continue;
+    if (rnd() > chance) continue;
     const buyers = G.clubs.filter(c => c.id !== G.clubId && c.budget > marketValue(p) * .8 && c.rep >= playerOvr(p) - 25);
     if (!buyers.length) continue;
     const b = pick(buyers);
@@ -746,7 +883,48 @@ function aiOffers(G) {
     G.offers.push({ id: Date.now() + Math.floor(rnd() * 1e6), pid: p.id, club: b.id, fee, week: G.week, max: roundMoney(fee * (1.05 + rnd() * .25)) });
     news(G, `${b.name} propose ${money(fee)} pour ${p.name}.`, 'offer');
   }
-  G.offers = G.offers.filter(o => G.week - o.week < 3);
+  G.offers = G.offers.filter(o => {
+    if (G.week - o.week < 5) return true;
+    if (o.star) { const p = getPlayer(G, o.pid); if (p && p.club === G.clubId) { p.morale = clamp(p.morale - 12, 5, 100); news(G, `${p.name} est déçu que son transfert vers ${getClub(G, o.club).name} n'ait pas abouti.`, 'warn'); } }
+    return false;
+  });
+}
+
+// ---------- Journal ----------
+function pressHeadlines(G) {
+  const items = [];
+  for (const L of leagueComps(G)) {
+    for (const r of standings(G, L.id)) {
+      const f = r.form; if (f.length < 4) continue;
+      let n = 0; const last = f[f.length - 1];
+      for (let i = f.length - 1; i >= 0 && f[i] === last; i--) n++;
+      const c = getClub(G, r.id);
+      if (![4, 6, 8, 10, 12, 15].includes(n)) continue;
+      if (last === 'V' && n >= 4) items.push({ w: n + (c.id === G.clubId ? 4 : 0), t: `🔥 ${c.name} enchaîne ${n} victoires consécutives en ${L.name} !` });
+      if (last === 'D' && n >= 4) items.push({ w: n + (c.id === G.clubId ? 4 : 0), t: `😰 Crise à ${c.name} : ${n} défaites de suite. ${c.id === G.clubId ? 'La presse s\'interroge sur l\'avenir de l\'entraîneur.' : ''}` });
+    }
+    const top = topScorers(G, L.id, 1)[0];
+    if (top && top.stats.lg >= 5 && top.stats.lg % 5 === 0 && top.lastPressGoals !== top.stats.lg) {
+      top.lastPressGoals = top.stats.lg;
+      items.push({ w: 5, t: `⚽ ${top.name} (${getClub(G, top.club).name}) déjà ${top.stats.lg} buts en ${L.name} !` });
+    }
+  }
+  if (windowOpen(G) && rnd() < .7) {
+    const stars = G.players.filter(p => p.club != null && !getClub(G, p.club).foreign && playerOvr(p) >= 74 && !p.loan);
+    const p = stars.length ? pick(stars) : null;
+    if (p) {
+      const from = getClub(G, p.club);
+      const bigs = G.clubs.filter(c => c.rep > from.rep + 3 && c.id !== p.club);
+      if (bigs.length) {
+        const b = pick(bigs);
+        items.push({ w: p.club === G.clubId ? 7 : 3, t: `🗞 Rumeur : ${b.name} suivrait de près ${p.name} (${from.name}).` });
+        if (p.club === G.clubId) p.morale = clamp(p.morale - 2, 5, 100);
+      }
+    }
+  }
+  if (!items.length) return;
+  items.sort((a, b) => b.w - a.w);
+  items.slice(0, rnd() < .5 ? 1 : 2).forEach(i => news(G, i.t, 'press'));
 }
 
 function news(G, text, type = 'info', worldOnly = false) {
@@ -780,7 +958,7 @@ function monthlyAwards(G) {
     let best = null, bv = 0;
     for (const p of G.players) {
       if (!L.clubs.includes(p.club)) continue;
-      const recent = (p.form || []).filter(x => x.s === G.season && x.w > G.week - 5);
+      const recent = (p.form || []).filter(x => x.s === G.season && x.w > G.week - 7);
       if (recent.length < 3) continue;
       const avg = recent.reduce((s, x) => s + x.r, 0) / recent.length;
       if (avg > bv) { bv = avg; best = p; }
@@ -847,7 +1025,7 @@ function endSeason(G) {
     const top = comp.div === L[0].div;
     t.forEach((r, i) => {
       const c = getClub(G, r.id);
-      const prize = top ? roundMoney(30e6 - i * 1.2e6) : roundMoney(6e6 - i * .2e6);
+      const prize = top ? roundMoney(24e6 - i * .95e6) : roundMoney(5e6 - i * .17e6);
       c.budget += prize;
       if (c.id === G.clubId) { G.fin.tv += prize; S.rank = i + 1; S.pts = r.pts; }
       c.rep = clamp(c.rep + (t.length / 2 - i) * .25 * (top ? 1 : .6), 30, 95);
@@ -858,6 +1036,8 @@ function endSeason(G) {
   S.met = S.rank <= G.objective;
   S.cupWinner = G.comps.CUP.winner ? getClub(G, G.comps.CUP.winner).name : null;
   S.awards = seasonAwards(G);
+  S.euroWinner = G.comps.EUR?.winner ? getClub(G, G.comps.EUR.winner).name : null;
+  G.euroQual = standings(G, L[0].id).slice(0, 4).map(r => r.id);
 
   for (let i = 0; i + 1 < L.length; i++) {
     const down = L[i], up = L[i + 1];
@@ -875,10 +1055,15 @@ function endSeason(G) {
   G.board.conf = clamp(G.board.conf + delta + (S.rank === 1 ? 10 : 0) - (relegated ? 25 : 0), 0, 100);
   S.sacked = G.board.conf < 20;
   if (S.met || S.rank <= 3) {
-    const cands = G.clubs.filter(c => c.id !== G.clubId && c.rep > me.rep + 2 && c.rep < me.rep + 16);
+    const cands = G.clubs.filter(c => !c.foreign && c.id !== G.clubId && c.rep > me.rep + 2 && c.rep < me.rep + 16);
     shuffle(cands).slice(0, rint(1, 2)).forEach(c => S.offers.push(c.id));
   }
 
+  for (const p of G.players) if (p.loan) {
+    const back = p.loan.from;
+    if (back === G.clubId) news(G, `Retour de prêt : ${p.name} (${p.stats.apps} matchs, ${p.stats.goals} buts chez ${getClub(G, p.club)?.name}).`, 'transfer');
+    p.club = back; p.num = null; delete p.loan;
+  }
   const retired = [];
   for (const p of G.players) {
     if (p.club != null && p.stats.apps > 0) {
@@ -908,10 +1093,13 @@ function endSeason(G) {
   G.players = G.players.filter(p => !rset.has(p.id));
   G.shortlist = (G.shortlist || []).filter(id => !rset.has(id));
   for (const c of G.clubs) {
-    const n = rint(2, 3);
+    const mineC = c.id === G.clubId;
+    const yb = mineC ? ((G.staff?.youth || 2) + (G.fac?.youth || 2) - 4) : 0;
+    const n = rint(2, 3) + (mineC && (G.fac?.youth || 2) >= 4 ? 1 : 0);
+    if (c.foreign) c.rep = clamp(c.rep + rint(-1, 1), 65, 95);
     for (let i = 0; i < n; i++) {
-      const y = genPlayer(pick(SQUAD_TEMPLATE), 4 + c.rep / 14 + gauss(), { club: c.id, age: rint(16, 18), rep: c.rep });
-      y.pot = clamp(y.pot + rint(0, 10), playerOvr(y), 95); y.wage = 1000; y.contract = 3;
+      const y = genPlayer(pick(SQUAD_TEMPLATE), 4 + c.rep / 14 + gauss() + yb * .3, { club: c.id, age: rint(16, 18), rep: c.rep });
+      y.pot = clamp(y.pot + rint(0, 10) + yb * 2, playerOvr(y), 95); y.wage = 1000; y.contract = 3;
       if (c.id === G.clubId) news(G, `Centre de formation : ${y.name} (${ROLES[y.pos].label}, ${y.age} ans, potentiel ${starsTxt(y.pot)}) intègre l'effectif.`, 'youth');
       G.players.push(y);
     }
@@ -966,10 +1154,16 @@ function starsTxt(v) { return (Math.round(clamp((v - 40) / 10, .5, 5) * 2) / 2).
 function normalizeWorld(W) {
   W.leagueNames = W.leagueNames || [W.leagueName || 'Ligue Élite', 'Ligue Pro 2'];
   W.cupName = W.cupName || 'Coupe Nationale';
-  const hasDiv = W.clubs.some(c => c.div);
+  W.euroName = W.euroName || 'Coupe des Étoiles';
+  if (!W.clubs.some(c => c.foreign) && !W.noForeign) {
+    const fr = genForeignClubs(Math.max(...W.clubs.map(c => c.id)) + 1, Math.max(0, ...W.players.map(p => p.id)) + 1);
+    W.clubs.push(...fr.clubs); W.players.push(...fr.players);
+  }
+  const hasDiv = W.clubs.some(c => c.div && !c.foreign);
   const byRep = W.clubs.slice().sort((a, b) => b.rep - a.rep);
   W.clubs.forEach(c => {
-    if (!hasDiv) c.div = W.clubs.length >= 24 && byRep.indexOf(c) >= Math.ceil(W.clubs.length / 2) ? 2 : 1;
+    if (c.foreign) { c.div = 0; }
+    else if (!hasDiv) { const dom = byRep.filter(x => !x.foreign); c.div = dom.length >= 24 && dom.indexOf(c) >= Math.ceil(dom.length / 2) ? 2 : 1; }
     c.style ||= clubStyle(); c.coh ??= 65; c.trophies ||= [];
   });
   W.players.forEach(p => {
@@ -979,6 +1173,19 @@ function normalizeWorld(W) {
   for (const c of W.clubs) assignNumbers(W.players.filter(p => p.club === c.id));
 }
 
+function migrateGame(G) {
+  G.staff ||= { assistant: 2, coach: 2, physio: 2, scout: 2, youth: 2 };
+  G.staffNames ||= (() => { const n = shuffle(STAFF_NAMES.slice()); return Object.fromEntries(Object.keys(STAFF).map((k, i) => [k, n[i]])); })();
+  G.fac ||= { training: 2, youth: 2 };
+  G.known ||= []; G.scouting ||= []; G.euroName ||= 'Coupe des Étoiles';
+  G.fin.prize ??= 0; G.fin.sponsor ??= 0;
+  if (!G.clubs.some(c => c.foreign)) {
+    const fr = genForeignClubs(Math.max(...G.clubs.map(c => c.id)) + 1, Math.max(...G.players.map(p => p.id)) + 1);
+    G.clubs.push(...fr.clubs); G.players.push(...fr.players);
+  }
+  return G;
+}
+
 function newGame(db, clubId, managerName) {
   const G = {
     version: 2, managerName: managerName || 'Coach', season: 2026, clubId,
@@ -986,8 +1193,9 @@ function newGame(db, clubId, managerName) {
     clubs: JSON.parse(JSON.stringify(db.clubs)), players: JSON.parse(JSON.stringify(db.players)),
     inbox: [], offers: [], history: [], shortlist: [], promises: [], awards: { monthly: [], seasons: [] },
     fin: { gate: 0, wages: 0, tv: 0, sponsor: 0, prize: 0, transfersIn: 0, transfersOut: 0, hist: [] },
-    board: { conf: 60 }, training: { focus: 'equilibre', intensity: 1 }, talked: {}
+    board: { conf: 60 }, training: { focus: 'equilibre', intensity: 1 }, talked: {}, euroName: db.euroName || 'Coupe des Étoiles'
   };
+  migrateGame(G);
   normalizeWorld(G);
   NEXT_PID = Math.max(...G.players.map(p => p.id)) + 1;
   reindex(G);
@@ -1003,7 +1211,7 @@ function newGame(db, clubId, managerName) {
 
 // ---------- Simulation d'une semaine (hors match du joueur) ----------
 function simFixture(G, f) {
-  const m = new Match(G, f, aiTactics(G, f.h, f.a), aiTactics(G, f.a, f.h), { cup: f.comp === 'CUP' });
+  const m = new Match(G, f, aiTactics(G, f.h, f.a), aiTactics(G, f.a, f.h), { cup: isKO(f) });
   m.sides[0].ai = m.sides[1].ai = true; m.auto = true;
   m.runToEnd(); applyMatch(G, m, f);
   return m;
@@ -1014,22 +1222,25 @@ function completeWeek(G, skipFixture) {
   const e = G.schedule[G.week];
   for (const f of weekFixtures(G)) if (f !== skipFixture && !f.res) simFixture(G, f);
   if (e.t === 'C') afterCupRound(G);
-  weeklyUpdate(G);
-  aiTransfers(G);
-  aiOffers(G);
+  if (e.t === 'E') afterEuroRound(G, e.r);
+  const full = e.t === 'L';
+  weeklyUpdate(G, full);
+  if (full) { aiTransfers(G); aiOffers(G); }
   for (const p of G.players) p.value = calcValue(p);
   G.week++;
-  if (G.week % 4 === 0 && G.week < G.schedule.length) monthlyAwards(G);
-  const n = G.schedule.length, mid = Math.floor(n / 2);
-  if (G.week === 6) news(G, 'Le mercato d\'été est fermé.', 'info');
-  if (G.week === mid) news(G, 'Le mercato d\'hiver ouvre pour 4 semaines !', 'info');
-  if (G.week === mid + 4) news(G, 'Le mercato d\'hiver est fermé.', 'info');
-  if (G.week === mid - 2 || G.week === n - 6) {
-    const exp = clubPlayers(G, G.clubId).filter(p => p.contract <= 1);
+  if (!full) return G.week > 10 && G.board.conf < 10 ? 'sacked' : null;
+  const lr = leagueRoundAt(G), R = leagueRoundsTotal(G), mid = Math.floor(R / 2);
+  if (lr % 4 === 0 && lr < R) monthlyAwards(G);
+  pressHeadlines(G);
+  if (lr === 6) news(G, 'Le mercato d\'été est fermé.', 'info');
+  if (lr === mid) news(G, 'Le mercato d\'hiver ouvre pour 4 semaines !', 'info');
+  if (lr === mid + 4) news(G, 'Le mercato d\'hiver est fermé.', 'info');
+  if (lr === mid - 2 || lr === R - 6) {
+    const exp = clubPlayers(G, G.clubId).filter(p => p.contract <= 1 && !p.loan);
     if (exp.length) news(G, `Contrats qui expirent en fin de saison : ${exp.map(p => p.name).join(', ')}. Prolonge-les ou ils partiront libres.`, 'warn');
   }
   const conf = G.board.conf;
-  if (G.week > 10 && conf < 10) return 'sacked';
-  if (conf < 25 && G.week % 3 === 0) news(G, 'Le président est très inquiet. Les résultats doivent s\'améliorer rapidement, sinon…', 'board');
+  if (lr > 8 && conf < 10) return 'sacked';
+  if (conf < 25 && lr % 3 === 0) news(G, 'Le président est très inquiet. Les résultats doivent s\'améliorer rapidement, sinon…', 'board');
   return null;
 }

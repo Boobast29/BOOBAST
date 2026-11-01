@@ -15,7 +15,7 @@ async function save() {
   catch (e) { toast('Sauvegarde impossible : ' + (e?.message || e), 'err'); }
 }
 async function saveDB() { try { await Store.set(DB_KEY, DB); } catch (e) { toast('Base non sauvegardée : ' + (e?.message || e), 'err'); } }
-function loadGame(g) { reindex(g); NEXT_PID = Math.max(...g.players.map(p => p.id)) + 1; G = g; }
+function loadGame(g) { migrateGame(g); reindex(g); NEXT_PID = Math.max(...g.players.map(p => p.id)) + 1; G = g; }
 
 // ============================================================
 //  Écran d'accueil
@@ -27,7 +27,7 @@ async function startScreen() {
   if (existing && existing.version !== 2) { await Store.del(SAVE_KEY); }
   const ex = existing?.version === 2 ? existing : null;
   document.body.className = 'start';
-  const divs = [...new Set(DB.clubs.map(c => c.div || 1))].sort();
+  const divs = [...new Set(DB.clubs.filter(c => !c.foreign).map(c => c.div || 1))].sort();
   const exClub = ex ? ex.clubs.find(c => c.id === ex.clubId) : null;
   $('#app').innerHTML = `
   <div class="start-wrap">
@@ -53,9 +53,9 @@ async function startScreen() {
         <div class="grow"></div>
         <div class="tabs">${divs.map((d, i) => `<button class="${d === START_DIV ? 'on' : ''}" data-div="${d}">${esc((DB.leagueNames || [])[i] || 'Division ' + d)}</button>`).join('')}</div>
       </div>
-      <p class="hint">${DB.clubs.length} clubs · ${DB.players.length} joueurs. Clique sur un club pour commencer. Tu peux tout renommer et ajouter tes logos/photos avec l'éditeur.</p>
+      <p class="hint">${DB.clubs.filter(c => !c.foreign).length} clubs (+ ${DB.clubs.filter(c => c.foreign).length} clubs étrangers en Coupe d'Europe) · ${DB.players.length} joueurs. Clique sur un club pour commencer. Tu peux tout renommer et ajouter tes logos/photos avec l'éditeur.</p>
       <div class="club-grid">
-        ${DB.clubs.filter(c => (c.div || 1) === START_DIV).sort((a, b) => b.rep - a.rep).map(c => {
+        ${DB.clubs.filter(c => !c.foreign && (c.div || 1) === START_DIV).sort((a, b) => b.rep - a.rep).map(c => {
           const sq = DB.players.filter(p => p.club === c.id);
           const top = sq.map(playerOvr).sort((a, b) => b - a).slice(0, 11);
           const avg = top.reduce((s, v) => s + v, 0) / (top.length || 1);
@@ -163,7 +163,7 @@ function exportDatabase(W) {
 //  Jeu principal
 // ============================================================
 const NAV = [
-  ['inbox', '🏠', 'Accueil'], ['squad', '👥', 'Effectif'], ['tactics', '📋', 'Tactique'], ['training', '🏋', 'Entraînement'],
+  ['inbox', '🏠', 'Accueil'], ['squad', '👥', 'Effectif'], ['tactics', '📋', 'Tactique'], ['training', '🏋', 'Entraînement'], ['staff', '🧑‍💼', 'Staff'],
   ['fixtures', '📅', 'Calendrier'], ['comps', '🏆', 'Compétitions'], ['transfers', '💱', 'Mercato'], ['finances', '💶', 'Finances'],
   ['club', '🏟', 'Club'], ['editor', '✏', 'Éditeur'], ['options', '⚙', 'Options']
 ];
@@ -184,10 +184,10 @@ function enterGame() {
 function myNextFixture() {
   for (let w = G.week; w < G.schedule.length; w++) {
     const e = G.schedule[w];
-    const fs = e.t === 'L' ? leagueComps(G).flatMap(l => l.fixtures[e.r] || []) : (G.comps.CUP.rounds[e.r]?.ties || []);
-    const f = fs.find(f => f.h === G.clubId || f.a === G.clubId);
+    const f = weekFixtures(G, w).find(f => f.h === G.clubId || f.a === G.clubId);
     if (f) return { f, w };
     if (e.t === 'C' && !G.comps.CUP.rounds[e.r] && G.comps.CUP.alive.includes(G.clubId) && !G.comps.CUP.winner) return { f: null, w, cupTbd: true };
+    if (e.t === 'E' && e.r >= 6 && G.comps.EUR && !G.comps.EUR.ko[e.r - 6] && G.comps.EUR.teams.includes(G.clubId) && !G.comps.EUR.winner) return { f: null, w, cupTbd: true };
   }
   return null;
 }
@@ -199,7 +199,7 @@ function renderTop() {
   const nx = myNextFixture();
   const opp = nx?.f ? getClub(G, nx.f.h === G.clubId ? nx.f.a : nx.f.h) : null;
   const unread = G.inbox.filter(m => !m.read && !m.world).length;
-  const compName = nx?.f ? (nx.f.comp === 'CUP' ? G.comps.CUP.name : G.comps[nx.f.comp].name) : '';
+  const cName = nx?.f ? compName(G, nx.f) : '';
   $('#top').innerHTML = `
     <div class="tclub">${crest(c, 42)}<div><b>${esc(c.name)}</b><small>${esc(G.managerName)} · ${esc(clubLeague(G, G.clubId)?.name || '')}</small></div></div>
     <div class="tinfo"><small>Saison</small><b>${G.season}/${String(G.season + 1).slice(2)}</b></div>
@@ -209,7 +209,7 @@ function renderTop() {
     <div class="tinfo hide-s"><small>Mercato</small><b>${windowOpen(G) ? '<span class="pos">Ouvert</span>' : 'Fermé'}</b></div>
     <div class="search hide-s"><input id="gsearch" placeholder="🔎 Joueur, club… ( / )" autocomplete="off"><div id="gres"></div></div>
     <div class="grow"></div>
-    ${opp ? `<div class="tnext hide-s"><small>${esc(compName)} · ${fmtDate(dateOfWeek(G, nx.w))}</small><b>${nx.f.h === G.clubId ? 'vs' : '@'} ${esc(opp.name)}</b></div>` : ''}
+    ${opp ? `<div class="tnext hide-s"><small>${esc(cName)} · ${fmtDate(dateOfWeek(G, nx.w))}</small><b>${nx.f.h === G.clubId ? 'vs' : '@'} ${esc(opp.name)}</b></div>` : ''}
     <button class="btn primary big" id="btnGo" title="Espace">${done ? 'Fin de saison ▶' : thisWeek ? 'Jouer le match ▶' : 'Continuer ▶'}</button>`;
   $('#btnGo').onclick = () => advance();
   const ib = $('#nav button[data-v=inbox] span'); if (ib) ib.dataset.n = unread || '';
@@ -235,7 +235,7 @@ function show(v) {
   VIEW = v;
   $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   renderTop();
-  const fn = { inbox: vInbox, squad: vSquad, tactics: vTactics, training: vTraining, fixtures: vFixtures, comps: vComps, transfers: vTransfers, finances: vFinances, club: vClub, editor: el => vEditor(el, G, true), options: vOptions }[v] || vInbox;
+  const fn = { inbox: vInbox, squad: vSquad, tactics: vTactics, training: vTraining, staff: vStaff, fixtures: vFixtures, comps: vComps, transfers: vTransfers, finances: vFinances, club: vClub, editor: el => vEditor(el, G, true), options: vOptions }[v] || vInbox;
   const main = $('#main'); main.innerHTML = '';
   fn(main);
   main.scrollTop = 0;
@@ -269,26 +269,25 @@ function vInbox(el) {
   const nx = myNextFixture();
   const squad = clubPlayers(G, G.clubId);
   const avgMor = squad.reduce((s, p) => s + p.morale, 0) / (squad.length || 1);
-  const filt = { all: m => !m.world, club: m => !m.world && ['board', 'win', 'loss', 'inj', 'warn', 'youth', 'trophy', 'info', 'cup'].includes(m.type), transfer: m => ['transfer', 'offer'].includes(m.type), world: m => m.world }[INBOX_FILTER];
+  const filt = { all: m => !m.world, club: m => !m.world && ['board', 'win', 'loss', 'inj', 'warn', 'youth', 'trophy', 'info', 'cup'].includes(m.type), transfer: m => ['transfer', 'offer', 'scout'].includes(m.type), press: m => m.type === 'press', world: m => m.world }[INBOX_FILTER];
   const msgs = G.inbox.filter(filt).slice(0, 40);
   const lastRes = [];
   for (let w = G.week - 1; w >= 0 && lastRes.length < 5; w--) {
     const e = G.schedule[w];
-    const fs = e.t === 'L' ? leagueComps(G).flatMap(l => l.fixtures[e.r] || []) : (G.comps.CUP.rounds[e.r]?.ties || []);
-    const f = fs.find(f => f.h === G.clubId || f.a === G.clubId);
+    const f = weekFixtures(G, w).find(f => f.h === G.clubId || f.a === G.clubId);
     if (f?.res) lastRes.push(f);
   }
   const lo = Math.max(0, myRank - 4), mini = tbl.slice(lo, lo + 7);
   let nextCard = '<p class="muted">Aucun match à venir.</p>';
   if (nx?.f) {
     const f = nx.f, home = f.h === G.clubId, opp = getClub(G, home ? f.a : f.h);
-    const oppL = clubLeague(G, opp.id), ot = standings(G, oppL.id), orank = ot.findIndex(t => t.id === opp.id) + 1;
+    const oppL = clubLeague(G, opp.id), ot = oppL ? standings(G, oppL.id) : null, orank = ot ? ot.findIndex(t => t.id === opp.id) + 1 : 0;
     nextCard = `<div class="nextmatch">
       <div class="nm-team">${crest(getClub(G, f.h), 64)}<b>${esc(getClub(G, f.h).name)}</b></div>
-      <div class="nm-mid"><small>${esc(f.comp === 'CUP' ? G.comps.CUP.name + ' · ' + weekLabel(G, nx.w) : G.comps[f.comp].name + ' · ' + weekLabel(G, nx.w))}</small><span>VS</span><small>${fmtDate(dateOfWeek(G, nx.w))}</small></div>
+      <div class="nm-mid"><small>${esc(compName(G, f) + ' · ' + weekLabel(G, nx.w))}</small><span>VS</span><small>${fmtDate(dateOfWeek(G, nx.w))}</small></div>
       <div class="nm-team">${crest(getClub(G, f.a), 64)}<b>${esc(getClub(G, f.a).name)}</b></div>
     </div>
-    <p class="center hint">${esc(opp.name)} : ${orank}<sup>e</sup> de ${esc(oppL.name)} · forme <span class="form">${ot[orank - 1].form.slice(-5).map(r => `<i class="f${r}">${r}</i>`).join('') || '-'}</span></p>`;
+    <p class="center hint">${oppL ? `${esc(opp.name)} : ${orank}<sup>e</sup> de ${esc(oppL.name)} · forme <span class="form">${ot[orank - 1].form.slice(-5).map(r => `<i class="f${r}">${r}</i>`).join('') || '-'}</span>` : `${esc(opp.name)} · club étranger (${esc(NATIONS.find(n => n[0] === opp.country)?.[1] || opp.country)})`}</p>`;
   } else if (nx?.cupTbd) nextCard = '<p class="muted">Prochain tour de coupe : tirage à venir.</p>';
   const prog = (G.weekProg || []).slice(0, 8);
   el.innerHTML = `
@@ -312,7 +311,7 @@ function vInbox(el) {
   <div class="grid2">
     <section class="card">
       <div class="row gap"><h2 class="grow">📨 Messages</h2>
-        <div class="tabs sm">${[['all', 'Tous'], ['club', 'Club'], ['transfer', 'Mercato'], ['world', 'Ligue']].map(([k, l]) => `<button data-f="${k}" class="${INBOX_FILTER === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+        <div class="tabs sm">${[['all', 'Tous'], ['club', 'Club'], ['transfer', 'Mercato'], ['press', 'Presse'], ['world', 'Ligue']].map(([k, l]) => `<button data-f="${k}" class="${INBOX_FILTER === k ? 'on' : ''}">${l}</button>`).join('')}</div>
       </div>
       ${G.offers.length ? `<div class="alert">💱 ${G.offers.length} offre(s) de transfert en attente. <a href="#" onclick="TR_TAB='offers';show('transfers');return false">Voir</a></div>` : ''}
       <ul class="inbox">${msgs.map(m => `<li class="${m.read ? '' : 'unread'} t-${m.type}"><small>${esc(m.label || '')} · ${m.season}</small>${esc(m.text)}</li>`).join('') || '<li class="muted">Aucun message.</li>'}</ul>
@@ -336,7 +335,7 @@ function vInbox(el) {
 function fxKey(f) { return `${f.comp}|${f.h}|${f.a}`; }
 function findFx(key) {
   const [comp, h, a] = key.split('|');
-  const list = comp === 'CUP' ? G.comps.CUP.rounds.flatMap(r => r.ties) : G.comps[comp].fixtures.flat();
+  const list = comp === 'CUP' ? G.comps.CUP.rounds.flatMap(r => r.ties) : comp === 'EUR' ? [...(G.comps.EUR?.groups || []).flatMap(g => g.fixtures.flat()), ...(G.comps.EUR?.ko || []).flatMap(k => k.ties)] : (G.comps[comp]?.fixtures.flat() || []);
   return list.find(f => f.h === +h && f.a === +a);
 }
 function resultRow(f, opts = {}) {
@@ -390,10 +389,11 @@ function vSquad(el, clubId = G.clubId) {
       <thead><tr>${th('num', '#')}<th></th>${th('name', 'Joueur')}${th('pos', 'Poste')}${th('age', 'Âge')}<th>Nat.</th>${th('ovr', 'Note')}${th('pot', 'Pot.', 'Potentiel')}<th>Forme</th>${th('fit', 'Cond.', 'Condition physique')}${th('mor', 'Moral')}${th('apps', 'MJ')}${th('goals', 'Buts')}${th('rat', 'Moy.')}${th('val', 'Valeur')}${th('wage', 'Salaire')}${th('con', 'Contrat')}<th></th></tr></thead>
       <tbody>${list.map(p => `<tr data-pid="${p.id}" class="${inXI.has(p.id) ? 'xi' : inB.has(p.id) ? 'bn' : ''} ${available(p) ? '' : 'unav'}">
         <td class="muted">${p.num ?? ''}</td><td>${avatar(p, 32)}</td><td class="nm">${esc(p.name)}</td><td><span class="pos-${ROLES[p.pos].line}">${p.pos}</span></td><td>${p.age}</td><td>${natFlag(p.nat)}</td>
-        <td>${ovrBadge(playerOvr(p))}</td><td>${stars(p.pot)}</td><td>${formDots(p)}</td><td>${bar(p.fit, 100, p.fit < 70 ? 'low' : '')}</td><td>${bar(p.morale, 100, 'mor')}</td>
+        <td>${ovrCell(p)}</td><td>${potCell(p)}</td><td>${formDots(p)}</td><td>${bar(p.fit, 100, p.fit < 70 ? 'low' : '')}</td><td>${bar(p.morale, 100, 'mor')}</td>
         <td>${p.stats.apps}</td><td>${p.stats.goals}</td><td>${p.stats.apps ? (p.stats.rating / p.stats.apps).toFixed(2) : '-'}</td>
         <td>${money(p.value)}</td><td>${money(p.wage)}</td><td>${p.contract} an${p.contract > 1 ? 's' : ''}</td><td>${status(p)}</td></tr>`).join('')}</tbody>
-    </table></div></section>`;
+    </table></div></section>
+    ${mine ? (() => { const ln = G.players.filter(p => p.loan?.from === G.clubId); return ln.length ? `<section class="card"><h2>🔁 Joueurs prêtés</h2><table class="tbl compact">${ln.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 26)}</td><td class="nm">${esc(p.name)}</td><td>${p.pos}</td><td>${ovrBadge(playerOvr(p))}</td><td>${crest(getClub(G, p.club), 18)} ${esc(getClub(G, p.club).name)}</td><td>${p.stats.apps} MJ · ${p.stats.goals} buts · ${p.stats.apps ? (p.stats.rating / p.stats.apps).toFixed(2) : '-'}</td></tr>`).join('')}</table></section>` : ''; })() : ''}`;
   el.querySelectorAll('th[data-k]').forEach(t => t.onclick = () => { SQUAD_SORT = { k: t.dataset.k, d: SQUAD_SORT.k === t.dataset.k ? -SQUAD_SORT.d : (['name', 'pos', 'age', 'num'].includes(t.dataset.k) ? 1 : -1) }; vSquad(el, clubId); });
   el.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { SQUAD_LINE = b.dataset.l; vSquad(el, clubId); });
   el.querySelectorAll('tr[data-pid]').forEach(r => r.onclick = () => playerModal(+r.dataset.pid));
@@ -403,7 +403,10 @@ function playerModal(pid, tab = 'profil') {
   const p = getPlayer(G, pid); if (!p) return;
   const club = p.club != null ? getClub(G, p.club) : null;
   const mine = p.club === G.clubId;
+  const known = knows(G, p);
   const ovr = playerOvr(p);
+  const scouting = G.scouting.some(s => s.pid === p.id);
+  const fogM = Math.max(1, 7 - G.staff.scout);
   const best = Object.keys(ROLES).map(r => [r, playerRoleRating(p, r) * familiarity(p, r)]).sort((a, b) => b[1] - a[1]).slice(0, 4);
   const shortlisted = G.shortlist.includes(p.id);
   const form = (p.form || []).filter(x => x.s === G.season).map(x => x.r);
@@ -411,11 +414,13 @@ function playerModal(pid, tab = 'profil') {
   let body = '';
   if (tab === 'profil') {
     body = `<div class="grid2">
-      <div><h3>Attributs</h3>${Object.entries(ATTRS).filter(([k]) => p.pos === 'GB' || k !== 'gar').map(([k, l]) => {
+      <div><h3>Attributs ${known ? '' : '<small class="muted">(estimés)</small>'}</h3>${!known ? Object.entries(ATTRS).filter(([k]) => p.pos === 'GB' || k !== 'gar').map(([k, l]) => {
+        const h = (((p.id * 31 + k.charCodeAt(0) * 17) % 97) / 97) * 2 - 1, est = clamp(Math.round(p.attrs[k] + h * fogM / 3), 1, 20), r = Math.ceil(fogM / 3);
+        return `<div class="attr"><span>${l}</span>${bar(est, 20, 'fog')}<b class="muted">${clamp(est - r, 1, 20)}-${clamp(est + r, 1, 20)}</b></div>`;
+      }).join('') + `<p class="hint">${scouting ? '🔎 Rapport du recruteur en cours…' : 'Envoie ton recruteur pour connaître ses vraies qualités.'}</p>` : Object.entries(ATTRS).filter(([k]) => p.pos === 'GB' || k !== 'gar').map(([k, l]) => {
         const d = p.attrs[k] - (p.attrs0?.[k] ?? p.attrs[k]);
         return `<div class="attr"><span>${l}</span>${bar(p.attrs[k], 20, 'a' + Math.ceil(p.attrs[k] / 5))}<b>${p.attrs[k]}${d ? `<sup class="${d > 0 ? 'pos' : 'neg'}">${d > 0 ? '▲' : '▼'}${Math.abs(d)}</sup>` : ''}</b></div>`;
-      }).join('')}
-      <p class="hint">▲▼ : évolution depuis le début de saison.</p></div>
+      }).join('') + '<p class="hint">▲▼ : évolution depuis le début de saison.</p>'}</div>
       <div><h3>Infos</h3>
         <table class="tbl kv">
           <tr><td>Personnalité</td><td title="${esc(PERSONALITIES[p.pers] || '')}">${esc(p.pers)} <span class="muted">ⓘ</span></td></tr>
@@ -424,7 +429,9 @@ function playerModal(pid, tab = 'profil') {
           <tr><td>Contrat</td><td>${p.contract} saison(s)</td></tr>
           <tr><td>Condition</td><td>${bar(p.fit)} ${Math.round(p.fit)}%</td></tr>
           <tr><td>Moral</td><td>${bar(p.morale, 100, 'mor')} ${Math.round(p.morale)}%</td></tr>
-          <tr><td>Postes</td><td>${best.map(([r, v]) => `${r} ${ovrBadge(v)}`).join(' ')}</td></tr>
+          ${known ? `<tr><td>Postes</td><td>${best.map(([r, v]) => `${r} ${ovrBadge(v)}`).join(' ')}</td></tr>` : ''}
+          ${p.loan ? `<tr><td>Prêt</td><td>Prêté par ${esc(getClub(G, p.loan.from).name)} jusqu'à la fin de saison</td></tr>` : ''}
+          ${p.wantsOut ? '<tr><td>Situation</td><td class="neg">Demande à être transféré</td></tr>' : ''}
         </table>
       </div></div>`;
   } else if (tab === 'stats') {
@@ -456,8 +463,10 @@ function playerModal(pid, tab = 'profil') {
   const actions = mine ? `
       <button class="btn" onclick="toggleList(${p.id})">${p.listed ? 'Retirer de la liste' : 'Mettre en vente'}</button>
       <button class="btn" onclick="renewModal(${p.id})">Prolonger</button>
+      ${p.age <= 23 ? `<button class="btn" onclick="loanModal(${p.id})">Prêter</button>` : ''}
       <button class="btn danger" onclick="releasePlayer(${p.id})">Libérer</button>`
-    : `<button class="btn primary" onclick="offerModal(${p.id})">${club ? 'Faire une offre' : 'Proposer un contrat'}</button>
+    : p.loan?.from === G.clubId ? '<span class="muted">Joueur prêté — il reviendra en fin de saison.</span>'
+    : `${known || scouting ? '' : `<button class="btn" onclick="scoutPlayer(${p.id})">🔎 Superviser</button>`}<button class="btn primary" onclick="offerModal(${p.id})">${club ? 'Faire une offre' : 'Proposer un contrat'}</button>
        <button class="btn" onclick="toggleShortlist(${p.id})">${shortlisted ? '👁 Retirer du suivi' : '👁 Suivre'}</button>
        ${club ? `<button class="btn" onclick="closeModal();viewClub(${club.id})">Voir le club</button>` : ''}`;
   modal(`
@@ -466,7 +475,7 @@ function playerModal(pid, tab = 'profil') {
       <p>${ROLES[p.pos].label} · ${p.age} ans · ${natFlag(p.nat)} ${esc(NATIONS.find(n => n[0] === p.nat)?.[1] || p.nat)} · Pied ${esc(p.foot.toLowerCase())}</p>
       <p>${club ? crest(club, 20) + ' ' + esc(club.name) : '<i>Agent libre</i>'} ${status(p)} ${formDots(p)}</p>
     </div>
-    <div class="pm-ovr">${ovrBadge(ovr)}<small>Potentiel</small>${stars(p.pot)}</div>
+    <div class="pm-ovr">${known ? ovrBadge(ovr) : `<span class="ovr o2 fogo" title="Estimation">~${estOvr(G, p)}</span>`}<small>Potentiel</small>${known ? stars(p.pot) : '<span class="muted">?</span>'}</div>
   </div>
   ${tabs}
   <div class="pm-body">${body}</div>
@@ -712,19 +721,18 @@ function vTraining(el) {
 let FIX_WEEK = null;
 function vFixtures(el) {
   if (FIX_WEEK == null || FIX_WEEK >= G.schedule.length) FIX_WEEK = Math.max(0, Math.min(G.week - 1, G.schedule.length - 1));
-  const rows = G.schedule.map((e, w) => {
-    const fs = e.t === 'L' ? leagueComps(G).flatMap(l => l.fixtures[e.r] || []) : (G.comps.CUP.rounds[e.r]?.ties || []);
-    return { w, e, f: fs.find(f => f.h === G.clubId || f.a === G.clubId) };
-  });
+  const rows = G.schedule.map((e, w) => ({ w, e, f: weekFixtures(G, w).find(f => f.h === G.clubId || f.a === G.clubId) }));
   const week = rows[FIX_WEEK];
-  const fsAll = week.e.t === 'L' ? leagueComps(G).map(l => ({ name: l.name, fs: l.fixtures[week.e.r] || [] })) : [{ name: G.comps.CUP.name + ' — ' + (G.comps.CUP.rounds[week.e.r]?.name || 'à venir'), fs: G.comps.CUP.rounds[week.e.r]?.ties || [] }];
+  const fsAll = week.e.t === 'L' ? leagueComps(G).map(l => ({ name: l.name, fs: l.fixtures[week.e.r] || [] }))
+    : week.e.t === 'E' ? (week.e.r < 6 ? (G.comps.EUR?.groups || []).map(g => ({ name: `${G.comps.EUR.name} — Groupe ${g.name}`, fs: g.fixtures[week.e.r] || [] })) : [{ name: G.comps.EUR.name + ' — ' + weekLabel(G, week.w), fs: G.comps.EUR.ko[week.e.r - 6]?.ties || [] }])
+    : [{ name: G.comps.CUP.name + ' — ' + (G.comps.CUP.rounds[week.e.r]?.name || 'à venir'), fs: G.comps.CUP.rounds[week.e.r]?.ties || [] }];
   el.innerHTML = `<div class="grid2">
     <section class="card"><h2>📅 Mon calendrier</h2><div class="scroll"><table class="tbl">
       ${rows.map(({ w, e, f }) => {
-        if (!f) return `<tr class="muted ${w === G.week ? 'next' : ''}" data-w="${w}"><td>${esc(weekLabel(G, w))}</td><td>${fmtDate(dateOfWeek(G, w))}</td><td colspan="3">${e.t === 'C' ? (G.comps.CUP.rounds[e.r] ? 'Pas de match (éliminé/exempté)' : 'Coupe — tirage à venir') : '-'}</td></tr>`;
+        if (!f) { if (e.t === 'E' && !G.comps.EUR?.teams.includes(G.clubId)) return ''; return `<tr class="muted ${w === G.week ? 'next' : ''}" data-w="${w}"><td>${esc(weekLabel(G, w))}</td><td>${fmtDate(dateOfWeek(G, w))}</td><td colspan="3">${e.t === 'C' ? (G.comps.CUP.rounds[e.r] ? 'Pas de match (éliminé/exempté)' : 'Coupe — tirage à venir') : e.t === 'E' ? 'Europe — pas de match' : '-'}</td></tr>`; }
         const home = f.h === G.clubId, o = getClub(G, home ? f.a : f.h);
         const w2 = fixtureWinner(f); const cls = f.res ? (w2 === G.clubId ? 'win' : w2 == null ? 'draw' : 'loss') : '';
-        return `<tr class="${cls} ${w === G.week ? 'next' : ''} ${e.t === 'C' ? 'cup' : ''}" data-w="${w}" ${f.res ? `data-fx="${fxKey(f)}"` : ''}><td>${esc(weekLabel(G, w))}</td><td>${fmtDate(dateOfWeek(G, w))}</td><td>${home ? 'Dom.' : 'Ext.'}</td><td>${crest(o, 20)} ${esc(o.name)}</td><td class="sc">${f.res ? (home ? f.res.join('-') : f.res.slice().reverse().join('-')) + (f.pens ? ' tab' : '') : ''}</td></tr>`;
+        return `<tr class="${cls} ${w === G.week ? 'next' : ''} ${e.t === 'C' ? 'cup' : e.t === 'E' ? 'euro' : ''}" data-w="${w}" ${f.res ? `data-fx="${fxKey(f)}"` : ''}><td>${esc(weekLabel(G, w))}</td><td>${fmtDate(dateOfWeek(G, w))}</td><td>${home ? 'Dom.' : 'Ext.'}</td><td>${crest(o, 20)} ${esc(o.name)}</td><td class="sc">${f.res ? (home ? f.res.join('-') : f.res.slice().reverse().join('-')) + (f.pens ? ' tab' : '') : ''}</td></tr>`;
       }).join('')}
     </table></div></section>
     <section class="card"><h2>Semaine <select id="wsel">${G.schedule.map((_, w) => `<option value="${w}" ${w === FIX_WEEK ? 'selected' : ''}>${esc(weekLabel(G, w))}</option>`).join('')}</select></h2>
@@ -742,12 +750,13 @@ let COMP_TAB = null;
 function vComps(el) {
   if (!COMP_TAB || !G.comps[COMP_TAB]) COMP_TAB = clubLeague(G, G.clubId).id;
   const comp = G.comps[COMP_TAB];
-  const tabs = `<div class="tabs">${[...leagueComps(G), G.comps.CUP].map(c => `<button data-c="${c.id}" class="${c.id === COMP_TAB ? 'on' : ''}">${esc(c.name)}</button>`).join('')}<button data-c="AW" class="${COMP_TAB === 'AW' ? 'on' : ''}">🏅 Récompenses</button></div>`;
+  const tabs = `<div class="tabs">${[...leagueComps(G), G.comps.CUP, ...(G.comps.EUR ? [G.comps.EUR] : [])].map(c => `<button data-c="${c.id}" class="${c.id === COMP_TAB ? 'on' : ''}">${esc(c.name)}</button>`).join('')}<button data-c="AW" class="${COMP_TAB === 'AW' ? 'on' : ''}">🏅 Récompenses</button></div>`;
   el.innerHTML = `<section class="card">${tabs}</section><div id="compBody"></div>`;
   el.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { COMP_TAB = b.dataset.c; vComps(el); });
   const body = $('#compBody');
   if (COMP_TAB === 'AW') return vAwards(body);
   if (comp.type === 'cup') return vCup(body, comp);
+  if (comp.type === 'euro') return vEuro(body, comp);
   const t = standings(G, comp.id), n = t.length, ps = promoSpots(comp);
   const L = leagueComps(G), li = L.findIndex(l => l.id === comp.id);
   const hasUp = li > 0, hasDown = li < L.length - 1;
@@ -803,10 +812,10 @@ function viewClub(id) {
   renderTop();
   const el = $('#main'); el.innerHTML = '';
   const c = getClub(G, id);
-  const L = clubLeague(G, id), t = standings(G, L.id), rank = t.findIndex(r => r.id === id) + 1;
+  const L = clubLeague(G, id), t = L ? standings(G, L.id) : [], rank = t.findIndex(r => r.id === id) + 1;
   const info = document.createElement('div');
   info.innerHTML = `<section class="card row gap wrap">${crest(c, 72)}<div class="grow"><h2>${esc(c.name)}</h2>
-    <p>${esc(L.name)} : <b>${rank}<sup>e</sup></b> · ${esc(c.stadium)} (${c.capacity.toLocaleString('fr-FR')} places) · Réputation ${stars(c.rep)} · Budget ${money(c.budget)}</p>
+    <p>${L ? `${esc(L.name)} : <b>${rank}<sup>e</sup></b>` : `Club étranger (${esc(NATIONS.find(n => n[0] === c.country)?.[1] || c.country || '?')})`} · ${esc(c.stadium)} (${c.capacity.toLocaleString('fr-FR')} places) · Réputation ${stars(c.rep)} · Budget ${money(c.budget)}</p>
     <p class="hint">Style : ${c.style?.formation || '?'} · pressing ${INST.press.opts[(c.style?.press ?? 0) + 1].toLowerCase()} · tempo ${INST.tempo.opts[(c.style?.tempo ?? 0) + 1].toLowerCase()} · ligne ${INST.line.opts[(c.style?.line ?? 0) + 1].toLowerCase()}</p>
     <p>${(c.trophies || []).map(t => `🏆 ${esc(t.name)} ${t.season}`).join(' · ') || '<span class="muted">Aucun trophée récent</span>'}</p></div></section>`;
   el.appendChild(info);
@@ -821,7 +830,7 @@ let TF = { q: '', pos: '', maxv: '', maxage: '', minovr: '', free: false };
 let TR_TAB = 'search';
 function vTransfers(el) {
   const club = myClub(G);
-  const tabs = [['search', '🔎 Recherche'], ['shortlist', `👁 Suivi (${G.shortlist.length})`], ['offers', `📩 Offres reçues (${G.offers.length})`], ['selling', '🏷 Mes joueurs en vente']];
+  const tabs = [['search', '🔎 Recherche'], ['shortlist', `👁 Suivi (${G.shortlist.length})`], ['scout', `🔎 Recrutement (${G.scouting.length})`], ['offers', `📩 Offres reçues (${G.offers.length})`], ['selling', '🏷 Mes joueurs en vente']];
   el.innerHTML = `<section class="card">
     <div class="row gap wrap"><h2 class="grow">💱 Mercato ${windowOpen(G) ? '<span class="tag grn">Ouvert</span>' : '<span class="tag red">Fermé — agents libres uniquement</span>'}</h2>
     <span>Budget : <b>${money(club.budget)}</b> · Effectif : ${clubPlayers(G, G.clubId).length}/32</span></div>
@@ -832,18 +841,18 @@ function vTransfers(el) {
   const table = list => `<div class="scroll"><table class="tbl players">
       <thead><tr><th></th><th>Joueur</th><th>Poste</th><th>Âge</th><th>Nat.</th><th>Note</th><th>Pot.</th><th>Club</th><th>Valeur</th><th>Salaire</th><th></th></tr></thead>
       <tbody>${list.map(p => { const c = p.club != null ? getClub(G, p.club) : null; return `<tr data-pid="${p.id}">
-        <td>${avatar(p, 30)}</td><td class="nm">${esc(p.name)}</td><td><span class="pos-${ROLES[p.pos].line}">${p.pos}</span></td><td>${p.age}</td><td>${natFlag(p.nat)}</td><td>${ovrBadge(playerOvr(p))}</td><td>${stars(p.pot)}</td>
+        <td>${avatar(p, 30)}</td><td class="nm">${esc(p.name)}</td><td><span class="pos-${ROLES[p.pos].line}">${p.pos}</span></td><td>${p.age}</td><td>${natFlag(p.nat)}</td><td>${ovrCell(p)}</td><td>${potCell(p)}</td>
         <td>${c ? crest(c, 18) + ' ' + esc(c.short) : '<i>Libre</i>'}</td><td>${c ? money(p.value) : '-'}</td><td>${money(p.wage)}</td><td>${status(p)}</td></tr>`; }).join('') || '<tr><td colspan="11" class="muted">Aucun joueur.</td></tr>'}</tbody>
     </table></div>`;
   if (TR_TAB === 'search') {
-    let list = G.players.filter(p => p.club !== G.clubId);
+    let list = G.players.filter(p => p.club !== G.clubId && !p.loan);
     if (TF.q) list = list.filter(p => normName(p.name).includes(normName(TF.q)));
     if (TF.pos) list = list.filter(p => p.pos === TF.pos);
     if (TF.maxv) list = list.filter(p => p.value <= +TF.maxv * 1e6);
     if (TF.maxage) list = list.filter(p => p.age <= +TF.maxage);
-    if (TF.minovr) list = list.filter(p => playerOvr(p) >= +TF.minovr);
+    if (TF.minovr) list = list.filter(p => estOvr(G, p) >= +TF.minovr);
     if (TF.free) list = list.filter(p => p.club == null || p.listed);
-    list.sort((a, b) => playerOvr(b) - playerOvr(a));
+    list.sort((a, b) => estOvr(G, b) - estOvr(G, a));
     body.innerHTML = `<div class="row gap wrap filters">
       <input id="fq" placeholder="Nom…" value="${esc(TF.q)}">
       <select id="fpos"><option value="">Tous postes</option>${Object.keys(ROLES).map(r => `<option ${r === TF.pos ? 'selected' : ''} value="${r}">${r} — ${ROLES[r].label}</option>`).join('')}</select>
@@ -854,12 +863,20 @@ function vTransfers(el) {
     </div>${table(list.slice(0, 150))}<p class="hint">${list.length} joueurs${list.length > 150 ? ' (150 affichés)' : ''}.</p>`;
     const upd = () => { TF = { q: $('#fq').value, pos: $('#fpos').value, maxv: $('#fmv').value, maxage: $('#fage').value, minovr: $('#fmo').value, free: $('#ffree').checked }; vTransfers(el); };
     ['#fq', '#fpos', '#fmv', '#fage', '#fmo', '#ffree'].forEach(s => $(s).onchange = upd);
+  } else if (TR_TAB === 'scout') {
+    body.innerHTML = `<p>Recruteur : <b>niveau ${G.staff.scout}/5</b>. Un rapport prend ${Math.max(1, 4 - Math.floor(G.staff.scout / 2))} semaine(s). Les joueurs non supervisés affichent une note <b>estimée (~)</b> et un potentiel inconnu.</p>
+      <h3>En cours</h3>${table(G.scouting.map(s => getPlayer(G, s.pid)).filter(Boolean))}
+      <h3>Joueurs connus (${G.known.length})</h3>${table(G.known.map(id => getPlayer(G, id)).filter(p => p && p.club !== G.clubId).slice(-40).reverse())}`;
   } else if (TR_TAB === 'shortlist') {
     body.innerHTML = table(G.shortlist.map(id => getPlayer(G, id)).filter(p => p && p.club !== G.clubId));
   } else if (TR_TAB === 'offers') {
     body.innerHTML = G.offers.length ? `<table class="tbl">${G.offers.map(o => { const p = getPlayer(G, o.pid), c = getClub(G, o.club); return `<tr><td>${avatar(p, 30)}</td><td class="nm">${esc(p.name)}</td><td>${ovrBadge(playerOvr(p))}</td><td>${crest(c, 20)} ${esc(c.name)}</td><td><b>${money(o.fee)}</b> <small class="muted">(valeur ${money(p.value)})</small></td><td class="row gap"><button class="btn primary sm" data-acc="${o.id}">Accepter</button><button class="btn sm" data-ctr="${o.id}">Contre-offre</button><button class="btn sm" data-rej="${o.id}">Refuser</button></td></tr>`; }).join('')}</table>` : '<p class="muted">Aucune offre. Mets des joueurs en vente pour attirer des acheteurs.</p>';
     body.querySelectorAll('[data-acc]').forEach(b => b.onclick = () => acceptOffer(+b.dataset.acc));
-    body.querySelectorAll('[data-rej]').forEach(b => b.onclick = () => { G.offers = G.offers.filter(o => o.id !== +b.dataset.rej); save(); vTransfers(el); });
+    body.querySelectorAll('[data-rej]').forEach(b => b.onclick = () => {
+      const o = G.offers.find(o => o.id === +b.dataset.rej);
+      if (o?.star) { const p = getPlayer(G, o.pid); p.morale = clamp(p.morale - 15, 5, 100); news(G, `${p.name} n'apprécie pas que tu aies refusé l'offre de ${getClub(G, o.club).name}.`, 'warn'); toast(`${p.name} est déçu…`, 'err'); }
+      G.offers = G.offers.filter(x => x !== o); save(); vTransfers(el);
+    });
     body.querySelectorAll('[data-ctr]').forEach(b => b.onclick = () => counterOffer(+b.dataset.ctr));
   } else {
     body.innerHTML = table(clubPlayers(G, G.clubId).filter(p => p.listed)) + '<p class="hint">Mets un joueur en vente depuis sa fiche. Les offres arrivent pendant les fenêtres de mercato.</p>';
@@ -905,7 +922,7 @@ function offerModal(pid) {
   let agreedFee = 0;
   const render = (msg = '') => {
     modal(`<h2>${seller ? 'Transfert' : 'Contrat'} : ${esc(p.name)}</h2>
-      <div class="row gap">${avatar(p, 56)}<div><p>${ROLES[p.pos].label} · ${p.age} ans · ${ovrBadge(playerOvr(p))} ${stars(p.pot)}</p>
+      <div class="row gap">${avatar(p, 56)}<div><p>${ROLES[p.pos].label} · ${p.age} ans · ${ovrCell(p)} ${potCell(p)}</p>
       <p>${seller ? `${crest(seller, 18)} ${esc(seller.name)} · valeur estimée <b>${money(p.value)}</b>` : 'Agent libre — pas d\'indemnité.'}</p></div></div>
       <p>Ton budget : <b>${money(me.budget)}</b></p>
       <div class="steps"><span class="${stage === 'fee' ? 'on' : 'done'}">${seller ? '1. Accord avec le club' : ''}</span><span class="${stage === 'wage' ? 'on' : ''}">${seller ? '2. ' : ''}Contrat du joueur</span></div>
@@ -1006,6 +1023,89 @@ function vClub(el) {
     </section></div>`;
 }
 
+function ovrCell(p) { return knows(G, p) ? ovrBadge(playerOvr(p)) : `<span class="ovr o2 fogo" title="Note estimée — supervise le joueur pour la connaître">~${estOvr(G, p)}</span>`; }
+function potCell(p) { return knows(G, p) ? stars(p.pot) : '<span class="muted" title="Potentiel inconnu">?</span>'; }
+function scoutPlayer(pid) {
+  if (G.scouting.length >= 6) return toast('Ton recruteur suit déjà 6 joueurs. Attends ses rapports.', 'err');
+  G.scouting.push({ pid, left: Math.max(1, 4 - Math.floor(G.staff.scout / 2)) });
+  save(); toast('Recruteur envoyé. Rapport dans quelques semaines.'); playerModal(pid);
+}
+function loanModal(pid) {
+  const p = getPlayer(G, pid);
+  if (!windowOpen(G)) return toast('Les prêts se font pendant le mercato.', 'err');
+  const o = playerOvr(p);
+  const clubs = G.clubs.filter(c => c.id !== G.clubId && !c.foreign).map(c => {
+    const better = clubPlayers(G, c.id).filter(x => x.pos === p.pos && playerOvr(x) > o).length;
+    return { c, better };
+  }).filter(x => x.better <= 1 && clubPlayers(G, x.c.id).length < 30).sort((a, b) => b.c.rep - a.c.rep).slice(0, 8);
+  modal(`<h2>Prêter ${esc(p.name)}</h2><p>Un prêt d'une saison permet à un jeune de jouer et de progresser plus vite. Le club prêteur paie son salaire.</p>
+    ${clubs.length ? clubs.map(({ c, better }) => `<div class="row gap offer-row">${crest(c, 28)}<b class="grow">${esc(c.name)}</b><small>${esc(clubLeague(G, c.id).name)} · ${better ? 'remplaçant probable' : 'titulaire probable'}</small><button class="btn sm primary" data-loan="${c.id}">Prêter</button></div>`).join('') : '<p class="muted">Aucun club intéressé pour l\'instant.</p>'}`);
+  $$('[data-loan]').forEach(b => b.onclick = () => {
+    const c = getClub(G, +b.dataset.loan);
+    p.loan = { from: G.clubId }; p.club = c.id; p.num = null; p.listed = false;
+    assignNumbers(clubPlayers(G, c.id)); removeFromTactics(p.id);
+    news(G, `${p.name} est prêté à ${c.name} jusqu'à la fin de la saison.`, 'transfer');
+    save(); closeModal(); toast(`${p.name} prêté à ${c.name}.`); refresh();
+  });
+}
+
+// ============================================================
+//  Staff & infrastructures
+// ============================================================
+function vStaff(el) {
+  const st = G.staff, fac = G.fac, c = myClub(G);
+  const total = Object.values(st).reduce((s, l) => s + staffWage(l), 0);
+  const lvl = l => '★'.repeat(l) + '☆'.repeat(5 - l);
+  el.innerHTML = `<div class="grid2">
+    <section class="card"><h2>🧑‍💼 Staff technique</h2>
+      <table class="tbl wrap">${Object.entries(STAFF).map(([k, s]) => `<tr><td><b>${s.label}</b><br><small class="muted">${esc(G.staffNames?.[k] || '')} — ${esc(s.tip)}</small></td>
+        <td class="stars">${lvl(st[k])}</td><td>${money(staffWage(st[k]))}/sem.</td>
+        <td class="row gap"><button class="btn sm" data-dn="${k}" ${st[k] <= 1 ? 'disabled' : ''} title="Remplacer par moins cher">−</button><button class="btn sm primary" data-up="${k}" ${st[k] >= 5 ? 'disabled' : ''} title="Recruter un meilleur profil">+</button></td></tr>`).join('')}</table>
+      <p>Masse salariale du staff : <b>${money(total)}</b>/sem.</p>
+      <p class="hint">Recruter un meilleur membre coûte une prime de signature (8 semaines de son nouveau salaire).</p>
+    </section>
+    <section class="card"><h2>🏗 Infrastructures</h2>
+      ${fac.build ? `<div class="alert">Chantier en cours : ${esc(FACILITIES[fac.build.type].label)} — fin dans ${Math.max(0, fac.build.done - leagueRoundAt(G) - 1)} semaine(s).</div>` : ''}
+      <table class="tbl wrap">${Object.entries(FACILITIES).map(([k, f]) => {
+        const cur = k === 'stadium' ? `${c.capacity.toLocaleString('fr-FR')} places` : lvl(fac[k] || 2);
+        const l = fac[k] || 2, cost = f.cost(l), canMax = k === 'stadium' ? c.capacity < 100000 : l < f.max;
+        return `<tr><td><b>${f.label}</b><br><small class="muted">${esc(f.tip)}</small></td><td>${k === 'stadium' ? cur : `<span class="stars">${cur}</span>`}</td>
+          <td>${canMax ? money(cost) : 'Max'}</td><td>${canMax ? `<button class="btn sm primary" data-build="${k}" ${fac.build ? 'disabled' : ''}>Construire</button>` : ''}</td></tr>`;
+      }).join('')}</table>
+      <p class="hint">Les travaux durent 8 semaines. Un seul chantier à la fois. Budget : <b>${money(c.budget)}</b>.</p>
+    </section></div>`;
+  el.querySelectorAll('[data-up]').forEach(b => b.onclick = () => {
+    const k = b.dataset.up, nl = st[k] + 1, fee = staffWage(nl) * 8;
+    confirmBox(`Recruter un ${STAFF[k].label.toLowerCase()} de niveau ${nl} ? Prime : <b>${money(fee)}</b>, salaire ${money(staffWage(nl))}/sem.`, () => {
+      if (c.budget < fee) return toast('Budget insuffisant.', 'err');
+      c.budget -= fee; st[k] = nl; G.staffNames[k] = pick(STAFF_NAMES.filter(n => !Object.values(G.staffNames).includes(n)));
+      news(G, `${G.staffNames[k]} rejoint le staff (${STAFF[k].label}, niveau ${nl}).`, 'board'); save(); vStaff(el);
+    }, 'Recruter');
+  });
+  el.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => { const k = b.dataset.dn; st[k]--; G.staffNames[k] = pick(STAFF_NAMES.filter(n => !Object.values(G.staffNames).includes(n))); save(); vStaff(el); toast('Staff remplacé par un profil moins cher.'); });
+  el.querySelectorAll('[data-build]').forEach(b => b.onclick = () => {
+    const k = b.dataset.build, f = FACILITIES[k], cost = f.cost(fac[k] || 2);
+    confirmBox(`Lancer les travaux : ${esc(f.label)} pour <b>${money(cost)}</b> ?`, () => {
+      if (c.budget < cost) return toast('Budget insuffisant.', 'err');
+      c.budget -= cost; fac.build = { type: k, done: leagueRoundAt(G) + 8 };
+      G.board.conf = clamp(G.board.conf + 2, 0, 100);
+      news(G, `🏗 Début des travaux : ${f.label}.`, 'board'); save(); vStaff(el); renderTop();
+    }, 'Construire');
+  });
+}
+
+function vEuro(body, E) {
+  const grp = g => { const t = tableOf(g.clubs, g.fixtures); return `<div class="card egroup"><h3>Groupe ${g.name}</h3><table class="tbl compact standings">${t.map((r, i) => { const c = getClub(G, r.id); return `<tr class="${i < 2 ? 'z-el' : ''} ${r.id === G.clubId ? 'me' : ''}" data-c="${c.id}"><td>${i + 1}</td><td class="nm">${crest(c, 18)} ${esc(c.name)} ${c.foreign ? `<small class="muted">${esc(c.country)}</small>` : ''}</td><td>${r.p}</td><td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td><b>${r.pts}</b></td></tr>`; }).join('')}</table></div>`; };
+  body.innerHTML = `<section class="card"><h2>⭐ ${esc(E.name)} ${E.winner ? `— vainqueur : ${crest(getClub(G, E.winner), 24)} ${esc(getClub(G, E.winner).name)}` : ''}</h2>
+    <p class="hint">16 clubs : les 4 premiers de ${esc(leagueComps(G)[0].name)} et 12 clubs étrangers. Les 2 premiers de chaque groupe vont en quarts. Primes : 3 M€ de participation, 2,5 M€ par victoire, jusqu'à 15 M€ pour le titre.</p>
+    <div class="egroups">${E.groups.map(grp).join('')}</div>
+    <h3>Phase finale</h3>
+    <div class="bracket">${['Quarts de finale', 'Demi-finales', 'Finale'].map((n, i) => { const r = E.ko[i]; return `<div class="bround"><h3>${n}</h3>${r ? r.ties.map(f => { const w = fixtureWinner(f); const line = id => `<div class="${w === id ? 'bw' : w ? 'bl' : ''} ${id === G.clubId ? 'me' : ''}">${crest(getClub(G, id), 16)} <span>${esc(getClub(G, id).short)}</span><b>${f.res ? f.res[id === f.h ? 0 : 1] : ''}</b></div>`; return `<div class="btie" ${f.res ? `data-fx="${fxKey(f)}"` : ''}>${line(f.h)}${line(f.a)}${f.pens ? `<small>tab ${f.pens[0]}-${f.pens[1]}</small>` : ''}</div>`; }).join('') : '<p class="muted">À venir</p>'}</div>`; }).join('')}</div>
+  </section>`;
+  body.querySelectorAll('tr[data-c]').forEach(r => r.onclick = () => viewClub(+r.dataset.c));
+  body.querySelectorAll('[data-fx]').forEach(r => r.onclick = () => matchReport(r.dataset.fx));
+}
+
 // ============================================================
 //  Options
 // ============================================================
@@ -1022,7 +1122,12 @@ function vOptions(el) {
     <div class="row gap wrap">
       <label>Vitesse par défaut <select id="sp"><option value="400">Lente</option><option value="120">Normale</option><option value="35">Rapide</option></select></label>
       <label class="chk"><input type="checkbox" id="s2d" ${SETTINGS.show2d ? 'checked' : ''}> Afficher la vue 2D</label>
+      <label class="chk"><input type="checkbox" id="snd" ${SETTINGS.sound !== false ? 'checked' : ''}> Ambiance sonore</label>
     </div>
+    <h3>🏖 Vacances</h3>
+    <div class="row gap wrap"><label>Simuler <select id="hol">${[1, 2, 4, 8, 99].map(n => `<option value="${n}">${n === 99 ? 'jusqu\'à la fin de saison' : n + ' semaine(s)'}</option>`).join('')}</select></label>
+      <button class="btn" id="holGo">Partir en vacances</button></div>
+    <p class="hint">Ton adjoint dirige l'équipe (composition auto) pendant ton absence. Le mercato et les offres restent en attente.</p>
     <h3>Raccourcis</h3>
     <p class="hint">Espace / Entrée : continuer · 1 à 9 : menus · / : recherche · Échap : fermer · Espace en match : pause.</p>
     <p class="hint">La partie est sauvegardée automatiquement dans le navigateur (IndexedDB) après chaque action importante.</p>
@@ -1030,6 +1135,8 @@ function vOptions(el) {
   $('#sp').value = String(SETTINGS.speed);
   $('#sp').onchange = e => { SETTINGS.speed = +e.target.value; saveSettings(); };
   $('#s2d').onchange = e => { SETTINGS.show2d = e.target.checked; saveSettings(); };
+  $('#snd').onchange = e => { SETTINGS.sound = e.target.checked; Sound.on = e.target.checked; saveSettings(); };
+  $('#holGo').onclick = () => holiday(+$('#hol').value);
   $('#o1').onclick = async () => { await save(); toast('Partie sauvegardée.'); };
   $('#o2').onclick = () => { const { pmap, ...rest } = G; download(`manager-foot-${G.season}-${weekLabel(G).replace(/\s+/g, '-')}.json`, rest); };
   $('#o5').onclick = () => exportDatabase(G);
@@ -1043,5 +1150,6 @@ function vOptions(el) {
   DB = await Store.get(DB_KEY);
   if (!DB || !DB.clubs) DB = buildDefaultDatabase();
   normalizeWorld(DB);
+  Sound.on = SETTINGS.sound !== false;
   startScreen();
 })();

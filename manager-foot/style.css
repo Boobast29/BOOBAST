@@ -358,3 +358,18 @@ details summary { cursor: pointer; color: var(--acc); }
   #nav button { min-width: 70px; }
   .club-grid { grid-template-columns: 1fr; }
 }
+
+/* ================= v3 ================= */
+.ovr.fogo { background: transparent; color: var(--txt); border: 1px dashed #6b7c90; font-weight: 700; }
+.bar.fog i { background: repeating-linear-gradient(90deg, #6b7c90 0 4px, #4a5868 4px 8px); }
+.egroups { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin: 10px 0; }
+.egroup { padding: 10px; background: var(--panel2); }
+tr.euro td:first-child { color: #ffd54f; }
+.feed li.ev-tip { color: #ffd98a; background: rgba(255, 213, 79, .07); font-style: italic; }
+.t-press { border-left-color: #90caf9 !important; }
+.t-scout { border-left-color: #4ae0ff !important; }
+td.stars { white-space: nowrap; }
+
+.tbl.wrap td { white-space: normal; }
+.tbl.wrap td:nth-child(2), .tbl.wrap td:nth-child(3) { white-space: nowrap; }
+.attr { grid-template-columns: 90px 1fr 48px; }

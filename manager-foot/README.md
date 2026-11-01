@@ -16,6 +16,14 @@ Raccourcis : `Espace` = continuer · `1`…`9` = menus · `/` = recherche · `É
 ## Contenu
 
 - **2 divisions de 20 clubs** avec montées et descentes, plus une **coupe** à élimination directe (prolongations, tirs au but).
+- **Coupe d'Europe** : les 4 premiers du championnat et 12 clubs étrangers. Phase de groupes, puis quarts, demies et finale, avec de grosses primes.
+- **Staff** (adjoint, entraîneur technique, kiné, recruteur, formateur) et **infrastructures** (centre d'entraînement, académie, agrandissement du stade).
+- **Recrutement réaliste** : les joueurs que tu ne connais pas ont une note estimée (~) et un potentiel inconnu. Envoie ton recruteur pour obtenir un rapport.
+- **Prêts** de jeunes joueurs pour les faire progresser.
+- **Joueurs qui ont du caractère** : demandes de transfert, stars courtisées par de grands clubs.
+- **Journal** : séries, crises, buteurs en forme, rumeurs de mercato.
+- **Ambiance sonore** du stade (foule, sifflet, but) et **conseils de l'adjoint** pendant le match.
+- **Vacances** : ton adjoint dirige l'équipe pendant plusieurs semaines.
 - **Match en direct** avec **vue 2D animée** et commentaires minute par minute. Au programme :
   - xG, penaltys, coups francs, corners, contres, VAR ;
   - cartons, blessures, fatigue en temps réel ;

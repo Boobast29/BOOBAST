@@ -13,7 +13,7 @@ async function persistWorld(W) { if (W === G) await save(); else await saveDB();
 
 function vEditor(el, W, inGame) {
   if (ED.club == null || (ED.club !== 'free' && !W.clubs.some(c => c.id === ED.club))) ED.club = inGame ? G.clubId : W.clubs[0].id;
-  const divs = [...new Set(W.clubs.map(c => c.div || 1))].sort((a, b) => a - b);
+  const divs = [...new Set(W.clubs.filter(c => !c.foreign).map(c => c.div || 1))].sort((a, b) => a - b);
   const club = ED.club === 'free' ? null : W.clubs.find(c => c.id === ED.club);
   const players = W.players.filter(p => ED.club === 'free' ? p.club == null : p.club === ED.club)
     .filter(p => !ED.q || normName(p.name).includes(normName(ED.q)))
@@ -29,12 +29,14 @@ function vEditor(el, W, inGame) {
     <div class="row gap wrap mt">
       ${divs.map((d, i) => `<label>Nom division ${d} <input data-ln="${i}" data-div="${d}" value="${esc(W.leagueNames?.[i] || 'Division ' + d)}"></label>`).join('')}
       <label>Nom de la coupe <input id="cupN" value="${esc(W.cupName || 'Coupe Nationale')}"></label>
+      <label>Nom de la coupe d'Europe <input id="euroN" value="${esc(W.euroName || 'Coupe des Étoiles')}"></label>
     </div>
     <p class="hint">Astuce : pour mettre tes propres photos et logos d'un coup, nomme les fichiers comme le joueur (« Prénom Nom.jpg ») ou le club (« Nom du club.png »), puis utilise les boutons « en masse ». Les images restent sur ton PC (stockées dans le navigateur).</p>
   </section>
   <div class="ed-wrap">
     <section class="card ed-clubs">
-      ${divs.map((d, i) => `<h3>${esc(W.leagueNames?.[i] || 'Division ' + d)}</h3>${W.clubs.filter(c => (c.div || 1) === d).sort((a, b) => a.name.localeCompare(b.name)).map(c => `<div class="ed-club ${c.id === ED.club ? 'on' : ''}" data-c="${c.id}">${crest(c, 24)} <span>${esc(c.name)}</span></div>`).join('')}`).join('')}
+      ${divs.map((d, i) => `<h3>${esc(W.leagueNames?.[i] || 'Division ' + d)}</h3>${W.clubs.filter(c => !c.foreign && (c.div || 1) === d).sort((a, b) => a.name.localeCompare(b.name)).map(c => `<div class="ed-club ${c.id === ED.club ? 'on' : ''}" data-c="${c.id}">${crest(c, 24)} <span>${esc(c.name)}</span></div>`).join('')}`).join('')}
+      <h3>Clubs étrangers (Coupe d'Europe)</h3>${W.clubs.filter(c => c.foreign).sort((a, b) => b.rep - a.rep).map(c => `<div class="ed-club ${c.id === ED.club ? 'on' : ''}" data-c="${c.id}">${crest(c, 24)} <span>${esc(c.name)}</span></div>`).join('')}
       <h3>Autres</h3><div class="ed-club ${ED.club === 'free' ? 'on' : ''}" data-c="free">👤 <span>Agents libres</span></div>
       ${inGame ? '' : '<button class="btn sm mt" id="addClub">+ Ajouter un club</button>'}
     </section>
@@ -55,7 +57,7 @@ function vEditor(el, W, inGame) {
             <label>Capacité <input id="cCap" type="number" value="${club.capacity}"></label>
             <label>Réputation (30-99) <input id="cRep" type="number" min="30" max="99" value="${Math.round(club.rep)}"></label>
             <label>Budget (M€) <input id="cBud" type="number" step="0.1" value="${(club.budget / 1e6).toFixed(1)}"></label>
-            ${inGame ? '' : `<label>Division <input id="cDiv" type="number" min="1" max="5" value="${club.div || 1}"></label>`}
+            ${inGame || club.foreign ? '' : `<label>Division <input id="cDiv" type="number" min="1" max="5" value="${club.div || 1}"></label>`}
           </div>
         </div>
         <div class="row gap mt"><div class="grow"></div>
@@ -80,6 +82,7 @@ function vEditor(el, W, inGame) {
     if (W === G && G.comps['L' + i.dataset.div]) G.comps['L' + i.dataset.div].name = W.leagueNames[+i.dataset.ln];
     persistWorld(W); toast('Nom mis à jour.');
   });
+  $('#euroN').onchange = e => { W.euroName = e.target.value.trim() || 'Coupe des Étoiles'; if (W === G && G.comps.EUR) G.comps.EUR.name = W.euroName; persistWorld(W); toast('Nom mis à jour.'); };
   $('#cupN').onchange = e => { W.cupName = e.target.value.trim() || 'Coupe Nationale'; if (W === G) G.comps.CUP.name = W.cupName; persistWorld(W); toast('Nom mis à jour.'); };
   $('#edQ').oninput = e => { ED.q = e.target.value; clearTimeout(ED.t); ED.t = setTimeout(() => { rerender(); const i = $('#edQ'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 250); };
   $('#bulkPh').onclick = () => pickFile(async files => {
@@ -108,7 +111,7 @@ function vEditor(el, W, inGame) {
   $('#edImp')?.addEventListener('click', () => pickFile(async raw => { try { DB = importDatabase(raw); await saveDB(); ED.club = null; editorScreen(); toast('Base importée.'); } catch (e) { toast('Import impossible : ' + e.message, 'err'); } }));
   $('#addClub')?.addEventListener('click', async () => {
     const id = Math.max(...W.clubs.map(c => c.id)) + 1;
-    const div = divs[divs.length - 1];
+    const div = divs[divs.length - 1] || 1;
     const c = { id, name: 'Nouveau club ' + id, short: 'NEW', colors: ['#3355aa', '#ffffff'], rep: 55, div, stadium: 'Stade municipal', capacity: 15000, budget: 3e6, logo: null, style: clubStyle(), coh: 65, trophies: [] };
     W.clubs.push(c);
     const sq = SQUAD_TEMPLATE.map(r => { const p = genPlayer(r, 9 + gauss(), { club: id, rep: 55 }); p.id = Math.max(...W.players.map(x => x.id), 0) + 1; p.value = calcValue(p); W.players.push(p); return p; });
@@ -158,7 +161,7 @@ function vEditor(el, W, inGame) {
     if (W === G) enterGameKeepView(); else rerender();
   };
   $('#delClub')?.addEventListener('click', () => {
-    if (W.clubs.length <= 4) return toast('Il faut au moins 4 clubs.', 'err');
+    if (!club.foreign && W.clubs.filter(c => !c.foreign).length <= 4) return toast('Il faut au moins 4 clubs.', 'err');
     confirmBox(`Supprimer ${esc(club.name)} ? Ses joueurs deviennent agents libres.`, async () => {
       W.players.forEach(p => { if (p.club === club.id) p.club = null; });
       W.clubs = W.clubs.filter(c => c !== club);

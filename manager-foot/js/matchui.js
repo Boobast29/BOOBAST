@@ -53,8 +53,9 @@ function prepareMatch(f) {
   const oppTac = aiTactics(G, opp.id, G.clubId);
   const oppS = teamStrength(G, makeSide(G, opp.id, oppTac)), myS = teamStrength(G, makeSide(G, G.clubId, G.tactics));
   const oppTop = oppTac.lineup.map(id => getPlayer(G, id)).filter(Boolean).sort((a, b) => playerOvr(b) - playerOvr(a)).slice(0, 3);
-  const comp = f.comp === 'CUP' ? G.comps.CUP.name + ' — ' + weekLabel(G) : G.comps[f.comp].name + ' — ' + weekLabel(G);
-  const oppL = clubLeague(G, opp.id), ot = standings(G, oppL.id), orank = ot.findIndex(t => t.id === opp.id) + 1;
+  const comp = compName(G, f) + ' — ' + weekLabel(G);
+  const oppL = clubLeague(G, opp.id), ot = oppL ? standings(G, oppL.id) : null, orank = ot ? ot.findIndex(t => t.id === opp.id) + 1 : 0;
+  const asl = G.staff.assistant;
   const cmp = (l, a, b) => `<div class="cmp"><b>${Math.round(a)}</b><div class="cmpbar"><i style="width:${a / (a + b) * 100}%"></i></div><b>${Math.round(b)}</b><small>${l}</small></div>`;
   const press = rnd() < .4 && !G.pressDone ? pick(PRESS_Q) : null;
   G.pressMod = null;
@@ -64,12 +65,13 @@ function prepareMatch(f) {
     <div class="grid2">
       <div><h3>Rapport de l'adversaire</h3>
         <table class="tbl kv">
-          <tr><td>Classement</td><td>${orank}<sup>e</sup> de ${esc(oppL.name)} · ${ot[orank - 1].form.slice(-5).join(' ') || '-'}</td></tr>
-          <tr><td>Système</td><td>${oppTac.formation} · pressing ${INST.press.opts[oppTac.inst.press + 1].toLowerCase()} · ligne ${INST.line.opts[oppTac.inst.line + 1].toLowerCase()}</td></tr>
+          <tr><td>${oppL ? 'Classement' : 'Origine'}</td><td>${oppL ? `${orank}<sup>e</sup> de ${esc(oppL.name)} · ${ot[orank - 1].form.slice(-5).join(' ') || '-'}` : `Club étranger (${esc(NATIONS.find(n => n[0] === opp.country)?.[1] || opp.country || '?')})`}</td></tr>
+          <tr><td>Système</td><td>${oppTac.formation}${asl >= 2 ? ` · pressing ${INST.press.opts[oppTac.inst.press + 1].toLowerCase()} · ligne ${INST.line.opts[oppTac.inst.line + 1].toLowerCase()}` : ''}${asl >= 4 ? ` · tempo ${INST.tempo.opts[oppTac.inst.tempo + 1].toLowerCase()} · passes ${INST.pass.opts[oppTac.inst.pass + 1].toLowerCase()}` : ''}</td></tr>
           <tr><td>Joueurs clés</td><td>${oppTop.map(p => `${esc(p.name)} ${ovrBadge(playerOvr(p))}`).join('<br>')}</td></tr>
         </table>
-        ${oppTac.inst.line > 0 ? '<p class="hint">💡 Ligne haute : des attaquants rapides et un tempo rapide peuvent les punir en contre.</p>' : ''}
-        ${oppTac.inst.press > 0 ? '<p class="hint">💡 Pressing haut : des passes courtes aident à garder le ballon.</p>' : ''}
+        ${asl < 2 ? '<p class="hint">Un meilleur adjoint (menu Staff) t\'en dirait plus sur leur style de jeu.</p>' : ''}
+        ${asl >= 2 && oppTac.inst.line > 0 ? '<p class="hint">💡 Ligne haute : des attaquants rapides et un tempo rapide peuvent les punir en contre.</p>' : ''}
+        ${asl >= 2 && oppTac.inst.press > 0 ? '<p class="hint">💡 Pressing haut : des passes courtes aident à garder le ballon.</p>' : ''}
       </div>
       <div><h3>Comparaison (toi / eux)</h3>
         ${cmp('Défense', myS.def, oppS.def)}${cmp('Milieu', myS.mid, oppS.mid)}${cmp('Attaque', myS.att, oppS.att)}${cmp('Gardien', myS.gk, oppS.gk)}
@@ -92,7 +94,7 @@ function prepareMatch(f) {
   const start = instant => {
     closeModal();
     const ht = home ? G.tactics : oppTac, at = home ? oppTac : G.tactics;
-    const mt = new Match(G, f, ht, at, { cup: f.comp === 'CUP' });
+    const mt = new Match(G, f, ht, at, { cup: isKO(f) });
     mt.my = home ? 0 : 1;
     mt.sides[1 - mt.my].ai = true;
     if (G.pressMod === 'conf') mt.sides[mt.my].talk = 1.01;
@@ -111,7 +113,7 @@ function liveMatch(mt, f) {
   $$('#nav button').forEach(b => b.disabled = true);
   $('#btnGo').disabled = true;
   const H = getClub(G, f.h), A = getClub(G, f.a);
-  const comp = f.comp === 'CUP' ? G.comps.CUP.name + ' · ' + weekLabel(G) : G.comps[f.comp].name + ' · ' + weekLabel(G);
+  const comp = compName(G, f) + ' · ' + weekLabel(G);
   const my = mt.sides[mt.my];
   $('#main').innerHTML = `
   <div class="match">
@@ -131,6 +133,7 @@ function liveMatch(mt, f) {
             <button class="btn" id="mPause">⏸ Pause</button>
             <select id="mSpeed"><option value="400">Lent</option><option value="120">Normal</option><option value="35">Rapide</option><option value="0">Instantané</option></select>
             <button class="btn" id="mSub">🔁 Changement</button>
+            <button class="btn" id="mSnd" title="Son">${Sound.on ? '🔊' : '🔇'}</button>
           </div>
           <label class="mt">Mentalité <select id="mMent">${MENTALITIES.map(m => `<option value="${m.v}" ${m.v === my.mentality ? 'selected' : ''}>${m.label}</option>`).join('')}</select></label>
           <div class="inst sm">${Object.entries(INST).map(([k, d]) => `<div class="inst-row" title="${esc(d.tip)}"><span>${d.label}</span>${seg(k, d.opts, my.inst[k] ?? 0)}</div>`).join('')}</div>
@@ -153,6 +156,8 @@ function liveMatch(mt, f) {
     mt.say(`Consigne : ${INST[s.dataset.name].label.toLowerCase()} ${b.textContent.toLowerCase()}.`, 'info', mt.my); renderLive();
   }));
   $('#mSub').onclick = () => subModal();
+  $('#mSnd').onclick = () => { Sound.on = !Sound.on; SETTINGS.sound = Sound.on; saveSettings(); $('#mSnd').textContent = Sound.on ? '🔊' : '🔇'; if (Sound.on) Sound.startCrowd(); else Sound.stopCrowd(); };
+  Sound.startCrowd(); Sound.whistle(1);
   renderLive();
   tick();
 }
@@ -180,6 +185,13 @@ function tick() {
   const newLogs = mt.log.slice(LIVE.shown);
   LIVE.shown = mt.log.length;
   const big = newLogs.find(l => ['goal', 'red', 'pen', 'var'].includes(l.type));
+  for (const l of newLogs) {
+    if (l.type === 'goal') Sound.roar(l.side === mt.my);
+    else if (l.type === 'half' || l.type === 'end') Sound.whistle(l.type === 'end' ? 3 : 2, true);
+    else if (l.type === 'chance' || l.type === 'save') { if (rnd() < .5) Sound.groan(); }
+  }
+  Sound.intensity(Math.abs(mt.mom) / 60 + (mt.minute > 80 && Math.abs(mt.score[0] - mt.score[1]) <= 1 ? .3 : 0));
+  assistantTip(mt);
   if (big && LIVE.pitch) {
     const lab = { goal: 'BUT !', red: 'CARTON ROUGE', pen: 'PENALTY', var: 'VAR : BUT REFUSÉ' }[big.type];
     LIVE.pitch.event(big.type === 'goal' ? `BUT ! ${mt.names[big.side]}` : lab, big.type);
@@ -254,9 +266,41 @@ function subModal(msg = '', outPre = null) {
     mt.sub(mt.my, +o.value, +i.value); LIVE.shown = mt.log.length; closeModal(); renderLive();
   };
 }
+function assistantTip(mt) {
+  const lvl = G.staff.assistant, m = mt.minute;
+  if (mt.done || m < 15 || m === LIVE.lastTip || m % 15 !== 0 || rnd() > .35 + lvl * .13) return;
+  LIVE.lastTip = m;
+  const me = mt.my, op = 1 - me, s = mt.stats, side = mt.sides[me];
+  const tot = s[0].poss + s[1].poss || 1, myPoss = s[me].poss / tot;
+  const d = mt.score[me] - mt.score[op];
+  const tips = [];
+  const tired = side.onPitch.filter(x => x.role !== 'GB').sort((a, b) => side.cond[a.id] - side.cond[b.id])[0];
+  if (tired && side.cond[tired.id] < 55 && side.subsLeft > 0) tips.push(`${getPlayer(G, tired.id).name} est à bout de forces, pense à le remplacer.`);
+  if (myPoss < .4) tips.push('On subit au milieu. Un pressing plus haut ou des passes courtes nous aideraient à garder le ballon.');
+  if (s[op].xg - s[me].xg > .8) tips.push('Ils se créent trop d\'occasions. Baisse la ligne défensive ou passe en défensif.');
+  if (d < 0 && m >= 65) tips.push('Il faut prendre plus de risques : passe en offensif et accélère le tempo.');
+  if (d > 0 && m >= 75) tips.push('On mène : on peut fermer le jeu (défensif, tempo lent).');
+  if (s[me].shots >= 6 && s[me].onT <= 1) tips.push('Beaucoup de tirs mais peu cadrés. Essaie des passes plus courtes pour mieux construire.');
+  const oppS = mt.sides[op].inst;
+  if (lvl >= 3 && oppS.line > 0) tips.push('Leur ligne défensive est haute : un tempo rapide peut les surprendre en contre.');
+  if (!tips.length) {
+    if (myPoss > .58) tips.push(`On a le ballon (${Math.round(myPoss * 100)} %). Sois patient, écarte le jeu sur les côtés.`);
+    else if (s[me].xg > s[op].xg + .5) tips.push('On se crée les meilleures occasions, continue comme ça !');
+    else if (lvl >= 3) tips.push(`Match équilibré. Leur point fort : ${['la défense', 'le milieu', 'l\'attaque'][rint(0, 2)]}. Reste concentré.`);
+  }
+  LIVE.said ||= new Set();
+  const fresh = tips.filter(t => !LIVE.said.has(t.replace(/\d+/g, '')));
+  if (!fresh.length) return;
+  const t = pick(fresh);
+  LIVE.said.add(t.replace(/\d+/g, ''));
+  mt.say(`💬 ${G.staffNames?.assistant || 'Ton adjoint'} : ${t}`, 'tip', me);
+  LIVE.shown = mt.log.length;
+  renderLive();
+}
 function endLive() {
   const { mt, f } = LIVE;
   clearTimeout(LIVE.timer);
+  Sound.stopCrowd();
   renderLive();
   ['#mPause', '#mSub', '#mSpeed', '#mMent'].forEach(s => { const e = $(s); if (e) e.disabled = true; });
   $('#mEnd').innerHTML = postMatchHTML(mt) + `<div class="center mt"><button class="btn primary big" id="mDone">Continuer ▶</button></div>`;
@@ -268,7 +312,7 @@ function postMatchHTML(mt) {
   const title = w === my ? '🎉 Victoire !' : w == null ? '🤝 Match nul' : '😞 Défaite';
   const motm = mt.motm ? getPlayer(G, mt.motm) : null;
   const ratings = side => Object.entries(mt.pr).filter(([, r]) => r.side === side && r.min > 0).sort((a, b) => b[1].r - a[1].r)
-    .map(([id, r]) => `<tr><td class="nm">${esc(getPlayer(G, +id).name)}</td><td>${r.g ? '⚽' + (r.g > 1 ? r.g : '') : ''}${r.a ? ' 🅰' : ''}</td><td>${r.min}'</td><td><b class="${r.r >= 7.5 ? 'pos' : r.r < 6 ? 'neg' : ''}">${r.r.toFixed(1)}</b></td></tr>`).join('');
+    .map(([id, r]) => `<tr><td class="nm">${esc(getPlayer(G, +id).name)}</td><td>${r.g ? '⚽' + (r.g > 1 ? r.g : '') : ''}${r.a ? ' 🅰' : ''}</td><td>${mt.et ? r.min : Math.min(r.min, 90)}'</td><td><b class="${r.r >= 7.5 ? 'pos' : r.r < 6 ? 'neg' : ''}">${r.r.toFixed(1)}</b></td></tr>`).join('');
   return `<section class="card endbox"><h2>${title}</h2>
     <p>${esc(mt.scoreStr())}${mt.penScore ? ` (${mt.penScore[0]}-${mt.penScore[1]} aux tirs au but)` : mt.et ? ' (a.p.)' : ''} · xG ${mt.stats[0].xg.toFixed(2)} - ${mt.stats[1].xg.toFixed(2)}</p>
     ${motm ? `<p>⭐ Homme du match : <b>${esc(motm.name)}</b> (${mt.pr[motm.id].r.toFixed(1)})</p>` : ''}
@@ -277,6 +321,7 @@ function postMatchHTML(mt) {
 }
 
 function finishMatch(mt, f) {
+  Sound.stopCrowd();
   LIVE?.pitch?.stop();
   clearTimeout(LIVE?.timer);
   LIVE = null;
@@ -314,6 +359,7 @@ function seasonEnd() {
         <h3>Champions</h3>
         ${S.leagues.map(l => `<p>🏆 ${esc(l.name)} : <b>${esc(l.champion)}</b></p>`).join('')}
         ${S.cupWinner ? `<p>🏆 ${esc(G.cupName)} : <b>${esc(S.cupWinner)}</b></p>` : ''}
+        ${S.euroWinner ? `<p>⭐ ${esc(G.euroName)} : <b>${esc(S.euroWinner)}</b></p>` : ''}
       </div>
       <div>
         <h3>Récompenses</h3>
@@ -332,7 +378,7 @@ function seasonEnd() {
 
 function sackedScreen(S) {
   const me = myClub(G);
-  const offers = shuffle(G.clubs.filter(c => c.id !== G.clubId && c.rep < me.rep - 3)).slice(0, 3);
+  const offers = shuffle(G.clubs.filter(c => !c.foreign && c.id !== G.clubId && c.rep < me.rep - 3)).slice(0, 3);
   enterGame();
   modal(`<h2>📰 Licencié !</h2>
     <p>Le président de <b>${esc(me.name)}</b> a perdu patience. Tu es démis de tes fonctions.</p>
@@ -345,4 +391,31 @@ function sackedScreen(S) {
     save(); closeModal(); enterGame(); toast('Nouveau départ !');
   });
   $('#quit').onclick = async () => { closeModal(); await Store.del(SAVE_KEY); startScreen(); };
+}
+
+// ---------- Vacances : l'adjoint gère l'équipe ----------
+function holiday(n) {
+  if (LIVE) return;
+  let weeks = 0, r = null;
+  const start = G.season;
+  while (weeks < n && G.week < G.schedule.length) {
+    const f = weekFixtures(G).find(f => f.h === G.clubId || f.a === G.clubId);
+    if (f) {
+      validateLineup();
+      Object.assign(G.tactics, autoLineup(G, G.clubId, G.tactics.formation));
+      const home = f.h === G.clubId, opp = home ? f.a : f.h;
+      const oppTac = aiTactics(G, opp, G.clubId);
+      const mt = new Match(G, f, home ? G.tactics : oppTac, home ? oppTac : G.tactics, { cup: isKO(f) });
+      mt.my = home ? 0 : 1; mt.sides[0].ai = mt.sides[1].ai = true; mt.auto = true;
+      mt.runToEnd(); applyMatch(G, mt, f); boardAfterMatch(G, f);
+      const w = mt.winner();
+      news(G, `${weekLabel(G)} : ${mt.names[0]} ${mt.score[0]}-${mt.score[1]} ${mt.names[1]} (${w === mt.my ? 'victoire' : w == null ? 'nul' : 'défaite'}, match dirigé par ton adjoint).`, w === mt.my ? 'win' : w == null ? 'info' : 'loss');
+    }
+    r = completeWeek(G, f);
+    if (G.schedule[G.week - 1]?.t === 'L') weeks++;
+    if (r === 'sacked') break;
+  }
+  save();
+  toast(`Retour de vacances : ${weeks} semaine(s) simulée(s).`);
+  afterWeek(r);
 }

@@ -302,6 +302,62 @@ function clubStyle() {
   return { formation: pick(['4-4-2', '4-3-3', '4-2-3-1', '4-1-4-1', '3-5-2', '4-3-1-2', '4-4-1-1', '3-4-3']), press: rint(-1, 1), tempo: rint(-1, 1), width: rint(-1, 1), line: rint(-1, 1), pass: rint(-1, 1) };
 }
 
+
+// --- Clubs étrangers fictifs (Coupe d'Europe) : [nom, abrégé, c1, c2, réputation, pays, stade, capacité]
+const FOREIGN_DEFS = [
+  ['Westhaven City', 'WHC', '#81d4fa', '#0d47a1', 91, 'ENG', 'Harbour Stadium', 55000],
+  ['Real Valdemora', 'RVD', '#f5f5f5', '#6a1b9a', 90, 'ESP', 'Estadio Valdemora', 80000],
+  ['FC Isartal', 'FCI', '#c62828', '#ffffff', 89, 'GER', 'Isartal Arena', 75000],
+  ['Northbridge United', 'NBU', '#c62828', '#111111', 88, 'ENG', 'Bridge Park', 74000],
+  ['Inter Navigli', 'INV', '#0d47a1', '#111111', 87, 'ITA', 'Stadio dei Navigli', 76000],
+  ['Borussia Rheinfeld', 'BRF', '#fdd835', '#111111', 86, 'GER', 'Rheinfeld Stadion', 81000],
+  ['Atlético Serranía', 'ASR', '#b71c1c', '#ffffff', 85, 'ESP', 'Estadio Serranía', 68000],
+  ['AC Lagunare', 'ACL', '#880e4f', '#ffd54f', 82, 'ITA', 'Stadio Laguna', 50000],
+  ['SL Tejo', 'SLT', '#2e7d32', '#ffffff', 81, 'POR', 'Estádio do Tejo', 50000],
+  ['Amstel Rovers', 'AMR', '#ffffff', '#d32f2f', 80, 'NED', 'Amstelveld', 54000],
+  ['Dragões do Douro', 'DDD', '#1565c0', '#ffffff', 80, 'POR', 'Estádio do Douro', 50000],
+  ['Club Brugenaar', 'CBG', '#0d47a1', '#111111', 76, 'BEL', 'Jan Breydelpark', 29000],
+  ['Dinamo Savograd', 'DSV', '#1565c0', '#e0e0e0', 74, 'CRO', 'Stadion Sava', 35000],
+  ['FK Morava', 'FKM', '#d32f2f', '#ffffff', 73, 'SRB', 'Stadion Morava', 50000],
+  ['FC Alpenrose', 'FCA', '#e53935', '#ffffff', 72, 'SUI', 'Alpenrose Park', 30000],
+  ['Nordhavn BK', 'NHB', '#0d47a1', '#ffffff', 71, 'DEN', 'Nordhavn Stadion', 38000]
+];
+
+const STAFF = {
+  assistant: { label: 'Adjoint', tip: 'Conseils pendant les matchs, rapports d\'avant-match plus précis.' },
+  coach: { label: 'Entraîneur technique', tip: 'Accélère la progression des joueurs.' },
+  physio: { label: 'Kiné / préparateur physique', tip: 'Moins de blessures, plus courtes, meilleure récupération.' },
+  scout: { label: 'Recruteur', tip: 'Rapports plus rapides et estimations plus précises des joueurs adverses.' },
+  youth: { label: 'Formateur', tip: 'Jeunes du centre de formation plus talentueux.' }
+};
+const STAFF_NAMES = ['Didier Marchal', 'Paolo Ricci', 'Hans Vogel', 'José Almeida', 'Karim Saadi', 'Tom Baker', 'Luc Arnaud', 'Pedro Ruiz', 'Erik Lund', 'Sami Benhassi', 'Marco Testa', 'Yves Caron'];
+function staffWage(l) { return 1500 * l * l; }
+const FACILITIES = {
+  training: { label: 'Centre d\'entraînement', tip: 'Progression des joueurs plus rapide.', cost: l => 3e6 * l, max: 5 },
+  youth: { label: 'Académie des jeunes', tip: 'Plus de jeunes et de meilleur potentiel.', cost: l => 2.5e6 * l, max: 5 },
+  stadium: { label: 'Agrandissement du stade (+5 000 places)', tip: 'Plus de recettes de billetterie.', cost: () => 9e6, max: 99 }
+};
+
+function genForeignClubs(startId, startPid) {
+  const clubs = [], players = [];
+  NEXT_PID = Math.max(NEXT_PID, startPid);
+  FOREIGN_DEFS.forEach((d, i) => {
+    const [name, short, c1, c2, rep, country, stadium, cap] = d;
+    const club = { id: startId + i, name, short, colors: [c1, c2], rep, stadium, capacity: cap, div: 0, foreign: true, country,
+      budget: roundMoney(Math.pow(rep / 50, 5) * 3e6), logo: null, style: clubStyle(), coh: 70, trophies: [] };
+    clubs.push(club);
+    const q = 8.6 + (rep - 50) / 40 * 5.2;
+    const squad = SQUAD_TEMPLATE.map((role, idx) => {
+      const tier = idx % 3 === 0 ? 1 : idx % 3 === 1 ? 0 : -1.1;
+      return genPlayer(role, q + tier + gauss() * .9, { club: club.id, rep, nat: rnd() < .65 ? country : undefined });
+    });
+    assignNumbers(squad);
+    squad.forEach(p => p.value = calcValue(p));
+    players.push(...squad);
+  });
+  return { clubs, players };
+}
+
 function buildDefaultDatabase(seed = 2026) {
   RNG = mulberry32(seed);
   NEXT_PID = 1;
@@ -324,7 +380,9 @@ function buildDefaultDatabase(seed = 2026) {
     players.push(...squad);
   });
   for (let i = 0; i < 50; i++) players.push(genPlayer(pick(SQUAD_TEMPLATE), 6 + rnd() * 6, { club: null, age: rint(19, 33) }));
+  const fr = genForeignClubs(clubs.length + 1, NEXT_PID);
+  clubs.push(...fr.clubs); players.push(...fr.players);
   players.forEach(p => { p.value = calcValue(p); });
   RNG = Math.random;
-  return { leagueNames: ['Ligue Élite', 'Ligue Pro 2'], cupName: 'Coupe Nationale', clubs, players };
+  return { leagueNames: ['Ligue Élite', 'Ligue Pro 2'], cupName: 'Coupe Nationale', euroName: 'Coupe des Étoiles', clubs, players };
 }
