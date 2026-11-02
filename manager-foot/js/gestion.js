@@ -595,7 +595,8 @@ renewModal = function (pid) {
     <div class="row gap mt"><div class="grow"></div><button class="btn primary" id="ok">Proposer</button></div><p id="resp" class="hint"></p>`);
   $('#ok').onclick = () => {
     const m = +$('#wg').value, y = +$('#yrs').value, sb = +$('#sb').value || 0, cl = +$('#cl').value || 0;
-    if (wageBill(G) - p.wage + weekly(m) > G.board.wageCap) { $('#resp').innerHTML = `❌ Le président refuse : plafond salarial (${wageM(G.board.wageCap)}) dépassé.`; return; }
+    if (!Number.isFinite(m) || m <= 0 || !Number.isInteger(y) || y < 1 || y > 5 || !Number.isFinite(sb) || sb < 0 || !Number.isFinite(cl) || cl < 0) { $('#resp').textContent = 'Montants invalides.'; return; }
+    if ((typeof renewalProjection === 'function' ? !renewalProjection(G, p, { wageM: m, years: y, bonus: sb, clause: cl }).allowed : wageBill(G) - p.wage + weekly(m) > G.board.wageCap)) { $('#resp').innerHTML = `❌ Le président refuse : plafond salarial (${wageM(G.board.wageCap)}) dépassé.`; return; }
     if (sb > myClub(G).budget) { $('#resp').innerHTML = '❌ Trésorerie insuffisante pour la prime.'; return; }
     const val = m * 12 * y + sb - (cl && cl < p.value ? m * 3 : 0), ask = askM * 12 * y * (Math.abs(y - yrsW) > 1 ? 1.08 : 1) + askM * 2;
     if (val >= ask * .94) {

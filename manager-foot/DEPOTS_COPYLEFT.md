@@ -35,3 +35,7 @@ Cette revue n'ajoute pas une licence globale au jeu. Elle ne transforme pas non 
 
 Le fichier donnees_reference/sources_copyleft.json contient les références examinées, les chemins et les empreintes des fichiers. Chaque statut est explicitement examined_not_copied. Les dépôts permissifs déjà adaptés (MIT/ISC) restent documentés dans SOURCES_GITHUB.md et leurs notices sont conservées.
 
+
+## Premier lot réalisé après cette revue
+
+Le module js/prolongations.js apporte une implémentation originale des projections de renouvellement et corrige le total salarial des prêts sortants. Voir PROLONGATIONS.md. Le code des projets copyleft ci-dessus reste non copié ; cette réalisation ne change donc pas leur statut de reprise.
