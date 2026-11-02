@@ -375,6 +375,14 @@ function genForeignClubs(startId, startPid) {
   return { clubs, players };
 }
 
+const D3_DEFS = [
+  ['US Valcourt', 'USV', '#1b5e20', '#ffffff'], ['FC Brisemont', 'FCB', '#0d47a1', '#ffeb3b'], ['Stade Roncière', 'STR', '#b71c1c', '#000000'],
+  ['AS Marvellois', 'ASM', '#4a148c', '#ffffff'], ['Entente Sorbières', 'ESO', '#e65100', '#1a237e'], ['SC Haut-Lignon', 'SHL', '#006064', '#ffffff'],
+  ['Olympique Trévenans', 'OTR', '#ffffff', '#0277bd'], ['FC Castelbriand', 'FCC', '#263238', '#fdd835'], ['AS Pont-Aval', 'APA', '#c62828', '#ffffff'],
+  ['US Ferrières', 'USF', '#2e7d32', '#000000'], ['Racing Mérandoux', 'RCM3', '#1565c0', '#ffffff'], ['FC Lorvagne', 'FCL', '#6a1b9a', '#ffd54f'],
+  ['Stade Cazalis', 'SCZ', '#ad1457', '#ffffff'], ['AS Beauvignac', 'ASB', '#00838f', '#ff7043'], ['Union Grandpré', 'UGP', '#3e2723', '#ffffff'],
+  ['FC Saint-Ervan', 'FSE', '#f9a825', '#0d47a1'], ['Avenir Morlanges', 'AVM', '#283593', '#e53935'], ['SC Vauzelle', 'SCV', '#558b2f', '#ffffff']
+];
 function buildDefaultDatabase(seed = 2026) {
   RNG = mulberry32(seed);
   NEXT_PID = 1;
@@ -399,7 +407,18 @@ function buildDefaultDatabase(seed = 2026) {
   for (let i = 0; i < 50; i++) players.push(genPlayer(pick(SQUAD_TEMPLATE), 6 + rnd() * 6, { club: null, age: rint(19, 33) }));
   const fr = genForeignClubs(clubs.length + 1, NEXT_PID);
   clubs.push(...fr.clubs); players.push(...fr.players);
+  // 3e division (générée après les clubs étrangers : les deux premières divisions restent identiques)
+  D3_DEFS.forEach(([name, short, c1, c2], i) => {
+    const rep = 50 - i * .7 + rnd() * 3;
+    const club = { id: clubs.length + 1, name, short, colors: [c1, c2], rep: Math.round(rep), stadium: 'Stade ' + name.split(' ').slice(-1)[0], capacity: rint(4, 12) * 1000, div: 3,
+      budget: roundMoney(Math.pow(rep / 50, 5) * 1.6e6), logo: null, style: clubStyle(), coh: 55 + rint(0, 20), trophies: [] };
+    clubs.push(club);
+    const q = 8.6 + (rep - 50) / 40 * 5.2 - .6;
+    const squad = SQUAD_TEMPLATE.map((role, idx) => genPlayer(role, q + (idx % 3 === 0 ? 1 : idx % 3 === 1 ? 0 : -1.1) + gauss() * .9, { club: club.id, rep, age: rnd() < .22 ? rint(17, 20) : undefined }));
+    assignNumbers(squad);
+    players.push(...squad);
+  });
   players.forEach(p => { p.value = calcValue(p); });
   RNG = Math.random;
-  return { leagueNames: ['Ligue Élite', 'Ligue Pro 2'], cupName: 'Coupe Nationale', euroName: 'Coupe des Étoiles', clubs, players };
+  return { leagueNames: ['Ligue Élite', 'Ligue Pro 2', 'National Pro 3'], cupName: 'Coupe Nationale', euroName: 'Coupe des Étoiles', clubs, players };
 }

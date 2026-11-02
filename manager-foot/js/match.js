@@ -34,6 +34,7 @@ class Match {
     this.names = [H.name, A.name];
     this.weather = opts.weather || pickWeather(dateOfWeek(G, G.week));
     this.wx = { fatigue: 1, fouls: 1, shot: 1, long: 1, cross: 1, contact: 1, muscle: 1, ...this.weather };
+    this.cal = typeof matchCalib === 'function' ? matchCalib(G, f) : null; // calibrage par division (données réelles, js/reglements.js)
     this.att = attendanceFor(G, f, this.weather);
     this.say(fmt(pick(COMM.kick), { H: H.name, A: A.name, S: H.stadium, ATT: this.att.toLocaleString('fr-FR') }) + ` ${this.weather.icon} ${this.weather.label}, ${this.weather.temp}°C.`, 'info');
     this.mult = {};
@@ -474,6 +475,7 @@ class Match {
       if (kind === 'oneonone') xg = Math.max(xg * 1.5, .28 + (fin - 10) * .015);
       else if (kind !== 'fk') xg *= 1 - press * .35;
       xg *= this.wx.shot * (dist > 22 ? this.wx.long : 1);
+      if (this.cal) xg *= this.cal[side];
     }
     xg = clamp(xg, .01, .95);
     const st = this.stats[side], pr = this.pr[c.id];

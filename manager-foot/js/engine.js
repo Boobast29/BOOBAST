@@ -692,6 +692,23 @@ function setObjective(G) {
   G.objective = Math.max(1, Math.min(obj, n));
 }
 
+// Montées / descentes simples (remplacé par js/reglements.js : règlements par pays, barrages, play-offs)
+function applyPromotions(G, S, L) {
+  const relegatedTop = L.length > 1 && (!G.real || G.real.promoValidated) ? standings(G, L[0].id).slice(-Math.min(promoSpots(L[0]), promoSpots(L[1]))).map(r => r.id) : [];
+
+  const promoOn = !G.real || G.real.promoValidated;
+  if (!promoOn) news(G, 'Montées et descentes non appliquées : les règles de ces compétitions réelles ne sont pas validées (Options → Règles de la saison réelle).', 'info');
+  for (let i = 0; promoOn && i + 1 < L.length; i++) {
+    const down = L[i], up = L[i + 1];
+    const n = Math.min(promoSpots(up), promoSpots(down));
+    const tu = standings(G, up.id), td = standings(G, down.id);
+    tu.slice(0, n).forEach(r => { const c = getClub(G, r.id); c.div = down.div; c.rep = Math.max(c.rep, 50); S.promoted.push(c.name); if (c.id === G.clubId) news(G, `🎉 PROMOTION ! ${c.name} monte en ${down.name} !`, 'trophy'); });
+    td.slice(-n).forEach(r => { const c = getClub(G, r.id); c.div = up.div; S.relegated.push(c.name); if (c.id === G.clubId) news(G, `😞 Relégation : ${c.name} descend en ${up.name}.`, 'loss'); });
+  }
+
+  return relegatedTop;
+}
+
 function endSeason(G) {
   const S = { season: G.season, leagues: [], offers: [], promoted: [], relegated: [] };
   const L = leagueComps(G);
@@ -721,17 +738,7 @@ function endSeason(G) {
   S.ballon = ballonDor(G, S.intl);
   S.met = S.rank <= G.objective;
   seasonEndFinances(G, S, L);
-  const relegatedTop = L.length > 1 && (!G.real || G.real.promoValidated) ? standings(G, L[0].id).slice(-Math.min(promoSpots(L[0]), promoSpots(L[1]))).map(r => r.id) : [];
-
-  const promoOn = !G.real || G.real.promoValidated;
-  if (!promoOn) news(G, 'Montées et descentes non appliquées : les règles de ces compétitions réelles ne sont pas validées (Options → Règles de la saison réelle).', 'info');
-  for (let i = 0; promoOn && i + 1 < L.length; i++) {
-    const down = L[i], up = L[i + 1];
-    const n = Math.min(promoSpots(up), promoSpots(down));
-    const tu = standings(G, up.id), td = standings(G, down.id);
-    tu.slice(0, n).forEach(r => { const c = getClub(G, r.id); c.div = down.div; c.rep = Math.max(c.rep, 50); S.promoted.push(c.name); if (c.id === G.clubId) news(G, `🎉 PROMOTION ! ${c.name} monte en ${down.name} !`, 'trophy'); });
-    td.slice(-n).forEach(r => { const c = getClub(G, r.id); c.div = up.div; S.relegated.push(c.name); if (c.id === G.clubId) news(G, `😞 Relégation : ${c.name} descend en ${up.name}.`, 'loss'); });
-  }
+  const relegatedTop = applyPromotions(G, S, L);
 
   parachutes(G, relegatedTop, L[0]);
   S.control = financialControl(G);

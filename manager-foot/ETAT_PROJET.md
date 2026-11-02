@@ -1,4 +1,30 @@
-# État du projet — v16 (2 novembre 2026)
+# État du projet — v17 (2 novembre 2026)
+
+## v17 — règlements des championnats + calibrage par données ouvertes
+Nouveau fichier `js/reglements.js` (chargé en dernier) ; recherche détaillée dans `RECHERCHE.md`.
+- **Règlements 2026/27, 5 pays, 3 niveaux et plus** : France (Ligue 1, Ligue 2, Ligue 3), Angleterre (Premier League → League Two),
+  Allemagne (Bundesliga, 2. Bundesliga, 3. Liga), Espagne (LaLiga, Segunda, Primera Federación en 2 groupes), Italie (Serie A, Serie B,
+  Serie C en 3 groupes). Chaque règle porte un statut : officiel / simplifié / à vérifier.
+- Départage propre à chaque pays (confrontations directes d'abord en Espagne et en Italie, différence de buts ailleurs), tirage stable
+  (ne change pas le futur), match d'appui en Serie A (titre, maintien).
+- Fin de saison : montées et descentes directes, play-offs (échelle Ligue 2, demi-finales + finale à Wembley, tableau Serie B avec
+  « 14 points d'avance », tableaux croisés Primera Federación, Serie C simplifiée), barrages aller-retour (Ligue 1/Ligue 2, Ligue 2/Ligue 3,
+  Relegation allemande), playouts (Serie B, Serie C, annulés au-delà de l'écart réglementaire), équipes réserves bloquées
+  (Allemagne, Espagne, Italie), répartition dans le groupe le moins rempli, équilibre montées = descentes.
+- Monde réel : les montées/descentes sont désormais appliquées automatiquement, y compris pour les niveaux à groupes (désactivable).
+- Monde fictif : **3e division** (« National Pro 3 », 18 clubs, ajoutée après les clubs étrangers : divisions 1 et 2 inchangées ;
+  bouton « Base d'origine » pour l'obtenir si une base modifiée est enregistrée) et choix du règlement sur l'accueil.
+- Écran **Compétitions → Règlement** : fiches par pays, sources, conformité de l'effectif (non-UE, liste de 25, formés localement,
+  joueurs allemands), journal des barrages ; zones colorées dans les classements (montée, play-offs, barrage/playout, relégation).
+  Alerte d'effectif non conforme à la fermeture des mercatos.
+- **Calibrage par division** : buts à domicile / à l'extérieur des vrais championnats (openfootball, CC0) appliqués aux matchs de
+  championnat (`matchCalib`). Avant : D2 1,72 but/match et 41 % de nuls ; après : 2,3 à 2,7 buts, 24 à 27 % de nuls.
+Vérifications : simulation longue 3 graines × 2 saisons (monde fictif, 3 divisions) sans erreur d'invariant ni plantage ;
+monde synthétique 5 pays × 3 graines (`tests/reglements_groupes.js`) : tailles de championnats conservées, groupes équilibrés,
+niveaux cohérents, aucune réserve promue trop haut ; écran Règlement et classements vérifiés dans Chromium (bureau et mobile 390 px).
+Limites : monde réel non testé ici (base Football_Monde absente de la session) ; relégations hors du dernier niveau simulé non
+appliquées ; play-offs de Serie C simplifiés (2e-5e au lieu de 28 clubs) ; fair-play non suivi (remplacé par le tirage) ;
+conformité « formé localement » approchée par la nationalité ; barrages simulés en rapide (pas jouables en direct).
 
 ## v16 — lot 5 (vie du club)
 Nouveau fichier `js/vieclub.js` : demandes du coach négociables (accepter, alternative, différer, refuser avec motif), relation

@@ -90,6 +90,13 @@ body.game #app { display: grid; grid-template-columns: 92px 1fr; grid-template-r
 .z-cl td:first-child { border-left-color: var(--blue) !important; }
 .z-el td:first-child { border-left-color: var(--acc) !important; }
 .z-rel td:first-child { border-left-color: var(--red) !important; }
+.z-po td:first-child { border-left-color: #8bc34a !important; }
+.z-bar td:first-child { border-left-color: #ff9800 !important; }
+.lg.z-po { background: #8bc34a; } .lg.z-bar { background: #ff9800; }
+.rg-st { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 8px; margin: 0 2px; }
+.rg-st.ok { background: rgba(76,175,80,.2); color: #4caf50; } .rg-st.mid { background: rgba(255,152,0,.2); color: #ff9800; } .rg-st.warn { background: rgba(244,67,54,.18); color: #f44336; }
+.rg-niv { border-left: 3px solid var(--acc); padding: 4px 12px; margin: 10px 0; }
+.rg-niv p { margin: 4px 0; }
 .lg { display: inline-block; width: 10px; height: 10px; margin: 0 4px 0 12px; }
 .lg.z-cl { background: var(--blue); } .lg.z-el { background: var(--acc); } .lg.z-rel { background: var(--red); }
 .form i { display: inline-block; width: 18px; height: 18px; line-height: 18px; text-align: center; font-style: normal; font-size: 10px; font-weight: 700; border-radius: 3px; margin-right: 2px; color: #111; }

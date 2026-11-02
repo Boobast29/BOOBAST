@@ -52,6 +52,7 @@ async function startScreen() {
       <div class="row gap wrap mt">
         <label>Nom de l'entraîneur <input id="mgr" value="${esc(ex?.managerName || localStorage.getItem('mf-mgr') || '')}" placeholder="Ton nom" maxlength="30"></label>
         ${typeof roleSelectHTML === 'function' ? roleSelectHTML() : ''}
+        ${typeof reglesSelectHTML === 'function' ? reglesSelectHTML() : ''}
         <div class="grow"></div>
         <div class="tabs">${divs.map((d, i) => `<button class="${d === START_DIV ? 'on' : ''}" data-div="${d}">${esc((DB.leagueNames || [])[i] || 'Division ' + d)}</button>`).join('')}</div>
       </div>
@@ -890,9 +891,10 @@ function vComps(el) {
   <section class="card"><h2>🏆 ${esc(comp.name)} ${G.season}/${G.season + 1}</h2>
     <div class="scroll"><table class="tbl standings"><thead><tr><th>#</th><th>Club</th><th>J</th><th>G</th><th>N</th><th>P</th><th>BP</th><th>BC</th><th>Diff</th><th>Pts</th><th>Forme</th></tr></thead>
     <tbody>${t.map((r, i) => { const c = getClub(G, r.id);
-      const zone = i === 0 ? 'z-cl' : (hasUp && i < ps) ? 'z-el' : (hasDown && i >= n - ps) ? 'z-rel' : '';
+      const zr = typeof zoneRegle === 'function' ? zoneRegle(G, comp, i, n, hasUp, hasDown) : null;
+      const zone = zr ?? (i === 0 ? 'z-cl' : (hasUp && i < ps) ? 'z-el' : (hasDown && i >= n - ps) ? 'z-rel' : '');
       return `<tr class="${zone} ${r.id === G.clubId ? 'me' : ''}" data-c="${c.id}"><td>${i + 1}</td><td class="nm">${crest(c, 20)} ${esc(c.name)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf}</td><td>${r.ga}</td><td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td><b>${r.pts}</b></td><td class="form">${r.form.slice(-5).map(x => `<i class="f${x}">${x}</i>`).join('')}</td></tr>`; }).join('')}</tbody></table></div>
-    <p class="hint"><span class="lg z-cl"></span> Champion ${hasUp ? '<span class="lg z-el"></span> Montée' : ''} ${hasDown ? '<span class="lg z-rel"></span> Relégation' : ''}</p>
+    <p class="hint"><span class="lg z-cl"></span> Champion ${hasUp ? '<span class="lg z-el"></span> Montée' : ''} ${hasUp && typeof zoneRegle === 'function' ? '<span class="lg z-po"></span> Play-offs / barrage d\'accession' : ''} ${hasDown && typeof zoneRegle === 'function' ? '<span class="lg z-bar"></span> Barrage / playout' : ''} ${hasDown ? '<span class="lg z-rel"></span> Relégation' : ''}${typeof regleComp === 'function' && reglesActives(G) && regleComp(G, comp) ? ` · <a href="#" onclick="show('regles');return false">règlement ${esc(regleComp(G, comp).nom)}</a>` : ''}</p>
   </section>
   <div class="col">
     <section class="card"><h2>⚽ Buteurs</h2><table class="tbl compact">${scorers.map((p, i) => `<tr data-pid="${p.id}"><td>${i + 1}</td><td>${avatar(p, 22)}</td><td class="nm">${esc(p.name)}</td><td>${crest(getClub(G, p.club), 16)}</td><td><b>${p.stats.lg}</b></td></tr>`).join('') || '<tr><td class="muted">-</td></tr>'}</table></section>
@@ -1580,9 +1582,7 @@ function vOptions(el) {
     <p class="hint">Ton adjoint dirige l'équipe (composition auto) pendant ton absence. Le mercato et les offres restent en attente.</p>
     ${G.real ? `<h3>🌍 Monde réel — ${esc(G.real.countryLabel)} ${esc(G.real.season)}</h3>
     <p class="hint">${esc(G.real.notice)} Conversion des attributs : ${esc(G.real.conversion)}. Import de la base : ${esc(G.real.imported || '?')}.</p>
-    <div class="row gap wrap">${(() => { const tiers = G.real.divisions.map(d => d.tier); const groups = tiers.length !== new Set(tiers).size;
-      return groups ? '<span class="muted">Montées/descentes automatiques indisponibles : niveaux à groupes régionaux (règles spécifiques non modélisées).</span>'
-        : `<label class="chk"><input type="checkbox" id="rPromo" ${G.real.promoValidated ? 'checked' : ''}> Je valide l'application de montées/descentes automatiques (3 places entre niveaux, sans barrages) pour ce scénario</label>`; })()}
+    <div class="row gap wrap"><span class="muted">Montées, descentes, barrages et play-offs : ${typeof reglesActives === 'function' && reglesActives(G) ? 'règlement officiel appliqué' : 'désactivés'} (</span><a href="#" onclick="show('regles');return false">Compétitions → Règlement</a><span class="muted">)</span>
       <button class="btn" id="rInc">Effectifs incomplets (${G.real.incomplete.length})</button>
       ${MONDE.ok ? '<button class="btn" id="rBase">🔎 Base mondiale</button><button class="btn" id="rRes">🖼 Ressources</button>' : ''}</div>` : ''}
     <h3>Affichage</h3>
