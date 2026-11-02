@@ -61,3 +61,7 @@ Le nouveau calcul des 41 compétences, ses pondérations et le système de langu
 | [helmedeiros/championship](https://github.com/helmedeiros/championship) | README examiné : gestion de tournois et historiques. Aucun import, réimport silencieux ou composant de stockage repris. |
 
 Le nouvel outil classe uniquement les joueurs suivis à partir d’estimations détaillées mémorisées lors des nouveaux rapports. Il n’interroge pas les compétences cachées des candidats à l’affichage. Les scripts tiers restent des références et ne créent aucune dépendance Python/Node pour jouer.
+
+## Recherche élargie aux licences copyleft
+
+Les projets GPL, LGPL et AGPL sont désormais inclus dans la sélection. Voir [DEPOTS_COPYLEFT.md](DEPOTS_COPYLEFT.md) : Openfoot Manager, Bygfoot, Foxtrick, OpenWebSoccer et soccer_ggplots, avec fichiers examinés, licences et lots de gestion proposés. Cette mise à jour ajoute des sources documentées ; elle ne copie pas leur code dans le moteur et ne change pas la licence globale du jeu.
