@@ -24,7 +24,10 @@ Match.prototype.ea = function (slot, k) {
   const D = ((this._det ||= {})[slot.id] ||= attributsDetail(this.G.pmap[slot.id]));
   const w = c[this._ctx] || c._;
   let s = 0, t = 0; for (const a in w) { s += (D[a] ?? 10) * w[a]; t += w[a]; }
-  return (s / t) * (this.mult[slot.id] || 1);
+  let v = s / t;
+  // finition d'élite adoucie au-delà de 14/20 : l'avantage reste, mais sans buteurs à 40+ buts par saison
+  if (k === 'fin' && this._ctx !== 'pen' && v > 14) v = 14 + (v - 14) * .55;
+  return v * (this.mult[slot.id] || 1);
 };
 // contexte posé par les actions (rétabli en sortie, même en cas d'erreur)
 function avecContexte(nom, ctxDe) {

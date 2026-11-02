@@ -1,4 +1,12 @@
-# État du projet — v34 (2 novembre 2026)
+# État du projet — v35 (2 novembre 2026)
+
+## v35 — audit complet et équilibre des buteurs
+- Audit automatique de tous les écrans (27) à 1366 px et 390 px : aucune erreur, aucun débordement horizontal, aucun écran vide ;
+  affichage de 58 à 265 ms (`tests/audit_ecrans.js`).
+- Équilibre : la finition d'élite est adoucie au-delà de 14/20 dans le moteur (pente × 0,55, penalties exclus). Meilleur buteur d'une
+  saison simulée : 41 → 34 buts en championnat (D1), 43 → 36 (D2) ; buts par match conservés (2,31-2,66), nuls 25-31 %.
+  Test : `tests/buteurs.js`.
+Vérifications : simulation longue sans erreur ; effet du jeu de tête toujours visible.
 
 ## v34 — le moteur de match joue avec les 37 attributs
 Nouveau `js/moteur37.js` : `Match.prototype.ea` renvoie une combinaison d'attributs détaillés selon l'action en cours
