@@ -1,3 +1,4 @@
+let LIVE_WX = null;
 // ============================================================
 //  Déroulé des semaines et des matchs (avant, pendant, après)
 // ============================================================
@@ -58,9 +59,13 @@ function prepareMatch(f) {
   const asl = G.staff.assistant;
   const cmp = (l, a, b) => `<div class="cmp"><b>${Math.round(a)}</b><div class="cmpbar"><i style="width:${a / (a + b) * 100}%"></i></div><b>${Math.round(b)}</b><small>${l}</small></div>`;
   const press = rnd() < .4 && !G.pressDone ? pick(PRESS_Q) : null;
+  const wx = pickWeather(dateOfWeek(G, G.week));
+  LIVE_WX = wx;
+  const estAtt = attendanceFor(G, f, wx);
   G.pressMod = null;
   modal(`<h2>Avant-match · ${esc(comp)}</h2>
     <div class="vs">${crest(getClub(G, f.h), 60)}<b>${esc(getClub(G, f.h).name)}</b><span>vs</span><b>${esc(getClub(G, f.a).name)}</b>${crest(getClub(G, f.a), 60)}</div>
+    <p class="center wxline">${wx.icon} ${wx.label}, ${wx.temp}°C · ${esc(getClub(G, f.h).stadium)} · ~${estAtt.toLocaleString('fr-FR')} spectateurs attendus${wx.fatigue > 1 ? ' · ⚠ fatigue accrue' : ''}${wx.muscle > 1 ? ' · ⚠ risque de blessure musculaire' : ''}${wx.long < 1 ? ' · frappes de loin difficiles' : ''}${wx.fouls > 1 ? ' · terrain glissant' : ''}</p>
     ${probs.length ? `<div class="alert">Remplacés automatiquement (blessés/suspendus) : ${probs.map(esc).join(', ')}</div>` : ''}
     <div class="grid2">
       <div><h3>Rapport de l'adversaire</h3>
@@ -94,7 +99,7 @@ function prepareMatch(f) {
   const start = instant => {
     closeModal();
     const ht = home ? G.tactics : oppTac, at = home ? oppTac : G.tactics;
-    const mt = new Match(G, f, ht, at, { cup: isKO(f) });
+    const mt = new Match(G, f, ht, at, { cup: isKO(f), weather: LIVE_WX });
     mt.my = home ? 0 : 1;
     mt.sides[1 - mt.my].ai = true;
     if (G.pressMod === 'conf') mt.sides[mt.my].talk = 1.01;
@@ -119,7 +124,7 @@ function liveMatch(mt, f) {
   <div class="match">
     <section class="card scoreboard" style="--h1:${H.colors[0]};--a1:${A.colors[0]}">
       <div class="tm">${crest(H, 56)}<b>${esc(H.name)}</b></div>
-      <div class="sc"><small class="comp">${esc(comp)}</small><span id="score">0 - 0</span><small id="min">0'</small><small id="xg" class="muted"></small></div>
+      <div class="sc"><small class="comp">${esc(comp)} · ${mt.weather.icon} ${mt.weather.temp}°C · ${mt.att.toLocaleString('fr-FR')} spect.</small><span id="score">0 - 0</span><small id="min">0'</small><small id="xg" class="muted"></small></div>
       <div class="tm">${crest(A, 56)}<b>${esc(A.name)}</b></div>
     </section>
     <div class="match-grid">

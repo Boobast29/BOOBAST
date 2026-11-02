@@ -122,6 +122,22 @@ class Pitch2D {
         }
       }
     }
+    // météo
+    const wk = this.mt.weather?.key;
+    if (wk === 'rain' || wk === 'storm' || wk === 'snow') {
+      const snow = wk === 'snow';
+      this.drops ||= Array.from({ length: snow ? 90 : 140 }, () => ({ x: Math.random() * W, y: Math.random() * H, s: .5 + Math.random() }));
+      ctx.strokeStyle = 'rgba(200,220,255,.45)'; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1;
+      for (const d of this.drops) {
+        d.y += (snow ? 1.2 : 9) * d.s; d.x += snow ? Math.sin((this.t + d.y) / 30) * .6 : -1.5 * d.s;
+        if (d.y > H) { d.y = -10; d.x = Math.random() * W; } if (d.x < 0) d.x = W;
+        if (snow) { ctx.beginPath(); ctx.arc(d.x, d.y, 1.6 * d.s, 0, Math.PI * 2); ctx.fill(); }
+        else { ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - 2, d.y + 8 * d.s); ctx.stroke(); }
+      }
+      if (wk === 'storm' && Math.random() < .004) this.lightning = 6;
+      if (this.lightning > 0) { ctx.fillStyle = `rgba(255,255,255,${this.lightning * .06})`; ctx.fillRect(0, 0, W, H); this.lightning--; }
+    } else if (wk === 'heat' || wk === 'sun') { ctx.fillStyle = 'rgba(255,220,120,.05)'; ctx.fillRect(0, 0, W, H); }
+    else if (wk === 'cold') { ctx.fillStyle = 'rgba(180,210,255,.07)'; ctx.fillRect(0, 0, W, H); }
     // ballon
     ctx.beginPath(); ctx.arc(X(this.ball.x) + 1, Y(this.ball.y) + 2, r * .5, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fill();
     ctx.beginPath(); ctx.arc(X(this.ball.x), Y(this.ball.y), r * .5, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();

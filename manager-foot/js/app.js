@@ -163,7 +163,7 @@ function exportDatabase(W) {
 //  Jeu principal
 // ============================================================
 const NAV = [
-  ['inbox', '🏠', 'Accueil'], ['squad', '👥', 'Effectif'], ['tactics', '📋', 'Tactique'], ['training', '🏋', 'Entraînement'], ['staff', '🧑‍💼', 'Staff'],
+  ['inbox', '🏠', 'Accueil'], ['squad', '👥', 'Effectif'], ['tactics', '📋', 'Tactique'], ['training', '🏋', 'Entraînement'], ['staff', '🧑‍💼', 'Staff'], ['medical', '🏥', 'Infirmerie'],
   ['fixtures', '📅', 'Calendrier'], ['comps', '🏆', 'Compétitions'], ['transfers', '💱', 'Mercato'], ['finances', '💶', 'Finances'],
   ['club', '🏟', 'Club'], ['editor', '✏', 'Éditeur'], ['options', '⚙', 'Options']
 ];
@@ -235,7 +235,7 @@ function show(v) {
   VIEW = v;
   $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   renderTop();
-  const fn = { inbox: vInbox, squad: vSquad, tactics: vTactics, training: vTraining, staff: vStaff, fixtures: vFixtures, comps: vComps, transfers: vTransfers, finances: vFinances, club: vClub, editor: el => vEditor(el, G, true), options: vOptions }[v] || vInbox;
+  const fn = { inbox: vInbox, squad: vSquad, tactics: vTactics, training: vTraining, staff: vStaff, medical: vMedical, fixtures: vFixtures, comps: vComps, transfers: vTransfers, finances: vFinances, club: vClub, editor: el => vEditor(el, G, true), options: vOptions }[v] || vInbox;
   const main = $('#main'); main.innerHTML = '';
   fn(main);
   main.scrollTop = 0;
@@ -313,6 +313,7 @@ function vInbox(el) {
       <div class="row gap"><h2 class="grow">📨 Messages</h2>
         <div class="tabs sm">${[['all', 'Tous'], ['club', 'Club'], ['transfer', 'Mercato'], ['press', 'Presse'], ['world', 'Ligue']].map(([k, l]) => `<button data-f="${k}" class="${INBOX_FILTER === k ? 'on' : ''}">${l}</button>`).join('')}</div>
       </div>
+      ${G.sponsorOffers?.length && !G.sponsor ? `<div class="alert">💼 Trois sponsors attendent ta réponse. <a href="#" onclick="show('finances');return false">Choisir</a></div>` : ''}
       ${G.offers.length ? `<div class="alert">💱 ${G.offers.length} offre(s) de transfert en attente. <a href="#" onclick="TR_TAB='offers';show('transfers');return false">Voir</a></div>` : ''}
       <ul class="inbox">${msgs.map(m => `<li class="${m.read ? '' : 'unread'} t-${m.type}"><small>${esc(m.label || '')} · ${m.season}</small>${esc(m.text)}</li>`).join('') || '<li class="muted">Aucun message.</li>'}</ul>
     </section>
@@ -432,6 +433,9 @@ function playerModal(pid, tab = 'profil') {
           ${known ? `<tr><td>Postes</td><td>${best.map(([r, v]) => `${r} ${ovrBadge(v)}`).join(' ')}</td></tr>` : ''}
           ${p.loan ? `<tr><td>Prêt</td><td>Prêté par ${esc(getClub(G, p.loan.from).name)} jusqu'à la fin de saison</td></tr>` : ''}
           ${p.wantsOut ? '<tr><td>Situation</td><td class="neg">Demande à être transféré</td></tr>' : ''}
+          ${p.injury > 0 ? `<tr><td>Blessure</td><td class="neg">${esc(p.inj?.name || 'Blessé')} — reste ${fmtDays(p.injury)}</td></tr>` : p.returnRisk > 0 ? '<tr><td>Médical</td><td>Convalescence : risque de rechute</td></tr>' : ''}
+          ${mine && G.staff.physio >= 3 ? `<tr><td>Fragilité</td><td>${p.frag >= 13 ? '<span class="neg">Fragile</span>' : p.frag <= 5 ? '<span class="pos">Très solide</span>' : 'Normale'}</td></tr>` : ''}
+          ${(p.injHist || []).length ? `<tr><td>Antécédents</td><td><small>${p.injHist.slice(-4).reverse().map(h => `${esc(h.name)} (${fmtDays(h.days)}, ${h.season})`).join('<br>')}</small></td></tr>` : ''}
         </table>
       </div></div>`;
   } else if (tab === 'stats') {
@@ -522,13 +526,13 @@ function releasePlayer(pid) {
   const p = getPlayer(G, pid);
   const cost = roundMoney(p.wage * 52 * p.contract * .5);
   confirmBox(`Libérer ${esc(p.name)} ? Indemnité à payer : <b>${money(cost)}</b>.`, () => {
-    myClub(G).budget -= cost; p.club = null; p.listed = false; p.contract = 0;
+    flow(G, myClub(G), -cost, 'wages'); p.club = null; p.listed = false; p.contract = 0;
     removeFromTactics(pid); save(); refresh();
   }, 'Libérer', true);
 }
 function renewModal(pid) {
   const p = getPlayer(G, pid);
-  const ask = roundMoney(calcWage(p) * (1.05 + (p.morale < 50 ? .3 : 0) + (p.pers === 'Ambitieux' ? .15 : 0)));
+  const ask = roundMoney(Math.max(p.wage, demandWage(G, p, myClub(G))) * (1.05 + (p.morale < 50 ? .3 : 0) + (p.pers === 'Ambitieux' ? .15 : 0)));
   modal(`<h2>Prolonger ${esc(p.name)}</h2>
     <p>Il demande environ <b>${money(ask)}</b>/sem. (actuel ${money(p.wage)}).</p>
     <label>Durée <select id="yrs">${[1, 2, 3, 4, 5].map(y => `<option ${y === 3 ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
@@ -536,6 +540,7 @@ function renewModal(pid) {
     <div class="row gap mt"><div class="grow"></div><button class="btn primary" id="ok">Proposer</button></div><p id="resp" class="hint"></p>`);
   $('#ok').onclick = () => {
     const w = +$('#wg').value, y = +$('#yrs').value;
+    if (wageBill(G) - p.wage + w > G.board.wageCap) { $('#resp').innerHTML = `❌ Le président refuse : plafond salarial (${money(G.board.wageCap)}/sem.) dépassé.`; return; }
     if (w >= ask * .92 || (w >= ask * .8 && rnd() < .5)) {
       p.wage = w; p.contract = y; p.morale = clamp(p.morale + 10, 0, 100); save(); closeModal(); toast(`${p.name} prolonge de ${y} saison(s) !`); refresh();
     } else { p.morale = clamp(p.morale - 4, 0, 100); $('#resp').innerHTML = `❌ ${esc(p.name)} refuse. Il veut au moins ~${money(roundMoney(ask * .92))}.`; }
@@ -900,7 +905,8 @@ function acceptOffer(oid) {
   const o = G.offers.find(o => o.id === oid); if (!o) return;
   const p = getPlayer(G, o.pid), buyer = getClub(G, o.club), me = myClub(G);
   if (buyer.budget < o.fee) { toast(`${buyer.name} n'a plus les fonds.`, 'err'); G.offers = G.offers.filter(x => x !== o); return refresh(); }
-  buyer.budget -= o.fee; me.budget += o.fee; G.fin.transfersOut += o.fee;
+  flow(G, buyer, -o.fee, 'transfers'); flow(G, me, o.fee, 'sales');
+  G.board.transfer = roundMoney((G.board.transfer || 0) + o.fee * .6);
   p.club = buyer.id; p.listed = false; p.contract = rint(2, 5); p.num = null; assignNumbers(clubPlayers(G, buyer.id));
   removeFromTactics(p.id);
   G.offers = G.offers.filter(x => x.pid !== p.id);
@@ -913,7 +919,9 @@ function offerModal(pid) {
   const me = myClub(G);
   if (seller && !windowOpen(G)) return toast('Mercato fermé : seuls les agents libres peuvent signer.', 'err');
   if (clubPlayers(G, G.clubId).length >= 32) return toast('Effectif complet (32 max). Vends ou libère quelqu\'un.', 'err');
-  const wageAsk = roundMoney(calcWage(p) * (1.1 + Math.max(0, playerOvr(p) - me.rep) / 40) * (p.pers === 'Ambitieux' ? 1.1 : 1));
+  if (seller && G.board.ban) return toast('Interdiction de recruter (contrôle de gestion) : seuls les agents libres sont autorisés.', 'err');
+  const wageAsk = roundMoney(Math.max(demandWage(G, p, me), p.wage * (seller ? 1.1 : .9)) * (1.1 + Math.max(0, playerOvr(p) - me.rep) / 40) * (p.pers === 'Ambitieux' ? 1.1 : 1));
+  const room = G.board.wageCap - wageBill(G);
   const sq = seller ? clubPlayers(G, seller.id) : [];
   const rank = seller ? sq.map(playerOvr).sort((a, b) => b - a).indexOf(playerOvr(p)) : 99;
   const key = rank < 11 ? .35 : rank < 16 ? .12 : 0;
@@ -924,7 +932,7 @@ function offerModal(pid) {
     modal(`<h2>${seller ? 'Transfert' : 'Contrat'} : ${esc(p.name)}</h2>
       <div class="row gap">${avatar(p, 56)}<div><p>${ROLES[p.pos].label} · ${p.age} ans · ${ovrCell(p)} ${potCell(p)}</p>
       <p>${seller ? `${crest(seller, 18)} ${esc(seller.name)} · valeur estimée <b>${money(p.value)}</b>` : 'Agent libre — pas d\'indemnité.'}</p></div></div>
-      <p>Ton budget : <b>${money(me.budget)}</b></p>
+      <p>Budget transferts : <b>${money(G.board.transfer)}</b> · Marge salariale : <b class="${room < wageAsk ? 'neg' : ''}">${money(room)}/sem.</b></p>
       <div class="steps"><span class="${stage === 'fee' ? 'on' : 'done'}">${seller ? '1. Accord avec le club' : ''}</span><span class="${stage === 'wage' ? 'on' : ''}">${seller ? '2. ' : ''}Contrat du joueur</span></div>
       ${stage === 'fee' ? `<label>Indemnité proposée (€) <input id="fee" type="number" step="100000" value="${roundMoney(p.value * .9)}"></label>
         <div class="row gap mt"><div class="grow"></div><button class="btn primary" id="ok">Envoyer l'offre</button></div>`
@@ -936,7 +944,7 @@ function offerModal(pid) {
     $('#ok').onclick = () => {
       if (stage === 'fee') {
         const fee = +$('#fee').value;
-        if (fee > me.budget) return render('❌ Budget insuffisant.');
+        if (fee > G.board.transfer || fee > me.budget) return render('❌ Le président refuse : budget transferts insuffisant. (Ajuste la répartition dans Finances.)');
         if (sq.length <= 18) return render(`❌ ${esc(seller.name)} refuse : effectif trop court.`);
         if (fee >= ask) { agreedFee = fee; stage = 'wage'; return render(); }
         if (fee >= ask * .85) {
@@ -944,7 +952,7 @@ function offerModal(pid) {
           modal(`<h2>Contre-offre de ${esc(seller.name)}</h2><p>Ils refusent ${money(fee)} mais accepteraient <b>${money(counter)}</b>.</p>
             <div class="row gap mt"><div class="grow"></div><button class="btn" id="no">Abandonner</button><button class="btn primary" id="yes">Accepter ${money(counter)}</button></div>`);
           $('#no').onclick = closeModal;
-          $('#yes').onclick = () => { if (counter > me.budget) return toast('Budget insuffisant.', 'err'); agreedFee = counter; stage = 'wage'; render(); };
+          $('#yes').onclick = () => { if (counter > G.board.transfer) return toast('Budget transferts insuffisant.', 'err'); agreedFee = counter; stage = 'wage'; render(); };
           return;
         }
         return render(`❌ Offre rejetée. ${esc(seller.name)} veut au moins ~<b>${money(roundMoney(ask * .9))}</b>.`);
@@ -953,14 +961,17 @@ function offerModal(pid) {
       const repGap = playerOvr(p) - me.rep;
       if (repGap > 18 && rnd() < .7) { closeModal(); return toast(`${p.name} ne veut pas rejoindre un club de ce niveau.`, 'err'); }
       if (w < wageAsk * .9) return render(`❌ ${esc(p.name)} refuse ce salaire. Il veut au moins ~<b>${money(roundMoney(wageAsk * .9))}</b>.`);
-      me.budget -= agreedFee; if (seller) seller.budget += agreedFee;
-      G.fin.transfersIn += agreedFee;
+      if (wageBill(G) + w > G.board.wageCap) return render(`❌ Le président bloque : la masse salariale dépasserait le plafond (${money(G.board.wageCap)}/sem.). Vends, libère ou ajuste la répartition dans Finances.`);
+      const agent = roundMoney(seller ? agreedFee * .08 : w * 4);
+      flow(G, me, -agreedFee, 'transfers'); if (seller) flow(G, seller, agreedFee, 'sales');
+      flow(G, me, -agent, 'agents');
+      G.board.transfer = roundMoney(G.board.transfer - agreedFee);
       p.club = G.clubId; p.wage = w; p.contract = y; p.listed = false; p.morale = 85; p.num = null;
       assignNumbers(clubPlayers(G, G.clubId));
       me.coh = clamp((me.coh ?? 60) - 4, 0, 100);
       G.shortlist = G.shortlist.filter(id => id !== p.id);
       if (G.tactics.bench.length < 9) G.tactics.bench.push(p.id);
-      news(G, `Officiel : ${p.name} signe pour ${y} saison(s)${seller ? ` en provenance de ${seller.name} (${money(agreedFee)})` : ''} !`, 'transfer');
+      news(G, `Officiel : ${p.name} signe pour ${y} saison(s)${seller ? ` en provenance de ${seller.name} (${money(agreedFee)})` : ''} ! ${seller ? 'Commission d\'agent' : 'Prime à la signature'} : ${money(agent)}.`, 'transfer');
       save(); closeModal(); toast(`${p.name} a signé ! 🎉`); refresh();
     };
   };
@@ -973,31 +984,99 @@ function offerModal(pid) {
 function vFinances(el) {
   const c = myClub(G);
   const squad = clubPlayers(G, G.clubId);
-  const wages = squad.reduce((s, p) => s + p.wage, 0);
+  const wages = wageBill(G);
   const sqVal = squad.reduce((s, p) => s + p.value, 0);
   const f = G.fin;
-  const top = [...squad].sort((a, b) => b.wage - a.wage).slice(0, 12);
-  const inc = f.gate + f.tv + f.sponsor + f.prize + f.transfersOut, out = f.wages + f.transfersIn;
-  el.innerHTML = `<div class="grid2">
-    <section class="card"><h2>💶 Finances</h2>
-      <div class="kpis"><div><small>Budget</small><b class="${c.budget < 0 ? 'neg' : ''}">${money(c.budget)}</b></div><div><small>Salaires / sem.</small><b>${money(wages)}</b></div><div><small>Valeur effectif</small><b>${money(sqVal)}</b></div></div>
-      <h3>Évolution du budget</h3>${sparkline(f.hist, 420, 80, { zero: true })}
-      <h3>Saison en cours</h3>
-      <table class="tbl kv">
-        <tr><td>Billetterie</td><td class="pos">+${money(f.gate)}</td></tr>
-        <tr><td>Sponsors</td><td class="pos">+${money(f.sponsor)}</td></tr>
-        <tr><td>Primes (coupe)</td><td class="pos">+${money(f.prize)}</td></tr>
-        <tr><td>Droits TV (fin de saison)</td><td class="pos">+${money(f.tv)}</td></tr>
-        <tr><td>Ventes de joueurs</td><td class="pos">+${money(f.transfersOut)}</td></tr>
-        <tr><td>Salaires</td><td class="neg">-${money(f.wages)}</td></tr>
-        <tr><td>Achats de joueurs</td><td class="neg">-${money(f.transfersIn)}</td></tr>
-        <tr><td><b>Solde</b></td><td><b class="${inc - out < 0 ? 'neg' : 'pos'}">${money(inc - out)}</b></td></tr>
-      </table>
+  const top = [...squad].sort((a, b) => b.wage - a.wage).slice(0, 10);
+  const incT = Object.values(f.inc).reduce((s, v) => s + v, 0), expT = Object.values(f.exp).reduce((s, v) => s + v, 0);
+  const maxV = Math.max(1, ...Object.values(f.inc), ...Object.values(f.exp));
+  const row = (label, v, cls) => `<div class="finrow"><span>${label}</span><div class="finbar ${cls}"><i style="width:${v / maxV * 100}%"></i></div><b class="${cls}">${cls === 'neg' ? '-' : '+'}${money(v)}</b></div>`;
+  const eco = clubEco(G, c), L = clubLeague(G, c.id);
+  const lvl = G.ticket ?? 2;
+  const nextHome = (() => { for (let w = G.week; w < G.schedule.length; w++) { const fx = weekFixtures(G, w).find(x => x.h === G.clubId); if (fx) return fx; } return null; })();
+  const capPct = clamp(wages / G.board.wageCap * 100, 0, 150);
+  el.innerHTML = `
+  <div class="kpis card">
+    <div><small>Trésorerie</small><b class="${c.budget < 0 ? 'neg' : ''}">${money(c.budget)}</b></div>
+    <div><small>Budget transferts</small><b>${G.board.ban ? '<span class="neg">Interdit</span>' : money(G.board.transfer)}</b></div>
+    <div><small>Masse salariale</small><b>${money(wages)}<small>/sem.</small></b><em>plafond ${money(G.board.wageCap)} ${bar(capPct, 100, capPct > 98 ? 'low' : '')}</em></div>
+    <div><small>Valeur de l'effectif</small><b>${money(sqVal)}</b></div>
+    <div><small>Solde de la saison</small><b class="${incT - expT < 0 ? 'neg' : 'pos'}">${money(incT - expT)}</b></div>
+  </div>
+  ${G.sponsorOffers?.length && !G.sponsor ? `<section class="card sponsor-pick"><h2>💼 Choisis ton sponsor maillot</h2><div class="sp-grid">${G.sponsorOffers.map((o, i) => `<div class="sp">
+      <h3>${esc(o.name)}</h3><span class="tag">${o.kind}</span>
+      <p><b>${money(o.weekly)}</b>/semaine · ${o.seasons} saison(s)</p>
+      <p class="hint">${o.objBonus ? `Prime objectif : ${money(o.objBonus)}` : 'Aucune prime : revenu garanti'}${o.winBonus ? ` · ${money(o.winBonus)} par victoire en championnat` : ''}</p>
+      <button class="btn primary" data-sp="${i}">Signer</button></div>`).join('')}</div></section>` : ''}
+  <div class="grid2">
+    <section class="card"><h2>📊 Saison ${G.season}/${String(G.season + 1).slice(2)}</h2>
+      <h3>Recettes</h3>${Object.entries(INC_LABELS).map(([k, l]) => row(l, f.inc[k] || 0, 'pos')).join('')}
+      <h3>Dépenses</h3>${Object.entries(EXP_LABELS).map(([k, l]) => row(l, f.exp[k] || 0, 'neg')).join('')}
+      <h3>Évolution de la trésorerie</h3>${sparkline(f.hist, 460, 80, { zero: true })}
     </section>
-    <section class="card"><h2>Masse salariale</h2><table class="tbl compact">${top.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 24)}</td><td class="nm">${esc(p.name)}</td><td>${money(p.wage)}/sem.</td><td>${p.contract} an(s)</td></tr>`).join('')}</table>
-    <p class="hint">Un budget durablement négatif fait chuter la confiance du président.</p></section>
+    <div class="col">
+      <section class="card"><h2>🎟 Billetterie</h2>
+        <div class="seg wide">${TICKET_LEVELS.map((t, i) => `<button data-tk="${i}" class="${lvl === i ? 'on' : ''}">${t.label}</button>`).join('')}</div>
+        ${nextHome ? (() => { const p = ticketPrice(G, nextHome); const att = Math.round(attendanceFor(G, nextHome, { att: 0 })); return `<p>Prochain match à domicile (vs ${esc(getClub(G, nextHome.a).name)}) : billet moyen <b>${Math.round(p)} €</b>, affluence estimée <b>${att.toLocaleString('fr-FR')}</b> / ${c.capacity.toLocaleString('fr-FR')} → recette ~<b>${money(att * p)}</b></p>`; })() : ''}
+        <p class="hint">Billets chers = plus de recette par fan, mais moins de spectateurs. L'affluence dépend aussi de la forme de l'équipe, de l'adversaire, de la compétition et de la météo.</p>
+      </section>
+      <section class="card"><h2>🏛 Répartition du président</h2>
+        <p>Transfère du budget vers les salaires ou l'inverse (1 € de salaire hebdo = ${leagueRoundsTotal(G)} € de budget transferts).</p>
+        <div class="row gap wrap"><button class="btn" data-sw="-1" ${G.board.ban ? 'disabled' : ''}>− 10 k€ salaires / + transferts</button><button class="btn" data-sw="1" ${G.board.ban ? 'disabled' : ''}>+ 10 k€ salaires / − transferts</button></div>
+        <h3>Sponsor maillot</h3>${G.sponsor ? `<p><b>${esc(G.sponsor.name)}</b> (${G.sponsor.kind}) : ${money(G.sponsor.weekly)}/sem. · encore ${G.sponsor.seasons} saison(s)${G.sponsor.objBonus ? ` · prime objectif ${money(G.sponsor.objBonus)}` : ''}${G.sponsor.winBonus ? ` · ${money(G.sponsor.winBonus)}/victoire` : ''}</p>` : '<p class="muted">Aucun sponsor signé.</p>'}
+        <h3>Économie de ${esc(L?.name || 'ton championnat')}</h3>
+        <table class="tbl kv compact"><tr><td>Droits TV (total ligue)</td><td>${money(eco.tv)} / saison</td></tr><tr><td>Répartition</td><td>50 % égalitaire · 25 % notoriété · 25 % classement</td></tr><tr><td>Prix moyen du billet</td><td>${Math.round(eco.ticket)} €</td></tr><tr><td>Niveau des salaires</td><td>×${wageFactor(G, c).toFixed(2)}</td></tr></table>
+        <p class="hint">Dette : intérêts de ~8 %/an. Sous -25 M€ en fin de saison : interdiction de recruter (contrôle de gestion).</p>
+      </section>
+      <section class="card"><h2>Plus gros salaires</h2><table class="tbl compact">${top.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 24)}</td><td class="nm">${esc(p.name)}</td><td>${money(p.wage)}/sem.</td><td>${p.contract} an(s)</td></tr>`).join('')}</table></section>
+    </div>
   </div>`;
   el.querySelectorAll('tr[data-pid]').forEach(r => r.onclick = () => playerModal(+r.dataset.pid));
+  el.querySelectorAll('[data-tk]').forEach(b => b.onclick = () => { G.ticket = +b.dataset.tk; save(); vFinances(el); });
+  el.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => {
+    G.sponsor = { ...G.sponsorOffers[+b.dataset.sp] }; G.sponsorOffers = null;
+    news(G, `💼 Contrat signé avec ${G.sponsor.name} : ${money(G.sponsor.weekly)}/semaine pendant ${G.sponsor.seasons} saison(s).`, 'board');
+    save(); toast(`Sponsor : ${G.sponsor.name} !`); vFinances(el);
+  });
+  el.querySelectorAll('[data-sw]').forEach(b => b.onclick = () => {
+    const d = +b.dataset.sw * 10000, R = leagueRoundsTotal(G);
+    if (d > 0 && G.board.transfer < d * R) return toast('Plus assez de budget transferts.', 'err');
+    if (d < 0 && G.board.wageCap + d < wages) return toast('Le plafond ne peut pas descendre sous la masse salariale actuelle.', 'err');
+    G.board.wageCap += d; G.board.transfer = roundMoney(G.board.transfer - d * R); save(); vFinances(el);
+  });
+}
+
+// ============================================================
+//  Infirmerie
+// ============================================================
+function vMedical(el) {
+  const squad = clubPlayers(G, G.clubId);
+  const inj = squad.filter(p => p.injury > 0).sort((a, b) => b.injury - a.injury);
+  const physio = G.staff.physio, med = G.fac.medical || 2;
+  const risk = squad.filter(p => p.injury <= 0 && (p.returnRisk > 0 || p.fit < 65 || (physio >= 3 && p.frag >= 13))).sort((a, b) => injuryRiskMult(G, b) - injuryRiskMult(G, a));
+  const log = (G.medLog || []).filter(x => x.season === G.season);
+  const lost = log.reduce((s, x) => s + x.days, 0);
+  const R = leagueRoundsTotal(G);
+  const ret = p => { const w = Math.ceil(p.injury / 7); const target = G.week + w; return target >= G.schedule.length ? '<span class="neg">Saison terminée</span>' : fmtDate(dateOfWeek(G, Math.min(target, G.schedule.length - 1))); };
+  el.innerHTML = `
+  <div class="kpis card"><div><small>Blessés</small><b>${inj.length}</b></div><div><small>Blessures cette saison</small><b>${log.length}</b></div><div><small>Jours perdus</small><b>${lost}</b></div><div><small>Kiné</small><b class="stars">${'★'.repeat(physio)}${'☆'.repeat(5 - physio)}</b></div><div><small>Centre médical</small><b class="stars">${'★'.repeat(med)}${'☆'.repeat(5 - med)}</b></div></div>
+  <div class="grid2">
+    <section class="card"><h2>🏥 Infirmerie</h2>
+      ${inj.length ? `<table class="tbl wrap">${inj.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 30)}</td><td class="nm">${esc(p.name)}<br><small class="muted">${p.pos}</small></td>
+        <td><b>${esc(p.inj?.name || 'Blessure')}</b>${p.inj?.recur ? ' <span class="tag red">rechute</span>' : ''}<br><small class="muted">${esc(p.inj?.part || '')} · durée totale ${fmtDays(p.inj?.total || p.injury)}</small></td>
+        <td>${bar(100 - p.injury / (p.inj?.total || p.injury) * 100, 100)}<br><small>reste ${fmtDays(p.injury)}</small></td><td>${ret(p)}</td>
+        <td>${canRushBack(p) ? `<button class="btn sm" data-rush="${p.id}" title="Infiltration : il peut jouer tout de suite, mais le risque de rechute est élevé">💉 Reprise anticipée</button>` : ''}</td></tr>`).join('')}</table>` : '<p class="muted">Aucun blessé. 👍</p>'}
+      <h3>Joueurs à surveiller</h3>
+      ${risk.length ? `<table class="tbl compact">${risk.slice(0, 10).map(p => `<tr data-pid="${p.id}"><td class="nm">${esc(p.name)}</td><td>${p.returnRisk > 0 ? `<span class="tag yel">${p.rushed ? 'reprise forcée' : 'convalescence'}</span>` : ''}${p.fit < 65 ? '<span class="tag red">fatigué</span>' : ''}${physio >= 3 && p.frag >= 13 ? '<span class="tag">fragile</span>' : ''}</td><td>${bar(p.fit, 100, p.fit < 65 ? 'low' : '')}</td><td>risque ×${injuryRiskMult(G, p).toFixed(1)}</td></tr>`).join('')}</table>` : '<p class="muted">Rien à signaler.</p>'}
+      <p class="hint">Le risque augmente avec la fatigue, l'âge, la fragilité du joueur, un retour de blessure récent, l'entraînement intensif, le pressing adverse et la météo (froid, pluie). Un meilleur kiné (niveau 3+) détecte les joueurs fragiles.</p>
+    </section>
+    <section class="card"><h2>📋 Historique de la saison</h2>
+      <table class="tbl compact">${log.slice().reverse().slice(0, 30).map(x => { const p = getPlayer(G, x.pid); return `<tr ${p ? `data-pid="${p.id}"` : ''}><td>${esc(weekLabel(G, x.week))}</td><td class="nm">${esc(p?.name || '?')}</td><td>${esc(x.name)}</td><td>${fmtDays(x.days)}</td></tr>`; }).join('') || '<tr><td class="muted">Aucune blessure pour l\'instant.</td></tr>'}</table>
+      <p class="hint">Améliore le kiné (Staff) et le centre médical (Staff › Infrastructures) pour réduire la durée et le nombre de blessures.</p>
+    </section>
+  </div>`;
+  el.querySelectorAll('tr[data-pid]').forEach(r => r.onclick = e => { if (e.target.closest('[data-rush]')) return; playerModal(+r.dataset.pid); });
+  el.querySelectorAll('[data-rush]').forEach(b => b.onclick = () => { const p = getPlayer(G, +b.dataset.rush); confirmBox(`Faire reprendre ${esc(p.name)} avec une infiltration ? Il sera disponible, mais avec un risque de rechute triplé pendant 5 semaines.`, () => { rushBack(G, p); save(); vMedical(el); }, 'Reprise anticipée', true); });
 }
 
 // ============================================================
@@ -1054,12 +1133,12 @@ function loanModal(pid) {
 // ============================================================
 function vStaff(el) {
   const st = G.staff, fac = G.fac, c = myClub(G);
-  const total = Object.values(st).reduce((s, l) => s + staffWage(l), 0);
+  const total = staffCost(G);
   const lvl = l => '★'.repeat(l) + '☆'.repeat(5 - l);
   el.innerHTML = `<div class="grid2">
     <section class="card"><h2>🧑‍💼 Staff technique</h2>
       <table class="tbl wrap">${Object.entries(STAFF).map(([k, s]) => `<tr><td><b>${s.label}</b><br><small class="muted">${esc(G.staffNames?.[k] || '')} — ${esc(s.tip)}</small></td>
-        <td class="stars">${lvl(st[k])}</td><td>${money(staffWage(st[k]))}/sem.</td>
+        <td class="stars">${lvl(st[k])}</td><td>${money(staffWage(st[k], G))}/sem.</td>
         <td class="row gap"><button class="btn sm" data-dn="${k}" ${st[k] <= 1 ? 'disabled' : ''} title="Remplacer par moins cher">−</button><button class="btn sm primary" data-up="${k}" ${st[k] >= 5 ? 'disabled' : ''} title="Recruter un meilleur profil">+</button></td></tr>`).join('')}</table>
       <p>Masse salariale du staff : <b>${money(total)}</b>/sem.</p>
       <p class="hint">Recruter un meilleur membre coûte une prime de signature (8 semaines de son nouveau salaire).</p>
@@ -1075,10 +1154,10 @@ function vStaff(el) {
       <p class="hint">Les travaux durent 8 semaines. Un seul chantier à la fois. Budget : <b>${money(c.budget)}</b>.</p>
     </section></div>`;
   el.querySelectorAll('[data-up]').forEach(b => b.onclick = () => {
-    const k = b.dataset.up, nl = st[k] + 1, fee = staffWage(nl) * 8;
-    confirmBox(`Recruter un ${STAFF[k].label.toLowerCase()} de niveau ${nl} ? Prime : <b>${money(fee)}</b>, salaire ${money(staffWage(nl))}/sem.`, () => {
+    const k = b.dataset.up, nl = st[k] + 1, fee = staffWage(nl, G) * 8;
+    confirmBox(`Recruter un ${STAFF[k].label.toLowerCase()} de niveau ${nl} ? Prime : <b>${money(fee)}</b>, salaire ${money(staffWage(nl, G))}/sem.`, () => {
       if (c.budget < fee) return toast('Budget insuffisant.', 'err');
-      c.budget -= fee; st[k] = nl; G.staffNames[k] = pick(STAFF_NAMES.filter(n => !Object.values(G.staffNames).includes(n)));
+      flow(G, c, -fee, 'staff'); st[k] = nl; G.staffNames[k] = pick(STAFF_NAMES.filter(n => !Object.values(G.staffNames).includes(n)));
       news(G, `${G.staffNames[k]} rejoint le staff (${STAFF[k].label}, niveau ${nl}).`, 'board'); save(); vStaff(el);
     }, 'Recruter');
   });
@@ -1087,7 +1166,7 @@ function vStaff(el) {
     const k = b.dataset.build, f = FACILITIES[k], cost = f.cost(fac[k] || 2);
     confirmBox(`Lancer les travaux : ${esc(f.label)} pour <b>${money(cost)}</b> ?`, () => {
       if (c.budget < cost) return toast('Budget insuffisant.', 'err');
-      c.budget -= cost; fac.build = { type: k, done: leagueRoundAt(G) + 8 };
+      flow(G, c, -cost, 'build'); fac.build = { type: k, done: leagueRoundAt(G) + 8 };
       G.board.conf = clamp(G.board.conf + 2, 0, 100);
       news(G, `🏗 Début des travaux : ${f.label}.`, 'board'); save(); vStaff(el); renderTop();
     }, 'Construire');

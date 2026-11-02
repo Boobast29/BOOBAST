@@ -229,6 +229,7 @@ function genPlayer(role, q, opts = {}) {
   const p = {
     id: NEXT_PID++, name: opts.name || genName(nat), nat, age, pos: role, attrs,
     club: opts.club ?? null, foot: rnd() < .25 ? 'Gauche' : (rnd() < .07 ? 'Les deux' : 'Droit'),
+    frag: clamp(Math.round(8 + gauss() * 3.5), 1, 20),
     pers: opts.pers || weighted(Object.keys(PERSONALITIES), k => k === 'Leader' ? .5 : k === 'Professionnel' ? 2 : 1),
     morale: 70 + rint(0, 20), fit: 100, injury: 0, susp: 0, yellow: 0,
     face: randomFace(), num: opts.num || null,
@@ -331,10 +332,11 @@ const STAFF = {
   youth: { label: 'Formateur', tip: 'Jeunes du centre de formation plus talentueux.' }
 };
 const STAFF_NAMES = ['Didier Marchal', 'Paolo Ricci', 'Hans Vogel', 'José Almeida', 'Karim Saadi', 'Tom Baker', 'Luc Arnaud', 'Pedro Ruiz', 'Erik Lund', 'Sami Benhassi', 'Marco Testa', 'Yves Caron'];
-function staffWage(l) { return 1500 * l * l; }
+function staffWage(l, G) { return roundMoney(1200 * l * l * (G && typeof clubEco === 'function' ? .4 + .6 * clubEco(G, G.clubs.find(c => c.id === G.clubId)).coef : 1)); }
 const FACILITIES = {
   training: { label: 'Centre d\'entraînement', tip: 'Progression des joueurs plus rapide.', cost: l => 3e6 * l, max: 5 },
   youth: { label: 'Académie des jeunes', tip: 'Plus de jeunes et de meilleur potentiel.', cost: l => 2.5e6 * l, max: 5 },
+  medical: { label: 'Centre médical', tip: 'Moins de blessures et rétablissement plus rapide.', cost: l => 2e6 * l, max: 5 },
   stadium: { label: 'Agrandissement du stade (+5 000 places)', tip: 'Plus de recettes de billetterie.', cost: () => 9e6, max: 99 }
 };
 

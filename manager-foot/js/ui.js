@@ -73,7 +73,8 @@ function meter(v, label = '') {
 function natFlag(code) { const n = NATIONS.find(x => x[0] === code); return `<span class="nat" title="${esc(n ? n[1] : code)}">${esc(code)}</span>`; }
 function status(p) {
   let s = '';
-  if (p.injury > 0) s += `<span class="tag red" title="Blessé">✚ ${p.injury} sem.</span>`;
+  if (p.injury > 0) s += `<span class="tag red" title="${esc(p.inj?.name || 'Blessé')}">✚ ${typeof fmtDays === 'function' ? fmtDays(p.injury) : p.injury}</span>`;
+  else if (p.returnRisk > 0) s += `<span class="tag yel" title="Retour de blessure : risque de rechute">⚕</span>`;
   if (p.susp > 0) s += `<span class="tag red" title="Suspendu">⛔ ${p.susp}</span>`;
   if (p.listed) s += `<span class="tag yel">À vendre</span>`;
   if (G && G.shortlist?.includes(p.id)) s += `<span class="tag blu" title="Liste de suivi">👁</span>`;

@@ -34,7 +34,19 @@ Raccourcis : `Espace` = continuer · `1`…`9` = menus · `/` = recherche · `É
 - **Vie du vestiaire** : personnalités, moral, forme, discussions individuelles et promesses de temps de jeu.
 - **Président** : objectifs, jauge de confiance. Tu peux être licencié ou recevoir des offres d'autres clubs.
 - **Mercato** : négociation en 2 temps (indemnité puis salaire), contre-offres, liste de suivi, offres reçues avec contre-proposition, agents libres.
-- **Finances** : billetterie, sponsors, primes de coupe, droits TV, salaires, courbe du budget.
+- **Économie propre à chaque championnat** : droits TV (50 % égalitaire, 25 % notoriété, 25 % classement), prix des billets, niveau des salaires et des sponsors. La D1 est riche, la D2 fauchée. Les pays étrangers sont plus ou moins riches (Angleterre > Espagne > … > Serbie). Tout est réglable dans l'éditeur.
+- **Finances** :
+  - recettes : billetterie (prix réglable, affluence selon forme/adversaire/météo), merchandising, sponsors ;
+  - dépenses : staff, installations, déplacements, commissions d'agents ;
+  - budget transferts et plafond salarial fixés par le président (répartition ajustable) ;
+  - choix du sponsor maillot (sécurité / équilibre / ambition) ;
+  - dette avec intérêts, « parachute » pour les relégués, contrôle de gestion (interdiction de recruter si déficit).
+- **Blessures réalistes** :
+  - 20 types (contusion, entorse, élongation, déchirure, ménisque, ligaments croisés, fractures, pubalgie, virus…) avec des durées en jours ;
+  - risque individuel : fatigue, âge, fragilité cachée, pressing adverse, météo, intensité d'entraînement ;
+  - rechutes, convalescence, reprise anticipée par infiltration, séquelles après une longue blessure ;
+  - **Infirmerie** et **centre médical**.
+- **Météo** (soleil, canicule, pluie, orage, vent, froid, neige) : effets sur la fatigue, les fautes, les frappes, les centres, les blessures et l'affluence. Pluie et neige visibles en 2D.
 - **Saisons enchaînées** : progression et vieillissement des joueurs, retraites, centre de formation.
 - **Récompenses** : joueur du mois, joueur de l'année, espoir, meilleur buteur, équipe type, armoire à trophées.
 

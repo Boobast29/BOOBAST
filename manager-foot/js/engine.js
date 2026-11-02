@@ -164,8 +164,10 @@ class Match {
     this.ball = { x: 50, y: 50, side: 0, ev: null };
     const H = getClub(G, f.h), A = getClub(G, f.a);
     this.names = [H.name, A.name];
-    this.att = Math.round(H.capacity * clamp(.55 + H.rep / 250 + A.rep / 500 + rnd() * .1 + (this.cup ? .05 : 0), .4, 1));
-    this.say(fmt(pick(COMM.kick), { H: H.name, A: A.name, S: H.stadium, ATT: this.att.toLocaleString('fr-FR') }), 'info');
+    this.weather = opts.weather || pickWeather(dateOfWeek(G, G.week));
+    this.wx = { fatigue: 1, fouls: 1, shot: 1, long: 1, cross: 1, contact: 1, muscle: 1, ...this.weather };
+    this.att = attendanceFor(G, f, this.weather);
+    this.say(fmt(pick(COMM.kick), { H: H.name, A: A.name, S: H.stadium, ATT: this.att.toLocaleString('fr-FR') }) + ` ${this.weather.icon} ${this.weather.label}, ${this.weather.temp}°C.`, 'info');
   }
   addPR(id, side) { this.pr[id] = { r: 6.3, g: 0, a: 0, min: 0, yel: 0, red: 0, side, sh: 0 }; }
   scoreStr() { return `${this.names[0]} ${this.score[0]}-${this.score[1]} ${this.names[1]}`; }
@@ -186,7 +188,7 @@ class Match {
     this.sides.forEach(s => {
       for (const x of s.onPitch) {
         const p = getPlayer(G, x.id);
-        const drain = .27 * (1 + .3 * Math.max(0, s.inst.press) + .1 * Math.max(0, s.inst.tempo)) * (1.3 - p.attrs.phy * .03) * (x.injured ? 2 : 1);
+        const drain = .27 * (1 + .3 * Math.max(0, s.inst.press) + .1 * Math.max(0, s.inst.tempo)) * (1.3 - p.attrs.phy * .03) * (x.injured ? 2 : 1) * this.wx.fatigue;
         s.cond[x.id] = Math.max(12, s.cond[x.id] - drain);
         this.pr[x.id].min++;
       }
@@ -214,7 +216,7 @@ class Match {
       if (x) this.say(fmt(pick(COMM.calm), { T: this.names[atk], P: getPlayer(G, x.id).name }), 'calm', atk);
     }
     // fautes
-    if (rnd() < .2 * (1 + .25 * I[dfn].press)) {
+    if (rnd() < .2 * (1 + .25 * I[dfn].press) * this.wx.fouls) {
       this.stats[dfn].fouls++;
       const r = rnd();
       if (r < .0135) {
@@ -227,7 +229,18 @@ class Match {
       }
       if (rnd() < .17) this.card(dfn);
     }
-    if (rnd() < .0018) this.injure(rint(0, 1));
+    // blessures : risque individuel (fatigue, fragilité, âge, rechute, météo, pressing adverse)
+    this.sides.forEach((s, i) => {
+      for (const x of s.onPitch.slice()) {
+        if (x.injured) continue;
+        const p = getPlayer(G, x.id), c = s.cond[x.id];
+        const risk = injuryRiskMult(G, p);
+        const contact = .00009 * (1 + .25 * Math.max(0, this.sides[1 - i].inst.press)) * this.wx.contact;
+        const muscle = .00005 * (c < 50 ? 3 : c < 65 ? 1.8 : 1) * this.wx.muscle;
+        if (rnd() < contact * risk) this.injureP(i, x, 'contact');
+        else if (rnd() < muscle * risk) this.injureP(i, x, 'muscle');
+      }
+    });
 
     this.mom *= .9;
     this.momLog.push(Math.round(this.mom));
@@ -281,7 +294,8 @@ class Match {
       default: q = (A.fin * 4 + A.tec * 1.5 + A.men + A.dri * .5) / 7 * 5;
     }
     q *= .8 + .2 * s.cond[sx.id] / 100;
-    let xg = XG[type] * Math.pow(q / gkR, type === 'pen' ? .35 : .9) * (1 - .04 * s.inst.tempo);
+    let xg = XG[type] * Math.pow(q / gkR, type === 'pen' ? .35 : .9) * (1 - .04 * s.inst.tempo)
+      * (type === 'pen' ? 1 : this.wx.shot) * (type === 'long' || type === 'fk' ? this.wx.long : 1) * (type === 'cross' || type === 'corner' ? this.wx.cross : 1);
     xg = clamp(xg, .01, .95);
     const st = this.stats[atk];
     st.shots++; st.xg += xg;
@@ -353,12 +367,19 @@ class Match {
     }
   }
 
-  injure(side) {
-    const s = this.sides[side]; if (!s.onPitch.length) return;
-    const x = pick(s.onPitch);
-    if (this.events.some(e => e.type === 'inj' && e.pid === x.id)) return;
-    this.events.push({ type: 'inj', side, min: this.minLabel(), pid: x.id, weeks: rint(1, 6) });
-    this.say(fmt(pick(COMM.injury), { P: this.pname(x.id) }), 'inj', side);
+  injureP(side, x, kind) {
+    const s = this.sides[side];
+    if (this.events.some(e => (e.type === 'inj' || e.type === 'knock') && e.pid === x.id)) return;
+    const p = getPlayer(this.G, x.id);
+    const inj = sampleInjury(this.G, p, kind);
+    if (inj.days <= 5 && kind === 'contact') {
+      this.events.push({ type: 'knock', side, min: this.minLabel(), pid: x.id, inj });
+      s.cond[x.id] = Math.max(15, s.cond[x.id] - 8);
+      this.say(`${fmt(PART_COMM[inj.part] || COMM.injury[0], { P: p.name })} Après des soins, il reprend sa place.`, 'info', side);
+      return;
+    }
+    this.events.push({ type: 'inj', side, min: this.minLabel(), pid: x.id, inj });
+    this.say(`${fmt(PART_COMM[inj.part] || COMM.injury[0], { P: p.name })} Il ne peut pas continuer.`, 'inj', side);
     x.injured = true;
     if (s.ai || this.auto) this.autoSub(side, x);
     else this.pendingInjury = { side, id: x.id };
@@ -483,16 +504,14 @@ function applyMatch(G, mt, f) {
     p.lastRating = Math.round(r.r * 10) / 10;
     p.form = [...(p.form || []), { w: G.week, s: G.season, r: p.lastRating }].slice(-10);
   }
-  for (const e of mt.events) if (e.type === 'inj') {
-    const p = getPlayer(G, e.pid);
-    p.injury = p.club === G.clubId ? Math.max(1, Math.round(e.weeks * (1.25 - .12 * (G.staff?.physio || 2)))) : e.weeks;
-    p.injNew = true;
-  }
+  for (const e of mt.events) if (e.type === 'inj' || e.type === 'knock') applyInjury(G, getPlayer(G, e.pid), e.inj);
+  const wnr = fixtureWinner(f);
   if (f.grp) {
-    const w = fixtureWinner(f);
-    const give = (id, v) => { getClub(G, id).budget += v; if (id === G.clubId) G.fin.prize += v; };
-    if (w) give(w, 2.5e6); else { give(f.h, .8e6); give(f.a, .8e6); }
+    if (wnr) flow(G, getClub(G, wnr), 2.5e6, 'prize'); else { flow(G, getClub(G, f.h), .8e6, 'prize'); flow(G, getClub(G, f.a), .8e6, 'prize'); }
   }
+  [f.h, f.a].forEach(id => { const c = getClub(G, id); const pts = wnr === id ? 3 : wnr == null ? 1 : 0; c.recent = [...(c.recent || []), pts].slice(-5); });
+  if (wnr === G.clubId && isLeague && G.sponsor?.winBonus) flow(G, myClub(G), G.sponsor.winBonus, 'sponsor');
+  if (f.a === G.clubId) flow(G, myClub(G), -(f.comp === 'EUR' ? 180000 : 25000) * clubEco(G, myClub(G)).coef, 'travel');
   const win = mt.winner();
   mt.sides.forEach((side, i) => {
     const won = win === i, lost = win === 1 - i;
@@ -502,11 +521,10 @@ function applyMatch(G, mt, f) {
     }
   });
   const home = getClub(G, f.h);
-  const gate = mt.att * (8 + home.rep * .3) * (f.comp === 'CUP' ? .7 : f.comp === 'EUR' ? 1.4 : 1);
-  home.budget += gate;
-  if (f.comp === 'CUP') getClub(G, f.a).budget += gate * .4;
-  if (home.id === G.clubId) G.fin.gate += gate;
-  if (f.comp === 'CUP' && f.a === G.clubId) G.fin.gate += gate * .4;
+  const gate = mt.att * ticketPrice(G, f);
+  f.gate = Math.round(gate);
+  if (f.comp === 'CUP') { flow(G, home, gate * .6, 'gate'); flow(G, getClub(G, f.a), gate * .4, 'gate'); }
+  else flow(G, home, gate, 'gate');
 }
 
 function isKO(f) { return f.comp === 'CUP' || (f.comp === 'EUR' && !f.grp); }
@@ -600,7 +618,7 @@ function setupEuro(G) {
   groups.forEach(g => { g.fixtures = makeFixtures(g.clubs, 'EUR').slice(0, 6); g.fixtures.flat().forEach(f => f.grp = g.name); });
   const name = G.euroName || 'Coupe des Étoiles';
   G.comps.EUR = { id: 'EUR', type: 'euro', name, groups, ko: [], winner: null, teams };
-  teams.forEach(id => { const c = getClub(G, id); c.budget += 3e6; if (id === G.clubId) G.fin && (G.fin.prize += 3e6); });
+  teams.forEach(id => flow(G, getClub(G, id), 3e6, 'prize'));
   const g = groups.find(g => g.clubs.includes(G.clubId));
   if (g) news(G, `${name} : tirage au sort ! Groupe ${g.name} avec ${g.clubs.filter(id => id !== G.clubId).map(id => getClub(G, id).name).join(', ')}. Prime de participation : 3 M€.`, 'cup');
 }
@@ -621,7 +639,7 @@ function afterEuroRound(G, r) {
     const last = E.ko[E.ko.length - 1]; if (!last) return;
     const winners = last.ties.map(fixtureWinner).filter(Boolean);
     const prize = [5e6, 8e6, 15e6][E.ko.length - 1] || 0;
-    winners.forEach(id => { getClub(G, id).budget += prize; if (id === me) G.fin.prize += prize; });
+    winners.forEach(id => flow(G, getClub(G, id), prize, 'prize'));
     const mineTie = last.ties.find(t => t.h === me || t.a === me);
     if (mineTie && fixtureWinner(mineTie) !== me) news(G, `${E.name} : élimination en ${last.name.toLowerCase()}.`, 'loss');
     if (winners.length === 1) {
@@ -676,7 +694,7 @@ function afterCupRound(G) {
   if (mine) {
     const w = fixtureWinner(mine);
     const prize = roundMoney(150000 * Math.pow(1.7, C.rounds.length - 1));
-    if (w === G.clubId) { myClub(G).budget += prize; G.fin.prize += prize; G.board.conf = clamp(G.board.conf + 3, 0, 100); }
+    if (w === G.clubId) { flow(G, myClub(G), prize, 'prize'); G.board.conf = clamp(G.board.conf + 3, 0, 100); }
     else { news(G, `Élimination en ${C.name} (${round.name}).`, 'loss'); G.board.conf = clamp(G.board.conf - (getClub(G, w).div > myClub(G).div ? 8 : 3), 0, 100); }
   }
   C.alive = [...winners, ...round.byes];
@@ -684,9 +702,9 @@ function afterCupRound(G) {
     C.winner = C.alive[0];
     const wc = getClub(G, C.winner);
     wc.trophies = [...(wc.trophies || []), { season: G.season, name: C.name }];
-    wc.budget += 5e6;
+    flow(G, wc, 5e6, 'prize');
     news(G, `🏆 ${wc.name} remporte la ${C.name} ${G.season}/${G.season + 1} !`, C.winner === G.clubId ? 'trophy' : 'info', C.winner !== G.clubId);
-    if (C.winner === G.clubId) { G.fin.prize += 5e6; G.board.conf = clamp(G.board.conf + 15, 0, 100); }
+    if (C.winner === G.clubId) { G.board.conf = clamp(G.board.conf + 15, 0, 100); }
   } else if (C.alive.length > 1) drawCup(G);
 }
 
@@ -755,8 +773,8 @@ function weeklyUpdate(G, full = true) {
     p.fit = clamp(p.fit + rec * (full ? 1 : .45), 0, 100);
     if (p.suspNew) p.suspNew = false; else if (p.susp > 0) p.susp--;
     if (!full) continue;
-    if (p.injury > 0 && !p.injNew) { p.injury--; p.fit = Math.min(p.fit, 70); }
-    if (p.injNew) p.injNew = false;
+    tickMedical(G, p, 7);
+    trainingInjuries(G, p);
     const target = p.pers === 'Loyal' ? 72 : 66;
     p.morale = clamp(p.morale + (target - p.morale) * .05 + (mine && tr.focus === 'repos' ? 3 : 0), 5, 100);
     if (p.club == null) continue;
@@ -770,21 +788,10 @@ function weeklyUpdate(G, full = true) {
       if (mine) G.weekProg.push({ pid: p.id, k, d: 1 });
     }
     if (p.age >= 31 && rnd() < .035 * (p.age - 29) / 2) bumpAttr(p, -1, rnd() < .6 ? ['vit', 'phy'] : null);
-    if (mine && p.injury <= 0) {
-      const risk = ((tr.intensity === 2 ? .004 : tr.intensity === 0 ? .0005 : .0015) + (tr.focus === 'physique' ? .002 : 0)) * (1.25 - .12 * (st.physio || 2));
-      if (rnd() < risk) { p.injury = rint(1, 2); news(G, `Blessure à l'entraînement : ${p.name} (${p.injury} sem.).`, 'inj'); }
-    }
   }
   if (!full) return;
-  for (const c of G.clubs) {
-    const mine = c.id === G.clubId;
-    c.coh = clamp((c.coh ?? 60) + 1.2 + (mine && tr.focus === 'tactique' ? 2.5 : 0), 0, 100);
-    let wages = clubPlayers(G, c.id).reduce((s, p) => s + p.wage, 0);
-    if (mine) wages += Object.values(st).reduce((s, l) => s + staffWage(l), 0);
-    const sponsor = c.foreign ? Math.round(wages * 1.02) : Math.round(c.rep * c.rep * 30 * (c.div === 1 ? 1 : .45));
-    c.budget += sponsor - wages;
-    if (mine) { G.fin.wages += wages; G.fin.sponsor += sponsor; }
-  }
+  for (const c of G.clubs) c.coh = clamp((c.coh ?? 60) + 1.2 + (c.id === G.clubId && tr.focus === 'tactique' ? 2.5 : 0), 0, 100);
+  weeklyFinances(G);
   G.promises = (G.promises || []).filter(pr => {
     const p = getPlayer(G, pr.pid);
     if (!p || p.club !== G.clubId) return false;
@@ -850,7 +857,8 @@ function aiTransfers(G) {
     const fee = t.club != null ? marketValue(t) : 0;
     const from = t.club != null ? getClub(G, t.club) : null;
     if (from && clubPlayers(G, from.id).length <= 20) continue;
-    c.budget -= fee; if (from) from.budget += fee;
+    flow(G, c, -fee, 'transfers'); if (from) flow(G, from, fee, 'sales');
+    t.wage = Math.max(roundMoney(t.wage * .9), demandWage(G, t, c));
     t.club = c.id; t.listed = false; t.contract = rint(2, 5); t.num = null; assignNumbers(clubPlayers(G, c.id));
     c.coh = clamp((c.coh ?? 60) - 3, 0, 100);
     news(G, `${t.name} quitte ${from ? from.name : 'les agents libres'} pour ${c.name}${fee ? ` (${money(fee)})` : ''}.`, 'transfer', true);
@@ -1025,9 +1033,7 @@ function endSeason(G) {
     const top = comp.div === L[0].div;
     t.forEach((r, i) => {
       const c = getClub(G, r.id);
-      const prize = top ? roundMoney(24e6 - i * .95e6) : roundMoney(5e6 - i * .17e6);
-      c.budget += prize;
-      if (c.id === G.clubId) { G.fin.tv += prize; S.rank = i + 1; S.pts = r.pts; }
+      if (c.id === G.clubId) { S.rank = i + 1; S.pts = r.pts; }
       c.rep = clamp(c.rep + (t.length / 2 - i) * .25 * (top ? 1 : .6), 30, 95);
     });
     if (champ.id === G.clubId) news(G, `🏆 CHAMPIONS ! ${me.name} remporte la ${comp.name} !`, 'trophy');
@@ -1038,6 +1044,9 @@ function endSeason(G) {
   S.awards = seasonAwards(G);
   S.euroWinner = G.comps.EUR?.winner ? getClub(G, G.comps.EUR.winner).name : null;
   G.euroQual = standings(G, L[0].id).slice(0, 4).map(r => r.id);
+  S.met = S.rank <= G.objective;
+  seasonEndFinances(G, S, L);
+  const relegatedTop = L.length > 1 ? standings(G, L[0].id).slice(-Math.min(promoSpots(L[0]), promoSpots(L[1]))).map(r => r.id) : [];
 
   for (let i = 0; i + 1 < L.length; i++) {
     const down = L[i], up = L[i + 1];
@@ -1047,6 +1056,8 @@ function endSeason(G) {
     td.slice(-n).forEach(r => { const c = getClub(G, r.id); c.div = up.div; S.relegated.push(c.name); if (c.id === G.clubId) news(G, `😞 Relégation : ${c.name} descend en ${up.name}.`, 'loss'); });
   }
 
+  parachutes(G, relegatedTop, L[0]);
+  S.control = financialControl(G);
   const cupRounds = G.comps.CUP.rounds.filter(r => r.ties.some(t => t.h === G.clubId || t.a === G.clubId));
   G.history.push({ season: G.season, comp: myL.name, rank: S.rank, pts: S.pts, objective: G.objective, objLabel: S.objLabel, met: S.met, cup: G.comps.CUP.winner === G.clubId ? 'Vainqueur' : (cupRounds.length ? cupRounds[cupRounds.length - 1].name : '-'), club: me.name });
 
@@ -1076,7 +1087,7 @@ function endSeason(G) {
     if (delta > 0 && o >= p.pot) delta = 0;
     for (let i = 0; i < Math.abs(delta); i++) bumpAttr(p, Math.sign(delta));
     if (p.age > 31) p.attrs.vit = clamp(p.attrs.vit - rint(0, 1), 1, 20);
-    p.stats = emptyStats(); p.yellow = 0; p.susp = 0; p.fit = 100; p.injury = 0;
+    p.stats = emptyStats(); p.yellow = 0; p.susp = 0; if (p.injury <= 0) p.fit = 100; else tickMedical(G, p, 35);
     p.attrs0 = { ...p.attrs };
     if (p.club != null) {
       p.contract--;
@@ -1086,7 +1097,7 @@ function endSeason(G) {
       }
     }
     if (p.age >= 34 && rnd() < (p.age - 32) * .25) retired.push(p);
-    p.wage = Math.max(p.wage, calcWage(p) * .8);
+    if (p.club != null) p.wage = Math.max(p.wage, demandWage(G, p, getClub(G, p.club)) * .8);
   }
   const rset = new Set(retired.map(p => p.id));
   for (const p of retired) if (p.club === G.clubId) news(G, `${p.name} prend sa retraite à ${p.age} ans.`, 'info');
@@ -1116,7 +1127,9 @@ function endSeason(G) {
 
   G.season++;
   G.offers = []; G.promises = [];
-  G.fin = { gate: 0, wages: 0, tv: 0, sponsor: 0, prize: 0, transfersIn: 0, transfersOut: 0, hist: G.fin.hist || [] };
+  G.finPrev = G.fin;
+  G.fin = emptyFin(G.fin.hist || []);
+  G.medLog = (G.medLog || []).filter(x => x.season >= G.season - 1);
   setupSeason(G);
   if (!S.sacked) startClubSeason(G);
   return S;
@@ -1124,6 +1137,8 @@ function endSeason(G) {
 
 function startClubSeason(G) {
   setObjective(G);
+  setBoardBudgets(G);
+  if (!G.sponsor) makeSponsorOffers(G);
   G.board.conf = clamp(G.board.conf * .6 + 25, 0, 100);
   G.tactics = { ...G.tactics, ...autoLineup(G, G.clubId, G.tactics.formation), takers: {} };
   news(G, `Nouvelle saison ${G.season}/${G.season + 1} ! Objectif du président : ${objectiveLabel(G).toLowerCase()} en ${clubLeague(G, G.clubId).name}.`, 'board');
@@ -1138,6 +1153,8 @@ function takeJob(G, clubId) {
   const f = c.style?.formation || '4-3-3';
   G.tactics = { formation: f, mentality: 0, inst: defaultInst(), takers: {}, ...autoLineup(G, clubId, f) };
   setObjective(G);
+  G.sponsor = null; G.ticket = 2;
+  setBoardBudgets(G); makeSponsorOffers(G);
   news(G, `${G.managerName} quitte ${old.name} et devient le nouvel entraîneur de ${c.name} ! Objectif : ${objectiveLabel(G).toLowerCase()}.`, 'board');
 }
 
@@ -1169,7 +1186,12 @@ function normalizeWorld(W) {
   W.players.forEach(p => {
     p.stats = { ...emptyStats(), ...(p.stats || {}) };
     p.form ||= []; p.hist ||= []; p.pers ||= 'Professionnel'; p.attrs0 ||= { ...p.attrs }; p.face ||= randomFace();
+    p.frag ??= clamp(Math.round(8 + gauss() * 3.5), 1, 20);
   });
+  if (!W.wagesScaled) {
+    W.wagesScaled = true;
+    for (const p of W.players) { const c = p.club != null ? W.clubs.find(x => x.id === p.club) : null; if (c) p.wage = roundMoney(p.wage * wageFactor(W, c)); }
+  }
   for (const c of W.clubs) assignNumbers(W.players.filter(p => p.club === c.id));
 }
 
@@ -1178,11 +1200,20 @@ function migrateGame(G) {
   G.staffNames ||= (() => { const n = shuffle(STAFF_NAMES.slice()); return Object.fromEntries(Object.keys(STAFF).map((k, i) => [k, n[i]])); })();
   G.fac ||= { training: 2, youth: 2 };
   G.known ||= []; G.scouting ||= []; G.euroName ||= 'Coupe des Étoiles';
-  G.fin.prize ??= 0; G.fin.sponsor ??= 0;
+  if (!G.fin?.inc) G.fin = emptyFin(G.fin?.hist || []);
+  G.fac.medical ??= 2;
+  G.ticket ??= 2;
+  G.medLog ||= [];
+  for (const p of G.players) {
+    p.frag ??= clamp(Math.round(8 + gauss() * 3.5), 1, 20);
+    if (p.injury > 0 && !p.inj) { p.injury *= 7; p.inj = { name: 'Blessure', part: '', kind: 'contact', days: p.injury, total: p.injury }; }
+  }
   if (!G.clubs.some(c => c.foreign)) {
     const fr = genForeignClubs(Math.max(...G.clubs.map(c => c.id)) + 1, Math.max(...G.players.map(p => p.id)) + 1);
     G.clubs.push(...fr.clubs); G.players.push(...fr.players);
   }
+  if (G.board && G.comps && G.board.wageCap == null) { reindex(G); setBoardBudgets(G); }
+  if (G.comps && !G.sponsor && !G.sponsorOffers) makeSponsorOffers(G);
   return G;
 }
 
@@ -1192,8 +1223,9 @@ function newGame(db, clubId, managerName) {
     leagueNames: [...(db.leagueNames || [db.leagueName || 'Ligue Élite', 'Ligue Pro 2'])], cupName: db.cupName || 'Coupe Nationale',
     clubs: JSON.parse(JSON.stringify(db.clubs)), players: JSON.parse(JSON.stringify(db.players)),
     inbox: [], offers: [], history: [], shortlist: [], promises: [], awards: { monthly: [], seasons: [] },
-    fin: { gate: 0, wages: 0, tv: 0, sponsor: 0, prize: 0, transfersIn: 0, transfersOut: 0, hist: [] },
-    board: { conf: 60 }, training: { focus: 'equilibre', intensity: 1 }, talked: {}, euroName: db.euroName || 'Coupe des Étoiles'
+    fin: emptyFin(),
+    board: { conf: 60 }, training: { focus: 'equilibre', intensity: 1 }, talked: {}, euroName: db.euroName || 'Coupe des Étoiles',
+    eco: JSON.parse(JSON.stringify(db.eco || {})), wagesScaled: !!db.wagesScaled
   };
   migrateGame(G);
   normalizeWorld(G);
@@ -1204,8 +1236,10 @@ function newGame(db, clubId, managerName) {
   const club = myClub(G);
   const f = club.style?.formation || '4-3-3';
   G.tactics = { formation: f, mentality: 0, inst: defaultInst(), takers: {}, ...autoLineup(G, clubId, f) };
+  setBoardBudgets(G);
   news(G, `Bienvenue à ${club.name}, ${G.managerName} ! Objectif du président : ${objectiveLabel(G).toLowerCase()}. Budget : ${money(club.budget)}.`, 'board');
   news(G, 'Le mercato d\'été est ouvert pendant les 6 premières semaines. Raccourcis : Espace = continuer, 1-9 = menus, / = recherche.', 'info');
+  makeSponsorOffers(G);
   return G;
 }
 

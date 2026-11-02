@@ -31,6 +31,10 @@ function vEditor(el, W, inGame) {
       <label>Nom de la coupe <input id="cupN" value="${esc(W.cupName || 'Coupe Nationale')}"></label>
       <label>Nom de la coupe d'Europe <input id="euroN" value="${esc(W.euroName || 'Coupe des Étoiles')}"></label>
     </div>
+    <details class="mt"><summary>💶 Économie des championnats</summary>
+      <div class="form-grid mt">${divs.map(d => { const e = leagueEcoByDiv(W, d); return `<label>Div. ${d} — droits TV (M€/saison) <input data-eco="tv" data-div="${d}" type="number" value="${Math.round(e.tv / 1e6)}"></label><label>Div. ${d} — prix moyen du billet (€) <input data-eco="ticket" data-div="${d}" type="number" value="${Math.round(e.ticket)}"></label><label>Div. ${d} — niveau économique (salaires, sponsors : 0.1-2) <input data-eco="coef" data-div="${d}" type="number" step="0.05" value="${e.coef}"></label>`; }).join('')}</div>
+      <p class="hint">Exemple : une ligue anglaise réaliste aurait des droits TV ~3 000 M€ et un niveau 1.7. Les clubs étrangers suivent la richesse de leur pays.</p>
+    </details>
     <p class="hint">Astuce : pour mettre tes propres photos et logos d'un coup, nomme les fichiers comme le joueur (« Prénom Nom.jpg ») ou le club (« Nom du club.png »), puis utilise les boutons « en masse ». Les images restent sur ton PC (stockées dans le navigateur).</p>
   </section>
   <div class="ed-wrap">
@@ -81,6 +85,12 @@ function vEditor(el, W, inGame) {
     W.leagueNames[+i.dataset.ln] = i.value.trim() || 'Division ' + i.dataset.div;
     if (W === G && G.comps['L' + i.dataset.div]) G.comps['L' + i.dataset.div].name = W.leagueNames[+i.dataset.ln];
     persistWorld(W); toast('Nom mis à jour.');
+  });
+  el.querySelectorAll('[data-eco]').forEach(i => i.onchange = () => {
+    W.eco ||= {}; const k = 'L' + i.dataset.div; W.eco[k] = { ...(W.eco[k] || {}) };
+    const v = +i.value; if (!(v > 0)) return toast('Valeur invalide.', 'err');
+    W.eco[k][i.dataset.eco] = i.dataset.eco === 'tv' ? v * 1e6 : v;
+    persistWorld(W); toast('Économie mise à jour.');
   });
   $('#euroN').onchange = e => { W.euroName = e.target.value.trim() || 'Coupe des Étoiles'; if (W === G && G.comps.EUR) G.comps.EUR.name = W.euroName; persistWorld(W); toast('Nom mis à jour.'); };
   $('#cupN').onchange = e => { W.cupName = e.target.value.trim() || 'Coupe Nationale'; if (W === G) G.comps.CUP.name = W.cupName; persistWorld(W); toast('Nom mis à jour.'); };
