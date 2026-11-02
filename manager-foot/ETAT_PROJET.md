@@ -1,4 +1,16 @@
-# État du projet — v32 (2 novembre 2026)
+# État du projet — v33 (2 novembre 2026)
+
+## v33 — 37 attributs par joueur, note de poste, percentiles, 34 statistiques
+Nouveau `js/attributs.js` ; `outils/scenario.py` et `js/monde.js` transmettent les sous-notes réelles (sur 99) du pack.
+- 37 attributs sur 20 en 4 familles : technique (12), mental (11), physique (8), gardien (6). Modèle propre au jeu (liste, regroupement et
+  pondérations originaux, pas ceux d'un autre jeu). Sources : sous-notes réelles du pack quand elles existent (ramenées sur 20, plus la
+  progression en jeu), sinon dérivation des 9 qualités du moteur avec un profil stable propre au joueur.
+- Note de poste = moyenne pondérée de 10-11 attributs clés du poste (sur 20 et sur 100) ; 3 meilleurs postes ; percentile de chaque attribut
+  parmi les joueurs du même poste (infobulle) ; valeurs en fourchette tant que le joueur n'est pas connu (recrutement).
+- Onglet Statistiques : 34 statistiques de saison (par match, par 90 min, xG, conversion, passes, défense, discipline…).
+- Le moteur de match garde ses 9 attributs : rien ne change dans les résultats.
+Vérifications (Chromium) : 37 attributs, profil identique au rechargement, corrélation 0,975 entre la note de poste et l'ancienne note
+(écart moyen 2 points), sous-note réelle 95/99 → 19/20, percentile, 34 statistiques, simulation longue sans erreur.
 
 ## v32 — 30 dépôts GitHub de plus
 `js/lot30.js`, `js/donnees_ouvertes2.js` (+ `outils/donnees_ouvertes2.py`), 24 dossiers ajoutés dans `vendor/` (détail : vendor/LISEZMOI.md).

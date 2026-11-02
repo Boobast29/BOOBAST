@@ -135,6 +135,7 @@ function realPlayer(sp, clubId, rep) {
   if (sp.estimated) p.estimated = true;
   else for (const k in ATTRS) if (sp.attrs[k] != null) p.attrs[k] = sp.attrs[k];
   p.srcId = sp.srcId; p.real = true; p.ageKnown = sp.ageKnown; p.dob = sp.dob; p.natLabel = sp.natLabel;
+  if (sp.detail99) p.detail99 = sp.detail99;
   p.ovr99 = sp.ovr99; p.pot99 = sp.pot99; p.attrCoverage = sp.attrCoverage; p.weakFoot = sp.weakFoot; p.skillMoves = sp.skills;
   const o = playerOvr(p);
   if (sp.pot99 != null && sp.ovr99 != null) { p.pot = clamp(o + Math.max(0, sp.pot99 - sp.ovr99), o, 99); p.potKnown = true; }
