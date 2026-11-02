@@ -1,12 +1,13 @@
 # État du projet — v16 (2 novembre 2026)
 
-## v16 — lot 5 (vie du club) : écrit, tests en cours
+## v16 — lot 5 (vie du club)
 Nouveau fichier `js/vieclub.js` : demandes du coach négociables (accepter, alternative, différer, refuser avec motif), relation
 en 4 axes (accord sportif, confiance, promesses, autorité), réunion de projet d'avant-saison (3 priorités max), influence progressive,
 succession du capitaine, parrainage et cours de langue des recrues, suivi des promesses, réunions à effet décroissant, prêts détaillés
 (rôle, concurrence, encadrement, part du salaire, rappel en hiver), bilan mensuel des prêts, identité durable du club.
 Correction : le bonus automatique de progression des joueurs prêtés (+15 %) est remplacé par un effet des minutes réellement jouées.
-**Non encore vérifié dans le navigateur** au moment de la publication : à tester avant de le considérer comme terminé.
+Vérifications : réunion de projet (décision bloquante, poids des objectifs), 5 options face au coach (refus « budget » non crédible si le budget existe : confiance 53 → 47), report puis nouvelle demande, effet de réunion divisé par 2 à la répétition, vice-capitaine qui reprend le brassard, prêt détaillé (rôle, 50 % du salaire, rappel), intégration 30 → 37 % en une semaine (parrain + cours), simulation 2 graines × 1 saison sans erreur.
+Limites : relations professionnelles du DS et appartenances multiples encore peu exploitées ; bilan du projet visible dans les messages seulement.
 
 ## v15 — lot 4 (marché et planification)
 Nouveau fichier `js/marche.js`. Réservation des sommes engagées, coût total des contrats (garanti / attendu / maximum, échéancier),

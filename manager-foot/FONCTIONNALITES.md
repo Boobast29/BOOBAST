@@ -38,6 +38,12 @@ Légende : **Prévu** · **Implémenté** (code présent) · **Interface** (acce
 | Vente active : sonder, intermédiaire (5 %), proposer aux clubs, prêt avec participation au salaire, baisse de prix | oui | fiche joueur, Négociations | oui : sondage 8 clubs, offre via intermédiaire, prêt 60/40 | |
 | Mise en liste seule : plus d'acheteur automatique (besoin réel requis) | oui | — | oui : 0 offre en 5 semaines sans besoin | |
 | Clubs IA : formation, prêt, achat ou attente selon besoin et enveloppe | oui | — | oui (formation 4, achat 6 sur une semaine de mercato) | prêts IA rares |
+| Demandes du coach : accepter / alternative / différer / refuser avec motif ; relation en 4 axes | oui | mail, Réunions | oui | |
+| Réunion de projet d'avant-saison (3 priorités, moyens, adhésion du coach, bilan de fin de saison) | oui | mail, Réunions, Direction | oui | |
+| Influence progressive, succession du capitaine, parrainage, cours de langue, suivi des promesses | oui | Réunions | oui | |
+| Réunions à effet décroissant (même sujet dans la saison) | oui | Réunions | oui : effet ÷ 2 | |
+| Prêts détaillés (rôle, concurrence, encadrement, part du salaire, rappel), bilan mensuel, progression liée aux minutes | oui | fiche joueur, mail | oui | bonus automatique de +15 % supprimé |
+| Identité durable du club (objectifs, réaction au choix du coach) | oui | Direction | oui (affichée) | trait simulé |
 
 | Fonctionnalité | Impl. | Interface | Testé | Limites |
 |---|---|---|---|---|
