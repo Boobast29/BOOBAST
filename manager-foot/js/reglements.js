@@ -30,6 +30,8 @@ const CRIT_LABEL = {
 const REGLES = {
   FRA: {
     pays: 'France', saison: '2026/27', nat: 'FRA', reserveMax: 1,
+    coupe: { nom: 'Coupe de France', hote: 'petit', texte: 'Match unique ; le club de division inférieure reçoit ; finale au Stade de France.', statut: 'officiel' },
+    sanction: { leger: 'ban', lourd: 'retro', texte: 'DNCG : encadrement de la masse salariale (recrutement bloqué) si le déficit dépasse 30 % de la masse salariale annuelle ; rétrogradation administrative au-delà de 60 %.' },
     niveaux: [
       { niveau: 1, nom: 'Ligue 1', equipes: 18, departage: ['diff', 'bp', 'h2hPts', 'h2hDiff', 'h2hBp', 'fairplay', 'tirage'],
         descente: { directe: 2, barrage: { place: 16, legs: 2, note: 'le 16e affronte le vainqueur des play-offs de Ligue 2' } },
@@ -53,6 +55,8 @@ const REGLES = {
   },
   ENG: {
     pays: 'Angleterre', saison: '2026/27', nat: 'ENG', reserveMax: 1,
+    coupe: { nom: 'FA Cup', hote: 'tirage', texte: 'Match unique, le premier club tiré reçoit ; plus de matchs rejoués depuis 2025/26 ; finale à Wembley.', statut: 'officiel' },
+    sanction: { leger: 'ban', lourd: 'points', points: [9, 12], texte: 'Déficit au-delà de 30 % de la masse salariale : embargo sur les transferts ; au-delà de 60 % : administration, −9 points (Premier League) ou −12 points (EFL) la saison suivante.' },
     niveaux: [
       { niveau: 1, nom: 'Premier League', equipes: 20, departage: ['diff', 'bp', 'h2hPts', 'h2hBpExt', 'appui'],
         descente: { directe: 3 }, europe: '1er à 4e LdC (+ places de performance UEFA), 5e, coupes', statut: { format: 'officiel', departage: 'officiel' },
@@ -75,6 +79,8 @@ const REGLES = {
   },
   GER: {
     pays: 'Allemagne', saison: '2026/27', nat: 'GER', reserveMax: 3,
+    coupe: { nom: 'DFB-Pokal', hote: 'petit', texte: 'Match unique ; le club amateur ou de division inférieure reçoit ; finale à Berlin.', statut: 'officiel' },
+    sanction: { leger: 'ban', lourd: 'retro', texte: 'Licence sous conditions (recrutement bloqué) au-delà de 30 % ; licence refusée (relégation) au-delà de 60 %.' },
     niveaux: [
       { niveau: 1, nom: 'Bundesliga', equipes: 18, departage: ['diff', 'bp', 'h2hPts', 'h2hDiff', 'h2hBpExt', 'bpExt', 'appui'],
         descente: { directe: 2, barrage: { place: 16, legs: 2, note: 'Relegation : le 16e contre le 3e de 2. Bundesliga' } },
@@ -96,6 +102,8 @@ const REGLES = {
   },
   ESP: {
     pays: 'Espagne', saison: '2026/27', nat: 'ESP', reserveMax: 2,
+    coupe: { nom: 'Copa del Rey', hote: 'petit', texte: 'Match unique, le club de division inférieure reçoit ; demi-finales en aller-retour (jouées en match unique dans le jeu) ; finale sur terrain neutre.', statut: 'simplifié' },
+    sanction: { leger: 'ban', lourd: 'ban', texte: 'Limite de coût d\'effectif dépassée : nouvelles recrues non inscrites (recrutement bloqué) tant que les comptes ne sont pas assainis.' },
     niveaux: [
       { niveau: 1, nom: 'LaLiga', equipes: 20, departage: ['h2hPts', 'h2hDiff', 'diff', 'bp', 'fairplay', 'tirage'],
         descente: { directe: 3 }, statut: { format: 'officiel', departage: 'officiel' } },
@@ -116,6 +124,8 @@ const REGLES = {
   },
   ITA: {
     pays: 'Italie', saison: '2026/27', nat: 'ITA', reserveMax: 3,
+    coupe: { nom: 'Coppa Italia', hote: 'mieuxClasse', texte: 'Tableau à têtes de série, le mieux classé reçoit ; demi-finales en aller-retour (match unique dans le jeu) ; finale au Stadio Olimpico.', statut: 'simplifié' },
+    sanction: { leger: 'ban', lourd: 'points', points: [4, 4], texte: 'Indice de liquidité non respecté : mercato bloqué ; salaires impayés (déficit au-delà de 60 %) : −4 points la saison suivante.' },
     niveaux: [
       { niveau: 1, nom: 'Serie A', equipes: 20, departage: ['h2hPts', 'h2hDiff', 'diff', 'bp', 'tirage'],
         descente: { directe: 3 }, appui: ['titre', 'maintien'], statut: { format: 'officiel', departage: 'officiel' },
@@ -234,8 +244,12 @@ function rgScore(pA, pB, home) {
   const lA = clamp(1.25 * Math.exp((pA - pB) / 18) * (home ? 1.1 : 1), .3, 3), lB = clamp(1.25 * Math.exp((pB - pA) / 18) / (home ? 1.1 : 1), .3, 3);
   return { s: [poisson(lA), poisson(lB)] };
 }
+let RG_LBL = '';
 function rgDuel(G, a, b, o = {}) {
   // a = mieux classé (reçoit au retour ou le match unique), b = moins bien classé
+  const key = a + '-' + b, P = G.post?.season === G.season ? G.post : null;
+  if (P?.res[key]) return P.res[key];
+  if (P?.live && (a === G.clubId || b === G.clubId)) throw { pendingDuel: true, a, b, o: { ...o, lbl: o.lbl || RG_LBL } };
   const pa = clubPower(G, a), pb = clubPower(G, b);
   const legs = o.legs || 1, neutral = !!o.neutral;
   let ga = 0, gb = 0; const parts = [];
@@ -249,7 +263,9 @@ function rgDuel(G, a, b, o = {}) {
   else if (o.egalite === 'mieuxClasse') { w = a; extra = ' (le mieux classé passe à égalité)'; }
   else if (!o.noET && rnd() < .4) { const s = rnd() < .5 + (pa - pb) / 40 ? a : b; w = s; extra = ' a.p.'; }
   else { w = rnd() < .5 + (pa - pb) / 60 ? a : b; extra = ' (t.a.b.)'; }
-  return { w, l: w === a ? b : a, txt: `${parts.join(' · ')}${legs === 2 ? ` (cumul ${A} ${ga}-${gb} ${B})` : ''}${extra} → ${getClub(G, w).name}` };
+  const res = { w, l: w === a ? b : a, txt: `${parts.join(' · ')}${legs === 2 ? ` (cumul ${A} ${ga}-${gb} ${B})` : ''}${extra} → ${getClub(G, w).name}` };
+  if (P) P.res[key] = res;
+  return res;
 }
 
 function isReserve(c) { return /(\sII|\sB|\sU2[123]|Next ?Gen|Castilla|Atlético\sB|Futuro)$/i.test(c.name.trim()); }
@@ -257,6 +273,7 @@ function isReserve(c) { return /(\sII|\sB|\sU2[123]|Next ?Gen|Castilla|Atlético
 // Play-offs d'un niveau : renvoie { gagnants: [ids], log: [] }
 function playoffNiveau(G, rule, tables) {
   const P = rule.montee?.playoff; if (!P) return { gagnants: [], log: [] };
+  RG_LBL = rule.nom + ' — play-offs d\'accession';
   const log = [], o = { legs: P.legs || 1, egalite: P.egalite };
   // les tableaux reçus excluent déjà les équipes réserves non autorisées à monter
   const pickPlaces = (t) => P.places.map(p => t[p - 1]).filter(Boolean).map(r => r.id);
@@ -321,6 +338,7 @@ function playoffNiveau(G, rule, tables) {
 // Playouts : renvoie les relégués (par groupe)
 function playoutNiveau(G, rule, t, log) {
   const P = rule.descente?.playout; if (!P) return [];
+  RG_LBL = rule.nom + ' — playout';
   const n = t.length, out = [];
   // places du règlement adaptées à la taille effective du groupe : comptées depuis le bas
   const fromBottom = p => t[n - (rule.equipes / (rule.groupes || 1) - p) - 1];
@@ -344,6 +362,7 @@ function matchsAppui(G, comp, rule, log) {
   for (const i of places) {
     const a = t[i], b = t[i + 1];
     if (!a || !b || a.pts !== b.pts) continue;
+    RG_LBL = `${comp.name} — match d'appui (${i === 0 ? 'titre' : 'maintien'})`;
     const d = rgDuel(G, a.id, b.id, { neutral: true, noET: true });
     (comp.appuis ||= []).push({ winner: d.w, loser: d.l });
     log.push(`Match d'appui (${i === 0 ? 'titre' : 'maintien'}) : ${d.txt}`);
@@ -395,6 +414,7 @@ applyPromotions = function (G, S, L) {
       const pos = t.length - (ru.equipes - ru.descente.barrage.place) - 1;
       const def = t[pos];
       if (def) {
+        RG_LBL = `Barrage ${ru.nom} / ${rd.nom}`;
         const d = rgDuel(G, def.id, po.gagnants[0], { legs: ru.descente.barrage.legs || 2 });
         log(`Barrage ${ru.nom} / ${rd.nom} — ${d.txt}`);
         if (d.w !== def.id) { down.push(def.id); up.push(d.w); }
@@ -499,11 +519,16 @@ function vRegles(el) {
       <p>${Object.entries(n.statut).map(([k, v]) => `${k} ${st(v)}`).join(' ')}</p></div>`).join('')}
     <h3>Effectif</h3><p>${esc(V.effectif.texte)} Feuille de match : ${esc(V.effectif.feuille)}, ${V.effectif.changements} changements. ${st(V.effectif.statut)}</p>
     <h3>Contrôle financier — ${esc(V.finances.nom)}</h3><p>${esc(V.finances.texte)} ${st(V.finances.statut)}</p>
+    <p class="hint">Dans le jeu : ${esc(V.sanction.texte)}</p>
+    <h3>Coupe nationale — ${esc(V.coupe.nom)}</h3><p>${esc(V.coupe.texte)} ${st(V.coupe.statut)}</p>
+    <h3>Barrages et play-offs</h3><p class="hint">Si ton club est concerné, ses barrages, play-offs, playouts et matchs d'appui s'ajoutent au calendrier après la dernière journée et se jouent comme de vrais matchs. Les autres sont simulés.</p>
     <h3>Mercato</h3><p>${esc(V.mercato)} <span class="muted">(dans le jeu : 6 premières journées + 4 journées à la mi-saison)</span></p>
     <p class="hint">Sources : ${V.sources.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\/(www\.)?/, '').split('/')[0])}</a>`).join(' · ')}</p>
   </section>
   <section class="card"><h2>Mon effectif face au règlement ${esc(R.pays)}</h2>
     <table class="tbl"><tr><th>Règle</th><th>Mon club</th><th></th></tr>${conf.map(c => `<tr><td>${esc(c.regle)}</td><td>${c.val}</td><td class="${c.ok ? 'pos' : 'neg'}">${c.ok ? 'conforme' : 'non conforme'}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Aucune limite chiffrée dans ce règlement.</td></tr>'}</table>
+    ${(() => { const annual = wageBill(G) * 52, me = myClub(G); return annual > 0 ? `<p>Trésorerie : <b class="${me.budget < 0 ? 'neg' : 'pos'}">${money(me.budget)}</b> · masse salariale annuelle ${money(annual)} · ${me.budget < -.3 * annual ? `<span class="neg">au-delà du seuil de sanction (${Math.round(-me.budget / annual * 100)} %)</span>` : 'sous le seuil de sanction (déficit < 30 % de la masse salariale)'}</p>` : ''; })()}
+    ${G.penalty?.season === G.season ? `<p class="neg">Pénalité en cours : −${G.penalty.pts} points (${esc(G.penalty.motif)}).</p>` : ''}
     <p class="hint">« Formé localement » est approché par la nationalité du pays ou un passage par le centre de formation (le parcours exact des joueurs n'est pas dans la base).</p></section>
   ${G.lastBarrages?.log?.length ? `<section class="card"><h2>Barrages, play-offs et playouts ${G.lastBarrages.season}/${G.lastBarrages.season + 1}</h2><ul>${G.lastBarrages.log.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}`;
   el.querySelectorAll('[data-rg]').forEach(b => b.onclick = () => { RG_TAB = b.dataset.rg; vRegles(el); });
@@ -581,3 +606,183 @@ function matchCalib(G, f) {
   const cible = calibCible(code, tier), base = CALIB_MOTEUR[Math.min(tier, CALIB_MOTEUR.length) - 1];
   return [clamp(cible[0] / base[0], .7, 1.9), clamp(cible[1] / base[1], .7, 1.9)];
 }
+
+// ============================================================
+//  Post-saison jouable : barrages, play-offs, playouts, matchs d'appui
+//  Quand ton club est concerné, ses matchs deviennent des semaines du calendrier (type 'P')
+//  jouées avec le vrai moteur ; les autres duels restent simulés. Tous les résultats sont
+//  mémorisés (G.post.res) : la fin de saison réutilise exactement les mêmes vainqueurs.
+// ============================================================
+function postDryRun(G) {
+  // exécute la résolution des montées/descentes sans rien modifier ; renvoie le duel de mon club en attente
+  const snap = G.clubs.map(c => [c, c.div, c.tier, c.group, c.compSrc, c.rep]);
+  const inbox = G.inbox.slice(), lastB = G.lastBarrages;
+  const appuis = leagueComps(G).map(c => [c, c.appuis ? c.appuis.slice() : undefined]);
+  let pending = null;
+  try { applyPromotions(G, { promoted: [], relegated: [] }, leagueComps(G)); }
+  catch (e) { if (e && e.pendingDuel) pending = e; else throw e; }
+  finally {
+    for (const [c, d, t, g, s, r] of snap) { c.div = d; c.tier = t; c.group = g; c.compSrc = s; c.rep = r; }
+    G.inbox = inbox; G.lastBarrages = lastB;
+    for (const [c, a] of appuis) { if (a === undefined) delete c.appuis; else c.appuis = a; }
+  }
+  return pending;
+}
+function postSeasonPlan(G) {
+  if (!reglesActives(G) || G.ds?.status === 'unemployed') return;
+  if (!G.post || G.post.season !== G.season) G.post = { season: G.season, res: {}, live: true, weeks: [] };
+  if (!G.post.live) return;
+  const p = postDryRun(G);
+  if (!p) { G.post.live = false; return; }
+  G.comps.PO ||= { id: 'PO', type: 'post', name: 'Barrages et play-offs' };
+  const { a, b, o } = p, base = { comp: 'PO', res: null, pkey: a + '-' + b, pname: o.lbl || 'Barrage', egalite: o.egalite || null, a1: a };
+  if ((o.legs || 1) === 2) {
+    G.post.weeks.push([{ ...base, h: b, a, leg: 1 }], [{ ...base, h: a, a: b, leg: 2, ko: true }]);
+    G.schedule.push({ t: 'P', r: G.post.weeks.length - 2 }, { t: 'P', r: G.post.weeks.length - 1 });
+  } else {
+    G.post.weeks.push([{ ...base, h: a, a: b, ko: true, neutral: !!o.neutral }]);
+    G.schedule.push({ t: 'P', r: G.post.weeks.length - 1 });
+  }
+  const opp = getClub(G, a === G.clubId ? b : a);
+  news(G, `🔥 ${o.lbl || 'Barrage'} : ton club affronte ${opp.name}${(o.legs || 1) === 2 ? ' en aller-retour' : o.neutral ? ' sur terrain neutre' : ''}. ${o.egalite === 'mieuxClasse' ? 'À égalité, le mieux classé passe.' : ''}`, 'cup');
+}
+function postAfterWeek(G, e) {
+  const fs = G.post?.weeks[e.r] || [];
+  for (const f of fs) {
+    if (!f.res) continue;
+    if (f.leg === 1) { const f2 = G.post.weeks[e.r + 1]?.find(x => x.pkey === f.pkey); if (f2) f2.firstRes = [f.res[1], f.res[0]]; continue; }
+    const [a, b] = f.pkey.split('-').map(Number);
+    let ga, gb;
+    if (f.firstRes) { ga = (f.h === a ? f.res[0] : f.res[1]) + (f.h === a ? f.firstRes[0] : f.firstRes[1]); gb = (f.h === b ? f.res[0] : f.res[1]) + (f.h === b ? f.firstRes[0] : f.firstRes[1]); }
+    else { ga = f.h === a ? f.res[0] : f.res[1]; gb = f.h === b ? f.res[0] : f.res[1]; }
+    let w = fixtureWinner(f), extra = f.pens ? ' (t.a.b.)' : f.et ? ' a.p.' : '';
+    if (f.egalite === 'mieuxClasse' && ga === gb) { w = a; extra = ' (le mieux classé passe à égalité)'; }
+    if (w == null) w = a;
+    const A = getClub(G, a).name, B = getClub(G, b).name;
+    G.post.res[f.pkey] = { w, l: w === a ? b : a, txt: `${f.firstRes ? `cumul ${A} ${ga}-${gb} ${B}` : `${A} ${ga}-${gb} ${B}`}${extra} → ${getClub(G, w).name}` };
+    news(G, `${f.pname} : ${G.post.res[f.pkey].txt}. ${w === G.clubId ? '✅ Qualifié !' : '❌ Éliminé.'}`, w === G.clubId ? 'trophy' : 'loss');
+  }
+}
+// calendrier : semaines de post-saison
+const __weekFixturesR = weekFixtures;
+weekFixtures = function (G, w = G.week) { const e = G.schedule[w]; if (e?.t === 'P') return G.post?.weeks[e.r] || []; return __weekFixturesR(G, w); };
+const __weekLabelR = weekLabel;
+weekLabel = function (G, w = G.week) {
+  const e = G.schedule?.[w]; if (e?.t !== 'P') return __weekLabelR(G, w);
+  const f = G.post?.weeks[e.r]?.[0]; return f ? f.pname + (f.leg === 1 ? ' (aller)' : f.leg === 2 ? ' (retour)' : '') : 'Barrages';
+};
+const __dateOfWeekR = dateOfWeek;
+dateOfWeek = function (G, w) {
+  if (G.schedule[w]?.t !== 'P') return __dateOfWeekR(G, w);
+  let wl = w; while (wl > 0 && G.schedule[wl].t === 'P') wl--;
+  const d = __dateOfWeekR(G, wl); d.setDate(d.getDate() + (w - wl) * 4); return d;
+};
+const __completeWeekP = completeWeek;
+completeWeek = function (G, skip) {
+  const e = G.schedule[G.week];
+  const r = __completeWeekP(G, skip);
+  if (e?.t === 'P') postAfterWeek(G, e);
+  if (r !== 'sacked' && G.week >= G.schedule.length) postSeasonPlan(G);
+  return r;
+};
+
+// ============================================================
+//  Coupes nationales, mercato et sanctions financières selon le pays
+// ============================================================
+function reglesCoupe(G) { return reglesPays(G).coupe; }
+const __newGameC2 = newGame;
+newGame = function (...a) {
+  const g = __newGameC2(...a);
+  const prev = G; G = g;
+  try { const cp = reglesCoupe(g); if (cp && (!g.real || /format de jeu/i.test(g.cupName || ''))) { g.cupName = cp.nom; if (g.comps.CUP) g.comps.CUP.name = cp.nom; } hotesCoupe(g); }
+  finally { G = prev; }
+  return g;
+};
+const __setupSeasonR = setupSeason;
+setupSeason = function (G) {
+  __setupSeasonR(G);
+  // pénalité de points décidée la saison précédente
+  if (G.penalty && G.penalty.season === G.season) for (const c of leagueComps(G)) if (c.clubs.includes(G.penalty.club)) { c.pen = { [G.penalty.club]: G.penalty.pts }; news(G, `⚖ ${G.penalty.motif} : ${getClub(G, G.penalty.club).name} commence la saison avec −${G.penalty.pts} points.`, 'board'); }
+};
+const __standingsPen = standings;
+standings = function (G, compId) {
+  const t = __standingsPen(G, compId), pen = G.comps[compId]?.pen;
+  if (!pen) return t;
+  for (const r of t) if (pen[r.id]) { r.pts -= pen[r.id]; r.pen = pen[r.id]; }
+  const comp = G.comps[compId], rule = reglesActives(G) && regleComp(G, comp);
+  return rule ? sortWithRules(G, t, comp.fixtures, rule.departage) : t.sort((x, y) => y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf);
+};
+function hotesCoupe(G) {
+  const cp = reglesActives(G) && reglesCoupe(G); if (!cp) return;
+  const C = G.comps.CUP, round = C.rounds[C.rounds.length - 1]; if (!round) return;
+  const finale = C.alive.length === 2;
+  const tier = id => { const L = clubLeague(G, id); return L ? compTier(G, L) : 9; };
+  for (const t of round.ties) {
+    if (t.res) continue;
+    if (finale) { t.neutral = true; continue; }
+    let h = t.h, a = t.a;
+    if (cp.hote === 'mieuxClasse') { if (tier(h) > tier(a) || (tier(h) === tier(a) && getClub(G, h).rep < getClub(G, a).rep)) [h, a] = [a, h]; }
+    else if (cp.hote === 'tirage') { if (rnd() < .5) [h, a] = [a, h]; }
+    else if (tier(h) < tier(a)) [h, a] = [a, h]; // le club de division inférieure reçoit
+    t.h = h; t.a = a;
+  }
+  if (finale) news(G, `${C.name} : finale sur terrain neutre.`, 'cup');
+}
+const __drawCupR = drawCup;
+drawCup = function (G) { __drawCupR(G); hotesCoupe(G); };
+// mercato : limite de joueurs non-UE à la signature
+function blocageNonUE(pid) {
+  if (!G || !reglesActives(G)) return false;
+  const p = getPlayer(G, pid); if (!p) return false;
+  const n = nonUEApres(G, G.clubId, p);
+  if (n) { toast(`Règlement ${reglesPays(G).pays} : ${p.name} serait ton ${n}e joueur non-UE (maximum ${reglesPays(G).effectif.nonUE}). Libère ou vends un joueur non-UE d'abord.`, 'err'); return true; }
+  return false;
+}
+if (typeof offerModal === 'function') { const __offerModalR = offerModal; offerModal = function (pid) { if (getPlayer(G, pid)?.club !== G.clubId && blocageNonUE(pid)) return; return __offerModalR(pid); }; }
+if (typeof loanInModal === 'function') { const __loanInR = loanInModal; loanInModal = function (pid) { if (blocageNonUE(pid)) return; return __loanInR(pid); }; }
+// contrôle financier de fin de saison (club du joueur)
+function controleFinancier(G, S) {
+  const R = reglesPays(G), san = R.sanction; if (!san || !reglesActives(G)) return;
+  const me = myClub(G), annual = wageBill(G) * 52, deficit = -me.budget;
+  if (annual <= 0 || deficit <= .3 * annual) { if (G.board.ban && G.banReason === 'regles' && me.budget >= 0) { G.board.ban = false; G.banReason = null; news(G, `⚖ ${R.finances.nom} : comptes assainis, recrutement de nouveau autorisé.`, 'board'); } return; }
+  const lourd = deficit > .6 * annual, type = lourd ? san.lourd : san.leger;
+  const pct = Math.round(deficit / annual * 100);
+  (S.sanctions ||= []).push(`${R.finances.nom} : déficit = ${pct} % de la masse salariale annuelle`);
+  if (type === 'ban') { G.board.ban = true; G.banReason = 'regles'; news(G, `⚖ ${R.finances.nom} : déficit de ${money(deficit)} (${pct} % de la masse salariale). Recrutement bloqué jusqu'à l'assainissement des comptes.`, 'board'); }
+  else if (type === 'points') {
+    const L = clubLeague(G, me.id), pts = (L && compTier(G, L) === 1 ? san.points[0] : san.points[1]);
+    G.penalty = { season: G.season + 1, club: me.id, pts, motif: R.finances.nom };
+    G.board.ban = true; G.banReason = 'regles';
+    news(G, `⚖ ${R.finances.nom} : déficit de ${money(deficit)} (${pct} %). Sanction : −${pts} points la saison prochaine et recrutement bloqué.`, 'loss');
+  } else if (type === 'retro') {
+    const L = leagueComps(G), tiers = [...new Set(L.map(c => compTier(G, c)))].sort((a, b) => a - b);
+    const cur = compTier(G, L.find(c => c.div === me.div) || clubLeague(G, me.id)), next = tiers.find(t => t > cur);
+    if (next == null) { G.board.ban = true; G.banReason = 'regles'; news(G, `⚖ ${R.finances.nom} : déficit de ${money(deficit)} (${pct} %). Recrutement bloqué (pas de division inférieure simulée).`, 'loss'); return; }
+    // échange avec le meilleur club non promu du niveau inférieur
+    const down = L.filter(c => compTier(G, c) === next);
+    const target = down[0], cand = standings(G, target.id).map(r => getClub(G, r.id)).find(c => c.div === target.div && !S.promoted.includes(c.name));
+    const from = me.div;
+    me.div = target.div; if (G.real) { const d = G.real.divisions.find(x => x.div === target.div); if (d) { me.tier = d.tier; me.group = d.group; me.compSrc = d.srcId; } }
+    if (cand) { cand.div = from; if (G.real) { const d = G.real.divisions.find(x => x.div === from); if (d) { cand.tier = d.tier; cand.group = d.group; cand.compSrc = d.srcId; } } S.promoted.push(cand.name + ' (repêché)'); }
+    S.relegated.push(me.name + ' (rétrogradation administrative)');
+    G.board.ban = true; G.banReason = 'regles';
+    news(G, `⚖ ${R.finances.nom} : déficit de ${money(deficit)} (${pct} %). Rétrogradation administrative en ${target.name}${cand ? ` ; ${cand.name} est repêché` : ''}.`, 'loss');
+  }
+}
+const __applyPromotionsF = applyPromotions;
+applyPromotions = function (G, S, L) {
+  const r = __applyPromotionsF(G, S, L);
+  if (!(G.post?.live)) controleFinancier(G, S); // pas pendant les simulations de post-saison
+  return r;
+};
+// avertissement à mi-saison
+const __completeWeekF = completeWeek;
+completeWeek = function (G, skip) {
+  const r = __completeWeekF(G, skip);
+  const R2 = leagueRoundsTotal(G), lr = leagueRoundAt(G);
+  if (reglesActives(G) && G.schedule[G.week - 1]?.t === 'L' && lr === Math.floor(R2 * .66)) {
+    const me = myClub(G), annual = wageBill(G) * 52;
+    if (annual > 0 && -me.budget > .3 * annual) news(G, `⚖ Alerte ${reglesPays(G).finances.nom} : déficit de ${money(-me.budget)} (${Math.round(-me.budget / annual * 100)} % de la masse salariale). Sanction en fin de saison si rien ne change : ${reglesPays(G).sanction.texte}`, 'warn');
+  }
+  return r;
+};

@@ -1,4 +1,26 @@
-# État du projet — v17 (2 novembre 2026)
+# État du projet — v18 (2 novembre 2026)
+
+## v18 — post-saison jouable, coupes nationales, mercato et contrôle financier par pays
+Tout dans `js/reglements.js`.
+- **Barrages, play-offs, playouts et matchs d'appui jouables** : si ton club est concerné, ses matchs s'ajoutent au calendrier
+  après la dernière journée (semaines « P », aller/retour, terrain neutre pour les finales) et se jouent avec le vrai moteur.
+  Le tour suivant n'apparaît qu'en cas de qualification (ex. échelle de Ligue 2 : 5e contre 4e, puis contre le 3e, puis barrage).
+  Les autres duels restent simulés ; tous les résultats sont mémorisés (`G.post`), la fin de saison reprend exactement les mêmes.
+  Règle « le mieux classé passe à égalité » respectée (Segunda, Serie B, Serie C, Primera Federación).
+- **Coupes nationales** : Coupe de France, FA Cup, DFB-Pokal, Copa del Rey, Coppa Italia ; règle du club recevant propre à chaque
+  coupe (le petit reçoit / tirage / tête de série) ; finale sur terrain neutre.
+- **Mercato** : limite de joueurs non-UE appliquée à la signature et au prêt (France 4, Espagne 3), avec message explicite.
+- **Contrôle financier de fin de saison** (club du joueur) : seuil = déficit de 30 % / 60 % de la masse salariale annuelle.
+  France (DNCG) et Allemagne (licence) : recrutement bloqué puis rétrogradation administrative (un club du niveau inférieur est repêché) ;
+  Angleterre : embargo puis −9 (Premier League) / −12 points (EFL) ; Italie : blocage puis −4 points ; Espagne : recrues non inscrites.
+  Alerte aux deux tiers de la saison ; pénalité affichée dans le classement et l'écran Règlement.
+- Bilan de fin de saison : liste des barrages et play-offs.
+Vérifications (Chromium) : `tests/reglements_post.js` (6 scénarios : Ligue 2 5e, Ligue 1 16e, Championship 3e, Serie B 17e,
+2. Bundesliga 3e, Segunda 6e : semaines ajoutées, journal identique aux matchs joués, 0 erreur d'invariant) ;
+`tests/reglements_sanctions.js` (5 pays : nom de coupe, club recevant, sanction, −12 / −4 points au classement sans incohérence,
+rétrogradation administrative ; refus du 5e non-UE en France) ; simulation longue 3 graines × 2 saisons sans erreur.
+Limites : demi-finales aller-retour des coupes espagnole et italienne jouées en match unique ; sanctions financières pour le club
+du joueur seulement ; play-offs de Serie C toujours simplifiés.
 
 ## v17 — règlements des championnats + calibrage par données ouvertes
 Nouveau fichier `js/reglements.js` (chargé en dernier) ; recherche détaillée dans `RECHERCHE.md`.

@@ -25,5 +25,5 @@ Référence : le cahier en 17 sections (cellule de recrutement, carrière de dir
 1. **« Mes décisions »** : contexte au moment du choix, échéance, bilans à 6 et 12 mois, pertinence jugée séparément du résultat.
 2. Bilan hebdomadaire regroupé, échéances et conséquences du silence pour les décisions non bloquantes.
 3. ~~Règlements versionnés par compétition~~ (fait en v17, `js/reglements.js`) ; reste : éditeur réversible.
-4. Barrages et play-offs jouables en direct quand ton club est concerné.
+4. ~~Barrages et play-offs jouables~~ (fait en v18).
 5. Import local de transfermarkt-datasets (CC0) — voir RECHERCHE.md.

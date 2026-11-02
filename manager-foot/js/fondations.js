@@ -129,7 +129,7 @@ function checkInvariants(G) {
 function checkStandings(G) {
   const errs = [];
   for (const L of leagueComps(G)) for (const r of standings(G, L.id)) {
-    if (r.pts !== 3 * r.w + r.d) errs.push(`${L.name} : points incohérents`);
+    if (r.pts + (r.pen || 0) !== 3 * r.w + r.d) errs.push(`${L.name} : points incohérents`);
     if (r.p !== (L.clubs.length - 1) * 2) errs.push(`${L.name} : ${getClub(G, r.id).name} a joué ${r.p} matchs au lieu de ${(L.clubs.length - 1) * 2}`);
   }
   return [...new Set(errs)];

@@ -848,6 +848,7 @@ function vFixtures(el) {
   const fsAll = week.e.t === 'L' ? leagueComps(G).map(l => ({ name: l.name, fs: l.fixtures[week.e.r] || [] }))
     : week.e.t === 'E' ? euroComps(G).map(C => ({ name: `${C.name} — ${weekLabel(G, week.w).replace('Europe · ', '')}`, fs: weekFixtures(G, week.w).filter(f => f.comp === C.id) }))
     : week.e.t === 'S' ? [{ name: G.comps[week.e.r === 0 ? 'SUP' : 'ESUP']?.name || 'Supercoupe', fs: weekFixtures(G, week.w) }]
+    : week.e.t === 'P' ? [{ name: weekLabel(G, week.w), fs: weekFixtures(G, week.w) }]
     : [{ name: G.comps.CUP.name + ' — ' + (G.comps.CUP.rounds[week.e.r]?.name || 'à venir'), fs: G.comps.CUP.rounds[week.e.r]?.ties || [] }];
   el.innerHTML = `<div class="grid2">
     <section class="card"><h2>📅 Mon calendrier</h2><div class="scroll"><table class="tbl">

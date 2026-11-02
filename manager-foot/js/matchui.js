@@ -402,6 +402,7 @@ function seasonEnd() {
         <p>Espoir de l'année : <b>${esc(name(S.awards.young))}</b></p>
         <p>Meilleur buteur : <b>${esc(name(S.awards.scorer))}</b> (${S.awards.scorerGoals ?? '-'})</p>
         ${S.promoted.length ? `<h3>Montées / descentes</h3><p class="pos">⬆ ${S.promoted.map(esc).join(', ')}</p><p class="neg">⬇ ${S.relegated.map(esc).join(', ')}</p>` : ''}
+        ${(S.barrages || []).length ? `<h3>Barrages et play-offs</h3><ul class="compact">${S.barrages.slice(0, 12).map(x => `<li><small>${esc(x)}</small></li>`).join('')}</ul>` : ''}
       </div>
     </div>
     ${S.offers.length ? `<div class="press"><h3>📞 Offres d'emploi</h3><p>Tes résultats ont attiré l'attention :</p>
