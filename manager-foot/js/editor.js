@@ -61,6 +61,7 @@ function vEditor(el, W, inGame) {
             <label>Capacité <input id="cCap" type="number" value="${club.capacity}"></label>
             <label>Réputation (30-99) <input id="cRep" type="number" min="30" max="99" value="${Math.round(club.rep)}"></label>
             <label>Budget (M€) <input id="cBud" type="number" step="0.1" value="${(club.budget / 1e6).toFixed(1)}"></label>
+            ${club.foreign ? '' : `<label>Actionnaire <select id="cOwn"><option value="">Automatique (selon la réputation)</option>${Object.entries(OWNER_TYPES).map(([k, o]) => `<option value="${k}" ${club.owner?.type === k ? 'selected' : ''}>${o.label}</option>`).join('')}</select></label>`}
             ${inGame || club.foreign ? '' : `<label>Division <input id="cDiv" type="number" min="1" max="5" value="${club.div || 1}"></label>`}
           </div>
         </div>
@@ -165,6 +166,7 @@ function vEditor(el, W, inGame) {
     club.capacity = clamp(+$('#cCap').value || club.capacity, 1000, 150000);
     club.rep = clamp(+$('#cRep').value || club.rep, 30, 99);
     club.budget = Math.round((+$('#cBud').value || 0) * 1e6);
+    if ($('#cOwn')) { const t = $('#cOwn').value; if (!t) delete club.owner; else if (club.owner?.type !== t) club.owner = { type: t, purse: ownerPurse(t, club.rep), used: 0 }; }
     if ($('#cDiv')) club.div = clamp(+$('#cDiv').value || 1, 1, 5);
     await persistWorld(W);
     toast('Club enregistré.');

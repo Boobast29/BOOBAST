@@ -515,20 +515,25 @@ function marketValue(p) { return calcValue(p); }
 function aiTransfers(G) {
   if (!windowOpen(G)) return;
   for (const c of G.clubs) {
-    if (c.id === G.clubId || rnd() > .1) continue;
+    if (c.id === G.clubId) continue;
+    const room = aiTransferRoom(c);
+    if (rnd() > .08 + (c.plan && !c.foreign ? Math.min(.08, room / Math.max(1, c.plan.revT) * .25) : .02)) continue;
     const squad = clubPlayers(G, c.id);
     if (squad.length >= 28) continue;
     const byPos = {};
     for (const r of Object.keys(ROLES)) byPos[r] = squad.filter(p => p.pos === r).map(playerOvr).sort((a, b) => b - a)[0] || 0;
     const need = Object.keys(byPos).sort((a, b) => byPos[a] - byPos[b])[0];
-    const targets = G.players.filter(p => p.pos === need && !p.loan && p.club !== c.id && p.club !== G.clubId && playerOvr(p) > byPos[need] && marketValue(p) < c.budget * .4 && playerOvr(p) < c.rep + 18);
+    const targets = G.players.filter(p => p.pos === need && !p.loan && p.club !== c.id && p.club !== G.clubId && playerOvr(p) > byPos[need] && playerOvr(p) < c.rep + 18 && (p.club == null || marketValue(p) * (p.listed ? .85 : 1) <= room));
     if (!targets.length) continue;
     const t = pick(targets);
-    const fee = t.club != null ? marketValue(t) : 0;
+    const fee = t.club != null ? roundMoney(marketValue(t) * (t.listed ? .85 : 1)) : 0;
     const from = t.club != null ? getClub(G, t.club) : null;
     if (from && clubPlayers(G, from.id).length <= 20) continue;
+    const wage = Math.max(roundMoney(t.wage * .9), demandWage(G, t, c));
+    if (!aiCanBuy(G, c, fee, wage)) continue;
     flow(G, c, -fee, 'transfers'); if (from) flow(G, from, fee, 'sales');
-    t.wage = Math.max(roundMoney(t.wage * .9), demandWage(G, t, c));
+    aiSpend(c, fee); if (from) aiReceive(from, fee);
+    t.wage = wage;
     if (from) paySellOn(G, t, fee, from);
     logTransfer(G, t, from?.id, c.id, fee, from ? 'transfert' : 'libre');
     t.club = c.id; t.listed = false; t.contract = rint(2, 5); t.num = null; assignNumbers(clubPlayers(G, c.id));
@@ -544,7 +549,7 @@ function aiOffers(G) {
     if (p.loan || G.offers.some(o => o.pid === p.id)) continue;
     const ovr = playerOvr(p);
     if (ovr >= me.rep + 4 && p.age <= 29 && rnd() < .035) {
-      const big = G.clubs.filter(c => c.id !== G.clubId && c.rep >= me.rep + 6 && c.budget > marketValue(p) * 1.2);
+      const big = G.clubs.filter(c => c.id !== G.clubId && c.rep >= me.rep + 6 && aiCanBuy(G, c, marketValue(p) * 1.5));
       if (big.length) {
         const b = pick(big);
         const fee = roundMoney(marketValue(p) * (1.3 + rnd() * .4));
@@ -556,7 +561,7 @@ function aiOffers(G) {
     }
     const chance = p.listed ? .35 : .02;
     if (rnd() > chance) continue;
-    const buyers = G.clubs.filter(c => c.id !== G.clubId && c.budget > marketValue(p) * .8 && c.rep >= playerOvr(p) - 25);
+    const buyers = G.clubs.filter(c => c.id !== G.clubId && aiCanBuy(G, c, marketValue(p) * (p.listed ? 1.1 : 1.45)) && c.rep >= playerOvr(p) - 25);
     if (!buyers.length) continue;
     const b = pick(buyers);
     const fee = roundMoney(marketValue(p) * (p.listed ? .75 + rnd() * .35 : .95 + rnd() * .5));
@@ -721,6 +726,7 @@ function endSeason(G) {
   S.ballon = ballonDor(G, S.intl);
   S.met = S.rank <= G.objective;
   seasonEndFinances(G, S, L);
+  const relegatedIds = [];
   const relegatedTop = L.length > 1 ? standings(G, L[0].id).slice(-Math.min(promoSpots(L[0]), promoSpots(L[1]))).map(r => r.id) : [];
 
   for (let i = 0; i + 1 < L.length; i++) {
@@ -728,11 +734,14 @@ function endSeason(G) {
     const n = Math.min(promoSpots(up), promoSpots(down));
     const tu = standings(G, up.id), td = standings(G, down.id);
     tu.slice(0, n).forEach(r => { const c = getClub(G, r.id); c.div = down.div; c.rep = Math.max(c.rep, 50); S.promoted.push(c.name); if (c.id === G.clubId) news(G, `🎉 PROMOTION ! ${c.name} monte en ${down.name} !`, 'trophy'); });
-    td.slice(-n).forEach(r => { const c = getClub(G, r.id); c.div = up.div; S.relegated.push(c.name); if (c.id === G.clubId) news(G, `😞 Relégation : ${c.name} descend en ${up.name}.`, 'loss'); });
+    td.slice(-n).forEach(r => { const c = getClub(G, r.id); c.div = up.div; S.relegated.push(c.name); relegatedIds.push(c.id); if (c.id === G.clubId) news(G, `😞 Relégation : ${c.name} descend en ${up.name}.`, 'loss'); });
   }
 
+  relegationWageCut(G, relegatedIds);
   parachutes(G, relegatedTop, L[0]);
+  ownersCoverLosses(G);
   S.control = financialControl(G);
+  S.accounts = (() => { const t = ledgerTotals(me.led); return { inc: t.inc, exp: t.exp, res: t.res, prev: me.plan?.revT || 0, dncg: me.dncg || 'ok' }; })();
   const cupRounds = G.comps.CUP.rounds.filter(r => r.ties.some(t => t.h === G.clubId || t.a === G.clubId));
   G.history.push({ season: G.season, comp: myL.name, rank: S.rank, pts: S.pts, objective: G.objective, objLabel: S.objLabel, met: S.met, cup: G.comps.CUP.winner === G.clubId ? 'Vainqueur' : (cupRounds.length ? cupRounds[cupRounds.length - 1].name : '-'), club: me.name });
 
@@ -796,7 +805,7 @@ function endSeason(G) {
     }
     while (c.id !== G.clubId && clubPlayers(G, c.id).length < 22) {
       const fa = G.players.filter(p => p.club == null).sort((a, b) => playerOvr(b) - playerOvr(a))[0];
-      if (!fa) break; fa.club = c.id; fa.contract = rint(1, 3); fa.num = null;
+      if (!fa) break; fa.club = c.id; fa.contract = rint(1, 3); fa.num = null; fa.wage = demandWage(G, fa, c);
     }
     assignNumbers(clubPlayers(G, c.id));
     c.coh = clamp((c.coh ?? 60) * .8 + 10, 0, 100);
@@ -811,8 +820,10 @@ function endSeason(G) {
   G.offers = []; G.promises = [];
   G.finPrev = G.fin;
   G.fin = emptyFin(G.fin.hist || []);
+  archiveAccounts(G);
   G.medLog = (G.medLog || []).filter(x => x.season >= G.season - 1);
   setupSeason(G);
+  planSeasonBudgets(G);
   if (!S.sacked) startClubSeason(G);
   return S;
 }
@@ -820,6 +831,7 @@ function endSeason(G) {
 function startClubSeason(G) {
   setObjective(G);
   setBoardBudgets(G);
+  boardBudgetNews(G);
   if (!G.sponsor) makeSponsorOffers(G);
   G.board.conf = clamp(G.board.conf * .6 + 25, 0, 100);
   G.tactics = { ...G.tactics, ...autoLineup(G, G.clubId, G.tactics.formation, G.tactics), takers: {} };
@@ -838,7 +850,7 @@ function takeJob(G, clubId) {
   G.sponsor = null; G.ticket = 2;
   assignStatuses(G, clubId, true); G.bonds = {}; G.tacFam = { [f]: 60 };
   G.mgr.rep = clamp(G.mgr.rep + 2, 0, 100); G.vacancies = (G.vacancies || []).filter(v => v.club !== clubId); c.mgrName = G.managerName;
-  setBoardBudgets(G); makeSponsorOffers(G);
+  setBoardBudgets(G); makeSponsorOffers(G); boardBudgetNews(G);
   news(G, `${G.managerName} quitte ${old.name} et devient le nouvel entraîneur de ${c.name} ! Objectif : ${objectiveLabel(G).toLowerCase()}.`, 'board');
 }
 
@@ -906,6 +918,8 @@ function migrateGame(G) {
     G.schedule = G.schedule.filter((e, i) => e.t !== 'E' || i < G.week);
     news(G, 'Les coupes d\'Europe passent au nouveau format (36 clubs) dès la saison prochaine.', 'info');
   }
+  for (const c of G.clubs) if (!c.foreign) { assignOwner(c); c.led ||= emptyLedger(); c.dncg ||= 'ok'; }
+  if (G.comps && G.clubs.some(c => !c.foreign && !c.plan)) { reindex(G); planSeasonBudgets(G, false); if (G.board && G.board.dncg == null) G.board.dncg = G.board.ban ? 'interdiction' : 'ok'; }
   if (G.board && G.comps && G.board.wageCap == null) { reindex(G); setBoardBudgets(G); }
   if (G.comps && !G.sponsor && !G.sponsorOffers) makeSponsorOffers(G);
   return G;
@@ -930,6 +944,7 @@ function newGame(db, clubId, managerName) {
   const club = myClub(G);
   const f = club.style?.formation || '4-3-3';
   G.tactics = { formation: f, mentality: 0, inst: defaultInst(), takers: {}, ...autoLineup(G, clubId, f) };
+  planSeasonBudgets(G);
   setBoardBudgets(G);
   assignStatuses(G, clubId, true);
   G.tacFam = { [f]: 75 };
@@ -937,6 +952,7 @@ function newGame(db, clubId, managerName) {
   news(G, `Bienvenue à ${club.name}, ${G.managerName} ! Objectif du président : ${objectiveLabel(G).toLowerCase()}. Budget : ${money(club.budget)}.`, 'board');
   news(G, 'Le mercato d\'été est ouvert pendant les 6 premières semaines. Raccourcis : Espace = continuer, 1-9 = menus, / = recherche.', 'info');
   makeSponsorOffers(G);
+  boardBudgetNews(G);
   return G;
 }
 
@@ -969,7 +985,8 @@ function completeWeek(G, skipFixture) {
   if ([9, 20, 30].map(x => Math.round(x * R / 38)).includes(lr)) intlBreak(G);
   pressHeadlines(G);
   if (lr === 6) news(G, 'Le mercato d\'été est fermé.', 'info');
-  if (lr === mid) news(G, 'Le mercato d\'hiver ouvre pour 4 semaines !', 'info');
+  if (lr === mid) { news(G, 'Le mercato d\'hiver ouvre pour 4 semaines !', 'info'); midSeasonReview(G); }
+  if (lr === 1 || lr === mid) aiWageControl(G);
   if (lr === mid + 4) news(G, 'Le mercato d\'hiver est fermé.', 'info');
   if (lr === mid - 2 || lr === R - 6) {
     const exp = clubPlayers(G, G.clubId).filter(p => p.contract <= 1 && !p.loan);

@@ -401,6 +401,7 @@ function seasonEnd() {
         <p>Joueur de l'année : <b>${esc(name(S.awards.best))}</b></p>
         <p>Espoir de l'année : <b>${esc(name(S.awards.young))}</b></p>
         <p>Meilleur buteur : <b>${esc(name(S.awards.scorer))}</b> (${S.awards.scorerGoals ?? '-'})</p>
+        ${S.accounts ? `<h3>Bilan financier</h3><p>Recettes ${money(S.accounts.inc)} (prévu ${money(S.accounts.prev)}) · Dépenses ${money(S.accounts.exp)} · Résultat <b class="${S.accounts.res < 0 ? 'neg' : 'pos'}">${S.accounts.res < 0 ? '' : '+'}${money(S.accounts.res)}</b></p><p>Contrôle de gestion : ${dncgTag(S.accounts.dncg)}</p>` : ''}
         ${S.promoted.length ? `<h3>Montées / descentes</h3><p class="pos">⬆ ${S.promoted.map(esc).join(', ')}</p><p class="neg">⬇ ${S.relegated.map(esc).join(', ')}</p>` : ''}
       </div>
     </div>

@@ -31,12 +31,20 @@ const SP = process.argv[2] || require('os').tmpdir();
     await pg.click('#mDone'); await pg.waitForSelector('#top');
   });
   await step('season end', async () => {
+    await pg.waitForTimeout(500); await pg.evaluate(() => closeModal());
     const t = Date.now();
     await pg.click('#nav button[data-v=options]'); await pg.selectOption('#hol', '99'); await pg.click('#holGo'); await pg.waitForTimeout(500);
     for (let k = 0; k < 5 && !(await pg.$('#modal')); k++) { await pg.click('#btnGo').catch(() => {}); await pg.waitForTimeout(300); }
     console.log('  season ms', Date.now() - t);
     await pg.screenshot({ path: SP + '/v8-end.png' });
     console.log('  ', await pg.evaluate(() => `season ${G.season} C1 winner hist ${JSON.stringify(G.history.slice(-1))} ballon ${G.ballon?.[0]?.list[0]?.name}`));
+  });
+  await step('finances budgets', async () => {
+    await pg.evaluate(() => closeModal());
+    await pg.click('#nav button[data-v=finances]');
+    for (const t of ['plan', 'league', 'acc', 'season']) { await pg.click(`[data-ft=${t}]`); await pg.screenshot({ path: SP + `/v9-fin-${t}.png`, fullPage: true }); }
+    await pg.click('[data-ft=league]'); await pg.click('[data-fdiv] >> nth=1'); await pg.click('a[data-club] >> nth=0'); await pg.waitForTimeout(200);
+    console.log('  ', await pg.evaluate(() => { const c = myClub(G); return `plan ${money(c.plan.revT)} owner ${c.owner.type} dncg ${c.dncg} acc ${(c.accounts || []).length}`; }));
   });
   console.log('ERRORS:', errs.length ? errs.join('\n') : 'none');
   await b.close();

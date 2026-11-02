@@ -106,7 +106,7 @@ function doLoanIn(G, p, share, option) {
 function exerciseOption(G, p) {
   const seller = getClub(G, p.loan.from), fee = p.loan.option;
   if (fee > G.board.transfer || fee > myClub(G).budget) return 'Budget transferts insuffisant.';
-  flow(G, myClub(G), -fee, 'transfers'); flow(G, seller, fee, 'sales');
+  flow(G, myClub(G), -fee, 'transfers'); flow(G, seller, fee, 'sales'); aiReceive(seller, fee);
   G.board.transfer = roundMoney(G.board.transfer - fee);
   delete p.loan; p.contract = 3;
   logTransfer(G, p, seller.id, G.clubId, fee, 'option levée');
@@ -131,7 +131,7 @@ function aiMarketExtras(G) {
     if (rnd() < .45) {
       const b = getClub(G, r.club);
       const fee = roundMoney(r.fee * (1.1 + rnd() * .08));
-      if (b.budget > fee) {
+      if (aiCanBuy(G, b, fee)) {
         G.offers.push({ id: Date.now() + Math.floor(rnd() * 1e6), pid: p.id, club: b.id, fee, week: G.week, max: roundMoney(fee * 1.12), star: r.star, improved: true });
         news(G, `${b.name} revient à la charge pour ${p.name} : nouvelle offre de ${money(fee)} !`, 'offer');
       }
@@ -142,7 +142,7 @@ function aiMarketExtras(G) {
   // bataille pour un joueur convoité
   for (const o of G.offers.filter(o => o.star && o.week === G.week)) {
     const p = getPlayer(G, o.pid);
-    const rivals = G.clubs.filter(c => c.id !== o.club && c.id !== G.clubId && c.rep >= myClub(G).rep + 4 && c.budget > o.fee * 1.15 && !G.offers.some(x => x.pid === p.id && x.club === c.id));
+    const rivals = G.clubs.filter(c => c.id !== o.club && c.id !== G.clubId && c.rep >= myClub(G).rep + 4 && aiCanBuy(G, c, o.fee * 1.2) && !G.offers.some(x => x.pid === p.id && x.club === c.id));
     if (rivals.length && rnd() < .35) {
       const c = pick(rivals), fee = roundMoney(o.fee * (1.05 + rnd() * .15));
       G.offers.push({ id: Date.now() + Math.floor(rnd() * 1e6), pid: p.id, club: c.id, fee, week: G.week, max: roundMoney(fee * 1.12), star: true });
@@ -151,8 +151,8 @@ function aiMarketExtras(G) {
     // clause libératoire
     if (p.clause && rnd() < .2) {
       const c = getClub(G, o.club);
-      if (c.budget > p.clause) {
-        flow(G, c, -p.clause, 'transfers'); flow(G, myClub(G), p.clause, 'sales');
+      if (aiCanBuy(G, c, p.clause)) {
+        flow(G, c, -p.clause, 'transfers'); flow(G, myClub(G), p.clause, 'sales'); aiSpend(c, p.clause);
         paySellOn(G, p, p.clause, myClub(G));
         removeFromTactics(p.id);
         p.club = c.id; p.listed = false; p.contract = rint(3, 5); p.num = null; p.status = null; assignNumbers(clubPlayers(G, c.id));

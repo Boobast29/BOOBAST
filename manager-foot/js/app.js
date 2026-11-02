@@ -932,7 +932,8 @@ function viewClub(id) {
   const L = clubLeague(G, id), t = L ? standings(G, L.id) : [], rank = t.findIndex(r => r.id === id) + 1;
   const info = document.createElement('div');
   info.innerHTML = `<section class="card row gap wrap">${crest(c, 72)}<div class="grow"><h2>${esc(c.name)}</h2>
-    <p>${L ? `${esc(L.name)} : <b>${rank}<sup>e</sup></b>` : `Club étranger (${esc(NATIONS.find(n => n[0] === c.country)?.[1] || c.country || '?')})`} · ${esc(c.stadium)} (${c.capacity.toLocaleString('fr-FR')} places) · Réputation ${stars(c.rep)} · Budget ${money(c.budget)}</p>
+    <p>${L ? `${esc(L.name)} : <b>${rank}<sup>e</sup></b>` : `Club étranger (${esc(NATIONS.find(n => n[0] === c.country)?.[1] || c.country || '?')})`} · ${esc(c.stadium)} (${c.capacity.toLocaleString('fr-FR')} places) · Réputation ${stars(c.rep)} · Trésorerie ${money(c.budget)}</p>
+    ${c.plan && !c.foreign ? `<p class="hint">💼 ${esc(OWNER_TYPES[c.owner?.type]?.label || '')} · Budget prévu ${money(c.plan.revT)} · Salaires ${money(clubWages(G, c))}/sem. · ${dncgTag(c.dncg)}</p>` : ''}
     <p class="hint">Style : ${c.style?.formation || '?'} · pressing ${INST.press.opts[(c.style?.press ?? 0) + 1].toLowerCase()} · tempo ${INST.tempo.opts[(c.style?.tempo ?? 0) + 1].toLowerCase()} · ligne ${INST.line.opts[(c.style?.line ?? 0) + 1].toLowerCase()}</p>
     <p>${(c.trophies || []).map(t => `🏆 ${esc(t.name)} ${t.season}`).join(' · ') || '<span class="muted">Aucun trophée récent</span>'}</p></div></section>`;
   el.appendChild(info);
@@ -1042,8 +1043,8 @@ function counterOffer(oid) {
 function acceptOffer(oid) {
   const o = G.offers.find(o => o.id === oid); if (!o) return;
   const p = getPlayer(G, o.pid), buyer = getClub(G, o.club), me = myClub(G);
-  if (buyer.budget < o.fee) { toast(`${buyer.name} n'a plus les fonds.`, 'err'); G.offers = G.offers.filter(x => x !== o); return refresh(); }
-  flow(G, buyer, -o.fee, 'transfers'); flow(G, me, o.fee, 'sales');
+  if (buyer.budget < o.fee || (!buyer.foreign && buyer.plan && buyer.plan.transfer < o.fee * .8)) { toast(`${buyer.name} n'a plus les fonds.`, 'err'); G.offers = G.offers.filter(x => x !== o); return refresh(); }
+  flow(G, buyer, -o.fee, 'transfers'); flow(G, me, o.fee, 'sales'); aiSpend(buyer, o.fee);
   paySellOn(G, p, o.fee, me);
   logTransfer(G, p, me.id, buyer.id, o.fee, 'transfert');
   G.board.transfer = roundMoney((G.board.transfer || 0) + o.fee * .6);
@@ -1132,7 +1133,7 @@ function offerModal(pid) {
       const plan = PAY_PLANS.find(x => x.k === deal.plan);
       const nowPay = roundMoney(deal.fee * plan.now);
       const agent = roundMoney(seller ? deal.fee * .08 : deal.wage * 4);
-      flow(G, me, -nowPay, 'transfers'); if (seller) flow(G, seller, nowPay, 'sales');
+      flow(G, me, -nowPay, 'transfers'); if (seller) { flow(G, seller, nowPay, 'sales'); aiReceive(seller, nowPay); }
       if (seller) scheduleRest(G, me.id, seller.id, deal.fee - nowPay, plan.weeks);
       flow(G, me, -agent, 'agents');
       G.board.transfer = roundMoney(G.board.transfer - deal.fee);
@@ -1170,6 +1171,71 @@ function loanInModal(pid) {
 // ============================================================
 //  Finances
 // ============================================================
+let FIN_TAB = 'season';
+function dncgTag(lvl) { lvl ||= 'ok'; return `<span class="tag ${lvl === 'ok' ? 'grn' : lvl === 'encadrement' ? 'yel' : 'red'}">${DNCG_LABELS[lvl]}</span>`; }
+function finPlanPanel(c) {
+  const P = c.plan, R = leagueRoundsTotal(G) || 38, lr = leagueRoundAt(G), led = c.led || emptyLedger();
+  if (!P) return '<section class="card"><p class="muted">Pas encore de budget prévisionnel.</p></section>';
+  const wagesNow = wageBill(G), own = OWNER_TYPES[c.owner?.type] || OWNER_TYPES.local;
+  const pct = (a, b) => b > 0 ? Math.round(a / b * 100) : 0;
+  const line = (label, prev, real = 0) => { real ||= 0; return `<tr><td>${label}</td><td>${prev == null ? '<span class="muted">-</span>' : money(prev)}</td><td>${money(real || 0)}</td><td>${prev ? `${bar(clamp(pct(real, prev), 0, 100), 100)} ${pct(real, prev)} %` : ''}</td></tr>`; };
+  const revCats = ['tv', 'gate', 'merch', 'sponsor', 'prize'];
+  const wageYear = wagesNow * R, staffYear = (staffCost(G) + facilitiesCost(G)) * R;
+  const otherFixed = P.fixed - staffYear;
+  const spent = (led.exp.transfers || 0) + (led.exp.agents || 0), sold = led.inc.sales || 0;
+  const resPrev = P.revT + (led.inc.owner || 0) + sold - wageYear - P.fixed - spent - (led.exp.build || 0);
+  const ratio = wageYear / Math.max(1, P.revT);
+  return `<div class="grid2"><section class="card"><h2>📋 Budget prévisionnel ${G.season}/${String(G.season + 1).slice(2)}</h2>
+    <p class="hint">Établi par le président en début de saison à partir de la division, de la notoriété, du stade et des compétitions disputées. Avancement de la saison : <b>${pct(lr, R)} %</b> (${lr}/${R} journées).</p>
+    <table class="tbl compact"><tr><th>Recettes</th><th>Prévu</th><th>Réalisé</th><th>Avancement</th></tr>
+      ${revCats.map(k => line(INC_LABELS[k], P.rev[k], led.inc[k])).join('')}
+      ${line(INC_LABELS.sales, null, sold)}${line(INC_LABELS.owner, null, led.inc.owner)}
+      <tr><td><b>Total recettes</b></td><td><b>${money(P.revT)}</b></td><td><b>${money(ledgerTotals(led).inc)}</b></td><td></td></tr>
+      <tr><th>Dépenses</th><th>Prévu</th><th>Réalisé</th><th></th></tr>
+      ${line('Salaires des joueurs (rythme actuel)', wageYear, led.exp.wages)}
+      ${line('Staff et installations', staffYear, (led.exp.staff || 0) + (led.exp.facilities || 0))}
+      ${line('Stade et déplacements', otherFixed, (led.exp.maintenance || 0) + (led.exp.travel || 0))}
+      ${line('Achats de joueurs et agents', null, spent)}
+      <tr><td><b>Résultat prévisionnel de la saison</b></td><td colspan="3"><b class="${resPrev < 0 ? 'neg' : 'pos'}">${resPrev < 0 ? '' : '+'}${money(resPrev)}</b></td></tr>
+    </table>
+    ${P.mid ? `<p class="hint">Point de mi-saison : ${money(P.mid.got)} encaissés pour ${money(P.mid.exp)} attendus.</p>` : '<p class="hint">Point budgétaire au mercato d\'hiver : si les recettes sont en retard sur le prévisionnel, le président réduit le budget transferts (et l\'augmente si elles sont en avance).</p>'}
+  </section>
+  <div class="col">
+    <section class="card"><h2>⚖ Ratio salaires / recettes</h2>
+      <p><b class="${ratio > P.ratio + .05 ? 'neg' : ratio > P.ratio ? '' : 'pos'}">${Math.round(ratio * 100)} %</b> des recettes prévues partent dans les salaires · cible du président : <b>${Math.round(P.ratio * 100)} %</b></p>
+      ${bar(clamp(ratio * 100, 0, 100), 100, ratio > P.ratio ? 'low' : '')}
+      <p class="hint">Dans la vraie vie, un club sain reste sous 70 % en 1re division. En 2e division, les recettes sont bien plus faibles (droits TV divisés par 4 ou 5). Le ratio y est donc plus élevé et le moindre écart coûte cher.</p>
+    </section>
+    <section class="card"><h2>💼 Actionnaire</h2>
+      <p><b>${own.label}</b> — ${own.desc}</p>
+      <table class="tbl kv compact"><tr><td>Fortune mobilisable / saison</td><td>${money(c.owner?.purse || 0)}</td></tr><tr><td>Déjà apporté cette saison</td><td>${money(c.owner?.used || 0)}</td></tr><tr><td>Part des pertes épongée</td><td>${Math.round(own.cover * 100)} %</td></tr></table>
+    </section>
+    <section class="card"><h2>🏛 Contrôle de gestion</h2>
+      <p>Situation : ${dncgTag(c.dncg)}</p>
+      <table class="tbl kv compact"><tr><td>Dette &gt; 10 % des recettes</td><td>${dncgTag('encadrement')}</td></tr><tr><td>Dette &gt; 30 % des recettes</td><td>${dncgTag('interdiction')}</td></tr></table>
+      <p class="hint">Verdict rendu à la fin de chaque saison, une fois l'éventuel apport de l'actionnaire versé. En cas de relégation, la clause de relégation réduit tous les salaires de 30 %, et la ligue verse une indemnité « parachute ».</p>
+    </section>
+  </div></div>`;
+}
+let FIN_DIV = null;
+function finLeaguePanel() {
+  const comps = leagueComps(G), R = leagueRoundsTotal(G) || 38;
+  const L = comps.find(x => x.div === FIN_DIV) || clubLeague(G, G.clubId) || comps[0];
+  const rows = L.clubs.map(id => getClub(G, id)).sort((a, b) => (b.plan?.revT || 0) - (a.plan?.revT || 0));
+  const tot = rows.reduce((s, c) => s + (c.plan?.revT || 0), 0);
+  return `<section class="card"><div class="row gap wrap"><h2 class="grow">🏦 Budgets des clubs : ${esc(L.name)}</h2>
+    <div class="seg">${comps.map(x => `<button data-fdiv="${x.div}" class="${x === L ? 'on' : ''}">${esc(x.name)}</button>`).join('')}</div></div>
+    <p class="hint">Recettes totales prévues de la division : <b>${money(tot)}</b> (moyenne ${money(tot / Math.max(1, rows.length))} par club). Droits TV de la ligue : ${money(leagueEco(G, L).tv)} par saison.</p>
+    <div class="scroll"><table class="tbl compact"><tr><th>#</th><th>Club</th><th>Actionnaire</th><th>Budget prévu</th><th>Salaires / an</th><th>Ratio</th><th>Transferts dispo</th><th>Trésorerie</th><th>Contrôle</th></tr>
+    ${rows.map((c, i) => { const P = c.plan || {}, w = (c.id === G.clubId ? wageBill(G) : clubWages(G, c)) * R, r = w / Math.max(1, P.revT || 1); const tr = c.id === G.clubId ? G.board.transfer : P.transfer;
+      return `<tr class="${c.id === G.clubId ? 'me' : ''}"><td>${i + 1}</td><td class="nm"><a href="#" data-club="${c.id}">${esc(c.name)}</a></td><td><small>${esc(OWNER_TYPES[c.owner?.type]?.label || '-')}</small></td><td>${money(P.revT || 0)}</td><td>${money(w)}</td><td class="${r > .85 ? 'neg' : r < .6 ? 'pos' : ''}">${Math.round(r * 100)} %</td><td>${money(tr || 0)}</td><td class="${c.budget < 0 ? 'neg' : ''}">${money(c.budget)}</td><td>${dncgTag(c.dncg)}</td></tr>`; }).join('')}
+    </table></div></section>`;
+}
+function finAccountsPanel(c) {
+  const A = (c.accounts || []).slice().reverse();
+  return `<section class="card"><h2>📚 Bilans des saisons précédentes</h2>${A.length ? `<table class="tbl compact"><tr><th>Saison</th><th>Division</th><th>Prévu</th><th>Recettes</th><th>Dépenses</th><th>dont salaires</th><th>Résultat</th><th>Trésorerie</th></tr>
+    ${A.map(a => `<tr><td>${a.season}/${String(a.season + 1).slice(2)}</td><td>${esc(G.leagueNames?.[leagueComps(G).findIndex(L => L.div === a.div)] || 'D' + a.div)}</td><td>${money(a.prev)}</td><td>${money(a.inc)}</td><td>${money(a.exp)}</td><td>${money(a.wages)}</td><td class="${a.res < 0 ? 'neg' : 'pos'}">${a.res < 0 ? '' : '+'}${money(a.res)}</td><td class="${a.budget < 0 ? 'neg' : ''}">${money(a.budget)}</td></tr>`).join('')}</table>` : '<p class="muted">Aucune saison terminée pour l\'instant.</p>'}</section>`;
+}
 function vFinances(el) {
   const c = myClub(G);
   const squad = clubPlayers(G, G.clubId);
@@ -1191,7 +1257,10 @@ function vFinances(el) {
     <div><small>Masse salariale</small><b>${money(wages)}<small>/sem.</small></b><em>plafond ${money(G.board.wageCap)} ${bar(capPct, 100, capPct > 98 ? 'low' : '')}</em></div>
     <div><small>Valeur de l'effectif</small><b>${money(sqVal)}</b></div>
     <div><small>Solde de la saison</small><b class="${incT - expT < 0 ? 'neg' : 'pos'}">${money(incT - expT)}</b></div>
+    <div><small>Contrôle de gestion</small><b class="sm">${dncgTag(c.dncg)}</b><em>${esc(OWNER_TYPES[c.owner?.type]?.label || '')}</em></div>
   </div>
+  <section class="card"><div class="tabs">${[['season', '📊 Saison'], ['plan', '📋 Budget prévisionnel'], ['league', '🏦 Budgets des clubs'], ['acc', '📚 Bilans']].map(([k, l]) => `<button data-ft="${k}" class="${FIN_TAB === k ? 'on' : ''}">${l}</button>`).join('')}</div></section>
+  ${FIN_TAB === 'plan' ? finPlanPanel(c) : FIN_TAB === 'league' ? finLeaguePanel() : FIN_TAB === 'acc' ? finAccountsPanel(c) : `
   ${G.sponsorOffers?.length && !G.sponsor ? `<section class="card sponsor-pick"><h2>💼 Choisis ton sponsor maillot</h2><div class="sp-grid">${G.sponsorOffers.map((o, i) => `<div class="sp">
       <h3>${esc(o.name)}</h3><span class="tag">${o.kind}</span>
       <p><b>${money(o.weekly)}</b>/semaine · ${o.seasons} saison(s)</p>
@@ -1215,11 +1284,14 @@ function vFinances(el) {
         <h3>Sponsor maillot</h3>${G.sponsor ? `<p><b>${esc(G.sponsor.name)}</b> (${G.sponsor.kind}) : ${money(G.sponsor.weekly)}/sem. · encore ${G.sponsor.seasons} saison(s)${G.sponsor.objBonus ? ` · prime objectif ${money(G.sponsor.objBonus)}` : ''}${G.sponsor.winBonus ? ` · ${money(G.sponsor.winBonus)}/victoire` : ''}</p>` : '<p class="muted">Aucun sponsor signé.</p>'}
         <h3>Économie de ${esc(L?.name || 'ton championnat')}</h3>
         <table class="tbl kv compact"><tr><td>Droits TV (total ligue)</td><td>${money(eco.tv)} / saison</td></tr><tr><td>Répartition</td><td>50 % égalitaire · 25 % notoriété · 25 % classement</td></tr><tr><td>Prix moyen du billet</td><td>${Math.round(eco.ticket)} €</td></tr><tr><td>Niveau des salaires</td><td>×${wageFactor(G, c).toFixed(2)}</td></tr></table>
-        <p class="hint">Dette : intérêts de ~8 %/an. Sous -25 M€ en fin de saison : interdiction de recruter (contrôle de gestion).</p>
+        <p class="hint">Dette : intérêts de ~8 %/an. Contrôle de gestion en fin de saison : dette &gt; 10 % des recettes = masse salariale encadrée, &gt; 30 % = interdiction de recruter.</p>
       </section>
       <section class="card"><h2>Plus gros salaires</h2><table class="tbl compact">${top.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 24)}</td><td class="nm">${esc(p.name)}</td><td>${money(p.wage)}/sem.</td><td>${p.contract} an(s)</td></tr>`).join('')}</table></section>
     </div>
-  </div>`;
+  </div>`}`;
+  el.querySelectorAll('[data-ft]').forEach(b => b.onclick = () => { FIN_TAB = b.dataset.ft; vFinances(el); });
+  el.querySelectorAll('[data-fdiv]').forEach(b => b.onclick = () => { FIN_DIV = +b.dataset.fdiv; vFinances(el); });
+  el.querySelectorAll('a[data-club]').forEach(a => a.onclick = e => { e.preventDefault(); viewClub(+a.dataset.club); });
   el.querySelectorAll('tr[data-pid]').forEach(r => r.onclick = () => playerModal(+r.dataset.pid));
   el.querySelectorAll('[data-tk]').forEach(b => b.onclick = () => { G.ticket = +b.dataset.tk; save(); vFinances(el); });
   el.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => {
