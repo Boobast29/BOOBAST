@@ -5,7 +5,7 @@ const SAVE_KEY = 'save-v2';
 const DB_KEY = 'db-v2';
 let VIEW = 'inbox';
 let LIVE = null;
-let SETTINGS = { speed: 120, show2d: true };
+let SETTINGS = { speed: 120, show2d: true, autoResume: true };
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('mf-settings') || '{}')); } catch { }
 function saveSettings() { try { localStorage.setItem('mf-settings', JSON.stringify(SETTINGS)); } catch { } }
 
@@ -233,6 +233,7 @@ function globalSearch(q) {
 function show(v) {
   if (LIVE) return;
   VIEW = v;
+  if (v !== 'x') { SETTINGS.lastView = v; saveSettings(); }
   $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   renderTop();
   const fn = { inbox: vInbox, squad: vSquad, tactics: vTactics, training: vTraining, staff: vStaff, medical: vMedical, dressing: vDressing, youth: vYouth, analysis: vAnalysis, fixtures: vFixtures, comps: vComps, intl: vIntl, transfers: vTransfers, finances: vFinances, club: vClub, editor: el => vEditor(el, G, true), options: vOptions }[v] || vInbox;
@@ -1641,6 +1642,9 @@ function vOptions(el) {
       <label class="chk"><input type="checkbox" id="s2d" ${SETTINGS.show2d ? 'checked' : ''}> Afficher la vue 2D</label>
       <label class="chk"><input type="checkbox" id="snd" ${SETTINGS.sound !== false ? 'checked' : ''}> Ambiance sonore</label>
     </div>
+    <h3>Démarrage</h3>
+    <div class="row gap wrap"><label class="chk"><input type="checkbox" id="autoRes" ${SETTINGS.autoResume !== false ? 'checked' : ''}> Reprendre automatiquement la dernière partie à l'ouverture du jeu</label></div>
+    <p class="hint">Le jeu rouvre directement ta partie, sur le dernier écran consulté. Le bouton « Menu principal » permet toujours de revenir à l'accueil.</p>
     <h3>🏖 Vacances</h3>
     <div class="row gap wrap"><label>Simuler <select id="hol">${[1, 2, 4, 8, 99].map(n => `<option value="${n}">${n === 99 ? 'jusqu\'à la fin de saison' : n + ' semaine(s)'}</option>`).join('')}</select></label>
       <button class="btn" id="holGo">Partir en vacances</button></div>
@@ -1652,6 +1656,7 @@ function vOptions(el) {
   $('#sp').value = String(SETTINGS.speed);
   $('#sp').onchange = e => { SETTINGS.speed = +e.target.value; saveSettings(); };
   $('#s2d').onchange = e => { SETTINGS.show2d = e.target.checked; saveSettings(); };
+  $('#autoRes').onchange = e => { SETTINGS.autoResume = e.target.checked; saveSettings(); };
   $('#snd').onchange = e => { SETTINGS.sound = e.target.checked; Sound.on = e.target.checked; saveSettings(); };
   $('#holGo').onclick = () => holiday(+$('#hol').value);
   $('#o1').onclick = async () => { await save(); toast('Partie sauvegardée.'); };
@@ -1668,5 +1673,27 @@ function vOptions(el) {
   if (!DB || !DB.clubs) DB = buildDefaultDatabase();
   normalizeWorld(DB);
   Sound.on = SETTINGS.sound !== false;
-  startScreen();
+  if (!(await autoResume())) startScreen();
+  // sauvegarde de sécurité quand on ferme ou quitte l'onglet (hors match en direct)
+  const bg = () => { if (G && !LIVE) save(); };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') bg(); });
+  window.addEventListener('pagehide', bg);
 })();
+
+// reprise automatique de la dernière partie à l'ouverture
+async function autoResume() {
+  if (SETTINGS.autoResume === false) return false;
+  try {
+    const g = await Store.get(SAVE_KEY);
+    if (!g || g.version !== 2 || !g.clubs || !g.players) return false;
+    loadGame(g);
+    VIEW = SETTINGS.lastView || 'inbox';
+    enterGame();
+    toast(`Partie reprise : ${myClub(G).name}, ${weekLabel(G)}.`);
+    return true;
+  } catch (e) {
+    console.warn('Reprise automatique impossible', e);
+    G = null;
+    return false;
+  }
+}
