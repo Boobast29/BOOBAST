@@ -1,4 +1,18 @@
-# État du projet — v21 (2 novembre 2026)
+# État du projet — v22 (2 novembre 2026)
+
+## v22 — interface plus claire et plus jolie
+Nouveau `js/interface.js` + section « Interface v22 » de `style.css`.
+- Menu latéral : sections repliables (mémorisées), section active toujours ouverte, bouton « Aller à… ».
+- Palette « Aller à… » (Ctrl+K / ⌘K, ou le bouton) : écrans, actions (continuer, sauvegarder, règlement, accueil), joueurs, clubs ;
+  recherche sans accents, flèches + Entrée, Échap.
+- Mobile (≤ 900 px) : barre d'onglets en bas (Accueil, Effectif, Mercato, Classements, Menu) avec pastilles, tiroir « Menu » avec toutes
+  les sections en tuiles, en-tête compact, pas de défilement horizontal.
+- Notifications : en bas à droite (pleine largeur au-dessus de la barre sur mobile), 3 au plus, doublons regroupés (×2), fermeture au clic,
+  durée selon la longueur, couleur selon le type.
+- Fil d'Ariane (section › écran) en haut de chaque écran ; accueil réécrit (titre qui ne chevauche plus, étapes, raccourci) ;
+  case « Libres / en vente » du mercato alignée.
+Vérifications (Chromium, 1366 px et 390 px) : palette « fin » → Finances, recherche de joueur, tiroir → Finances sans débordement,
+notifications regroupées ; simulation longue 2 graines × 2 saisons et 6 scénarios de post-saison sans erreur.
 
 ## v21 — mécaniques réelles du mercato, statistiques et transferts réels
 - `js/mercato_reel.js` (branché sur `logTransfer`, par lequel passent tous les transferts) : mécanisme de solidarité FIFA (5 %),

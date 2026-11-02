@@ -27,3 +27,10 @@ Référence : le cahier en 17 sections (cellule de recrutement, carrière de dir
 3. ~~Règlements versionnés par compétition~~ (fait en v17, `js/reglements.js`) ; reste : éditeur réversible.
 4. ~~Barrages et play-offs jouables~~ (fait en v18).
 5. Import local de transfermarkt-datasets (CC0) — voir RECHERCHE.md.
+
+## Idées de jeu (recherche GitHub v22), par priorité
+1. Sponsors par tribune et nommage du stade ; prix des billets avec effet sur l'affluence et l'ambiance.
+2. Poste de sélectionneur national (offre après de bons résultats, convocations, matchs internationaux joués).
+3. Distance parcourue et fatigue réaliste (données de suivi SkillCorner, MIT).
+4. Événements aléatoires légers (bienfaiteur, incident au stade, joueur malade) avec choix et conséquences.
+5. Tirage européen avec protection par pays ; places européennes selon le classement UEFA.

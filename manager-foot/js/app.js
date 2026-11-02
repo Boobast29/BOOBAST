@@ -32,7 +32,8 @@ async function startScreen() {
   <div class="start-wrap">
     <div class="hero">
       <div class="logo-big">⚽ <b>Manager</b> Foot</div>
-      <p class="sub">Deux divisions, une coupe, un mercato vivant, des matchs en direct en 2D. À toi d'écrire l'histoire.</p>
+      <p class="sub">Trois divisions, les vrais règlements de 5 pays, barrages et play-offs jouables, un mercato aux règles FIFA et des matchs en direct en 2D. À toi d'écrire l'histoire.</p>
+      <div class="hero-etapes"><span><b>1</b>Reprends une partie</span><span><b>2</b>ou choisis le monde réel</span><span><b>3</b>ou un club fictif ci-dessous</span><span><kbd>Ctrl K</kbd> en jeu : aller n'importe où</span></div>
     </div>
     ${ex ? `<div class="card cont">
       ${crest(exClub, 52)}

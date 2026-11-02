@@ -107,6 +107,19 @@ Les règles du mercato viennent des textes officiels (règlement FIFA RSTP, règ
 | Fenêtres 2026 : Premier League 15 juin – 1er sept., LaLiga / Bundesliga / Ligue 1 1er juillet – 31 août / 1er sept., Serie A 29 juin – 1er sept. | [ESPN](https://africa.espn.com/football/story/_/id/48833505/when-does-summer-transfer-window-close-premier-league-serie-laliga-bundesliga-ligue-1), [Sky Sports](https://www.skysports.com/football/news/12040/13546220/summer-transfer-window-2026-dates-when-is-deadline-day-for-premier-league-and-efl-clubs-to-sign-players) | inchangé (fenêtre du jeu ≈ 6 journées, cohérente avec une fermeture au 1er septembre) |
 | Valeur selon le poste | ewenme/transfers (agrégats 2015-2022) : gardiens ≈ moitié des milieux, attaquants au-dessus | coefficient de poste dans la valeur marchande (GB 0,6 → BU 1,15) |
 
+## Recherche n° 5 — interface et idées de jeu (v22)
+
+| Source | Licence | Idée reprise (sans copier de code) |
+|---|---|---|
+| [MartinSG98/league-manager-ui](https://github.com/MartinSG98/league-manager-ui) | aucune | couleurs à sens unique (or = ce sur quoi tu peux agir, couleur du club = ton identité, vert/orange = alertes) ; bouton « Continuer » qui mène d'abord à ce qui bloque |
+| [FredericusRadicalus/retroFootballManager](https://github.com/FredericusRadicalus/retroFootballManager) | MIT | sponsors par tribune, prix des billets qui jouent sur l'affluence, événements aléatoires légers |
+| [openfootmanager/openfootmanager](https://github.com/openfootmanager/openfootmanager) | GPL-3.0 | devenir sélectionneur national ; parler à la presse |
+| [plucury/ohmyhattrick](https://github.com/plucury/ohmyhattrick) | GPL-3.0 | interface moderne d'un jeu de gestion : peu d'écrans, accès rapide |
+| [ihofmann/open-websoccer](https://github.com/ihofmann/open-websoccer) | LGPL-3.0 | jeu de gestion en ligne : stades, sponsors, matchs de jeunes |
+
+Fait en v22 : menu repliable, palette « Aller à… » (Ctrl+K), barre d'onglets et tiroir sur mobile, notifications discrètes, fil d'Ariane,
+accueil réécrit. Idées de jeu notées dans PLAN.md.
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.
