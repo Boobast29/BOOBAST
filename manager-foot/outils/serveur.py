@@ -253,6 +253,9 @@ class Handler(BaseHTTPRequestHandler):
             self.envoyer(500, {'erreur': repr(e)[:300]})
 
     def api_get(self, parts, p):
+        if parts == ['reglements-officiels']:
+            path = RACINE_JEU / 'donnees_reference' / 'reglements_officiels_v12.json'
+            return self.envoyer(200, json.loads(path.read_text(encoding='utf-8')))
         if parts == ['etat']:
             return self.envoyer(200, etat())
         if parts == ['recherche']:
@@ -353,3 +356,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

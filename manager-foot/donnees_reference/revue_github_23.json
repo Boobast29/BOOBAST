@@ -1,0 +1,144 @@
+{
+  "date": "2026-11-02",
+  "repositories": [
+    {
+      "repository": "ZOXEXIVO/open-football",
+      "reviewed_resource": "https://github.com/ZOXEXIVO/open-football/blob/master/README.md",
+      "blob_sha": "b66f5c3bb156de8a8b8d7c860d62f1550389dfce",
+      "readme_available": true
+    },
+    {
+      "repository": "eddwebster/football_analytics",
+      "reviewed_resource": "https://github.com/eddwebster/football_analytics/blob/master/README.md",
+      "blob_sha": "97d7229dfdc15af47325091ffc14b136cdb0ce4f",
+      "readme_available": true
+    },
+    {
+      "repository": "FantasyFootballAnalytics/FantasyFootballAnalyticsR",
+      "reviewed_resource": "https://github.com/FantasyFootballAnalytics/FantasyFootballAnalyticsR/blob/master/README.md",
+      "blob_sha": "fca003cb736a0652ad6c216bbb21077168e08e9e",
+      "readme_available": true
+    },
+    {
+      "repository": "jakeyk11/football-data-analytics",
+      "reviewed_resource": "https://github.com/jakeyk11/football-data-analytics/blob/main/README.md",
+      "blob_sha": "69f1369f61c2dfa1eb1d85a290a6dcdb151527d4",
+      "readme_available": true
+    },
+    {
+      "repository": "xgabora/Club-Football-Match-Data",
+      "reviewed_resource": "https://github.com/xgabora/Club-Football-Match-Data/blob/main/README.md",
+      "blob_sha": "0ea48f5656007e5a25b3668000c21fc16f9dcd41",
+      "readme_available": true
+    },
+    {
+      "repository": "withqwerty/football-docs",
+      "reviewed_resource": "https://github.com/withqwerty/football-docs/blob/main/README.md",
+      "blob_sha": "4f096b71800d8cb2db95a5311a27cc7405224e35",
+      "readme_available": true
+    },
+    {
+      "repository": "LeandreGachet/reseaux-transferts-football",
+      "reviewed_resource": "https://github.com/LeandreGachet/reseaux-transferts-football/blob/main/README.md",
+      "blob_sha": "660212cc7bc82e82333b9664083c7948e51c8878",
+      "readme_available": true
+    },
+    {
+      "repository": "raphaelalcala/Projet-Determinants-de-la-valeur-marchande-des-joueurs-de-football",
+      "reviewed_resource": "repository tree, branch rapport_final_pdf",
+      "blob_sha": null,
+      "readme_available": false,
+      "scope": "Arborescence seulement ; rapport PDF non lu"
+    },
+    {
+      "repository": "ArijBattikh/Footbar_Data_Scientist",
+      "reviewed_resource": "https://github.com/ArijBattikh/Footbar_Data_Scientist/blob/main/README.md",
+      "blob_sha": "8c5ebac72c3455a6ec2a22b22153cbb90536db93",
+      "readme_available": true
+    },
+    {
+      "repository": "GK-FOMI/Datalake-Football-Project",
+      "reviewed_resource": "https://github.com/GK-FOMI/Datalake-Football-Project/blob/main/README.md",
+      "blob_sha": "7d271c07b693372f904fc68b1f9a8ba8568d6940",
+      "readme_available": true
+    },
+    {
+      "repository": "MO7KUN/Football-Player-Market-Value-Prediction",
+      "reviewed_resource": "https://github.com/MO7KUN/Football-Player-Market-Value-Prediction/blob/main/README.md",
+      "blob_sha": "37e2e04993b5b532e5b7ee9532e4c32c5914394e",
+      "readme_available": true
+    },
+    {
+      "repository": "flora-francx/recrutement-football-jeunes-attaquants",
+      "reviewed_resource": "https://github.com/flora-francx/recrutement-football-jeunes-attaquants/blob/main/README.md",
+      "blob_sha": "7523e1ace457a6b4eb04d86d7b5d35f35ae88c0c",
+      "readme_available": true
+    },
+    {
+      "repository": "openfootball/europe",
+      "reviewed_resource": "https://github.com/openfootball/europe/blob/master/README.md",
+      "blob_sha": "2eb7e068a48ee0cf2f20a15d17b018860ea9c479",
+      "readme_available": true
+    },
+    {
+      "repository": "felipeall/transfermarkt-api",
+      "reviewed_resource": "https://github.com/felipeall/transfermarkt-api/blob/main/README.md",
+      "blob_sha": "16d8bc75af7d272ddb2bd0d7d9e2caf60a3ce728",
+      "readme_available": true
+    },
+    {
+      "repository": "dcaribou/transfermarkt-datasets",
+      "reviewed_resource": "https://github.com/dcaribou/transfermarkt-datasets/blob/master/README.md",
+      "blob_sha": "bdf41e1d826b08a0fce8a9e072235c995936c982",
+      "readme_available": true
+    },
+    {
+      "repository": "JaseZiv/worldfootballR",
+      "reviewed_resource": "https://github.com/JaseZiv/worldfootballR/blob/main/README.md",
+      "blob_sha": "3c2e75b1fce4fecfed49f9b72ad09609b97a9c9b",
+      "readme_available": true
+    },
+    {
+      "repository": "roboflow/sports",
+      "reviewed_resource": "https://github.com/roboflow/sports/blob/main/README.md",
+      "blob_sha": "e9863c68c66a03de20489cacbdb360febe6b3afb",
+      "readme_available": true
+    },
+    {
+      "repository": "google-research/football",
+      "reviewed_resource": "https://github.com/google-research/football/blob/master/README.md",
+      "blob_sha": "aeeaa32ffdb7878fe95f9bbf54367e714a1f8379",
+      "readme_available": true
+    },
+    {
+      "repository": "withqwerty/reep",
+      "reviewed_resource": "https://github.com/withqwerty/reep/blob/main/README.md",
+      "blob_sha": "a3d8e43a7bdec58a8163c357a1e2d639b691985f",
+      "readme_available": true
+    },
+    {
+      "repository": "manrajgrover/football-cli",
+      "reviewed_resource": "https://github.com/manrajgrover/football-cli/blob/master/README.md",
+      "blob_sha": "e27546faf7cd127567c0d5fa3513c16f63d1176a",
+      "readme_available": true
+    },
+    {
+      "repository": "openfootball/football.json",
+      "reviewed_resource": "https://github.com/openfootball/football.json/blob/master/README.md",
+      "blob_sha": "81a70d4a7df63ec019c77b33e98fff8b51b4196a",
+      "readme_available": true
+    },
+    {
+      "repository": "jokecamp/FootballData",
+      "reviewed_resource": "https://github.com/jokecamp/FootballData/blob/master/README.md",
+      "blob_sha": "12fd8c54d8f5386c884d5f385355ec724422aeab",
+      "readme_available": true
+    },
+    {
+      "repository": "probberechts/soccerdata",
+      "reviewed_resource": "https://github.com/probberechts/soccerdata/blob/master/README.rst",
+      "blob_sha": "ce240f0831a66de28f3dc626e919d7009f1fb8f7",
+      "readme_available": true
+    }
+  ]
+}

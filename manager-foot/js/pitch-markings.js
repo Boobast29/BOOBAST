@@ -1,0 +1,14 @@
+/* Adapté de sports/configs/soccer.py, Roboflow, commit42c80c06, MIT.
+ * Copyright(c)2024 Roboflow. Licence : third_party/roboflow-sports/LICENSE.
+ * Port JS du repérage par sommets/arêtes ; dimensions par défaut adaptées au terrain105×68m.
+ * Aucune détection vidéo ni données de tracking ajoutées. */
+const PitchMarkings=(()=>{
+ function vertices({length=105,width=68,penaltyWidth=40.32,penaltyLength=16.5,goalWidth=18.32,goalLength=5.5,radius=9.15,spot=11}={}){
+  return [[0,0],[0,(width-penaltyWidth)/2],[0,(width-goalWidth)/2],[0,(width+goalWidth)/2],[0,(width+penaltyWidth)/2],[0,width],[goalLength,(width-goalWidth)/2],[goalLength,(width+goalWidth)/2],[spot,width/2],[penaltyLength,(width-penaltyWidth)/2],[penaltyLength,(width-goalWidth)/2],[penaltyLength,(width+goalWidth)/2],[penaltyLength,(width+penaltyWidth)/2],[length/2,0],[length/2,width/2-radius],[length/2,width/2+radius],[length/2,width],[length-penaltyLength,(width-penaltyWidth)/2],[length-penaltyLength,(width-goalWidth)/2],[length-penaltyLength,(width+goalWidth)/2],[length-penaltyLength,(width+penaltyWidth)/2],[length-spot,width/2],[length-goalLength,(width-goalWidth)/2],[length-goalLength,(width+goalWidth)/2],[length,0],[length,(width-penaltyWidth)/2],[length,(width-goalWidth)/2],[length,(width+goalWidth)/2],[length,(width+penaltyWidth)/2],[length,width],[length/2-radius,width/2],[length/2+radius,width/2]];
+ }
+ const edges=[[1,2],[2,3],[3,4],[4,5],[5,6],[7,8],[10,11],[11,12],[12,13],[14,15],[15,16],[16,17],[18,19],[19,20],[20,21],[23,24],[25,26],[26,27],[27,28],[28,29],[29,30],[1,14],[2,10],[3,7],[4,8],[5,13],[6,17],[14,25],[18,26],[23,27],[24,28],[21,29],[17,30]];
+ function svg(){const v=vertices();return `<g aria-hidden="true"><rect width="105" height="68" fill="#224e36"/>${Array.from({length:10},(_,i)=>`<rect x="${i*10.5}" width="10.5" height="68" fill="${i%2?'#ffffff06':'#00000005'}"/>`).join('')}<g stroke="#d6e3d4" stroke-width=".35" fill="none">${edges.map(([a,b])=>`<path d="M${v[a-1].join(' ')}L${v[b-1].join(' ')}"/>`).join('')}<circle cx="52.5" cy="34" r="9.15"/></g><g fill="#e4e9df">${[8,21].map(i=>`<circle cx="${v[i][0]}" cy="${v[i][1]}" r=".25"/>`).join('')}<circle cx="52.5" cy="34" r=".25"/><rect x="-1.5" y="30.34" width="1.5" height="7.32"/><rect x="105" y="30.34" width="1.5" height="7.32"/></g></g>`;}
+ return Object.freeze({vertices,edges,svg});
+})();
+const __analysisBeforePitch=analysisHTML;
+analysisHTML=function(...args){const box=document.createElement('div');box.innerHTML=__analysisBeforePitch(...args);const svg=box.querySelector('.shotmap');if(svg){const shots=Array.from(svg.querySelectorAll('circle')).filter(c=>c.querySelector('title')).map(c=>c.outerHTML);svg.innerHTML=PitchMarkings.svg()+shots.join('');svg.setAttribute('aria-label','Carte des tirs sur terrain105par68m');}return box.innerHTML;};
