@@ -118,6 +118,7 @@ def joueur_jeu(row, con):
         'age': age, 'ageKnown': age is not None, 'dob': row['naissance'],
         'pos': row['poste'], 'posRaw': row['poste_brut'], 'height': row['taille'],
         'attrs': attrs, 'attrCoverage': round(couv, 2),
+        'detail99': {k: v for k, v in (cap.get('attributs_detail_sur_99') or {}).items() if isinstance(v, (int, float)) and not isinstance(v, bool) and 1 <= v <= 99},
         'ovr99': row['niveau99'], 'pot99': row['pot99'],
         'foot': None,
         'weakFoot': cap.get('pied_faible_sur_5'), 'skills': cap.get('gestes_techniques_sur_5'),
@@ -236,3 +237,4 @@ def construire(con, pays):
                    "Contrats, salaires et budgets sont des valeurs de simulation ; stades, entraîneurs, valeurs marchandes et fins de contrat "
                    "réels quand les imports complémentaires (reep, transfermarkt-datasets, Wikidata) ont été faits."),
     }
+

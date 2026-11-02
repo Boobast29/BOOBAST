@@ -31,11 +31,20 @@ Revue du 2 novembre 2026. Les liens répétés ont été dédupliqués. Les READ
 ## Priorités retenues
 
 1. **Livré** : import local complet du pack existant, audit des identifiants et images, installateur ZIP/dossier, écran de statistiques lisible, terrain de la carte des tirs et référentiel documentaire des règles.
-2. **À développer ensuite** : cellule de recrutement pilotable, rapports datés sur plusieurs matchs et incertitude liée à l’observateur ; utiliser les projets analytiques comme méthodes, puis valider sur les données disponibles.
-3. **À développer ensuite** : clubs IA recrutant selon postes vacants, masse salariale et échéances ; s’inspirer de la simulation de ZOXEXIVO sans remplacer le moteur actuel.
-4. **À développer ensuite** : évaluations évolutives distinguant niveau simulé et note source, vieillissement, temps de jeu et blessures ; aucune réécriture silencieuse des notes historiques.
-5. **À développer ensuite** : marché des directeurs sportifs et offres d’emploi selon bilan, réputation et profil du club.
+2. **À approfondir** dans la cellule déjà présente : rapports datés sur plusieurs matchs et incertitude liée à l’observateur ; utiliser les projets analytiques comme méthodes, puis valider sur les données disponibles.
+3. **À approfondir** dans le marché déjà présent : clubs IA recrutant selon postes vacants, masse salariale et échéances ; s’inspirer de la simulation de ZOXEXIVO sans remplacer le moteur actuel.
+4. **Enrichi dans COMPETENCES_LANGUES.md** : évaluations évolutives distinguant niveau simulé et note source, vieillissement, temps de jeu et blessures ; aucune réécriture silencieuse des notes historiques.
+5. **À approfondir** : le module de carrière existant comprend déjà un marché de postes et des offres ; améliorer leur calibration selon bilan, réputation et profil du club.
 
 Le code de Roboflow est la reprise de code effective de ce complément, au commit `42c80c06b6b65a7f89455b89fe31cdf4c38ba227`. Les sources originales et la licence MIT sont fournies. Les autres dépôts ne sont pas ajoutés en bloc : leurs langages, données et conditions diffèrent. Les 436 020 fiches et les portraits proviennent du pack Football Monde existant, dont l’import complet a été testé ; ils ne sont pas attribués à ces 23 dépôts indistinctement.
 
 Le référentiel officiel des compétitions repose sur les organismes compétents, et non sur ces dépôts. Il distingue les règles documentées, les champs en attente et les adaptations du moteur.
+
+## Recherche complémentaire — compétences et langues
+
+- [simple-statistics/simple-statistics](https://github.com/simple-statistics/simple-statistics), commit `b1ba7efc88838b7f11cd42562e03abd99c9cb99b` : fonction `quantileSorted` effectivement adaptée pour la médiane de forme récente. Licence ISC et source conservées. Aucun paquet à installer pour jouer.
+- [imsreyas7/Player-Similarity-Model](https://github.com/imsreyas7/Player-Similarity-Model), arborescence `9bdfc04aba53653260ac5dc415988041484ccdae` et README examinés : profils multidimensionnels et similarité ; référence seulement, aucun modèle Python ni jeu de données repris.
+- [mavarobli/FMSuperScout](https://github.com/mavarobli/FMSuperScout), arborescence `b3433fc6313eb37c222f1c9d7c5531ac150033ba` et README examinés : vues d’attributs et suivi temporel. Référence d’interface seulement ; aucun lecteur mémoire de Football Manager ni attribut caché extrait.
+- [nicolasLepy/TheManager](https://github.com/nicolasLepy/TheManager), arborescence `d71e1f97f4a95d148b157747f5ab8929758dbd89` et `Readme.md` examinés : simulation de carrière et attention à l’inflation des niveaux. Aucun moteur C# incorporé.
+
+Le nouveau calcul des 41 compétences, ses pondérations et le système de langues sont des développements originaux pour ce jeu. Ils ne sont pas présentés comme une méthode officielle d’évaluation du football.

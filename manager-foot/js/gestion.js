@@ -731,7 +731,7 @@ function groupDynamicsWeekly(G) {
   if (cap && cap.club === G.clubId) myClub(G).coh = clamp((myClub(G).coh ?? 60) + (cap.morale - 60) / 60, 0, 100);
   // intégration des recrues : plus rapide si un groupe de même langue existe
   for (const p of ft) if ((p.integ ?? 100) < 100) {
-    const mates = ft.filter(x => x !== p && langOf(x) === langOf(p)).length;
+    const mates = ft.filter(x => x !== p && (typeof sharedLanguage === 'function' ? sharedLanguage(x, p) : langOf(x) === langOf(p))).length;
     p.integ = clamp(p.integ + 8 + Math.min(3, mates) * 3 + (p.pers === 'Discret' ? -3 : 0), 0, 100);
     if (p.integ < 50) p.morale = clamp(p.morale - .8, 5, 100);
     if (p.integ >= 100) news(G, `🤝 ${p.name} est désormais bien intégré au groupe.`, 'info');
@@ -985,3 +985,4 @@ endSeason = function (G) {
 // Chaque message reçoit un identifiant (lien direct depuis le tableau de bord)
 const __news = news;
 news = function (G, text, type = 'info', worldOnly = false) { __news(G, text, type, worldOnly); if (G.inbox[0]) G.inbox[0].id ||= 'm' + (G.decSeq = (G.decSeq || 1) + 1); };
+

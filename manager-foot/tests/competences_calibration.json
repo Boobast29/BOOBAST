@@ -1,0 +1,19 @@
+{
+  "scope": "380 matchs synthétiques par modèle, même graine ; contrôle de dérive grossière, pas validation statistique exhaustive",
+  "results": [
+    {
+      "model": "ancien",
+      "matches": 380,
+      "goals": 2.4973684210526317,
+      "shots": 23.58421052631579,
+      "msPerMatch": 7.5926315789478585
+    },
+    {
+      "model": "41",
+      "matches": 380,
+      "goals": 2.473684210526316,
+      "shots": 24.589473684210525,
+      "msPerMatch": 13.438421052631824
+    }
+  ]
+}
