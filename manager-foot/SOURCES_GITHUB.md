@@ -73,3 +73,7 @@ Les projets GPL, LGPL et AGPL sont désormais inclus dans la sélection. Voir [D
 - [ElliotJBall/FootballManagerSimulator](https://github.com/ElliotJBall/FootballManagerSimulator), référence `c0057d228c1b320ccd72c02c2de6d8478c13f850` : README et licence MIT examinés. Simulateur console Java ; pas de moteur ni de base ancienne copiés.
 
 Deux autres résultats ont été repérés, Ahmed-ibrahim21/Nutmeg et Dardoe/Dream-Football, mais le chemin README.md essayé ne répondait pas : ils ne sont pas présentés comme audités et aucun code n’en est repris.
+
+## Dépôts hors football
+
+Voir [DEPOTS_GENERALISTES.md](DEPOTS_GENERALISTES.md) : huit candidats avec licences vérifiées, priorités, périmètres d’intégration et critères de réussite. Microdiff, MiniSearch, Tabulator, Ajv, uPlot, XState, Graphology et Dexie sont étudiés pour l’éditeur, la recherche, les tableaux, les imports, les courbes, les négociations, le vestiaire et les sauvegardes. Ils ne sont pas encore intégrés ; ce lot ne modifie pas le moteur ni les sauvegardes.
