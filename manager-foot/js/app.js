@@ -163,7 +163,7 @@ function exportDatabase(W) {
 //  Jeu principal
 // ============================================================
 const NAV = [
-  ['inbox', '🏠', 'Accueil'], ['squad', '👥', 'Effectif'], ['tactics', '📋', 'Tactique'], ['training', '🏋', 'Entraînement'], ['staff', '🧑‍💼', 'Staff'], ['medical', '🏥', 'Infirmerie'],
+  ['inbox', '🏠', 'Accueil'], ['squad', '👥', 'Effectif'], ['tactics', '📋', 'Tactique'], ['training', '🏋', 'Entraînement'], ['staff', '🧑‍💼', 'Staff'], ['medical', '🏥', 'Infirmerie'], ['dressing', '🤝', 'Vestiaire'],
   ['fixtures', '📅', 'Calendrier'], ['comps', '🏆', 'Compétitions'], ['transfers', '💱', 'Mercato'], ['finances', '💶', 'Finances'],
   ['club', '🏟', 'Club'], ['editor', '✏', 'Éditeur'], ['options', '⚙', 'Options']
 ];
@@ -235,7 +235,7 @@ function show(v) {
   VIEW = v;
   $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   renderTop();
-  const fn = { inbox: vInbox, squad: vSquad, tactics: vTactics, training: vTraining, staff: vStaff, medical: vMedical, fixtures: vFixtures, comps: vComps, transfers: vTransfers, finances: vFinances, club: vClub, editor: el => vEditor(el, G, true), options: vOptions }[v] || vInbox;
+  const fn = { inbox: vInbox, squad: vSquad, tactics: vTactics, training: vTraining, staff: vStaff, medical: vMedical, dressing: vDressing, fixtures: vFixtures, comps: vComps, transfers: vTransfers, finances: vFinances, club: vClub, editor: el => vEditor(el, G, true), options: vOptions }[v] || vInbox;
   const main = $('#main'); main.innerHTML = '';
   fn(main);
   main.scrollTop = 0;
@@ -440,6 +440,12 @@ function playerModal(pid, tab = 'profil') {
       <div><h3>Infos</h3>
         <table class="tbl kv">
           <tr><td>Personnalité</td><td title="${esc(PERSONALITIES[p.pers] || '')}">${esc(p.pers)} <span class="muted">ⓘ</span></td></tr>
+          ${mine ? `<tr><td>Statut</td><td><select id="pmStatus">${STATUS_ORDER.map(k => `<option value="${k}" ${k === (p.status || 'rot') ? 'selected' : ''}>${STATUS[k].label}</option>`).join('')}</select> <small class="muted">${(() => { const sh = playShare(p); return sh == null ? '' : `joue ${Math.round(sh * 100)} % du temps (attendu ${Math.round(expectedShare(p) * 100)} %)`; })()}</small></td></tr>
+          <tr><td>Confiance en toi</td><td>${meter(p.trust ?? 55)}</td></tr>
+          <tr><td>Disponibilité</td><td><label class="chk"><input type="checkbox" id="pmRest" ${p.rest ? 'checked' : ''}> Repos au prochain match</label> <label class="chk"><input type="checkbox" id="pmRes" ${p.reserve ? 'checked' : ''}> En réserve</label></td></tr>
+          ${unhappyReasons(G, p).length ? `<tr><td>Préoccupations</td><td class="neg"><small>${unhappyReasons(G, p).map(esc).join('<br>')}</small></td></tr>` : ''}` : ''}
+          ${p.clause && (mine || known) ? `<tr><td>Clause libératoire</td><td>${money(p.clause)}</td></tr>` : ''}
+          ${p.loan?.inLoan ? `<tr><td>Prêt</td><td>De ${esc(getClub(G, p.loan.from).name)} · tu paies ${Math.round((p.loan.share ?? 1) * 100)} % du salaire${p.loan.option ? ` · option ${money(p.loan.option)}` : ''}</td></tr>` : ''}
           <tr><td>Valeur</td><td>${money(p.value)}</td></tr>
           <tr><td>Salaire</td><td>${money(p.wage)} / sem.</td></tr>
           <tr><td>Contrat</td><td>${p.contract} saison(s)</td></tr>
@@ -488,10 +494,12 @@ function playerModal(pid, tab = 'profil') {
   const actions = mine ? `
       <button class="btn" onclick="toggleList(${p.id})">${p.listed ? 'Retirer de la liste' : 'Mettre en vente'}</button>
       <button class="btn" onclick="renewModal(${p.id})">Prolonger</button>
-      ${p.age <= 23 ? `<button class="btn" onclick="loanModal(${p.id})">Prêter</button>` : ''}
-      <button class="btn danger" onclick="releasePlayer(${p.id})">Libérer</button>`
+      ${p.age <= 23 && !p.loan ? `<button class="btn" onclick="loanModal(${p.id})">Prêter</button>` : ''}
+      ${p.loan?.inLoan && p.loan.option ? `<button class="btn primary" onclick="(()=>{const m=exerciseOption(G,getPlayer(G,${p.id}));if(m)return toast(m,'err');save();closeModal();refresh();})()">Lever l'option (${money(p.loan.option)})</button>` : ''}
+      ${p.loan?.inLoan ? '' : `<button class="btn danger" onclick="releasePlayer(${p.id})">Libérer</button>`}`
     : p.loan?.from === G.clubId ? '<span class="muted">Joueur prêté — il reviendra en fin de saison.</span>'
     : `${known || scouting ? '' : `<button class="btn" onclick="scoutPlayer(${p.id})">🔎 Superviser</button>`}<button class="btn primary" onclick="offerModal(${p.id})">${club ? 'Faire une offre' : 'Proposer un contrat'}</button>
+       ${club && canLoanIn(G, p) ? `<button class="btn" onclick="loanInModal(${p.id})">Demander un prêt</button>` : ''}
        <button class="btn" onclick="toggleShortlist(${p.id})">${shortlisted ? '👁 Retirer du suivi' : '👁 Suivre'}</button>
        ${club ? `<button class="btn" onclick="closeModal();viewClub(${club.id})">Voir le club</button>` : ''}`;
   modal(`
@@ -506,6 +514,9 @@ function playerModal(pid, tab = 'profil') {
   <div class="pm-body">${body}</div>
   <div class="row gap wrap mt">${actions}<div class="grow"></div><button class="btn" onclick="editPlayerModal(${p.id}, G, () => playerModal(${p.id}))" title="Modifier dans l'éditeur">✏ Éditer</button></div>`, 'wide');
   $$('#modal [data-t]').forEach(b => b.onclick = () => playerModal(pid, b.dataset.t));
+  $('#pmStatus')?.addEventListener('change', e => { const m = setStatus(G, p, e.target.value); if (m) toast(m, m.includes('ravi') ? '' : 'err'); save(); playerModal(pid); });
+  $('#pmRest')?.addEventListener('change', e => { p.rest = e.target.checked; if (p.rest) removeFromTactics(p.id); save(); toast(p.rest ? `${p.name} sera au repos au prochain match.` : `${p.name} est de nouveau disponible.`); });
+  $('#pmRes')?.addEventListener('change', e => { p.reserve = e.target.checked; if (p.reserve) { removeFromTactics(p.id); if (STATUS_ORDER.indexOf(p.status) <= 2) { p.morale = clamp(p.morale - 10, 5, 100); p.trust = clamp((p.trust ?? 55) - 10, 0, 100); } } save(); toast(p.reserve ? `${p.name} rejoint l'équipe réserve.` : `${p.name} réintègre le groupe pro.`); });
   $$('#modal [data-talk]').forEach(b => b.onclick = () => talkTo(p, b.dataset.talk));
 }
 
@@ -532,6 +543,7 @@ function talkTo(p, kind) {
       break;
   }
   p.morale = clamp(p.morale + d, 5, 100);
+  p.trust = clamp((p.trust ?? 55) + d * .5, 0, 100);
   G.talked[p.id] = txt;
   save();
   toast(txt, d >= 0 ? '' : 'err');
@@ -590,16 +602,44 @@ function placePlayer(T, pid, target) {
   else if (target.idx < T.bench.length) T.bench[target.idx] = pid; else T.bench.push(pid);
   T.bench = T.bench.filter((x, i, a) => x != null && a.indexOf(x) === i && !T.lineup.includes(x)).slice(0, 9);
 }
+let TAC_MOVE = false, TAC_SLOT = null;
 function vTactics(el) {
   const T = G.tactics;
-  T.inst ||= defaultInst(); T.takers ||= {};
-  const slots = FORMATIONS[T.formation];
+  T.inst = { ...defaultInst(), ...(T.inst || {}) }; T.takers ||= {}; T.pos ||= {}; T.styles ||= {}; T.duties ||= {};
+  G.tacPresets ||= [null, null, null];
+  const nSlots = FORMATIONS[T.formation].length;
   const squad = clubPlayers(G, G.clubId).sort((a, b) => POS_ORDER.indexOf(a.pos) - POS_ORDER.indexOf(b.pos) || playerOvr(b) - playerOvr(a));
   const side = makeSide(G, G.clubId, T);
   const S = teamStrength(G, side);
-  const selRole = SEL?.type === 'xi' ? slots[SEL.idx][0] : null;
+  const fam = tacFam(G, T.formation);
+  if (TAC_SLOT != null && TAC_SLOT >= nSlots) TAC_SLOT = null;
+  const selRole = SEL?.type === 'xi' ? slotRole(T, SEL.idx) : null;
   const xiPlayers = T.lineup.filter(Boolean).map(id => getPlayer(G, id));
   const opt = (k) => `<option value="">Auto (${esc(getPlayer(G, side.takers[k])?.name || '-')})</option>` + xiPlayers.map(p => `<option value="${p.id}" ${T.takers[k] === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+  const dutyIcon = d => d === 1 ? '⚔' : d === -1 ? '🛡' : '';
+  const slotHTML = Array.from({ length: nSlots }, (_, i) => {
+    const pos = slotPos(T, i), role = slotRole(T, i);
+    const p = T.lineup[i] ? getPlayer(G, T.lineup[i]) : null;
+    const r = p ? effRating(p, role) : 0;
+    const bad = p && (!available(p) || familiarity(p, role) < .9);
+    const st = ROLE_STYLES[role]?.[slotStyle(T, i, role)];
+    return `<div class="slot ${SEL?.type === 'xi' && SEL.idx === i ? 'sel' : ''} ${TAC_SLOT === i ? 'focus' : ''} ${bad ? 'bad' : ''} ${T.pos[i] ? 'moved' : ''}" data-i="${i}" style="left:${pos.x}%;top:${pos.y}%" ${p && !TAC_MOVE ? `draggable="true" data-pid="${p.id}"` : ''} title="${p ? esc(p.name) + ' — ' : ''}${esc(st?.label || ROLES[role].label)}${p && familiarity(p, role) < 1 ? ' (hors de son poste : ' + p.pos + ')' : ''}">
+      ${p ? avatar(p, 40) : '<div class="empty">+</div>'}
+      <div class="sl-role">${role}${p ? ' ' + ovrBadge(r) : ''}${dutyIcon(T.duties[i] ?? 0)}</div>
+      <div class="sl-name">${p ? esc(p.name.split(' ').slice(-1)[0]) : '—'}${p && T.takers.cap === p.id ? ' ©' : ''}</div>
+      <div class="sl-style">${esc(st?.label || '')}</div>
+    </div>`;
+  }).join('');
+  let focusHTML = '<p class="hint">Clique un joueur sur le terrain pour régler son rôle et sa mission.</p>';
+  if (TAC_SLOT != null) {
+    const i = TAC_SLOT, role = slotRole(T, i), p = T.lineup[i] ? getPlayer(G, T.lineup[i]) : null;
+    const styles = ROLE_STYLES[role] || {}, cur = slotStyle(T, i, role);
+    focusHTML = `<div class="focus-box"><h3>${ROLES[role].label}${p ? ` — ${esc(p.name)} ${ovrBadge(effRating(p, role))}` : ''}</h3>
+      <label>Rôle <select id="fStyle">${Object.entries(styles).map(([k, s]) => `<option value="${k}" ${k === cur ? 'selected' : ''}>${esc(s.label)}</option>`).join('')}</select></label>
+      <p class="hint">${esc(styles[cur]?.tip || '')}</p>
+      ${role !== 'GB' ? `<div class="inst-row"><span>Mission</span>${seg('duty', ['Défense', 'Soutien', 'Attaque'], T.duties[i] ?? 0)}</div>` : ''}
+      ${T.pos[i] ? '<button class="btn sm mt" id="fReset">↺ Position par défaut</button>' : ''}</div>`;
+  }
   el.innerHTML = `
   <div class="tac-wrap">
     <section class="card">
@@ -607,22 +647,16 @@ function vTactics(el) {
         <label>Formation <select id="form">${Object.keys(FORMATIONS).map(f => `<option ${f === T.formation ? 'selected' : ''}>${f}</option>`).join('')}</select></label>
         <label>Mentalité <select id="ment">${MENTALITIES.map(m => `<option value="${m.v}" ${m.v === T.mentality ? 'selected' : ''}>${m.label}</option>`).join('')}</select></label>
         <div class="grow"></div>
-        <button class="btn" id="auto" title="Meilleure composition selon les notes et la condition">⚡ Composition auto</button>
+        <button class="btn ${TAC_MOVE ? 'primary' : ''}" id="moveMode" title="Déplace librement les joueurs sur le terrain : leur poste s'adapte à la zone">✥ ${TAC_MOVE ? 'Placement : ON' : 'Placement libre'}</button>
+        <button class="btn" id="auto" title="Meilleure composition">⚡ Auto</button>
       </div>
-      <div class="pitch">
+      <div class="pitch ${TAC_MOVE ? 'moving' : ''}" id="tpitch">
         <div class="lines"></div>
-        ${slots.map(([role, x, y], i) => {
-          const p = T.lineup[i] ? getPlayer(G, T.lineup[i]) : null;
-          const r = p ? effRating(p, role) : 0;
-          const bad = p && (!available(p) || familiarity(p, role) < .9);
-          return `<div class="slot ${SEL?.type === 'xi' && SEL.idx === i ? 'sel' : ''} ${bad ? 'bad' : ''}" data-i="${i}" style="left:${x}%;top:${y}%" ${p ? `draggable="true" data-pid="${p.id}"` : ''} title="${p ? esc(p.name) + (familiarity(p, role) < 1 ? ' — hors de son poste (' + p.pos + ')' : '') : 'Place libre'}">
-            ${p ? avatar(p, 42) : '<div class="empty">+</div>'}
-            <div class="sl-role">${role}${p ? ' ' + ovrBadge(r) : ''}</div>
-            <div class="sl-name">${p ? esc(p.name.split(' ').slice(-1)[0]) : '—'}${p && T.takers.cap === p.id ? ' ©' : ''}</div>
-            ${p ? bar(p.fit, 100, p.fit < 70 ? 'low' : '') : ''}
-          </div>`;
-        }).join('')}
+        ${TAC_MOVE ? '<div class="zones"><span style="top:6%">ATTAQUE</span><span style="top:30%">MILIEU OFFENSIF</span><span style="top:46%">MILIEU</span><span style="top:59%">MILIEU DÉFENSIF</span><span style="top:74%">DÉFENSE</span></div>' : ''}
+        ${slotHTML}
       </div>
+      <div class="row gap mt"><small class="muted">Familiarité ${esc(T.formation)}</small>${meter(fam, 'Familiarité tactique')}<small class="muted">${fam < 50 ? 'Les joueurs découvrent ce système (malus).' : fam < 80 ? 'En cours d\'assimilation.' : 'Parfaitement maîtrisé.'}</small>
+        ${Object.keys(T.pos).length ? '<div class="grow"></div><button class="btn sm" id="resetAll">↺ Positions par défaut</button>' : ''}</div>
       <div class="strength">
         <div><small>Défense</small>${bar(S.def)}<b>${Math.round(S.def)}</b></div>
         <div><small>Milieu</small>${bar(S.mid)}<b>${Math.round(S.mid)}</b></div>
@@ -634,61 +668,98 @@ function vTactics(el) {
         const p = T.bench[i] ? getPlayer(G, T.bench[i]) : null;
         return `<div class="bslot ${SEL?.type === 'bench' && SEL.idx === i ? 'sel' : ''}" data-b="${i}" ${p ? `draggable="true" data-pid="${p.id}"` : ''}>${p ? avatar(p, 30) + `<span>${p.pos} ${esc(p.name.split(' ').slice(-1)[0])}</span>${ovrBadge(playerOvr(p))}` : '<span class="muted">+ vide</span>'}</div>`;
       }).join('')}</div>
-      <p class="hint">Glisse un joueur sur une place, ou clique une place puis un joueur. Rouge = hors poste ou indisponible.</p>
+      <p class="hint">${TAC_MOVE ? 'Mode placement : fais glisser un joueur où tu veux, son poste change selon la zone (ex. un milieu axial avancé devient meneur offensif).' : 'Glisse un joueur sur une place, ou clique une place puis un joueur. Rouge = hors poste ou indisponible.'}</p>
     </section>
     <div class="col">
+      <section class="card"><h2>🎯 Poste sélectionné</h2>${focusHTML}</section>
       <section class="card">
         <h2>Consignes d'équipe</h2>
-        <div class="inst">${Object.entries(INST).map(([k, d]) => `<div class="inst-row" title="${esc(d.tip)}"><span>${d.label}</span>${seg(k, d.opts, T.inst[k] ?? 0)}</div>`).join('')}</div>
+        <div class="inst">${Object.entries(INST).map(([k, d]) => `<div class="inst-row" title="${esc(d.tip)}"><span>${d.label}</span>${seg(k, d.opts, T.inst[k] ?? 0)}</div>`).join('')}
+          ${Object.entries(EXTRA_INST).map(([k, d]) => `<div class="inst-row" title="${esc(d.tip)}"><span>${d.label}</span><div class="seg"><button data-x="${k}" data-v="0" class="${!T.inst[k] ? 'on' : ''}">Non</button><button data-x="${k}" data-v="1" class="${T.inst[k] ? 'on' : ''}">Oui</button></div></div>`).join('')}</div>
         <div class="row gap wrap mt">
           <label>Capitaine <select data-tk="cap">${opt('cap')}</select></label>
           <label>Penaltys <select data-tk="pen">${opt('pen')}</select></label>
           <label>Coups francs <select data-tk="fk">${opt('fk')}</select></label>
         </div>
-        <p class="hint">Survole une consigne pour voir son effet. Elles influencent vraiment le moteur : possession, occasions, contres, fatigue, cartons.</p>
+      </section>
+      <section class="card"><h2>💾 Tactiques enregistrées</h2>
+        <div class="presets">${G.tacPresets.map((pr, i) => `<div class="preset"><b>${pr ? esc(pr.name) : `Tactique ${'ABC'[i]}`}</b><small>${pr ? `${pr.formation} · ${MENTALITIES.find(m => m.v === pr.mentality)?.label || ''}` : 'vide'}</small>
+          <div class="row gap"><button class="btn sm" data-psave="${i}">Enregistrer</button>${pr ? `<button class="btn sm primary" data-pload="${i}">Charger</button>` : ''}</div></div>`).join('')}</div>
+        <p class="hint">Change de plan en un clic : avant le match ou en plein match (bouton 📋 Tactique).</p>
       </section>
       <section class="card">
         <h2>Joueurs ${selRole ? `<small>— note au poste ${selRole}</small>` : ''}</h2>
         <div class="scroll short"><table class="tbl players compact">
-          <thead><tr><th></th><th>Joueur</th><th>Poste</th><th>Note</th>${selRole ? `<th>${selRole}</th>` : ''}<th>Cond.</th><th>Forme</th><th></th></tr></thead>
-          <tbody>${squad.map(p => `<tr data-pid="${p.id}" draggable="true" class="${T.lineup.includes(p.id) ? 'xi' : T.bench.includes(p.id) ? 'bn' : ''} ${available(p) ? '' : 'unav'}">
+          <thead><tr><th></th><th>Joueur</th><th>Poste</th><th>Note</th>${selRole ? `<th>${selRole}</th>` : ''}<th>Cond.</th><th>Statut</th><th></th></tr></thead>
+          <tbody>${squad.map(p => `<tr data-pid="${p.id}" draggable="true" class="${T.lineup.includes(p.id) ? 'xi' : T.bench.includes(p.id) ? 'bn' : ''} ${available(p) && !p.rest && !p.reserve ? '' : 'unav'}">
             <td>${avatar(p, 26)}</td><td class="nm">${esc(p.name)}</td><td><span class="pos-${ROLES[p.pos].line}">${p.pos}</span></td><td>${ovrBadge(playerOvr(p))}</td>
             ${selRole ? `<td>${ovrBadge(effRating(p, selRole))}</td>` : ''}
-            <td>${bar(p.fit, 100, p.fit < 70 ? 'low' : '')}</td><td>${formDots(p, 3)}</td><td>${T.lineup.includes(p.id) ? '<span class="tag grn">XI</span>' : T.bench.includes(p.id) ? '<span class="tag">Banc</span>' : ''} ${status(p)}</td></tr>`).join('')}</tbody>
+            <td>${bar(p.fit, 100, p.fit < 70 ? 'low' : '')}</td><td><small>${esc(STATUS[p.status || 'rot'].label)}</small></td><td>${T.lineup.includes(p.id) ? '<span class="tag grn">XI</span>' : T.bench.includes(p.id) ? '<span class="tag">Banc</span>' : ''} ${p.rest ? '<span class="tag">Repos</span>' : ''}${p.reserve ? '<span class="tag">Réserve</span>' : ''} ${status(p)}</td></tr>`).join('')}</tbody>
         </table></div>
       </section>
     </div>
   </div>`;
   const rerender = () => { save(); vTactics(el); };
   $('#form').onchange = e => {
-    const nw = FORMATIONS[e.target.value];
-    const left = T.lineup.filter(Boolean);
-    const newL = new Array(nw.length).fill(null);
-    nw.forEach(([r], i) => { const j = left.findIndex(id => getPlayer(G, id).pos === r); if (j >= 0) newL[i] = left.splice(j, 1)[0]; });
-    nw.forEach(([r], i) => { if (!newL[i] && left.length) { let bj = 0, bv = -1; left.forEach((id, j) => { const v = effRating(getPlayer(G, id), r); if (v > bv) { bv = v; bj = j; } }); newL[i] = left.splice(bj, 1)[0]; } });
-    T.formation = e.target.value; T.lineup = newL; SEL = null; rerender();
+    const nf = e.target.value;
+    T.pos = {}; T.styles = {}; T.duties = {};
+    T.lineup = remapLineup(G, T.lineup, nf, { ...T, formation: nf });
+    T.formation = nf; SEL = null; TAC_SLOT = null; rerender();
+    if (tacFam(G, nf) < 50) toast('Nouveau système : tes joueurs vont devoir l\'assimiler (familiarité basse).', 'err');
   };
   $('#ment').onchange = e => { T.mentality = +e.target.value; save(); };
-  $('#auto').onclick = () => { Object.assign(T, autoLineup(G, G.clubId, T.formation)); SEL = null; rerender(); };
-  el.querySelectorAll('.seg').forEach(s => s.querySelectorAll('button').forEach(b => b.onclick = () => { T.inst[s.dataset.name] = +b.dataset.v; rerender(); }));
+  $('#auto').onclick = () => { Object.assign(T, autoLineup(G, G.clubId, T.formation, T)); SEL = null; rerender(); };
+  $('#moveMode').onclick = () => { TAC_MOVE = !TAC_MOVE; SEL = null; vTactics(el); };
+  $('#resetAll')?.addEventListener('click', () => { T.pos = {}; rerender(); });
+  $('#fReset')?.addEventListener('click', () => { delete T.pos[TAC_SLOT]; rerender(); });
+  $('#fStyle')?.addEventListener('change', e => { T.styles[TAC_SLOT] = e.target.value; rerender(); });
+  el.querySelectorAll('.seg').forEach(s => s.querySelectorAll('button[data-v]').forEach(b => b.onclick = () => {
+    if (b.dataset.x) { T.inst[b.dataset.x] = +b.dataset.v; return rerender(); }
+    if (s.dataset.name === 'duty') { T.duties[TAC_SLOT] = +b.dataset.v; return rerender(); }
+    T.inst[s.dataset.name] = +b.dataset.v; rerender();
+  }));
   el.querySelectorAll('[data-tk]').forEach(s => s.onchange = () => { T.takers[s.dataset.tk] = s.value ? +s.value : undefined; rerender(); });
-  const target = elx => elx.dataset.i != null ? { type: 'xi', idx: +elx.dataset.i } : { type: 'bench', idx: Math.min(+elx.dataset.b, T.bench.length) };
-  const clickSlot = elx => {
-    const cur = target(elx);
-    const curId = cur.type === 'xi' ? T.lineup[cur.idx] : T.bench[cur.idx];
-    if (SEL && !(SEL.type === cur.type && SEL.idx === cur.idx)) {
-      const selId = SEL.type === 'xi' ? T.lineup[SEL.idx] : T.bench[SEL.idx];
-      if (selId != null) placePlayer(T, selId, cur); else if (curId != null) placePlayer(T, curId, SEL);
-      SEL = null; rerender();
-    } else { SEL = SEL ? null : cur; vTactics(el); }
-  };
-  el.querySelectorAll('.slot, .bslot').forEach(s => {
-    s.onclick = () => clickSlot(s);
-    s.ondragover = e => { e.preventDefault(); s.classList.add('over'); };
-    s.ondragleave = () => s.classList.remove('over');
-    s.ondrop = e => { e.preventDefault(); const pid = +e.dataTransfer.getData('text/plain'); if (pid) { placePlayer(T, pid, target(s)); SEL = null; rerender(); } };
+  el.querySelectorAll('[data-psave]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.psave;
+    const name = prompt('Nom de la tactique :', G.tacPresets[i]?.name || `Tactique ${'ABC'[i]}`);
+    if (name === null) return;
+    G.tacPresets[i] = newPreset(T, name.trim() || `Tactique ${'ABC'[i]}`); toast('Tactique enregistrée.'); rerender();
   });
-  el.querySelectorAll('[draggable=true]').forEach(d => d.ondragstart = e => { e.dataTransfer.setData('text/plain', d.dataset.pid); e.dataTransfer.effectAllowed = 'move'; });
+  el.querySelectorAll('[data-pload]').forEach(b => b.onclick = () => { applyPreset(G, G.tacPresets[+b.dataset.pload]); SEL = null; TAC_SLOT = null; toast(`Tactique « ${G.tacPresets[+b.dataset.pload].name} » chargée.`); rerender(); });
+  const pitch = $('#tpitch');
+  if (TAC_MOVE) {
+    el.querySelectorAll('.slot').forEach(s => {
+      const i = +s.dataset.i;
+      s.onclick = () => { TAC_SLOT = i; vTactics(el); };
+      if (i === 0) return;
+      s.onpointerdown = ev => {
+        ev.preventDefault(); s.setPointerCapture(ev.pointerId); let moved = false;
+        const rect = pitch.getBoundingClientRect();
+        const at = e2 => [clamp((e2.clientX - rect.left) / rect.width * 100, 4, 96), clamp((e2.clientY - rect.top) / rect.height * 100, 8, 84)];
+        s.onpointermove = e2 => { moved = true; const [x, y] = at(e2); s.style.left = x + '%'; s.style.top = y + '%'; s.querySelector('.sl-role').firstChild.textContent = roleAt(x, y, false) + ' '; };
+        s.onpointerup = e2 => { s.onpointermove = null; s.onpointerup = null; if (!moved) { TAC_SLOT = i; return vTactics(el); } const [x, y] = at(e2); T.pos[i] = [Math.round(x), Math.round(y)]; TAC_SLOT = i; rerender(); };
+      };
+    });
+  } else {
+    const target = elx => elx.dataset.i != null ? { type: 'xi', idx: +elx.dataset.i } : { type: 'bench', idx: Math.min(+elx.dataset.b, T.bench.length) };
+    const clickSlot = elx => {
+      const cur = target(elx);
+      if (cur.type === 'xi') TAC_SLOT = cur.idx;
+      const curId = cur.type === 'xi' ? T.lineup[cur.idx] : T.bench[cur.idx];
+      if (SEL && !(SEL.type === cur.type && SEL.idx === cur.idx)) {
+        const selId = SEL.type === 'xi' ? T.lineup[SEL.idx] : T.bench[SEL.idx];
+        if (selId != null) placePlayer(T, selId, cur); else if (curId != null) placePlayer(T, curId, SEL);
+        SEL = null; rerender();
+      } else { SEL = SEL ? null : cur; vTactics(el); }
+    };
+    el.querySelectorAll('.slot, .bslot').forEach(s => {
+      s.onclick = () => clickSlot(s);
+      s.ondragover = e => { e.preventDefault(); s.classList.add('over'); };
+      s.ondragleave = () => s.classList.remove('over');
+      s.ondrop = e => { e.preventDefault(); const pid = +e.dataTransfer.getData('text/plain'); if (pid) { placePlayer(T, pid, target(s)); SEL = null; rerender(); } };
+    });
+    el.querySelectorAll('[draggable=true]').forEach(d => d.ondragstart = e => { e.dataTransfer.setData('text/plain', d.dataset.pid); e.dataTransfer.effectAllowed = 'move'; });
+  }
   el.querySelectorAll('tr[data-pid]').forEach(r => r.onclick = () => {
     const pid = +r.dataset.pid;
     if (!SEL) return playerModal(pid);
@@ -696,8 +767,6 @@ function vTactics(el) {
   });
 }
 
-// ============================================================
-//  Entraînement
 // ============================================================
 function vTraining(el) {
   const tr = G.training;
@@ -856,7 +925,7 @@ let TF = { q: '', pos: '', maxv: '', maxage: '', minovr: '', free: false };
 let TR_TAB = 'search';
 function vTransfers(el) {
   const club = myClub(G);
-  const tabs = [['search', '🔎 Recherche'], ['shortlist', `👁 Suivi (${G.shortlist.length})`], ['scout', `🔎 Recrutement (${G.scouting.length})`], ['offers', `📩 Offres reçues (${G.offers.length})`], ['selling', '🏷 Mes joueurs en vente']];
+  const tabs = [['search', '🔎 Recherche'], ['shortlist', `👁 Suivi (${G.shortlist.length})`], ['scout', `🔎 Recrutement (${G.scouting.length})`], ['offers', `📩 Offres reçues (${G.offers.length})`], ['selling', '🏷 Mes joueurs en vente'], ['history', '📜 Historique']];
   el.innerHTML = `<section class="card">
     <div class="row gap wrap"><h2 class="grow">💱 Mercato ${windowOpen(G) ? '<span class="tag grn">Ouvert</span>' : '<span class="tag red">Fermé — agents libres uniquement</span>'}</h2>
     <span>Budget : <b>${money(club.budget)}</b> · Effectif : ${clubPlayers(G, G.clubId).length}/32</span></div>
@@ -889,6 +958,15 @@ function vTransfers(el) {
     </div>${table(list.slice(0, 150))}<p class="hint">${list.length} joueurs${list.length > 150 ? ' (150 affichés)' : ''}.</p>`;
     const upd = () => { TF = { q: $('#fq').value, pos: $('#fpos').value, maxv: $('#fmv').value, maxage: $('#fage').value, minovr: $('#fmo').value, free: $('#ffree').checked }; vTransfers(el); };
     ['#fq', '#fpos', '#fmv', '#fage', '#fmo', '#ffree'].forEach(s => $(s).onchange = upd);
+  } else if (TR_TAB === 'history') {
+    const all = G.transfers || [];
+    const mine = all.filter(t => t.from === G.clubId || t.to === G.clubId);
+    const top = all.filter(t => t.season === G.season && t.fee > 0).sort((a, b) => b.fee - a.fee).slice(0, 10);
+    const cl = id => id == null ? '<i>Libre</i>' : `${crest(getClub(G, id), 16)} ${esc(getClub(G, id)?.short || '?')}`;
+    const row = t => `<tr ${G.pmap[t.pid] ? `data-pid="${t.pid}"` : ''}><td>${t.season} · ${esc(t.label)}</td><td class="nm">${esc(t.name)}</td><td>${t.pos}</td><td>${cl(t.from)}</td><td>→</td><td>${cl(t.to)}</td><td>${t.fee ? money(t.fee) : '-'}</td><td><span class="tag">${esc(t.type)}</span></td></tr>`;
+    body.innerHTML = `<div class="grid2"><div><h3>Mes mouvements</h3><table class="tbl compact">${mine.slice(0, 40).map(row).join('') || '<tr><td class="muted">Aucun.</td></tr>'}</table></div>
+      <div><h3>Plus gros transferts de la saison</h3><table class="tbl compact">${top.map(row).join('') || '<tr><td class="muted">Aucun.</td></tr>'}</table>
+      <h3>Engagements financiers</h3><p>À payer (échéancier) : <b class="neg">${money(payablesOwed(G))}</b> · À recevoir : <b class="pos">${money(receivablesDue(G))}</b></p></div></div>`;
   } else if (TR_TAB === 'scout') {
     body.innerHTML = `<p>Recruteur : <b>niveau ${G.staff.scout}/5</b>. Un rapport prend ${Math.max(1, 4 - Math.floor(G.staff.scout / 2))} semaine(s). Les joueurs non supervisés affichent une note <b>estimée (~)</b> et un potentiel inconnu.</p>
       <h3>En cours</h3>${table(G.scouting.map(s => getPlayer(G, s.pid)).filter(Boolean))}
@@ -901,6 +979,7 @@ function vTransfers(el) {
     body.querySelectorAll('[data-rej]').forEach(b => b.onclick = () => {
       const o = G.offers.find(o => o.id === +b.dataset.rej);
       if (o?.star) { const p = getPlayer(G, o.pid); p.morale = clamp(p.morale - 15, 5, 100); news(G, `${p.name} n'apprécie pas que tu aies refusé l'offre de ${getClub(G, o.club).name}.`, 'warn'); toast(`${p.name} est déçu…`, 'err'); }
+      if (o) (G.rejected ||= []).push({ pid: o.pid, club: o.club, fee: o.fee, week: G.week, star: o.star });
       G.offers = G.offers.filter(x => x !== o); save(); vTransfers(el);
     });
     body.querySelectorAll('[data-ctr]').forEach(b => b.onclick = () => counterOffer(+b.dataset.ctr));
@@ -927,6 +1006,8 @@ function acceptOffer(oid) {
   const p = getPlayer(G, o.pid), buyer = getClub(G, o.club), me = myClub(G);
   if (buyer.budget < o.fee) { toast(`${buyer.name} n'a plus les fonds.`, 'err'); G.offers = G.offers.filter(x => x !== o); return refresh(); }
   flow(G, buyer, -o.fee, 'transfers'); flow(G, me, o.fee, 'sales');
+  paySellOn(G, p, o.fee, me);
+  logTransfer(G, p, me.id, buyer.id, o.fee, 'transfert');
   G.board.transfer = roundMoney((G.board.transfer || 0) + o.fee * .6);
   p.club = buyer.id; p.listed = false; p.contract = rint(2, 5); p.num = null; assignNumbers(clubPlayers(G, buyer.id));
   removeFromTactics(p.id);
@@ -939,64 +1020,112 @@ function offerModal(pid) {
   const seller = p.club != null ? getClub(G, p.club) : null;
   const me = myClub(G);
   if (seller && !windowOpen(G)) return toast('Mercato fermé : seuls les agents libres peuvent signer.', 'err');
-  if (clubPlayers(G, G.clubId).length >= 32) return toast('Effectif complet (32 max). Vends ou libère quelqu\'un.', 'err');
   if (seller && G.board.ban) return toast('Interdiction de recruter (contrôle de gestion) : seuls les agents libres sont autorisés.', 'err');
-  const wageAsk = roundMoney(Math.max(demandWage(G, p, me), p.wage * (seller ? 1.1 : .9)) * (1.1 + Math.max(0, playerOvr(p) - me.rep) / 40) * (p.pers === 'Ambitieux' ? 1.1 : 1));
-  const room = G.board.wageCap - wageBill(G);
-  const sq = seller ? clubPlayers(G, seller.id) : [];
-  const rank = seller ? sq.map(playerOvr).sort((a, b) => b - a).indexOf(playerOvr(p)) : 99;
-  const key = rank < 11 ? .35 : rank < 16 ? .12 : 0;
-  const ask = seller ? roundMoney(p.value * (p.listed ? .85 : 1.05 + key) * (seller.rep > me.rep + 10 ? 1.25 : 1)) : 0;
+  if (clubPlayers(G, G.clubId).length >= 32) return toast('Effectif complet (32 max). Vends ou libère quelqu\'un.', 'err');
+  const myRankIfSigned = clubPlayers(G, G.clubId).filter(x => playerOvr(x) > playerOvr(p)).length;
+  const wantStatus = defaultStatus(myRankIfSigned, p.age);
+  const baseWage = roundMoney(Math.max(demandWage(G, p, me), p.wage * (seller ? 1.1 : .9)) * (1.1 + Math.max(0, playerOvr(p) - me.rep) / 40) * (p.pers === 'Ambitieux' ? 1.1 : 1));
+  const room = () => G.board.wageCap - wageBill(G);
+  const ask = seller ? sellerAsk(G, p, me) : 0;
+  const known = knows(G, p);
   let stage = seller ? 'fee' : 'wage';
-  let agreedFee = 0;
+  const deal = { fee: roundMoney(p.value * .9), plan: 'cash', addOn: 0, sellOn: 0, swap: null };
+  const myPlayers = clubPlayers(G, G.clubId).filter(x => !x.loan).sort((a, b) => b.value - a.value);
   const render = (msg = '') => {
+    const st = deal.status || wantStatus;
     modal(`<h2>${seller ? 'Transfert' : 'Contrat'} : ${esc(p.name)}</h2>
       <div class="row gap">${avatar(p, 56)}<div><p>${ROLES[p.pos].label} · ${p.age} ans · ${ovrCell(p)} ${potCell(p)}</p>
-      <p>${seller ? `${crest(seller, 18)} ${esc(seller.name)} · valeur estimée <b>${money(p.value)}</b>` : 'Agent libre — pas d\'indemnité.'}</p></div></div>
-      <p>Budget transferts : <b>${money(G.board.transfer)}</b> · Marge salariale : <b class="${room < wageAsk ? 'neg' : ''}">${money(room)}/sem.</b></p>
+      <p>${seller ? `${crest(seller, 18)} ${esc(seller.name)} · valeur estimée <b>${money(p.value)}</b>${p.clause && known ? ` · clause libératoire <b>${money(p.clause)}</b>` : p.clause ? ' · clause libératoire (montant inconnu, supervise-le)' : ''}` : 'Agent libre — pas d\'indemnité.'}</p></div></div>
+      <p>Budget transferts : <b>${money(G.board.transfer)}</b> · Marge salariale : <b class="${room() < baseWage ? 'neg' : ''}">${money(room())}/sem.</b></p>
       <div class="steps"><span class="${stage === 'fee' ? 'on' : 'done'}">${seller ? '1. Accord avec le club' : ''}</span><span class="${stage === 'wage' ? 'on' : ''}">${seller ? '2. ' : ''}Contrat du joueur</span></div>
-      ${stage === 'fee' ? `<label>Indemnité proposée (€) <input id="fee" type="number" step="100000" value="${roundMoney(p.value * .9)}"></label>
-        <div class="row gap mt"><div class="grow"></div><button class="btn primary" id="ok">Envoyer l'offre</button></div>`
-        : `<p>${seller ? `✅ Accord trouvé avec ${esc(seller.name)} : <b>${money(agreedFee)}</b>.` : ''}</p>
-        <label>Salaire (€/sem.) — il demande ~${money(wageAsk)} <input id="wg" type="number" step="1000" value="${roundMoney(wageAsk * .9)}"></label>
-        <label>Durée <select id="yrs">${[1, 2, 3, 4, 5].map(y => `<option ${y === 3 ? 'selected' : ''}>${y}</option>`).join('')}</select> saison(s)</label>
+      ${stage === 'fee' ? `<div class="form-grid">
+          <label>Indemnité (€) <input id="fee" type="number" step="100000" value="${deal.fee}"></label>
+          <label>Paiement <select id="plan">${PAY_PLANS.map(x => `<option value="${x.k}" ${deal.plan === x.k ? 'selected' : ''}>${x.label}</option>`).join('')}</select></label>
+          <label>Bonus après 25 matchs (€) <input id="addon" type="number" step="100000" value="${deal.addOn}"></label>
+          <label>% à la revente pour eux <select id="sellon">${[0, 10, 20, 30].map(v => `<option ${deal.sellOn === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+          <label>Échange (joueur inclus) <select id="swap"><option value="">— Aucun —</option>${myPlayers.map(x => `<option value="${x.id}" ${deal.swap === x.id ? 'selected' : ''}>${esc(x.name)} (${x.pos}, ${money(x.value)})</option>`).join('')}</select></label>
+        </div>
+        <p class="hint">Un paiement échelonné, un bonus ou un % à la revente rendent l'offre plus attractive sans tout payer tout de suite.</p>
+        <div class="row gap mt">${p.clause && known ? `<button class="btn" id="payClause">💥 Payer la clause (${money(p.clause)})</button>` : ''}<div class="grow"></div><button class="btn primary" id="ok">Envoyer l'offre</button></div>`
+        : `<p>${seller ? `✅ Accord avec ${esc(seller.name)} : <b>${money(deal.fee)}</b> (${PAY_PLANS.find(x => x.k === deal.plan).label})${deal.addOn ? ` + bonus ${money(deal.addOn)}` : ''}${deal.sellOn ? ` + ${deal.sellOn} % à la revente` : ''}${deal.swap ? ` + ${esc(getPlayer(G, deal.swap).name)}` : ''}.` : ''}</p>
+        <p>Il demande environ <b>${money(baseWage)}</b>/sem. et le statut « <b>${STATUS[wantStatus].label}</b> ».</p>
+        <div class="form-grid">
+          <label>Salaire (€/sem.) <input id="wg" type="number" step="1000" value="${deal.wage ?? roundMoney(baseWage * .9)}"></label>
+          <label>Durée <select id="yrs">${[1, 2, 3, 4, 5].map(y => `<option ${y === (deal.yrs || 3) ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
+          <label>Statut promis <select id="stt">${STATUS_ORDER.map(k => `<option value="${k}" ${k === st ? 'selected' : ''}>${STATUS[k].label}</option>`).join('')}</select></label>
+          <label>Clause libératoire (€, 0 = aucune) <input id="cls" type="number" step="500000" value="${deal.clause ?? 0}"></label>
+        </div>
+        <p class="hint">Promettre un statut élevé aide à le convaincre, mais il faudra le faire jouer. Une clause libératoire rassure le joueur (salaire un peu moins élevé).</p>
         <div class="row gap mt"><div class="grow"></div><button class="btn primary" id="ok">Proposer le contrat</button></div>`}
-      <p class="hint" id="resp">${msg}</p>`);
+      <p class="hint" id="resp">${msg}</p>`, 'wide');
+    $('#payClause')?.addEventListener('click', () => {
+      if (p.clause > G.board.transfer || p.clause > me.budget) return render('❌ Budget transferts insuffisant pour la clause.');
+      Object.assign(deal, { fee: p.clause, plan: 'cash', addOn: 0, sellOn: 0, swap: null, viaClause: true }); stage = 'wage'; render('💥 Clause payée : le club ne peut pas refuser. Reste à convaincre le joueur.');
+    });
     $('#ok').onclick = () => {
       if (stage === 'fee') {
-        const fee = +$('#fee').value;
-        if (fee > G.board.transfer || fee > me.budget) return render('❌ Le président refuse : budget transferts insuffisant. (Ajuste la répartition dans Finances.)');
-        if (sq.length <= 18) return render(`❌ ${esc(seller.name)} refuse : effectif trop court.`);
-        if (fee >= ask) { agreedFee = fee; stage = 'wage'; return render(); }
-        if (fee >= ask * .85) {
-          const counter = roundMoney((fee + ask) / 2 + ask * .03);
-          modal(`<h2>Contre-offre de ${esc(seller.name)}</h2><p>Ils refusent ${money(fee)} mais accepteraient <b>${money(counter)}</b>.</p>
-            <div class="row gap mt"><div class="grow"></div><button class="btn" id="no">Abandonner</button><button class="btn primary" id="yes">Accepter ${money(counter)}</button></div>`);
-          $('#no').onclick = closeModal;
-          $('#yes').onclick = () => { if (counter > G.board.transfer) return toast('Budget transferts insuffisant.', 'err'); agreedFee = counter; stage = 'wage'; render(); };
+        Object.assign(deal, { fee: +$('#fee').value, plan: $('#plan').value, addOn: +$('#addon').value || 0, sellOn: +$('#sellon').value || 0, swap: $('#swap').value ? +$('#swap').value : null });
+        const nowPay = deal.fee * PAY_PLANS.find(x => x.k === deal.plan).now;
+        if (deal.fee > G.board.transfer + 1 || nowPay > me.budget) return render('❌ Le président refuse : budget transferts insuffisant. (Ajuste la répartition dans Finances.)');
+        if (clubPlayers(G, seller.id).length <= 18 && !deal.swap) return render(`❌ ${esc(seller.name)} refuse : effectif trop court. Propose un échange ?`);
+        if (deal.swap) { const sp = getPlayer(G, deal.swap); if (playerOvr(sp) < seller.rep - 15) return render(`❌ ${esc(seller.name)} ne veut pas de ${esc(sp.name)}.`); if (sp.pers === 'Loyal' && rnd() < .5) return render(`❌ ${esc(sp.name)} refuse de partir dans l'échange.`); }
+        if (p.clause && deal.fee >= p.clause) { stage = 'wage'; return render('💥 Ton offre atteint la clause libératoire : le club doit accepter.'); }
+        const v = dealValue(G, deal, p);
+        if (v >= ask) { stage = 'wage'; return render(); }
+        if (v >= ask * .85) {
+          const counter = roundMoney(deal.fee + (ask - v) / (PAY_PLANS.find(x => x.k === deal.plan).f) + ask * .02);
+          modal(`<h2>Contre-offre de ${esc(seller.name)}</h2><p>Ils refusent cette structure mais accepteraient <b>${money(counter)}</b> avec les mêmes conditions.</p>
+            <div class="row gap mt"><div class="grow"></div><button class="btn" id="no">Revoir l'offre</button><button class="btn primary" id="yes">Accepter ${money(counter)}</button></div>`);
+          $('#no').onclick = () => render();
+          $('#yes').onclick = () => { if (counter > G.board.transfer) return toast('Budget transferts insuffisant.', 'err'); deal.fee = counter; stage = 'wage'; render(); };
           return;
         }
-        return render(`❌ Offre rejetée. ${esc(seller.name)} veut au moins ~<b>${money(roundMoney(ask * .9))}</b>.`);
+        return render(`❌ Offre rejetée. ${esc(seller.name)} veut au moins ~<b>${money(roundMoney(ask * .9))}</b> (valeur perçue de ton offre : ${money(roundMoney(v))}).`);
       }
-      const w = +$('#wg').value, y = +$('#yrs').value;
+      deal.wage = +$('#wg').value; deal.yrs = +$('#yrs').value; deal.status = $('#stt').value; deal.clause = +$('#cls').value || 0;
       const repGap = playerOvr(p) - me.rep;
       if (repGap > 18 && rnd() < .7) { closeModal(); return toast(`${p.name} ne veut pas rejoindre un club de ce niveau.`, 'err'); }
-      if (w < wageAsk * .9) return render(`❌ ${esc(p.name)} refuse ce salaire. Il veut au moins ~<b>${money(roundMoney(wageAsk * .9))}</b>.`);
-      if (wageBill(G) + w > G.board.wageCap) return render(`❌ Le président bloque : la masse salariale dépasserait le plafond (${money(G.board.wageCap)}/sem.). Vends, libère ou ajuste la répartition dans Finances.`);
-      const agent = roundMoney(seller ? agreedFee * .08 : w * 4);
-      flow(G, me, -agreedFee, 'transfers'); if (seller) flow(G, seller, agreedFee, 'sales');
+      const sGap = STATUS_ORDER.indexOf(deal.status) - STATUS_ORDER.indexOf(wantStatus);
+      let need = baseWage * .9 * (1 + Math.max(0, sGap) * .12) * (deal.clause ? .95 : 1) * (deal.clause && deal.clause < p.value * 1.2 ? .93 : 1);
+      if (sGap >= 2 && (p.pers === 'Ambitieux' || playerOvr(p) > me.rep)) return render(`❌ ${esc(p.name)} refuse d'être « ${STATUS[deal.status].label} ». Il veut être au moins « ${STATUS[STATUS_ORDER[STATUS_ORDER.indexOf(wantStatus) + 1]].label} ».`);
+      if (deal.wage < need) return render(`❌ ${esc(p.name)} refuse ce salaire. Pour ce statut, il veut au moins ~<b>${money(roundMoney(need))}</b>.`);
+      if (wageBill(G) + deal.wage > G.board.wageCap) return render(`❌ Le président bloque : la masse salariale dépasserait le plafond (${money(G.board.wageCap)}/sem.).`);
+      const plan = PAY_PLANS.find(x => x.k === deal.plan);
+      const nowPay = roundMoney(deal.fee * plan.now);
+      const agent = roundMoney(seller ? deal.fee * .08 : deal.wage * 4);
+      flow(G, me, -nowPay, 'transfers'); if (seller) flow(G, seller, nowPay, 'sales');
+      if (seller) scheduleRest(G, me.id, seller.id, deal.fee - nowPay, plan.weeks);
       flow(G, me, -agent, 'agents');
-      G.board.transfer = roundMoney(G.board.transfer - agreedFee);
-      p.club = G.clubId; p.wage = w; p.contract = y; p.listed = false; p.morale = 85; p.num = null;
+      G.board.transfer = roundMoney(G.board.transfer - deal.fee);
+      if (deal.swap) { const sp = getPlayer(G, deal.swap); removeFromTactics(sp.id); sp.club = seller.id; sp.num = null; sp.status = null; sp.listed = false; assignNumbers(clubPlayers(G, seller.id)); logTransfer(G, sp, me.id, seller.id, 0, 'échange'); }
+      if (seller && p.sellOn) paySellOn(G, p, deal.fee, seller);
+      if (seller) logTransfer(G, p, seller.id, me.id, deal.fee, deal.viaClause || (p.clause && deal.fee >= p.clause) ? 'clause' : 'transfert'); else logTransfer(G, p, null, me.id, 0, 'libre');
+      p.club = G.clubId; p.wage = deal.wage; p.contract = deal.yrs; p.listed = false; p.morale = 85; p.num = null; p.status = deal.status; p.trust = 60; p.clause = deal.clause; p.recentMin = [];
+      if (seller && deal.addOn) p.addOn = { club: seller.id, amount: deal.addOn, need: 25, count: 0 };
+      if (seller && deal.sellOn) p.sellOn = { club: seller.id, pct: deal.sellOn };
       assignNumbers(clubPlayers(G, G.clubId));
       me.coh = clamp((me.coh ?? 60) - 4, 0, 100);
       G.shortlist = G.shortlist.filter(id => id !== p.id);
       if (G.tactics.bench.length < 9) G.tactics.bench.push(p.id);
-      news(G, `Officiel : ${p.name} signe pour ${y} saison(s)${seller ? ` en provenance de ${seller.name} (${money(agreedFee)})` : ''} ! ${seller ? 'Commission d\'agent' : 'Prime à la signature'} : ${money(agent)}.`, 'transfer');
+      news(G, `Officiel : ${p.name} signe pour ${deal.yrs} saison(s)${seller ? ` en provenance de ${seller.name} (${money(deal.fee)}${plan.k !== 'cash' ? ', paiement échelonné' : ''})` : ''} ! Statut : ${STATUS[deal.status].label}. ${seller ? 'Commission d\'agent' : 'Prime à la signature'} : ${money(agent)}.`, 'transfer');
       save(); closeModal(); toast(`${p.name} a signé ! 🎉`); refresh();
     };
   };
   render();
+}
+function loanInModal(pid) {
+  const p = getPlayer(G, pid), seller = getClub(G, p.club);
+  if (!windowOpen(G)) return toast('Les prêts se font pendant le mercato.', 'err');
+  modal(`<h2>Demande de prêt : ${esc(p.name)}</h2><p>${crest(seller, 18)} ${esc(seller.name)} · salaire ${money(p.wage)}/sem. · jusqu'à la fin de saison.</p>
+    <div class="form-grid"><label>Part du salaire payée par toi <select id="ls">${[1, .75, .5, .25].map(v => `<option value="${v}">${v * 100} %</option>`).join('')}</select></label>
+    <label>Option d'achat (€, 0 = aucune) <input id="lo" type="number" step="500000" value="0"></label></div>
+    <div class="row gap mt"><div class="grow"></div><button class="btn primary" id="ok">Proposer</button></div><p class="hint" id="resp"></p>`);
+  $('#ok').onclick = () => {
+    const share = +$('#ls').value, option = +$('#lo').value || 0;
+    const r = loanInEval(G, p, share, option);
+    if (!r.ok) return $('#resp').innerHTML = '❌ ' + esc(r.msg);
+    doLoanIn(G, p, share, option); save(); closeModal(); toast(`${p.name} arrive en prêt !`); refresh();
+  };
 }
 
 // ============================================================
@@ -1065,6 +1194,43 @@ function vFinances(el) {
     if (d < 0 && G.board.wageCap + d < wages) return toast('Le plafond ne peut pas descendre sous la masse salariale actuelle.', 'err');
     G.board.wageCap += d; G.board.transfer = roundMoney(G.board.transfer - d * R); save(); vFinances(el);
   });
+}
+
+// ============================================================
+//  Vestiaire (dynamique de groupe)
+// ============================================================
+function vDressing(el) {
+  assignStatuses(G, G.clubId);
+  const h = hierarchy(G), groups = socialGroups(G), atm = atmosphere(G);
+  const sq = clubPlayers(G, G.clubId);
+  const unhappy = sq.map(p => ({ p, r: unhappyReasons(G, p) })).filter(x => x.r.length || x.p.morale < 40).sort((a, b) => a.p.morale - b.p.morale);
+  const bonds = topBonds(G, 10);
+  const card = p => `<div class="mini" data-pid="${p.id}">${avatar(p, 30)}<div><b>${esc(p.name)}</b><small>${esc(STATUS[p.status || 'rot'].label)} · ${esc(p.pers)}</small></div>${meter(p.morale, 'Moral')}</div>`;
+  el.innerHTML = `
+  <div class="kpis card"><div><small>Ambiance du vestiaire</small><b>${Math.round(atm)}/100</b><em>${meter(atm)}</em></div><div><small>Cohésion</small><b>${Math.round(myClub(G).coh ?? 60)}</b></div>
+    <div><small>Joueurs mécontents</small><b class="${unhappy.length > 3 ? 'neg' : ''}">${unhappy.length}</b></div><div><small>Familiarité tactique (${esc(G.tactics.formation)})</small><b>${Math.round(tacFam(G, G.tactics.formation))}</b></div></div>
+  <div class="grid2">
+    <section class="card"><h2>👑 Hiérarchie</h2>
+      <h3>Leaders</h3><div class="minis">${h.leaders.map(card).join('')}</div>
+      <h3>Joueurs influents</h3><div class="minis">${h.influent.map(card).join('')}</div>
+      <p class="hint">Les leaders donnent le ton : leur moral se propage au groupe. Un leader mécontent peut faire basculer le vestiaire.</p>
+      <h3>🤝 Automatismes</h3>
+      ${bonds.length ? `<table class="tbl compact">${bonds.map(b => `<tr><td class="nm">${esc(getPlayer(G, b.a).name)}</td><td>+</td><td class="nm">${esc(getPlayer(G, b.b).name)}</td><td>${meter(b.v, 'Entente')}</td></tr>`).join('')}</table>` : '<p class="muted">Les automatismes naissent en jouant ensemble.</p>'}
+      <p class="hint">Les joueurs qui jouent souvent ensemble (ou parlent la même langue) se trouvent mieux : passes plus réussies dans le moteur de match.</p>
+    </section>
+    <div class="col">
+      <section class="card"><h2>👥 Clans</h2>${groups.map(g => `<div class="clan"><div class="row gap"><b class="grow">${esc(g.name)}</b><small>${g.members.length} joueurs</small>${meter(g.mood, 'Moral du clan')}</div><small class="muted">${g.members.map(p => esc(p.name.split(' ').slice(-1)[0])).join(', ')}</small></div>`).join('') || '<p class="muted">Pas de clan marqué.</p>'}</section>
+      <section class="card"><h2>😟 Joueurs à gérer</h2>
+        ${unhappy.length ? `<table class="tbl wrap">${unhappy.slice(0, 10).map(({ p, r }) => `<tr data-pid="${p.id}"><td>${avatar(p, 28)}</td><td class="nm">${esc(p.name)}<br><small class="muted">${esc(STATUS[p.status || 'rot'].label)}</small></td><td>${meter(p.morale)}</td><td><small>${r.map(esc).join('<br>') || 'Moral en berne'}</small></td><td>${p.conflict ? `<button class="btn sm" data-resolve="${p.id}">Réunir</button>` : ''}</td></tr>`).join('')}</table>` : '<p class="muted">Tout le monde est content. 👍</p>'}
+      </section>
+      <section class="card"><h2>⏱ Statuts et temps de jeu</h2>
+        <table class="tbl compact">${sq.filter(p => !p.loan || p.loan.inLoan).sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)).map(p => { const sh = playShare(p), ex = expectedShare(p); return `<tr data-pid="${p.id}"><td class="nm">${esc(p.name)}</td><td><small>${esc(STATUS[p.status || 'rot'].label)}</small></td><td>${sh == null ? '<span class="muted">-</span>' : `<span class="${sh < ex - .25 ? 'neg' : sh >= ex ? 'pos' : ''}">${Math.round(sh * 100)} %</span>`}<small class="muted"> / ${Math.round(ex * 100)} %</small></td><td>${meter(p.trust ?? 55, 'Confiance')}</td></tr>`; }).join('')}</table>
+        <p class="hint">Change le statut d'un joueur depuis sa fiche. Rétrograder fâche, promouvoir motive… mais il faudra tenir parole.</p>
+      </section>
+    </div>
+  </div>`;
+  el.querySelectorAll('[data-pid]').forEach(r => r.onclick = e => { if (e.target.closest('[data-resolve]')) return; playerModal(+r.dataset.pid); });
+  el.querySelectorAll('[data-resolve]').forEach(b => b.onclick = () => { const p = getPlayer(G, +b.dataset.resolve); const m = resolveConflict(G, p); toast(m, m.includes('Réconciliation') ? '' : 'err'); save(); vDressing(el); });
 }
 
 // ============================================================

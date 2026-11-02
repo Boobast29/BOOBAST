@@ -39,6 +39,24 @@ Raccourcis : `Espace` = continuer · `1`…`9` = menus · `/` = recherche · `É
   - 5 changements, causerie à la mi-temps ;
   - consignes modifiables pendant le match.
 - **Tactique** : 10 formations, mentalité et glisser-déposer des joueurs. Consignes d'équipe (pressing, tempo, largeur, ligne défensive, style de passe) qui agissent vraiment sur le moteur. Tireurs de penaltys et de coups francs, capitaine.
+- **Tactique avancée** :
+  - placement libre des joueurs (le poste s'adapte à la zone du terrain) ;
+  - rôle détaillé par joueur (Renard des surfaces, Pivot, Faux 9, Ailier intérieur, Latéral inversé, Meneur reculé…) et mission (Défense / Soutien / Attaque), avec de vrais effets dans le moteur ;
+  - consignes supplémentaires : contre-pressing, piège du hors-jeu, gagner du temps ;
+  - familiarité tactique : un nouveau système s'apprend ;
+  - 3 tactiques enregistrables ;
+  - plan de match avec marquage individuel ;
+  - en direct : changement de dispositif, de mentalité, des missions et du marquage.
+- **Gestion de l'effectif** : statut promis à chaque joueur (Joueur clé, Titulaire, Rotation, Remplaçant, Espoir) comparé à son temps de jeu réel, confiance envers l'entraîneur, repos, équipe réserve.
+- **Vestiaire** : hiérarchie et leaders, clans (langue, jeunes), ambiance, moral qui se propage dans le groupe, automatismes entre coéquipiers (passes plus réussies), conflits à apaiser, liste des joueurs mécontents avec leurs raisons.
+- **Mercato approfondi** :
+  - clauses libératoires (pour toi comme pour l'IA) ;
+  - paiement comptant ou échelonné sur 1 ou 2 ans, bonus après 25 matchs, % à la revente ;
+  - échange de joueurs ;
+  - statut promis et clause dans le contrat ;
+  - prêts entrants avec part du salaire et option d'achat ;
+  - surenchères et batailles entre clubs, dernier jour du mercato ;
+  - historique des transferts et échéancier financier.
 - **Entraînement** : programme de la semaine, intensité, cohésion du groupe, réunions d'équipe.
 - **Vie du vestiaire** : personnalités, moral, forme, discussions individuelles et promesses de temps de jeu.
 - **Président** : objectifs, jauge de confiance. Tu peux être licencié ou recevoir des offres d'autres clubs.

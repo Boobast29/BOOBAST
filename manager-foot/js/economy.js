@@ -55,7 +55,9 @@ function weeklyFinances(G) {
   }
   for (const c of G.clubs) {
     const mine = c.id === G.clubId;
-    const wages = clubPlayers(G, c.id).reduce((s, p) => s + p.wage, 0);
+    let wages = 0;
+    for (const p of clubPlayers(G, c.id)) wages += p.loan?.inLoan ? p.wage * (p.loan.share ?? 1) : p.wage;
+    for (const p of G.players) if (p.loan?.inLoan && p.loan.from === c.id) wages += p.wage * (1 - (p.loan.share ?? 1));
     flow(G, c, -wages, 'wages');
     if (c.foreign) { flow(G, c, wages * (1.02 + rnd() * .03), 'other'); continue; }
     flow(G, c, weeklyMerch(G, c), 'merch');
@@ -108,7 +110,7 @@ function setBoardBudgets(G) {
     G.board.transfer = roundMoney(Math.max(0, c.budget * .55));
   }
 }
-function wageBill(G) { return clubPlayers(G, G.clubId).reduce((s, p) => s + p.wage, 0); }
+function wageBill(G) { return clubPlayers(G, G.clubId).reduce((s, p) => s + (p.loan?.inLoan ? p.wage * (p.loan.share ?? 1) : p.wage), 0); }
 
 function makeSponsorOffers(G) {
   const c = myClub(G), base = baseSponsor(G, c);

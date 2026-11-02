@@ -37,6 +37,11 @@ class Match {
     this.att = attendanceFor(G, f, this.weather);
     this.say(fmt(pick(COMM.kick), { H: H.name, A: A.name, S: H.stadium, ATT: this.att.toLocaleString('fr-FR') }) + ` ${this.weather.icon} ${this.weather.label}, ${this.weather.temp}°C.`, 'info');
     this.mult = {};
+    const mineIdx = this.sides.findIndex(s => s.clubId === G.clubId);
+    if (mineIdx >= 0 && typeof bondVal === 'function') {
+      const mineSet = new Set(this.sides[mineIdx].onPitch.map(x => x.id).concat(this.sides[mineIdx].bench));
+      this.bondOf = (a, b) => mineSet.has(a) && mineSet.has(b) ? (bondVal(G, a, b) - 35) / 100 : 0;
+    }
     this.kickoff(rnd() < .5 ? 0 : 1);
   }
   addPR(id, side) { this.pr[id] = { r: 6.6, g: 0, a: 0, min: 0, yel: 0, red: 0, side, sh: 0, shOT: 0, xg: 0, pas: 0, pasOk: 0, kp: 0, dri: 0, tkl: 0, int: 0, sav: 0, tch: 0 }; }
@@ -50,9 +55,23 @@ class Match {
   absX(side, d) { return side === 0 ? d : 100 - d; }
   absY(side, y) { return side === 0 ? y : 100 - y; }
   homeOf(side, slot) {
-    const f = FORMATIONS[this.sides[side].formation][slot.slot] || ['MC', 50, 50];
-    const dep = 6 + (100 - f[2]) * .86;
-    return { X: this.absX(side, dep), Y: this.absY(side, f[1]), role: f[0] };
+    const s = this.sides[side];
+    const p = s.tac ? slotPos(s.tac, slot.slot) : { x: (FORMATIONS[s.formation][slot.slot] || [0, 50])[1], y: (FORMATIONS[s.formation][slot.slot] || [0, 50, 50])[2] };
+    const md = slot.mods || {};
+    const dep = clamp(6 + (100 - p.y) * .86 + (md.dd || 0), 3, 95);
+    const lane = p.x + (50 - p.x) * (md.cy || 0);
+    return { X: this.absX(side, dep), Y: this.absY(side, lane), role: slot.role };
+  }
+  changeFormation(side, tac) {
+    const s = this.sides[side];
+    const ids = s.onPitch.map(x => x.id);
+    const order = remapLineup(this.G, ids, tac.formation, tac);
+    const byId = Object.fromEntries(s.onPitch.map(x => [x.id, x]));
+    s.onPitch = order.map((id, i) => { if (!id) return null; const x = byId[id]; x.slot = i; x.role = slotRole(tac, i); x.mods = slotMods(tac, i, x.role); x.hX = null; return x; }).filter(Boolean);
+    s.formation = tac.formation; s.tac = tac;
+    s.inst = { ...defaultInst(), ...(tac.inst || {}) }; s.mentality = tac.mentality ?? s.mentality;
+    s.fam = side === this.my || s.clubId === this.G.clubId ? tacFam(this.G, tac.formation) : 80;
+    this.say(`${this.names[side]} passe en ${tac.formation}.`, 'info', side);
   }
   // positions de toutes les joueurs (dépend du ballon et de la possession)
   positions() {
@@ -63,7 +82,7 @@ class Match {
       const lineShift = s.inst.line * 5 * (i === 0 ? 1 : -1);
       const ysh = .18 - s.inst.width * .05;
       s.onPitch.forEach(x => {
-        if (x.hX == null || x.hF !== s.formation) { const h = this.homeOf(i, x); x.hX = h.X; x.hY = h.Y; x.hF = s.formation; }
+        if (x.hX == null || x.hF !== s.formation || x.hS !== x.slot) { const h = this.homeOf(i, x); x.hX = h.X; x.hY = h.Y; x.hF = s.formation; x.hS = x.slot; }
         let X = x.hX, Y = x.hY;
         if (x.role !== 'GB') {
           X += (b.x - 50) * .42 + (poss ? (i === 0 ? 7 : -7) : (i === 0 ? -5 : 5)) + lineShift;
@@ -114,7 +133,7 @@ class Match {
       this.defQ[i] = n ? ((q / n) - 10) * .006 - (11 - s.onPitch.length) * .04 : 0;
     });
     this.sides.forEach((s, si) => {
-      const cohF = (.93 + .07 * (s.coh ?? 60) / 100) * (si === 0 ? 1.045 : 1);
+      const cohF = (.93 + .07 * (s.coh ?? 60) / 100) * (si === 0 ? 1.045 : 1) * (.94 + .06 * (s.fam ?? 80) / 100) * (.97 + .03 * (s.atm ?? 60) / 100);
       for (const x of s.onPitch) {
         const p = getPlayer(this.G, x.id);
         const base = playerRoleRating(p, x.role) || 1;
@@ -129,7 +148,9 @@ class Match {
     const d = side === 0 ? X : 100 - X;
     let p = .1 + .09 * Math.min(n, 4) + .07 * D.inst.press * (d < 50 ? 1.5 : .6) - .03 * D.mentality + (d > 70 ? .14 : d > 55 ? .06 : 0) + this.defQ[1 - side];
     if (this.st.counter > 0) p -= .15;
-    return clamp(p, .03, .85);
+    if (this.st.cp > 0) p += .15;
+    if (D.mark.has(this.st.carrier?.id)) p += .12;
+    return clamp(p, .03, .9);
   }
 
   // ----- état de jeu -----
@@ -146,8 +167,10 @@ class Match {
     st.side = side; st.carrier = slot;
     st.d = side === 0 ? X : 100 - X; st.y = side === 0 ? Y : 100 - Y;
     st.oneOnOne = false; st.setPiece = opts.setPiece || null;
+    st.cp = 0;
     if (opts.turnover) {
       const L = this.sides[lostSide];
+      if (L.inst.cpress) { st.cp = 2; }
       if (st.d >= 30 && st.d <= 65 && (L.inst.line > 0 || L.mentality > 0 || rnd() < .15) && rnd() < .35 + .1 * this.sides[side].inst.tempo) {
         st.counter = 3;
         if (rnd() < .4) this.say(fmt(pick(COMM2.counter), { T: this.names[side] }), 'calm', side);
@@ -169,14 +192,20 @@ class Match {
     this.sides.forEach(s => {
       for (const x of s.onPitch) {
         const p = getPlayer(G, x.id);
-        const drain = .27 * (1 + .3 * Math.max(0, s.inst.press) + .1 * Math.max(0, s.inst.tempo)) * (1.3 - p.attrs.phy * .03) * (x.injured ? 2 : 1) * this.wx.fatigue;
+        const drain = .27 * (1 + .3 * Math.max(0, s.inst.press) + .1 * Math.max(0, s.inst.tempo) + .12 * (s.inst.cpress || 0) + .1 * (x.mods?.press || 0) + (s.mark.size && ROLE_LINES[x.role].def ? .03 : 0)) * (1.3 - p.attrs.phy * .03) * (x.injured ? 2 : 1) * this.wx.fatigue;
         s.cond[x.id] = Math.max(12, s.cond[x.id] - drain);
         this.pr[x.id].min++;
       }
     });
     this.computeMults();
     this.trace = [];
-    const n = ACTIONS_PER_MIN + (rnd() < .5 ? 1 : 0);
+    let n = ACTIONS_PER_MIN + (rnd() < .5 ? 1 : 0);
+    this.sides.forEach((s, i) => {
+      if (s.inst.waste && this.score[i] > this.score[1 - i]) {
+        n -= 2;
+        if (rnd() < .012) { const x = pick(s.onPitch); if (x) { this.say(`${this.pname(x.id)} prend son temps… l'arbitre sort le jaune pour anti-jeu.`, 'info', i); this.card(i, x); } }
+      }
+    });
     for (let i = 0; i < n && !this.done; i++) this.action();
     this.traceId++;
     // blessures
@@ -218,6 +247,7 @@ class Match {
     this.stats[side].poss++;
     this.pr[c.id].tch++;
     if (st.counter > 0) st.counter--;
+    if (st.cp > 0) st.cp--;
     // coups de pied arrêtés
     if (st.setPiece) return this.setPiece(st.setPiece);
     const press = this.pressure(side, X, Y);
@@ -234,6 +264,9 @@ class Match {
       safe: 2.7 * (1 - .25 * I.tempo) * (1 - .15 * I.pass) * (1 + press) * (1 - .1 * M) / ctr,
       long: (st.d < 45 ? .9 : .2) * (1 + .9 * I.pass) * (c.role === 'GB' ? 4 : 1)
     };
+    const mw = c.mods?.w;
+    if (mw) for (const k in w) if (mw[k] != null) w[k] *= mw[k];
+    if (D.mark.has(c.id)) { w.shoot *= .7; w.dribble *= .7; w.safe *= 1.3; }
     let tot = 0; for (const k in w) tot += w[k];
     let r = rnd() * tot, act = 'safe';
     for (const k in w) { r -= w[k]; if (r <= 0) { act = k; break; } }
@@ -253,9 +286,13 @@ class Match {
     const recv = this.receiver(side, TX, TY, c);
     if (!recv) return false;
     const def = this.nearest(1 - side, TX, TY);
+    if (kind === 'long' && recv.slot.mods?.recv > 1 && rnd() < .4) { const t = this.posCache.find(q => q.side === side && q.slot.mods?.recv > 1); if (t) recv.slot = t.slot; }
     let prob = base + (this.ea(c, 'pas') - 10) * (kind === 'long' ? .01 : .0075) + (this.ea(c, 'tec') - 10) * .004;
     if (def) prob -= ((this.ea(def.slot, 'tac') + this.ea(def.slot, 'men')) / 2 - 10) * .008;
     if (nd > 70) prob -= .12;
+    if (def?.slot.mods?.tk) prob -= def.slot.mods.tk * .02;
+    if (this.sides[1 - side].mark.has(recv.slot.id)) prob -= .06;
+    if (this.bondOf) prob += this.bondOf(c.id, recv.slot.id) * .045;
     prob += -.05 * A.inst.pass - .02 * A.inst.tempo;
     if (kind === 'long') { prob *= this.wx.long; if (def) prob += ((this.ea(recv.slot, 'phy') - this.ea(def.slot, 'phy')) * .015); }
     if (this.weather.key === 'rain' || this.weather.key === 'storm' || this.weather.key === 'snow') prob -= .03;
@@ -291,7 +328,7 @@ class Match {
     const def = this.nearest(1 - side, TX, TY);
     this.pr[c.id].pas++; this.stats[side].pas++;
     // hors-jeu
-    const offP = .1 + .09 * D.inst.line - (this.ea(recv.slot, 'men') - 10) * .006;
+    const offP = .1 + .09 * D.inst.line + .08 * (D.inst.trap || 0) - (this.ea(recv.slot, 'men') - 10) * .006;
     if (rnd() < offP) {
       this.stats[side].off++;
       if (rnd() < .5) this.say(fmt(pick(COMM2.offside), { P: this.pname(recv.slot.id) }), 'calm', side);
@@ -306,7 +343,8 @@ class Match {
       this.pr[c.id].pasOk++; this.stats[side].pasOk++;
       this.give(side, recv.slot, TX, TY);
       this.lastPasser = c.id;
-      if (rnd() < .3 + .15 * Math.max(0, D.inst.line) && nd > 70) {
+      const sweeper = (this.gkOf(1 - side)?.mods?.style === 'sweeper');
+      if (rnd() < .3 + .15 * Math.max(0, D.inst.line) + .18 * (D.inst.trap || 0) - (sweeper ? .12 : 0) && nd > 70) {
         this.st.oneOnOne = true;
         if (rnd() < .5) this.say(fmt(pick(COMM2.oneonone), { P: this.pname(recv.slot.id), G: this.pname((this.gkOf(1 - side) || recv.slot).id) }), 'calm', side);
       } else if (rnd() < .15) this.say(fmt(pick(COMM2.through), { P: this.pname(c.id) }), 'calm', side);
@@ -326,7 +364,7 @@ class Match {
     const def = this.nearest(1 - side, X, Y);
     if (!def) return this.a_fwd(c, p, press);
     const att = this.ea(c, 'dri') + this.ea(c, 'vit') * .4 + this.ea(c, 'tec') * .3;
-    const dfn = this.ea(def.slot, 'tac') + this.ea(def.slot, 'vit') * .4 + this.ea(def.slot, 'men') * .3;
+    const dfn = this.ea(def.slot, 'tac') + this.ea(def.slot, 'vit') * .4 + this.ea(def.slot, 'men') * .3 + (def.slot.mods?.tk || 0) * 1.2 + (this.sides[1 - side].mark.has(c.id) ? 1.5 : 0);
     const prob = clamp(.5 + (att - dfn) * .011 - press * .2, .12, .88);
     if (rnd() < prob) {
       this.pr[c.id].dri++; this.stats[side].dri++; this.pr[c.id].r += .06;
@@ -400,7 +438,7 @@ class Match {
     }
     const att = this.pickShooter(side, 'cross');
     if (!att) return;
-    const aS = (this.ea(att, 'phy') + this.ea(att, 'fin')) / 2 + (setPiece ? 1 : 0), dS = def ? (this.ea(def.slot, 'phy') + this.ea(def.slot, 'tac')) / 2 : 6;
+    const aS = (this.ea(att, 'phy') + this.ea(att, 'fin')) / 2 + (setPiece ? 1 : 0) + (att.mods?.air || 0), dS = def ? (this.ea(def.slot, 'phy') + this.ea(def.slot, 'tac')) / 2 : 6;
     const gk = this.gkOf(1 - side), gkS = gk ? this.ea(gk, 'gar') : 5;
     const win = clamp(.38 + (aS - dS) * .022 - (gkS - 10) * .012, .1, .75);
     if (rnd() < win) {
@@ -509,7 +547,7 @@ class Match {
     const A = x => getPlayer(this.G, x.id).attrs;
     if (type === 'cross') {
       const w = { BU: 2, DC: 1.5, MOC: .9, AG: .7, AD: .7, MC: .7, MDC: .6, DG: .4, DD: .4 };
-      return weighted(on, x => (w[x.role] || .3) * (A(x).phy + A(x).fin));
+      return weighted(on, x => (w[x.role] || .3) * (A(x).phy + A(x).fin) * (1 + (x.mods?.air || 0) * .3) * (x.mods?.duty === 1 ? 1.25 : x.mods?.duty === -1 ? .7 : 1));
     }
     return this.shooter(side);
   }
@@ -556,6 +594,7 @@ class Match {
     const slot = s.onPitch.find(x => x.id === outId);
     if (!slot || !s.bench.includes(inId)) return false;
     slot.id = inId; slot.fresh = true; slot.injured = false;
+    this.bondCache = null;
     s.bench = s.bench.filter(i => i !== inId); s.subsLeft--;
     this.addPR(inId, side);
     this.events.push({ type: 'sub', side, min: this.minLabel(), pid: inId, out: outId });

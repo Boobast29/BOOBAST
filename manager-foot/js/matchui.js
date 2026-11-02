@@ -38,7 +38,8 @@ function validateLineup() {
   T.lineup = T.lineup.map(id => { if (id && (!mine.has(id) || !available(getPlayer(G, id)))) { problems.push(getPlayer(G, id)?.name); return null; } return id; });
   T.bench = T.bench.filter(id => mine.has(id) && available(getPlayer(G, id)) && !T.lineup.includes(id));
   if (T.lineup.some(x => !x)) {
-    FORMATIONS[T.formation].forEach(([r], i) => {
+    FORMATIONS[T.formation].forEach((_, i) => {
+      const r = slotRole(T, i);
       if (T.lineup[i]) return;
       const cands = clubPlayers(G, G.clubId).filter(p => available(p) && !T.lineup.includes(p.id)).sort((a, b) => effRating(b, r) - effRating(a, r));
       if (cands[0]) { T.lineup[i] = cands[0].id; T.bench = T.bench.filter(x => x !== cands[0].id); }
@@ -84,6 +85,10 @@ function prepareMatch(f) {
         <p class="hint">Ta tactique : ${G.tactics.formation} · ${MENTALITIES.find(m => m.v === G.tactics.mentality).label}</p>
       </div>
     </div>
+    <div class="press"><h3>🎯 Plan de match</h3><div class="form-grid">
+      ${(G.tacPresets || []).some(Boolean) ? `<label>Tactique <select id="pmPreset"><option value="">Actuelle (${G.tactics.formation})</option>${G.tacPresets.map((pr, i) => pr ? `<option value="${i}">${esc(pr.name)} (${pr.formation})</option>` : '').join('')}</select></label>` : ''}
+      ${[0, 1].map(k => `<label>Marquage individuel ${k + 1} <select class="pmMark"><option value="">— Aucun —</option>${oppTac.lineup.map(id => getPlayer(G, id)).filter(p => p && p.pos !== 'GB').sort((a, b) => playerOvr(b) - playerOvr(a)).map(p => `<option value="${p.id}">${esc(p.name)} (${p.pos} ${playerOvr(p)})</option>`).join('')}</select></label>`).join('')}
+    </div><p class="hint">Un marquage individuel gêne le joueur ciblé (dribbles, passes reçues), au prix d'un peu de fatigue pour tes défenseurs.</p></div>
     ${press ? `<div class="press"><h3>🎤 Conférence de presse</h3><p>« ${esc(press.q)} »</p><div class="talk-opts">${press.a.map(([t, k]) => `<button class="btn" data-press="${k}">${esc(t)}</button>`).join('')}</div></div>` : ''}
     <div class="row gap mt wrap"><button class="btn" id="pmT">📋 Tactique</button><div class="grow"></div>
       <button class="btn" id="pmS" title="Simuler sans regarder">⏩ Résultat direct</button><button class="btn primary big" id="pmP">▶ Jouer le match</button></div>`, 'wide');
@@ -98,6 +103,10 @@ function prepareMatch(f) {
   });
   $('#pmT').onclick = () => { closeModal(); show('tactics'); };
   const start = instant => {
+    const pi = $('#pmPreset')?.value;
+    if (pi) applyPreset(G, G.tacPresets[+pi]);
+    G.tactics.mark = [...new Set($$('.pmMark').map(s => +s.value).filter(Boolean))];
+    validateLineup();
     closeModal();
     const ht = home ? G.tactics : oppTac, at = home ? oppTac : G.tactics;
     const mt = new Match(G, f, ht, at, { cup: isKO(f), weather: LIVE_WX });
@@ -140,6 +149,7 @@ function liveMatch(mt, f) {
             <button class="btn" id="mPause">⏸ Pause</button>
             <select id="mSpeed"><option value="400">Lent</option><option value="120">Normal</option><option value="35">Rapide</option><option value="0">Instantané</option></select>
             <button class="btn" id="mSub">🔁 Changement</button>
+            <button class="btn" id="mTac">📋 Tactique</button>
             <button class="btn" id="mSnd" title="Son">${Sound.on ? '🔊' : '🔇'}</button>
           </div>
           <label class="mt">Mentalité <select id="mMent">${MENTALITIES.map(m => `<option value="${m.v}" ${m.v === my.mentality ? 'selected' : ''}>${m.label}</option>`).join('')}</select></label>
@@ -163,6 +173,7 @@ function liveMatch(mt, f) {
     mt.say(`Consigne : ${INST[s.dataset.name].label.toLowerCase()} ${b.textContent.toLowerCase()}.`, 'info', mt.my); renderLive();
   }));
   $('#mSub').onclick = () => subModal();
+  $('#mTac').onclick = () => liveTacticsModal();
   $('#mSnd').onclick = () => { Sound.on = !Sound.on; SETTINGS.sound = Sound.on; saveSettings(); $('#mSnd').textContent = Sound.on ? '🔊' : '🔇'; if (Sound.on) Sound.startCrowd(); else Sound.stopCrowd(); };
   Sound.startCrowd(); Sound.whistle(1);
   renderLive();
@@ -337,6 +348,7 @@ function finishMatch(mt, f) {
   document.body.classList.remove('live');
   applyMatch(G, mt, f);
   boardAfterMatch(G, f);
+  G.tactics.mark = [];
   const my = mt.my, w = mt.winner();
   const opp = getClub(G, my === 0 ? f.a : f.h);
   const motm = mt.motm ? getPlayer(G, mt.motm) : null;
@@ -411,7 +423,7 @@ function holiday(n) {
     const f = weekFixtures(G).find(f => f.h === G.clubId || f.a === G.clubId);
     if (f) {
       validateLineup();
-      Object.assign(G.tactics, autoLineup(G, G.clubId, G.tactics.formation));
+      Object.assign(G.tactics, autoLineup(G, G.clubId, G.tactics.formation, G.tactics));
       const home = f.h === G.clubId, opp = home ? f.a : f.h;
       const oppTac = aiTactics(G, opp, G.clubId);
       const mt = new Match(G, f, home ? G.tactics : oppTac, home ? oppTac : G.tactics, { cup: isKO(f) });
@@ -427,4 +439,51 @@ function holiday(n) {
   save();
   toast(`Retour de vacances : ${weeks} semaine(s) simulée(s).`);
   afterWeek(r);
+}
+
+// ---------- Tactique en plein match ----------
+function liveTacticsModal() {
+  if (!LIVE || LIVE.mt.done) return;
+  const { mt } = LIVE, side = mt.sides[mt.my], opp = mt.sides[1 - mt.my];
+  setPaused(true);
+  const tac = JSON.parse(JSON.stringify({ ...side.tac, inst: side.inst, mentality: side.mentality }));
+  tac.duties ||= {}; tac.styles ||= {};
+  const presets = (G.tacPresets || []);
+  const rowsFor = () => {
+    if (tac.formation === side.formation && JSON.stringify(tac.pos || {}) === JSON.stringify(side.tac.pos || {})) return side.onPitch.filter(x => x.role !== 'GB').map(x => ({ id: x.id, slot: x.slot, role: x.role }));
+    return remapLineup(G, side.onPitch.map(x => x.id), tac.formation, tac).map((id, i) => ({ id, slot: i, role: slotRole(tac, i) })).filter(x => x.id && x.role !== 'GB');
+  };
+  const render = () => {
+    modal(`<h2>📋 Tactique en cours de match · ${mt.minLabel()}'</h2>
+      <div class="form-grid">
+        <label>Dispositif <select id="ltForm">${Object.keys(FORMATIONS).map(f => `<option ${f === tac.formation ? 'selected' : ''}>${f}</option>`).join('')}</select></label>
+        <label>Mentalité <select id="ltMent">${MENTALITIES.map(x => `<option value="${x.v}" ${x.v === tac.mentality ? 'selected' : ''}>${x.label}</option>`).join('')}</select></label>
+        ${presets.some(Boolean) ? `<label>Charger <select id="ltPreset"><option value="">—</option>${presets.map((pr, i) => pr ? `<option value="${i}">${esc(pr.name)} (${pr.formation})</option>` : '').join('')}</select></label>` : ''}
+        <label>Marquage individuel <select id="ltMark"><option value="">— Aucun —</option>${opp.onPitch.filter(x => x.role !== 'GB').map(x => `<option value="${x.id}" ${side.mark.has(x.id) ? 'selected' : ''}>${esc(getPlayer(G, x.id).name)} (${x.role}) — note ${mt.pr[x.id]?.r.toFixed(1)}</option>`).join('')}</select></label>
+      </div>
+      <div class="inst sm mt">${Object.entries(EXTRA_INST).map(([k, d]) => `<div class="inst-row" title="${esc(d.tip)}"><span>${d.label}</span><div class="seg"><button data-x="${k}" data-v="0" class="${!tac.inst[k] ? 'on' : ''}">Non</button><button data-x="${k}" data-v="1" class="${tac.inst[k] ? 'on' : ''}">Oui</button></div></div>`).join('')}</div>
+      <h3>Missions des joueurs</h3>
+      <table class="tbl compact">${rowsFor().map(x => `<tr><td>${x.role}</td><td class="nm">${esc(getPlayer(G, x.id).name)}</td><td>${bar(side.cond[x.id], 100, side.cond[x.id] < 60 ? 'low' : '')}</td><td>${seg('d' + x.slot, ['Défense', 'Soutien', 'Attaque'], tac.duties[x.slot] ?? 0)}</td></tr>`).join('')}</table>
+      <div class="row gap mt"><div class="grow"></div><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" id="ltOk">Appliquer</button></div>`, 'wide');
+    $('#ltPreset')?.addEventListener('change', e => { const pr = presets[+e.target.value]; if (!pr) return; Object.assign(tac, JSON.parse(JSON.stringify(pr))); render(); });
+    $('#ltForm').onchange = e => { tac.formation = e.target.value; tac.pos = {}; tac.styles = {}; tac.duties = {}; render(); };
+    $('#ltMent').onchange = e => { tac.mentality = +e.target.value; };
+    $$('#modal .seg').forEach(s => s.querySelectorAll('button').forEach(b => b.onclick = () => {
+      if (b.dataset.x) tac.inst[b.dataset.x] = +b.dataset.v; else tac.duties[+s.dataset.name.slice(1)] = +b.dataset.v;
+      s.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    }));
+    $('#ltOk').onclick = () => {
+      const formChanged = tac.formation !== side.formation || JSON.stringify(tac.pos || {}) !== JSON.stringify(side.tac.pos || {});
+      if (formChanged) mt.changeFormation(mt.my, tac);
+      else { side.tac = tac; side.inst = { ...defaultInst(), ...tac.inst }; side.onPitch.forEach(x => { x.mods = slotMods(tac, x.slot, x.role); x.hX = null; }); }
+      side.mentality = tac.mentality;
+      const mk = +$('#ltMark').value;
+      side.mark = new Set(mk ? [mk] : []);
+      if (mk) mt.say(`Consigne : marquage individuel sur ${getPlayer(G, mk).name}.`, 'info', mt.my);
+      $('#mMent') && ($('#mMent').value = String(side.mentality));
+      LIVE.shown = mt.log.length - 1;
+      closeModal(); renderLive();
+    };
+  };
+  render();
 }

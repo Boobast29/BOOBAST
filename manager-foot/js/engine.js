@@ -10,7 +10,7 @@ function getPlayer(G, id) { return G.pmap[id]; }
 function getClub(G, id) { return G.clubs.find(c => c.id === id); }
 function clubPlayers(G, clubId) { return G.players.filter(p => p.club === clubId); }
 function available(p) { return p.injury <= 0 && p.susp <= 0; }
-function defaultInst() { return { press: 0, tempo: 0, width: 0, line: 0, pass: 0 }; }
+function defaultInst() { return { press: 0, tempo: 0, width: 0, line: 0, pass: 0, cpress: 0, trap: 0, waste: 0 }; }
 function myClub(G) { return getClub(G, G.clubId); }
 
 function effRating(p, role, cond = p.fit) {
@@ -19,9 +19,9 @@ function effRating(p, role, cond = p.fit) {
 }
 
 // ---------- Composition ----------
-function autoLineup(G, clubId, formation) {
-  const slots = FORMATIONS[formation];
-  const pool = clubPlayers(G, clubId).filter(available);
+function autoLineup(G, clubId, formation, tac = null) {
+  const slots = FORMATIONS[formation].map((s, i) => tac ? [slotRole({ ...tac, formation }, i)] : s);
+  const pool = clubPlayers(G, clubId).filter(p => available(p) && !(clubId === G.clubId && (p.rest || p.reserve)));
   const used = new Set();
   const lineup = new Array(slots.length).fill(null);
   const order = slots.map((s, i) => i).sort((a, b) => (slots[a][0] === 'GB' ? -1 : 0) - (slots[b][0] === 'GB' ? -1 : 0));
@@ -34,7 +34,7 @@ function autoLineup(G, clubId, formation) {
         if (used.has(p.id)) continue;
         if (pass === 0 && p.pos !== role) continue;
         if (pass === 1 && familiarity(p, role) < .92) continue;
-        const v = effRating(p, role) * (p.fit < 75 ? .85 : 1);
+        const v = effRating(p, role) * (p.fit < 75 ? .85 : 1) * (clubId === G.clubId ? ({ star: 1.06, first: 1.03, rot: 1, sub: .98, youth: .97 }[p.status] || 1) : 1);
         if (v > bv) { bv = v; best = p; }
       }
       if (best) { lineup[i] = best.id; used.add(best.id); }
@@ -80,13 +80,14 @@ function aiTactics(G, clubId, oppId) {
   const t = autoLineup(G, clubId, c.style.formation);
   let ment = 0;
   if (oppId) { const d = c.rep - getClub(G, oppId).rep; ment = d > 12 ? 1 : d < -12 ? -1 : 0; }
-  const { formation, ...inst } = c.style;
-  return { formation: c.style.formation, mentality: ment, lineup: t.lineup, bench: t.bench, inst, takers: autoTakers(G, t.lineup) };
+  const { formation, styles, ...inst } = c.style;
+  if (!styles) c.style.styles = Object.fromEntries(FORMATIONS[c.style.formation].map((s, i) => [i, pick(Object.keys(ROLE_STYLES[s[0]] || { x: 1 }))]));
+  return { styles: c.style.styles, formation: c.style.formation, mentality: ment, lineup: t.lineup, bench: t.bench, inst, takers: autoTakers(G, t.lineup) };
 }
 
 function makeSide(G, clubId, tac) {
   const club = getClub(G, clubId);
-  const onPitch = tac.lineup.map((id, i) => ({ id, role: FORMATIONS[tac.formation][i][0], slot: i })).filter(s => s.id && getPlayer(G, s.id));
+  const onPitch = tac.lineup.map((id, i) => { const role = slotRole(tac, i); return { id, role, slot: i, mods: slotMods(tac, i, role) }; }).filter(s => s.id && getPlayer(G, s.id));
   const bench = (tac.bench || []).filter(id => getPlayer(G, id));
   const cond = {};
   for (const id of [...onPitch.map(s => s.id), ...bench]) cond[id] = getPlayer(G, id).fit;
@@ -95,7 +96,8 @@ function makeSide(G, clubId, tac) {
   for (const k of ['pen', 'fk', 'cap']) if (tac.takers && ids.includes(tac.takers[k])) takers[k] = tac.takers[k];
   return {
     clubId, formation: tac.formation, mentality: tac.mentality || 0, inst: { ...defaultInst(), ...(tac.inst || {}) },
-    onPitch, bench, subsLeft: 5, sentOff: [], cond, talk: 1, coh: club.coh ?? 60, takers
+    onPitch, bench, subsLeft: 5, sentOff: [], cond, talk: 1, coh: club.coh ?? 60, takers,
+    tac, fam: clubId === G.clubId ? tacFam(G, tac.formation) : 80, mark: new Set(tac.mark || []), atm: club.atm ?? 60
   };
 }
 
@@ -208,9 +210,11 @@ function applyMatch(G, mt, f) {
     if (r.yel && !r.red) { p.yellow++; if (p.yellow % 5 === 0) { p.susp = 1; p.suspNew = true; } }
     if (r.red) { p.susp = Math.max(p.susp, rint(1, 3)); p.suspNew = true; }
     p.lastRating = Math.round(r.r * 10) / 10;
+    onPlayerAppearance(G, p);
     p.form = [...(p.form || []), { w: G.week, s: G.season, r: p.lastRating }].slice(-10);
   }
   for (const e of mt.events) if (e.type === 'inj' || e.type === 'knock') applyInjury(G, getPlayer(G, e.pid), e.inj);
+  if (f.h === G.clubId || f.a === G.clubId) squadAfterMatch(G, mt);
   const wnr = fixtureWinner(f);
   if (f.grp) {
     if (wnr) flow(G, getClub(G, wnr), 2.5e6, 'prize'); else { flow(G, getClub(G, f.h), .8e6, 'prize'); flow(G, getClub(G, f.a), .8e6, 'prize'); }
@@ -498,6 +502,9 @@ function weeklyUpdate(G, full = true) {
   if (!full) return;
   for (const c of G.clubs) c.coh = clamp((c.coh ?? 60) + 1.2 + (c.id === G.clubId && tr.focus === 'tactique' ? 2.5 : 0), 0, 100);
   weeklyFinances(G);
+  processPayables(G);
+  squadWeekly(G);
+  if (tr.focus === 'tactique') growTacFam(G, G.tactics.formation, true);
   G.promises = (G.promises || []).filter(pr => {
     const p = getPlayer(G, pr.pid);
     if (!p || p.club !== G.clubId) return false;
@@ -565,6 +572,8 @@ function aiTransfers(G) {
     if (from && clubPlayers(G, from.id).length <= 20) continue;
     flow(G, c, -fee, 'transfers'); if (from) flow(G, from, fee, 'sales');
     t.wage = Math.max(roundMoney(t.wage * .9), demandWage(G, t, c));
+    if (from) paySellOn(G, t, fee, from);
+    logTransfer(G, t, from?.id, c.id, fee, from ? 'transfert' : 'libre');
     t.club = c.id; t.listed = false; t.contract = rint(2, 5); t.num = null; assignNumbers(clubPlayers(G, c.id));
     c.coh = clamp((c.coh ?? 60) - 3, 0, 100);
     news(G, `${t.name} quitte ${from ? from.name : 'les agents libres'} pour ${c.name}${fee ? ` (${money(fee)})` : ''}.`, 'transfer', true);
@@ -779,6 +788,7 @@ function endSeason(G) {
   for (const p of G.players) if (p.loan) {
     const back = p.loan.from;
     if (back === G.clubId) news(G, `Retour de prêt : ${p.name} (${p.stats.apps} matchs, ${p.stats.goals} buts chez ${getClub(G, p.club)?.name}).`, 'transfer');
+    if (p.club === G.clubId && p.loan.inLoan) { news(G, `Fin de prêt : ${p.name} retourne à ${getClub(G, back)?.name}.`, 'transfer'); removeFromTactics(p.id); }
     p.club = back; p.num = null; delete p.loan;
   }
   const retired = [];
@@ -846,7 +856,7 @@ function startClubSeason(G) {
   setBoardBudgets(G);
   if (!G.sponsor) makeSponsorOffers(G);
   G.board.conf = clamp(G.board.conf * .6 + 25, 0, 100);
-  G.tactics = { ...G.tactics, ...autoLineup(G, G.clubId, G.tactics.formation), takers: {} };
+  G.tactics = { ...G.tactics, ...autoLineup(G, G.clubId, G.tactics.formation, G.tactics), takers: {} };
   news(G, `Nouvelle saison ${G.season}/${G.season + 1} ! Objectif du président : ${objectiveLabel(G).toLowerCase()} en ${clubLeague(G, G.clubId).name}.`, 'board');
 }
 
@@ -860,6 +870,7 @@ function takeJob(G, clubId) {
   G.tactics = { formation: f, mentality: 0, inst: defaultInst(), takers: {}, ...autoLineup(G, clubId, f) };
   setObjective(G);
   G.sponsor = null; G.ticket = 2;
+  assignStatuses(G, clubId, true); G.bonds = {}; G.tacFam = { [f]: 60 };
   setBoardBudgets(G); makeSponsorOffers(G);
   news(G, `${G.managerName} quitte ${old.name} et devient le nouvel entraîneur de ${c.name} ! Objectif : ${objectiveLabel(G).toLowerCase()}.`, 'board');
 }
@@ -894,6 +905,7 @@ function normalizeWorld(W) {
     p.form ||= []; p.hist ||= []; p.pers ||= 'Professionnel'; p.attrs0 ||= { ...p.attrs }; p.face ||= randomFace();
     p.frag ??= clamp(Math.round(8 + gauss() * 3.5), 1, 20);
   });
+  initClauses(W);
   if (!W.wagesScaled) {
     W.wagesScaled = true;
     for (const p of W.players) { const c = p.club != null ? W.clubs.find(x => x.id === p.club) : null; if (c) p.wage = roundMoney(p.wage * wageFactor(W, c)); }
@@ -943,6 +955,8 @@ function newGame(db, clubId, managerName) {
   const f = club.style?.formation || '4-3-3';
   G.tactics = { formation: f, mentality: 0, inst: defaultInst(), takers: {}, ...autoLineup(G, clubId, f) };
   setBoardBudgets(G);
+  assignStatuses(G, clubId, true);
+  G.tacFam = { [f]: 75 };
   news(G, `Bienvenue à ${club.name}, ${G.managerName} ! Objectif du président : ${objectiveLabel(G).toLowerCase()}. Budget : ${money(club.budget)}.`, 'board');
   news(G, 'Le mercato d\'été est ouvert pendant les 6 premières semaines. Raccourcis : Espace = continuer, 1-9 = menus, / = recherche.', 'info');
   makeSponsorOffers(G);
@@ -965,7 +979,7 @@ function completeWeek(G, skipFixture) {
   if (e.t === 'E') afterEuroRound(G, e.r);
   const full = e.t === 'L';
   weeklyUpdate(G, full);
-  if (full) { aiTransfers(G); aiOffers(G); }
+  if (full) { aiTransfers(G); aiOffers(G); aiMarketExtras(G); }
   for (const p of G.players) p.value = calcValue(p);
   G.week++;
   if (!full) return G.week > 10 && G.board.conf < 10 ? 'sacked' : null;
