@@ -1,4 +1,18 @@
-# État du projet — v29 (2 novembre 2026)
+# État du projet — v30 (2 novembre 2026)
+
+## v30 — traits cachés, records et Panthéon
+Nouveau `js/traits.js`.
+- 0 à 2 traits par joueur, stables (tirés de l'identifiant, sans toucher l'aléatoire de la partie), incompatibilités respectées.
+- Révélation : 1er trait après 6 matchs avec toi, 2e après 15 ; rapport de recrutement complet = traits connus. Message à chaque découverte.
+- Effets : Fragile ×1,5 / Robuste ×0,7 sur la durée des blessures ; Bosseur +1 attribut en fin de saison (≤ 31 ans), Dilettante −1 une saison
+  sur deux ; Leader titulaire = moral du vestiaire en hausse chaque semaine ; Fidèle = moral stabilisé ; Grands matchs / Nerveux = ±0,4 de note
+  en coupe, en Europe, en barrages et en supercoupe.
+- Fiche joueur : badges des traits connus (infobulle d'explication) + nombre de traits à découvrir.
+- Chronique : records du club (plus large victoire, plus lourde défaite, plus de buts, record d'achat et de vente, meilleure saison)
+  et Panthéon (60 matchs ou 25 buts avec le club).
+Vérifications : répartition (1 748 joueurs sans trait sur 4 200, 8 traits ~ 330-365 chacun), traits identiques après recalcul,
+blessure de 20 jours → 30 (Fragile) / 14 (Robuste) / 20, 12 traits révélés sur 19 après une saison, records et Panthéon affichés,
+simulation longue sans erreur. Test : `tests/traits.js`.
 
 ## v29 — refonte visuelle : icônes, police, boutons, composants
 `vendor/lucide/`, `vendor/inter/`, `vendor/open-props/` (licences incluses) + `js/icones.js` (sprite), `js/theme.js`, `theme.css`.

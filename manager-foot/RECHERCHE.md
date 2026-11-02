@@ -201,6 +201,14 @@ quand une décision bloque ; cartes avec ombre et reflet ; onglets en segments ;
 en petites capitales ; barres de défilement discrètes ; cartes de club animées sur l'accueil ; animations coupées si
 « réduire les animations ».
 
+## Fonctionnalités inspirées (v30)
+
+Peu de dépôts réutilisables trouvés cette fois (recherches « traits », « records », « achievements » : projets sans licence ou hors sujet).
+Mise en œuvre originale d'idées déjà repérées :
+- **Traits cachés** (pitch-to-glory : traits révélés avec le temps ; League-Soccer/GameplayFootball : traits de joueurs) — 8 traits
+  (Fragile, Robuste, Bosseur, Dilettante, Leader, Joueur de grands matchs, Nerveux, Fidèle) avec effets réels.
+- **Records et Panthéon** (pitch-to-glory : records et Hall of Fame).
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.

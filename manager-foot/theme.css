@@ -87,3 +87,10 @@ input::placeholder { color: #6c7d92; }
 .logo-big b { background: linear-gradient(90deg, var(--acc), #8be9b5); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 @media (prefers-reduced-motion: reduce) { .btn, .club-pick, #btnGo.blocked { transition: none !important; animation: none !important; } }
+
+/* traits des joueurs */
+.traits { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.trait { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 12.5px; font-weight: 600;
+  background: color-mix(in srgb, var(--acc) 16%, #121a24); border: 1px solid color-mix(in srgb, var(--acc) 45%, #2f3c4d); color: #d8f5e6; cursor: help; }
+.trait.neg { background: color-mix(in srgb, var(--red) 14%, #121a24); border-color: color-mix(in srgb, var(--red) 45%, #2f3c4d); color: #ffd3d7; }
+.trait.inconnu { background: #121a24; border: 1px dashed #3a4a5e; color: var(--mut); font-weight: 500; }
