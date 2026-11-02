@@ -35,7 +35,32 @@ class Pitch2D {
   px(x) { const m = this.W * .04; return m + x / 100 * (this.W - 2 * m); }
   py(y) { const m = this.H * .06; return m + y / 100 * (this.H - 2 * m); }
 
+  // image courante de la relecture des actions du moteur
+  playFrame() {
+    const mt = this.mt;
+    if (mt.record && mt.traceId !== this.lastTrace && mt.trace.length) {
+      this.queue = mt.trace; this.qStart = performance.now();
+      this.qDur = Math.max(80, ((typeof LIVE !== 'undefined' && LIVE?.speed) || 120) * .92);
+      this.lastTrace = mt.traceId;
+    }
+    if (!this.queue?.length) return null;
+    const i = Math.min(this.queue.length - 1, Math.floor((performance.now() - this.qStart) / this.qDur * this.queue.length));
+    this.kSpeed = clamp(16.7 / (this.qDur / this.queue.length) * .55, .06, .6);
+    return this.queue[i];
+  }
   targets() {
+    const fr = this.playFrame();
+    if (fr) {
+      const T = {};
+      this.mt.sides.forEach((s, i) => s.onPitch.forEach(x => {
+        const ps = fr.pos[x.id]; if (!ps) return;
+        T[x.id] = { x: ps[0], y: ps[1], side: i, role: x.role, num: getPlayer(G, x.id).num, id: x.id };
+      }));
+      if (fr.c != null && T[fr.c]) { T[fr.c].x = fr.x - (fr.side === 0 ? 1.2 : -1.2); T[fr.c].y = fr.y; T[fr.c].carrier = true; }
+      this.ballTarget = { x: fr.x, y: fr.y };
+      return T;
+    }
+    this.ballTarget = this.mt.ball;
     const mt = this.mt, b = mt.ball, T = {};
     mt.sides.forEach((s, i) => {
       const form = FORMATIONS[s.formation];
@@ -72,13 +97,14 @@ class Pitch2D {
     for (const id in T) {
       const t = T[id];
       const p = this.pos[id] || (this.pos[id] = { x: t.x, y: t.y });
-      const k = t.carrier ? .12 : .05;
+      const k = this.queue ? (t.carrier ? Math.max(.2, this.kSpeed) : this.kSpeed * .7) : (t.carrier ? .12 : .05);
       p.x += (t.x - p.x) * k + Math.sin((this.t + id * 13) / 30) * .03;
       p.y += (t.y - p.y) * k + Math.cos((this.t + id * 7) / 34) * .03;
       Object.assign(p, { side: t.side, role: t.role, num: t.num, carrier: t.carrier });
     }
-    this.ball.x += (this.mt.ball.x - this.ball.x) * .14;
-    this.ball.y += (this.mt.ball.y - this.ball.y) * .14;
+    const bt = this.ballTarget || this.mt.ball, bk = this.queue ? Math.min(.7, this.kSpeed * 1.6) : .14;
+    this.ball.x += (bt.x - this.ball.x) * bk;
+    this.ball.y += (bt.y - this.ball.y) * bk;
 
     // terrain
     const stripes = 12;

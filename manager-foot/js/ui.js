@@ -158,3 +158,79 @@ function normName(s) { return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '')
 function seg(name, opts, val, tips = []) {
   return `<div class="seg" data-name="${name}">${opts.map((o, i) => `<button type="button" data-v="${i - 1}" class="${val === i - 1 ? 'on' : ''}" title="${esc(tips[i] || '')}">${esc(o)}</button>`).join('')}</div>`;
 }
+
+// ============================================================
+//  Analyse de match : carte des tirs, xG, statistiques
+// ============================================================
+function reportFromMatch(mt) {
+  return {
+    shots: mt.shots.map(s => [s.side, s.m, s.x, s.y, s.xg, s.res, s.pid, s.kind]),
+    tl: mt.xgTl, st: mt.stats.map(s => ({ ...s })), poss: mt.possPct || [50, 50],
+    pr: Object.fromEntries(Object.entries(mt.pr).filter(([, r]) => r.min > 0).map(([id, r]) => [id, [r.side, r.min, +r.r.toFixed(1), r.g, r.a, r.pas, r.pasOk, r.kp, r.dri, r.tkl, r.int, r.sh, +(+r.xg).toFixed(2), r.sav]]))
+  };
+}
+function analysisHTML(names, colors, R, mySide = 0) {
+  const c0 = colors[0], c1 = colors[1];
+  const shotSvg = `<svg class="shotmap" viewBox="-2 -2 109 72">
+    <rect x="0" y="0" width="105" height="68" fill="#1f6b3a" stroke="#fff" stroke-opacity=".6" stroke-width=".4"/>
+    <line x1="52.5" y1="0" x2="52.5" y2="68" stroke="#fff" stroke-opacity=".5" stroke-width=".3"/>
+    <circle cx="52.5" cy="34" r="9.15" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".3"/>
+    <rect x="0" y="13.85" width="16.5" height="40.3" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".3"/>
+    <rect x="88.5" y="13.85" width="16.5" height="40.3" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".3"/>
+    <rect x="-1.5" y="30.3" width="1.5" height="7.3" fill="#fff" opacity=".7"/><rect x="105" y="30.3" width="1.5" height="7.3" fill="#fff" opacity=".7"/>
+    ${R.shots.map(([side, m, x, y, xg, res, pid, kind]) => {
+      const col = side === 0 ? c0 : c1, rr = 1 + Math.sqrt(xg) * 3.2;
+      const goal = res === 'goal';
+      return `<circle cx="${(x * 1.05).toFixed(1)}" cy="${(y * .68).toFixed(1)}" r="${rr.toFixed(2)}" fill="${goal ? col : 'none'}" fill-opacity="${goal ? .95 : 0}" stroke="${goal ? '#fff' : col}" stroke-width="${goal ? .5 : .45}" opacity="${res === 'block' ? .45 : 1}"><title>${esc(getPlayer(G, pid)?.name || '?')} ${m}' — xG ${xg.toFixed(2)} — ${{ goal: 'BUT', save: 'arrêté', miss: 'à côté', block: 'contré', var: 'refusé (VAR)' }[res] || res}${kind === 'header' ? ' (tête)' : kind === 'pen' ? ' (penalty)' : kind === 'fk' ? ' (coup franc)' : ''}</title></circle>`;
+    }).join('')}
+  </svg>`;
+  const tl = R.tl || [], mx = Math.max(.5, ...tl.map(t => Math.max(t[0], t[1])));
+  const W = 300, Hh = 90;
+  const line = i => tl.map((t, k) => `${(k / Math.max(1, tl.length - 1) * W).toFixed(1)},${(Hh - t[i] / mx * (Hh - 6) - 3).toFixed(1)}`).join(' ');
+  const goalsMarks = R.shots.filter(s => s[5] === 'goal').map(s => { const k = Math.min(tl.length - 1, s[1] - 1); const v = tl[k]?.[s[0]] ?? 0; return `<circle cx="${(k / Math.max(1, tl.length - 1) * W).toFixed(1)}" cy="${(Hh - v / mx * (Hh - 6) - 3).toFixed(1)}" r="3" fill="${s[0] === 0 ? c0 : c1}" stroke="#fff"/>`; }).join('');
+  const xgSvg = tl.length > 1 ? `<svg class="xgtl" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none"><polyline points="${line(0)}" fill="none" stroke="${c0}" stroke-width="2"/><polyline points="${line(1)}" fill="none" stroke="${c1}" stroke-width="2"/>${goalsMarks}</svg>` : '';
+  const s = R.st;
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+  const rows = [
+    ['Possession', R.poss[0] + ' %', R.poss[1] + ' %', R.poss[0], R.poss[1]],
+    ['Tirs (cadrés)', `${s[0].shots} (${s[0].onT})`, `${s[1].shots} (${s[1].onT})`, s[0].shots, s[1].shots],
+    ['xG', (+s[0].xg).toFixed(2), (+s[1].xg).toFixed(2), +s[0].xg, +s[1].xg],
+    ['Passes', `${s[0].pas} · ${pct(s[0].pasOk, s[0].pas)} %`, `${s[1].pas} · ${pct(s[1].pasOk, s[1].pas)} %`, s[0].pasOk, s[1].pasOk],
+    ['Dribbles réussis', s[0].dri ?? 0, s[1].dri ?? 0, s[0].dri ?? 0, s[1].dri ?? 0],
+    ['Tacles gagnés', s[0].tkl, s[1].tkl, s[0].tkl, s[1].tkl],
+    ['Ballons récupérés', s[0].int, s[1].int, s[0].int, s[1].int],
+    ['Corners', s[0].corners, s[1].corners, s[0].corners, s[1].corners],
+    ['Fautes', s[0].fouls, s[1].fouls, s[0].fouls, s[1].fouls],
+    ['Hors-jeu', s[0].off, s[1].off, s[0].off, s[1].off],
+    ['Arrêts du gardien', s[0].saves, s[1].saves, s[0].saves, s[1].saves]
+  ];
+  const statTbl = rows.map(([l, a, b, va, vb]) => `<div class="srow"><b>${a}</b><span>${l}</span><b>${b}</b></div><div class="sbar"><i style="width:${(va + vb) ? va / (va + vb) * 100 : 50}%"></i></div>`).join('');
+  const ptab = side => {
+    const list = Object.entries(R.pr).filter(([, r]) => r[0] === side).sort((a, b) => b[1][2] - a[1][2]);
+    return `<table class="tbl compact pstats"><tr><th>Joueur</th><th>Min</th><th>Note</th><th title="Buts / passes décisives">B/PD</th><th>Tirs</th><th>xG</th><th title="Passes réussies">Passes</th><th title="Passes clés">PC</th><th title="Dribbles réussis">Drib.</th><th title="Tacles gagnés">Tac.</th><th title="Ballons récupérés">Récup.</th><th title="Arrêts">Arr.</th></tr>
+      ${list.map(([id, r]) => { const p = getPlayer(G, +id); return `<tr data-pid="${id}"><td class="nm">${esc(p?.name || '?')}</td><td>${Math.min(r[1], 120)}'</td><td><b class="${r[2] >= 7.5 ? 'pos' : r[2] < 6 ? 'neg' : ''}">${r[2].toFixed(1)}</b></td><td>${r[3] || ''}${r[4] ? '/' + r[4] : r[3] ? '' : ''}</td><td>${r[11] || ''}</td><td>${r[12] ? r[12].toFixed(2) : ''}</td><td>${r[5] ? `${r[6]}/${r[5]}` : ''}</td><td>${r[7] || ''}</td><td>${r[8] || ''}</td><td>${r[9] || ''}</td><td>${r[10] || ''}</td><td>${r[13] || ''}</td></tr>`; }).join('')}</table>`;
+  };
+  return `<div class="analysis">
+    <div class="grid2">
+      <div><h3>Carte des tirs <small class="muted">(taille = xG, plein = but)</small></h3>${shotSvg}
+        <div class="legend"><span><i style="background:${c0}"></i>${esc(names[0])} →</span><span>← ${esc(names[1])}<i style="background:${c1}"></i></span></div>
+        <h3>Évolution des xG</h3>${xgSvg}</div>
+      <div><h3>Statistiques</h3>${statTbl}</div>
+    </div>
+    <div class="tabs mt ana-tabs"><button class="${mySide === 0 ? 'on' : ''}" data-as="0">${esc(names[0])}</button><button class="${mySide === 1 ? 'on' : ''}" data-as="1">${esc(names[1])}</button></div>
+    <div class="ana-p" data-p="0" ${mySide === 0 ? '' : 'hidden'}>${ptab(0)}</div><div class="ana-p" data-p="1" ${mySide === 1 ? '' : 'hidden'}>${ptab(1)}</div>
+  </div>`;
+}
+function bindAnalysis(root) {
+  root.querySelectorAll('[data-as]').forEach(b => b.onclick = () => {
+    root.querySelectorAll('[data-as]').forEach(x => x.classList.toggle('on', x === b));
+    root.querySelectorAll('.ana-p').forEach(d => d.hidden = d.dataset.p !== b.dataset.as);
+  });
+  root.querySelectorAll('.pstats tr[data-pid]').forEach(r => r.onclick = () => playerModal(+r.dataset.pid));
+}
+function teamColors(H, A) {
+  let ca = A.colors[0];
+  if (typeof colorDist === 'function' && colorDist(H.colors[0], ca) < 90) ca = A.colors[1];
+  if (typeof colorDist === 'function' && colorDist(H.colors[0], ca) < 90) ca = '#f5f5f5';
+  return [H.colors[0], ca];
+}

@@ -207,7 +207,7 @@ function genName(nat) {
   return pick(pool.f) + ' ' + pick(pool.l);
 }
 function randomFace() { return { skin: rint(0, 5), hair: rint(0, 6), hairCol: rint(0, 5), beard: rnd() < .3 ? rint(1, 2) : 0 }; }
-function emptyStats() { return { apps: 0, goals: 0, assists: 0, rating: 0, yel: 0, red: 0, lg: 0, motm: 0 }; }
+function emptyStats() { return { apps: 0, goals: 0, assists: 0, rating: 0, yel: 0, red: 0, lg: 0, motm: 0, min: 0, pas: 0, pasOk: 0, kp: 0, dri: 0, tkl: 0, int: 0, sh: 0, xg: 0, sav: 0 }; }
 
 function genPlayer(role, q, opts = {}) {
   const nat = opts.nat || pickNation(opts.rep || 60)[0];

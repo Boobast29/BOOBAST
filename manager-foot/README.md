@@ -24,7 +24,16 @@ Raccourcis : `Espace` = continuer · `1`…`9` = menus · `/` = recherche · `É
 - **Journal** : séries, crises, buteurs en forme, rumeurs de mercato.
 - **Ambiance sonore** du stade (foule, sifflet, but) et **conseils de l'adjoint** pendant le match.
 - **Vacances** : ton adjoint dirige l'équipe pendant plusieurs semaines.
-- **Match en direct** avec **vue 2D animée** et commentaires minute par minute. Au programme :
+- **Moteur de match action par action** (environ 900 actions par match) :
+  - passes courtes, vers l'avant, longues, en profondeur, dribbles, centres, duels aériens, tirs ;
+  - chaque action oppose le porteur au défenseur le plus proche, selon leurs attributs, leurs positions, le pressing, la fatigue et la météo ;
+  - xG calculé selon la distance et l'angle du tir, hors-jeu, contre-attaques, fautes situées sur le terrain (coup franc direct ou penalty) ;
+  - notes des joueurs calculées à partir de leurs actions réelles ;
+  - calibrage : environ 2,7 buts, 25 tirs, 77 % de passes réussies, 21 fautes, 3 cartons par match, 44 % de victoires à domicile, 22 % de nuls ;
+  - aucune consigne tactique ne domine.
+- **Analyse d'après-match** : carte des tirs, courbe des xG, statistiques d'équipe, statistiques détaillées de chaque joueur (passes, passes clés, dribbles, tacles, récupérations, arrêts).
+- **Statistiques de saison** par joueur (minutes, xG, % de passes, actions par 90 minutes).
+- **Match en direct** avec **vue 2D animée** (le ballon suit les vraies passes du moteur) et commentaires. Au programme :
   - xG, penaltys, coups francs, corners, contres, VAR ;
   - cartons, blessures, fatigue en temps réel ;
   - 5 changements, causerie à la mi-temps ;

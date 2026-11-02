@@ -361,7 +361,10 @@ function matchReport(key) {
       ${f.xg ? `<tr><td>xG (buts attendus)</td><td>${f.xg[0]} - ${f.xg[1]}</td></tr>` : ''}
       ${f.att ? `<tr><td>Affluence</td><td>${f.att.toLocaleString('fr-FR')}</td></tr>` : ''}
       ${f.motm ? `<tr><td>Homme du match</td><td>${esc(getPlayer(G, f.motm)?.name || '-')}</td></tr>` : ''}
-    </table></div>`);
+      ${f.wx && typeof WEATHER !== 'undefined' ? `<tr><td>Météo</td><td>${WEATHER[f.wx].icon} ${WEATHER[f.wx].label}</td></tr>` : ''}
+    </table>
+    ${f.report ? analysisHTML([H.name, A.name], teamColors(H, A), f.report, f.a === G.clubId ? 1 : 0) : ''}</div>`, f.report ? 'wide' : '');
+  bindAnalysis($('#modal'));
 }
 
 // ============================================================
@@ -369,6 +372,7 @@ function matchReport(key) {
 // ============================================================
 let SQUAD_SORT = { k: 'pos', d: 1 };
 let SQUAD_LINE = '';
+let SQUAD_VIEW = 'gen';
 const POS_ORDER = Object.keys(ROLES);
 function vSquad(el, clubId = G.clubId) {
   const mine = clubId === G.clubId;
@@ -386,20 +390,31 @@ function vSquad(el, clubId = G.clubId) {
     <div class="row gap wrap"><h2 class="grow">${crest(club, 30)} ${esc(club.name)} <small>${all.length} joueurs · âge moyen ${(all.reduce((s, p) => s + p.age, 0) / (all.length || 1)).toFixed(1)} · valeur ${money(all.reduce((s, p) => s + p.value, 0))}</small></h2>
       <div class="tabs sm">${[['', 'Tous'], ['G', 'Gardiens'], ['D', 'Défenseurs'], ['M', 'Milieux'], ['A', 'Attaquants']].map(([k, l]) => `<button data-l="${k}" class="${SQUAD_LINE === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     </div>
-    <div class="scroll"><table class="tbl players">
+    <div class="tabs sm mt">${[['gen', 'Général'], ['stats', 'Statistiques de la saison']].map(([k, l]) => `<button data-vw="${k}" class="${SQUAD_VIEW === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    ${SQUAD_VIEW === 'stats' ? squadStatsTable(list) : `<div class="scroll"><table class="tbl players">
       <thead><tr>${th('num', '#')}<th></th>${th('name', 'Joueur')}${th('pos', 'Poste')}${th('age', 'Âge')}<th>Nat.</th>${th('ovr', 'Note')}${th('pot', 'Pot.', 'Potentiel')}<th>Forme</th>${th('fit', 'Cond.', 'Condition physique')}${th('mor', 'Moral')}${th('apps', 'MJ')}${th('goals', 'Buts')}${th('rat', 'Moy.')}${th('val', 'Valeur')}${th('wage', 'Salaire')}${th('con', 'Contrat')}<th></th></tr></thead>
       <tbody>${list.map(p => `<tr data-pid="${p.id}" class="${inXI.has(p.id) ? 'xi' : inB.has(p.id) ? 'bn' : ''} ${available(p) ? '' : 'unav'}">
         <td class="muted">${p.num ?? ''}</td><td>${avatar(p, 32)}</td><td class="nm">${esc(p.name)}</td><td><span class="pos-${ROLES[p.pos].line}">${p.pos}</span></td><td>${p.age}</td><td>${natFlag(p.nat)}</td>
         <td>${ovrCell(p)}</td><td>${potCell(p)}</td><td>${formDots(p)}</td><td>${bar(p.fit, 100, p.fit < 70 ? 'low' : '')}</td><td>${bar(p.morale, 100, 'mor')}</td>
         <td>${p.stats.apps}</td><td>${p.stats.goals}</td><td>${p.stats.apps ? (p.stats.rating / p.stats.apps).toFixed(2) : '-'}</td>
         <td>${money(p.value)}</td><td>${money(p.wage)}</td><td>${p.contract} an${p.contract > 1 ? 's' : ''}</td><td>${status(p)}</td></tr>`).join('')}</tbody>
-    </table></div></section>
+    </table></div>`}</section>
     ${mine ? (() => { const ln = G.players.filter(p => p.loan?.from === G.clubId); return ln.length ? `<section class="card"><h2>🔁 Joueurs prêtés</h2><table class="tbl compact">${ln.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 26)}</td><td class="nm">${esc(p.name)}</td><td>${p.pos}</td><td>${ovrBadge(playerOvr(p))}</td><td>${crest(getClub(G, p.club), 18)} ${esc(getClub(G, p.club).name)}</td><td>${p.stats.apps} MJ · ${p.stats.goals} buts · ${p.stats.apps ? (p.stats.rating / p.stats.apps).toFixed(2) : '-'}</td></tr>`).join('')}</table></section>` : ''; })() : ''}`;
   el.querySelectorAll('th[data-k]').forEach(t => t.onclick = () => { SQUAD_SORT = { k: t.dataset.k, d: SQUAD_SORT.k === t.dataset.k ? -SQUAD_SORT.d : (['name', 'pos', 'age', 'num'].includes(t.dataset.k) ? 1 : -1) }; vSquad(el, clubId); });
   el.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { SQUAD_LINE = b.dataset.l; vSquad(el, clubId); });
+  el.querySelectorAll('[data-vw]').forEach(b => b.onclick = () => { SQUAD_VIEW = b.dataset.vw; vSquad(el, clubId); });
   el.querySelectorAll('tr[data-pid]').forEach(r => r.onclick = () => playerModal(+r.dataset.pid));
 }
 
+function squadStatsTable(list) {
+  const per90 = (v, p) => p.stats.min ? (v / p.stats.min * 90).toFixed(1) : '-';
+  return `<div class="scroll"><table class="tbl players compact">
+    <thead><tr><th></th><th>Joueur</th><th>Poste</th><th>MJ</th><th>Min</th><th>Note</th><th>Buts</th><th>PD</th><th title="Buts attendus">xG</th><th>Tirs</th><th title="% passes réussies">Passes</th><th title="Passes clés / 90 min">PC/90</th><th title="Dribbles réussis / 90">Drib/90</th><th title="Tacles / 90">Tac/90</th><th title="Ballons récupérés / 90">Récup/90</th><th title="Arrêts (gardiens)">Arrêts</th><th>⭐</th></tr></thead>
+    <tbody>${list.slice().sort((a, b) => (b.stats.min || 0) - (a.stats.min || 0)).map(p => { const s = p.stats; return `<tr data-pid="${p.id}"><td>${avatar(p, 26)}</td><td class="nm">${esc(p.name)}</td><td><span class="pos-${ROLES[p.pos].line}">${p.pos}</span></td>
+      <td>${s.apps}</td><td>${s.min || 0}</td><td>${s.apps ? (s.rating / s.apps).toFixed(2) : '-'}</td><td>${s.goals}</td><td>${s.assists}</td><td>${(s.xg || 0).toFixed(1)}</td><td>${s.sh || 0}</td>
+      <td>${s.pas ? Math.round(s.pasOk / s.pas * 100) + ' %' : '-'}</td><td>${per90(s.kp || 0, p)}</td><td>${per90(s.dri || 0, p)}</td><td>${per90(s.tkl || 0, p)}</td><td>${per90(s.int || 0, p)}</td><td>${p.pos === 'GB' ? s.sav || 0 : ''}</td><td>${s.motm || ''}</td></tr>`; }).join('')}</tbody></table></div>
+    <p class="hint">Statistiques réelles issues de la simulation action par action (toutes compétitions).</p>`;
+}
 function playerModal(pid, tab = 'profil') {
   const p = getPlayer(G, pid); if (!p) return;
   const club = p.club != null ? getClub(G, p.club) : null;
@@ -445,6 +460,12 @@ function playerModal(pid, tab = 'profil') {
         <tr><td>Matchs</td><td>${p.stats.apps}</td></tr><tr><td>Buts (dont championnat)</td><td>${p.stats.goals} (${p.stats.lg})</td></tr>
         <tr><td>Passes décisives</td><td>${p.stats.assists}</td></tr><tr><td>Note moyenne</td><td>${p.stats.apps ? (p.stats.rating / p.stats.apps).toFixed(2) : '-'}</td></tr>
         <tr><td>Homme du match</td><td>${p.stats.motm}</td></tr><tr><td>Cartons</td><td>🟨 ${p.stats.yel} · 🟥 ${p.stats.red}</td></tr>
+        <tr><td>Minutes</td><td>${p.stats.min || 0}</td></tr>
+        <tr><td>Tirs · xG</td><td>${p.stats.sh || 0} · ${(p.stats.xg || 0).toFixed(2)} (${p.stats.goals - (p.stats.xg || 0) >= 0 ? '+' : ''}${(p.stats.goals - (p.stats.xg || 0)).toFixed(1)})</td></tr>
+        <tr><td>Passes réussies</td><td>${p.stats.pas ? Math.round(p.stats.pasOk / p.stats.pas * 100) + ' %' : '-'} (${p.stats.pas || 0})</td></tr>
+        <tr><td>Passes clés · dribbles</td><td>${p.stats.kp || 0} · ${p.stats.dri || 0}</td></tr>
+        <tr><td>Tacles · récupérations</td><td>${p.stats.tkl || 0} · ${p.stats.int || 0}</td></tr>
+        ${p.pos === 'GB' ? `<tr><td>Arrêts</td><td>${p.stats.sav || 0}</td></tr>` : ''}
       </table>
       <h3>Forme (notes)</h3>${sparkline(form, 300, 60, { min: 4, max: 10 })}
     </div><div>

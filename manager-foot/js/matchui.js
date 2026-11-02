@@ -31,6 +31,7 @@ function afterWeek(r) {
 }
 
 function validateLineup() {
+  ensureSquad(G, G.clubId);
   const T = G.tactics;
   const mine = new Set(clubPlayers(G, G.clubId).map(p => p.id));
   const problems = [];
@@ -114,6 +115,7 @@ function prepareMatch(f) {
 // ---------- Match en direct ----------
 function liveMatch(mt, f) {
   LIVE = { mt, f, speed: SETTINGS.speed, timer: null, paused: false, shown: 0 };
+  mt.record = true;
   document.body.classList.add('live');
   $$('#nav button').forEach(b => b.disabled = true);
   $('#btnGo').disabled = true;
@@ -246,7 +248,8 @@ function renderLive() {
   $('#feed').innerHTML = mt.log.slice().reverse().slice(0, 120).map(l => `<li class="ev-${l.type} ${l.side === mt.my ? 'mine' : l.side != null ? 'opp' : ''}"><b>${l.m}'</b> ${icon[l.type] || ''} ${esc(l.text)}</li>`).join('');
   const s = mt.stats, tot = s[0].poss + s[1].poss || 1, ph = Math.round(s[0].poss / tot * 100);
   const row = (l, a, b, fmtv = x => x) => `<div class="srow"><b>${fmtv(a)}</b><span>${l}</span><b>${fmtv(b)}</b></div><div class="sbar"><i style="width:${(a + b) ? a / (a + b) * 100 : 50}%"></i></div>`;
-  $('#stats').innerHTML = row('Possession %', ph, 100 - ph) + row('xG', s[0].xg, s[1].xg, x => x.toFixed(2)) + row('Tirs', s[0].shots, s[1].shots) + row('Cadrés', s[0].onT, s[1].onT) + row('Corners', s[0].corners, s[1].corners) + row('Fautes', s[0].fouls, s[1].fouls);
+  const pp = i => s[i].pas ? Math.round(s[i].pasOk / s[i].pas * 100) : 0;
+  $('#stats').innerHTML = row('Possession %', ph, 100 - ph) + row('xG', s[0].xg, s[1].xg, x => x.toFixed(2)) + row('Tirs', s[0].shots, s[1].shots) + row('Cadrés', s[0].onT, s[1].onT) + row('Passes réussies %', pp(0), pp(1)) + row('Tacles', s[0].tkl, s[1].tkl) + row('Corners', s[0].corners, s[1].corners) + row('Fautes', s[0].fouls, s[1].fouls) + row('Hors-jeu', s[0].off, s[1].off);
   const ml = mt.momLog.slice(-60);
   $('#mom').innerHTML = `<div class="momlbl"><span>${esc(mt.names[0])}</span><small>Dynamique du match</small><span>${esc(mt.names[1])}</span></div>
     <svg viewBox="0 0 120 30" preserveAspectRatio="none">${ml.map((v, i) => { const h = clamp(Math.abs(v) / 60, 0, 1) * 14; return `<rect x="${i * 2}" y="${v >= 0 ? 15 - h : 15}" width="1.6" height="${h}" fill="${v >= 0 ? 'var(--acc)' : 'var(--red)'}"/>`; }).join('')}<line x1="0" x2="120" y1="15" y2="15" stroke="#556" stroke-width=".3"/></svg>`;
@@ -309,6 +312,7 @@ function endLive() {
   renderLive();
   ['#mPause', '#mSub', '#mSpeed', '#mMent'].forEach(s => { const e = $(s); if (e) e.disabled = true; });
   $('#mEnd').innerHTML = postMatchHTML(mt) + `<div class="center mt"><button class="btn primary big" id="mDone">Continuer ▶</button></div>`;
+  bindAnalysis($('#mEnd'));
   $('#mDone').onclick = () => finishMatch(mt, f);
   $('#mEnd').scrollIntoView({ behavior: 'smooth' });
 }
@@ -321,7 +325,7 @@ function postMatchHTML(mt) {
   return `<section class="card endbox"><h2>${title}</h2>
     <p>${esc(mt.scoreStr())}${mt.penScore ? ` (${mt.penScore[0]}-${mt.penScore[1]} aux tirs au but)` : mt.et ? ' (a.p.)' : ''} · xG ${mt.stats[0].xg.toFixed(2)} - ${mt.stats[1].xg.toFixed(2)}</p>
     ${motm ? `<p>⭐ Homme du match : <b>${esc(motm.name)}</b> (${mt.pr[motm.id].r.toFixed(1)})</p>` : ''}
-    <div class="grid2"><div><h3>${esc(mt.names[0])}</h3><table class="tbl compact">${ratings(0)}</table></div><div><h3>${esc(mt.names[1])}</h3><table class="tbl compact">${ratings(1)}</table></div></div>
+    ${analysisHTML(mt.names, teamColors(getClub(G, mt.f.h), getClub(G, mt.f.a)), reportFromMatch(mt), mt.my)}
   </section>`;
 }
 
