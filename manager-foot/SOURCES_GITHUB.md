@@ -77,3 +77,7 @@ Deux autres résultats ont été repérés, Ahmed-ibrahim21/Nutmeg et Dardoe/Dre
 ## Dépôts hors football
 
 Voir [DEPOTS_GENERALISTES.md](DEPOTS_GENERALISTES.md) : huit candidats avec licences vérifiées, priorités, périmètres d’intégration et critères de réussite. Microdiff, MiniSearch, Tabulator, Ajv, uPlot, XState, Graphology et Dexie sont étudiés pour l’éditeur, la recherche, les tableaux, les imports, les courbes, les négociations, le vestiaire et les sauvegardes. Ils ne sont pas encore intégrés ; ce lot ne modifie pas le moteur ni les sauvegardes.
+
+### Deuxième sélection hors football
+
+[DEPOTS_GENERALISTES_2.md](DEPOTS_GENERALISTES_2.md) ajoute douze candidats et un projet en maintenance à titre de comparaison : fast-check, PapaParse, axe-core, fflate, decimal.js, TanStack Virtual, Floating UI, SortableJS, Cytoscape.js, rrule.js, diff2html, Jedison et JSON Editor. Licences et références vérifiées ; aucun de ces composants n’est intégré par ce lot documentaire. Les recoupements avec la première sélection sont explicités.
