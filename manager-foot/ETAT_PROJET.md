@@ -1,4 +1,14 @@
-# État du projet — v25 (2 novembre 2026)
+# État du projet — v26 (2 novembre 2026)
+
+## v26 — visite guidée, export en image, application installable
+`vendor/driver/`, `vendor/html-to-image/` (licences MIT) + `js/visite.js` ; `manifest.webmanifest`, `sw.js`, `icone.svg`.
+- Visite guidée (driver.js) : en-tête, bouton principal, « À faire », navigation (menu ou barre mobile), palette ; proposée une fois,
+  relançable depuis la palette et les Options ; thème aux couleurs du jeu.
+- « 📷 Image » sur la Chronique et les classements (PNG, fond du jeu, double résolution).
+- Application installable (manifeste + icône) et hors ligne (service worker « réseau d'abord » : à jour quand le serveur répond,
+  copie locale sinon ; /api/ et /img/ jamais mis en cache par le service worker).
+Vérifications (Chromium) : visite de 6 étapes lancée seule et menée jusqu'au bout (1366 px et 390 px), PNG du classement téléchargé,
+service worker enregistré, simulation longue 2 graines × 2 saisons sans erreur.
 
 ## v25 — bibliothèques open source hors football
 `vendor/` (canvas-confetti, uPlot, Fuse.js, fflate, ZzFX, avec licences) + `js/extras.js`.

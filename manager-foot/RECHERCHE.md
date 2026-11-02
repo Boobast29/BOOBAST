@@ -158,6 +158,18 @@ Copiées depuis le registre npm (versions officielles), licences d'origine dans 
 Repérées, non intégrées (pas utiles pour l'instant) : SortableJS (MIT, glisser-déposer : la tactique a déjà le sien), tinykeys (MIT,
 raccourcis : déjà gérés), lz-string (MIT, compression : fflate est plus efficace).
 
+## Bibliothèques hors football, 2e lot (v26)
+
+| Projet | Licence | Dans le jeu |
+|---|---|---|
+| [nilbuild/driver.js](https://github.com/nilbuild/driver.js) 1.10.2 | MIT | visite guidée en 6 étapes à la première partie (ordinateur et mobile), relançable (Ctrl+K → « Visite guidée », Options) |
+| [bubkoo/html-to-image](https://github.com/bubkoo/html-to-image) 1.11.13 | MIT | bouton « 📷 Image » : Chronique et classements enregistrés en PNG à partager |
+| [GoogleChrome/workbox](https://github.com/GoogleChrome/workbox) | MIT | principe « réseau d'abord » repris dans un service worker écrit à la main (`sw.js`, sans dépendance) : jeu installable et jouable hors ligne |
+
+Écartés : [shipshapecode/shepherd](https://github.com/shipshapecode/shepherd) (AGPL / licence commerciale) et [usablica/intro.js](https://github.com/usablica/intro.js)
+(AGPL / licence commerciale) : licences non libres pour un usage sans publier tout le jeu. Pistes : jsPDF (MIT, bilan de saison en PDF),
+qrcode-generator (MIT, partager une partie par QR code), i18next (MIT, traduction).
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.

@@ -723,3 +723,12 @@ label.chk input[type=checkbox] { width: 16px !important; height: 16px; margin: 0
 .graphe .u-title { display: none; }
 .graphe .uplot { font-family: inherit; }
 .graphe .u-legend { color: var(--mut); font-size: 12px; }
+
+/* visite guidée (driver.js) aux couleurs du jeu */
+.driver-popover.mf-visite { background: #111822; color: var(--txt); border: 1px solid #2b3a4c; border-radius: 14px; box-shadow: 0 18px 50px rgba(0,0,0,.5); max-width: 340px; }
+.driver-popover.mf-visite .driver-popover-title { font-size: 16px; }
+.driver-popover.mf-visite .driver-popover-description { color: #c4d0dc; line-height: 1.5; }
+.driver-popover.mf-visite .driver-popover-progress-text { color: var(--mut); }
+.driver-popover.mf-visite button { background: #1b2735; color: var(--txt); border: 1px solid #314155; text-shadow: none; border-radius: 8px; padding: 5px 10px; }
+.driver-popover.mf-visite .driver-popover-next-btn { background: var(--acc); color: #06120b; border-color: transparent; font-weight: 700; }
+.driver-popover.mf-visite .driver-popover-arrow { border-color: #111822; }

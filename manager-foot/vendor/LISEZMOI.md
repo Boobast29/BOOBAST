@@ -9,6 +9,8 @@ Toutes copiées sans modification depuis le registre npm (versions publiées off
 | `fuse/` | [krisk/Fuse](https://github.com/krisk/Fuse) | 7.5.0 | Apache-2.0 | recherche tolérante aux fautes dans la palette Ctrl+K |
 | `fflate/` | [101arrowz/fflate](https://github.com/101arrowz/fflate) | 0.8.3 | MIT | export/import de partie compressé (.mfz) |
 | `zzfx/` | [KilledByAPixel/ZzFX](https://github.com/KilledByAPixel/ZzFX) | 1.4.0 | MIT | effets sonores synthétisés (but, sifflet, trophée) |
+| `driver/` | [nilbuild/driver.js](https://github.com/nilbuild/driver.js) | 1.10.2 | MIT | visite guidée du jeu |
+| `html-to-image/` | [bubkoo/html-to-image](https://github.com/bubkoo/html-to-image) | 1.11.13 | MIT | export en image (chronique, classement, bilan) |
 | `retroFootballManager/` | [FredericusRadicalus/retroFootballManager](https://github.com/FredericusRadicalus/retroFootballManager) | commit dans VERSION | MIT | logique des sponsors de tribunes (adaptée dans js/tribunes.js) |
 
 `modules.mjs` expose Fuse et ZzFX (modules ES) en variables globales ; il ne fonctionne qu'avec le serveur local (http),

@@ -1,0 +1,12 @@
+{
+  "name": "Manager Foot",
+  "short_name": "Manager Foot",
+  "description": "Jeu de gestion de football : règlements réels, barrages jouables, mercato aux règles FIFA.",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0f14",
+  "theme_color": "#0b0f14",
+  "icons": [{ "src": "icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
