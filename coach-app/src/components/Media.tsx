@@ -6,15 +6,16 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { linkThumbnail, MEDIA_KIND_ICON } from '@/lib/media';
 import { formatDate } from '@/lib/stats';
 import type { MediaItem } from '@/lib/types';
-import { shadow, useTheme } from './theme';
+import { useTheme } from './theme';
 
-const CATEGORY_GRADIENT: Record<MediaItem['category'], [string, string]> = {
-  Match: ['#0A4A1B', '#1FA971'],
-  Entraînement: ['#1E3A8A', '#3B82F6'],
-  Analyse: ['#4C1D95', '#8B5CF6'],
-  Adversaire: ['#7F1D1D', '#EF4444'],
-  Exercice: ['#78350F', '#F59E0B'],
-  Autre: ['#1F2937', '#6B7280'],
+/** Fond uni (sobre) quand la vidéo n'a pas de vignette. */
+const CATEGORY_BG: Record<MediaItem['category'], string> = {
+  Match: '#14452A',
+  Entraînement: '#1D3557',
+  Analyse: '#33294F',
+  Adversaire: '#4E2323',
+  Exercice: '#4A3418',
+  Autre: '#2A2F33',
 };
 
 export function mediaThumb(m: MediaItem) {
@@ -22,16 +23,15 @@ export function mediaThumb(m: MediaItem) {
 }
 
 /** Vignette 16:9 avec icône lecture, catégorie et nombre de temps forts. */
-export function MediaCover({ m, height = 180, rounded = 16 }: { m: MediaItem; height?: number; rounded?: number }) {
+export function MediaCover({ m, height = 180, rounded = 12 }: { m: MediaItem; height?: number; rounded?: number }) {
   const thumb = mediaThumb(m);
   return (
-    <View style={{ height, borderRadius: rounded, overflow: 'hidden' }}>
-      <LinearGradient colors={CATEGORY_GRADIENT[m.category]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+    <View style={{ height, borderRadius: rounded, overflow: 'hidden', backgroundColor: CATEGORY_BG[m.category] }}>
       {thumb ? <Image source={thumb} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
-      <LinearGradient colors={['transparent', 'rgba(0,0,0,0.55)']} style={StyleSheet.absoluteFill} />
+      {thumb ? <LinearGradient colors={['transparent', 'rgba(0,0,0,0.45)']} style={StyleSheet.absoluteFill} /> : null}
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <View style={{ width: height > 120 ? 58 : 38, height: height > 120 ? 58 : 38, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name={m.kind === 'video' ? 'play' : m.kind === 'photo' ? 'expand' : 'open-outline'} size={height > 120 ? 28 : 18} color="#0A4A1B" style={m.kind === 'video' ? { marginLeft: 3 } : undefined} />
+        <View style={{ width: height > 140 ? 52 : 36, height: height > 140 ? 52 : 36, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name={m.kind === 'video' ? 'play' : m.kind === 'photo' ? 'expand' : 'open-outline'} size={height > 140 ? 24 : 17} color="#14452A" style={m.kind === 'video' ? { marginLeft: 2 } : undefined} />
         </View>
       </View>
       <View style={{ position: 'absolute', top: 8, left: 8, flexDirection: 'row', gap: 6 }}>
@@ -48,7 +48,7 @@ export function MediaCover({ m, height = 180, rounded = 16 }: { m: MediaItem; he
 
 function Pill({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 }}>
       <Ionicons name={icon} size={12} color="#fff" />
       <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>{text}</Text>
     </View>
@@ -61,17 +61,14 @@ export function MediaCard({ m, subtitle }: { m: MediaItem; subtitle?: string }) 
   return (
     <Pressable
       onPress={() => router.push(`/media/${m.id}`)}
-      style={({ pressed }) => [
-        { backgroundColor: t.card, borderRadius: 20, overflow: 'hidden', borderWidth: t.dark ? 1 : 0, borderColor: t.border, opacity: pressed ? 0.9 : 1 },
-        shadow(t),
-      ]}
+      style={({ pressed }) => ({ gap: 6, opacity: pressed ? 0.8 : 1 })}
     >
-      <MediaCover m={m} rounded={0} />
-      <View style={{ padding: 14, gap: 4 }}>
-        <Text style={{ color: t.text, fontSize: 16, fontWeight: '700' }} numberOfLines={2}>
+      <MediaCover m={m} height={118} />
+      <View style={{ gap: 2, paddingHorizontal: 2 }}>
+        <Text style={{ color: t.text, fontSize: 14, fontWeight: '600' }} numberOfLines={2}>
           {m.title}
         </Text>
-        <Text style={{ color: t.muted, fontSize: 13 }} numberOfLines={1}>
+        <Text style={{ color: t.muted, fontSize: 12 }} numberOfLines={1}>
           {[formatDate(m.date), subtitle].filter(Boolean).join(' · ')}
         </Text>
       </View>
@@ -86,7 +83,7 @@ export function MediaStrip({ items }: { items: MediaItem[] }) {
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingVertical: 2 }}>
       {items.map((m) => (
         <Pressable key={m.id} onPress={() => router.push(`/media/${m.id}`)} style={{ width: 200, gap: 6 }}>
-          <MediaCover m={m} height={112} rounded={14} />
+          <MediaCover m={m} height={112} />
           <Text style={{ color: t.text, fontWeight: '600', fontSize: 13 }} numberOfLines={2}>
             {m.title}
           </Text>

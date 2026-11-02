@@ -120,8 +120,10 @@ export default function TabsLayout() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 7 }}>
               <ClubLogo size={42} />
               <View style={{ flex: 1 }}>
-                <Text style={{ color: t.text, fontSize: 16, fontWeight: '900', letterSpacing: 0.3 }}>BOOBAST</Text>
-                <Text style={{ color: t.muted, fontSize: 11, fontWeight: '600' }}>Suivi d’équipe</Text>
+                <Text style={{ color: t.text, fontSize: 16, fontWeight: '800' }}>QEA Coach</Text>
+                <Text style={{ color: t.muted, fontSize: 11, fontWeight: '600' }} numberOfLines={1}>
+                  {club.name}
+                </Text>
               </View>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, padding: 11, borderRadius: 14, backgroundColor: t.cardAlt }}>
@@ -163,7 +165,7 @@ export default function TabsLayout() {
             },
             headerStyle: { backgroundColor: t.bg },
             headerShadowVisible: false,
-            headerTitleStyle: { color: t.text, fontWeight: '800', fontSize: 20 },
+            headerTitleStyle: { color: t.text, fontWeight: '700', fontSize: 20 },
             headerTitleAlign: 'left',
             headerLeft: desktop
               ? undefined
@@ -225,7 +227,7 @@ export default function TabsLayout() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
                   <ClubLogo size={42} />
                   <View>
-                    <Text style={{ color: t.text, fontSize: 16, fontWeight: '900' }}>BOOBAST</Text>
+                    <Text style={{ color: t.text, fontSize: 16, fontWeight: '800' }}>QEA Coach</Text>
                     <Text style={{ color: t.muted, fontSize: 11, fontWeight: '600' }}>{team?.name ?? 'Suivi d’équipe'}</Text>
                   </View>
                 </View>

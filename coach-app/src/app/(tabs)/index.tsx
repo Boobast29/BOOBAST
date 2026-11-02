@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -7,18 +6,18 @@ import { ClubLogo } from '@/components/ClubLogo';
 import { StrengthsWeaknesses } from '@/components/Feedback';
 import { MediaStrip } from '@/components/Media';
 import { Ring } from '@/components/Ring';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { PlayerHome } from '@/components/PlayerHome';
 import { ScorePill } from '@/components/ScorePill';
 import { useTheme } from '@/components/theme';
-import { ActionTile, Avatar, HeroStat, Badge, Button, Card, Empty, IconCircle, Link, Progress, Row, Screen, Section, Txt } from '@/components/ui';
+import { CoachTodo } from '@/components/CoachTodo';
+import { Hero, Avatar, HeroStat, Button, Card, Empty, IconCircle, Link, List, ListRow, Progress, Row, Screen, Section, Txt } from '@/components/ui';
 import type { IconName, Tone } from '@/components/ui';
-import { PREP_FIELDS } from '@/lib/constants';
+import { coachAlerts } from '@/lib/insights';
+import { matchRequest } from '@/lib/requests';
 import { useStore } from '@/lib/store';
 import {
   avg,
   byDateDesc,
-  computeAlerts,
   isoDaysAgo,
   wellnessScore,
   fmt,
@@ -39,6 +38,9 @@ const ALERT_ICON: Record<AlertKind, IconName> = {
   rpe: 'flame',
   load: 'trending-up',
   absence: 'calendar-clear',
+  decline: 'trending-down',
+  silence: 'chatbubble-ellipses-outline',
+  playtime: 'hourglass-outline',
 };
 const FORM_LETTER = { win: 'V', draw: 'N', loss: 'D', none: '–' } as const;
 
@@ -52,13 +54,12 @@ function Dashboard() {
   const t = useTheme();
   const { data, club, loadDemo } = useStore();
   const active = useMemo(() => data.players.filter((p) => !p.archived), [data.players]);
-  const alerts = useMemo(() => computeAlerts(data), [data]);
+  const alerts = useMemo(() => coachAlerts(data), [data]);
   const summaries = useMemo(() => active.map((p) => summarizePlayer(data, p)), [data, active]);
   const record = useMemo(() => seasonRecord(data), [data]);
   const [showAll, setShowAll] = useState(false);
   const injured = summaries.filter((s) => s.activeInjury?.status === 'active').length;
   const lastMatch = [...data.matches].filter((m) => m.date <= today() || m.scoreFor != null).sort(byDateDesc)[0];
-  const nextMatch = data.matches.filter((m) => m.scoreFor == null && m.date >= today()).sort((a, b) => a.date.localeCompare(b.date))[0];
   const since = isoDaysAgo(14);
   const recentFb = data.sessions.filter((x) => x.date >= since).flatMap((x) => Object.values(x.feedback ?? {}));
   const recentSessions = data.sessions.filter((x) => x.date >= since && x.date <= today());
@@ -79,13 +80,13 @@ function Dashboard() {
   if (!data.players.length && !data.matches.length)
     return (
       <Screen>
-        <LinearGradient colors={t.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 24, padding: 24, gap: 12 }}>
+        <Hero style={{ padding: 24, gap: 12 }}>
           <ClubLogo size={84} />
-          <Text style={{ color: t.heroText, fontSize: 26, fontWeight: '800' }}>Bienvenue coach 👋</Text>
+          <Text style={{ color: t.heroText, fontSize: 26, fontWeight: '800' }}>Bienvenue coach</Text>
           <Text style={{ color: t.heroMuted, fontSize: 15, lineHeight: 22 }}>
             Suivez vos joueurs après chaque match : ressenti, charge (RPE), statistiques, blessures et vidéos — tout au même endroit.
           </Text>
-        </LinearGradient>
+        </Hero>
         <Empty
           icon="people-outline"
           text="Commencez par ajouter vos joueurs, ou chargez des données de démonstration pour découvrir l'appli."
@@ -99,7 +100,7 @@ function Dashboard() {
       </Screen>
     );
 
-  const lastMatchReports = lastMatch ? data.reports.filter((r) => r.matchId === lastMatch.id).length : 0;
+  const lastRequest = lastMatch ? matchRequest(data, lastMatch) : undefined;
   const top = (key: 'goals' | 'assists') =>
     summaries
       .filter((s) => s.totals[key] > 0)
@@ -113,11 +114,11 @@ function Dashboard() {
   return (
     <Screen>
       {/* Bandeau équipe */}
-      <LinearGradient colors={t.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 24, padding: 20, gap: 16 }}>
+      <Hero style={{ padding: 20, gap: 16 }}>
         <Row style={{ justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <ClubLogo size={60} />
           <View style={{ flex: 1, gap: 2 }}>
-            <Text style={{ color: t.heroMuted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 }} numberOfLines={1}>
+            <Text style={{ color: t.heroMuted, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
               {club.name}
             </Text>
             <Text style={{ color: t.heroText, fontSize: 26, fontWeight: '900' }} numberOfLines={1}>
@@ -126,7 +127,7 @@ function Dashboard() {
           </View>
           {record.form.length > 0 && (
             <View style={{ alignItems: 'flex-end', gap: 4 }}>
-              <Text style={{ color: t.heroMuted, fontSize: 11, fontWeight: '600' }}>FORME</Text>
+              <Text style={{ color: t.heroMuted, fontSize: 11, fontWeight: '600' }}>5 derniers</Text>
               <Row style={{ gap: 4 }}>
                 {[...record.form].reverse().map((f) => (
                   <View
@@ -168,49 +169,32 @@ function Dashboard() {
             />
           </View>
         </View>
-      </LinearGradient>
+      </Hero>
 
-      {/* Météo du groupe */}
+      <CoachTodo />
+
       {(weather.form != null || weather.quality != null || weather.attendance != null) && (
-        <Animated.View entering={FadeInDown.delay(80).springify()}>
-          <Card>
-            <Row>
-              <Ionicons name="partly-sunny" size={18} color={t.accent} />
-              <Txt bold>Météo du groupe · 14 derniers jours</Txt>
-            </Row>
-            <Row style={{ justifyContent: 'space-around', alignItems: 'flex-start' }}>
-              <Ring
-                value={weather.form != null ? (weather.form - 1) / 4 : undefined}
-                display={weather.form != null ? fmt(weather.form) : '–'}
-                label="Forme /5"
-              />
-              <Ring
-                value={weather.quality != null ? weather.quality / 10 : undefined}
-                display={weather.quality != null ? fmt(weather.quality) : '–'}
-                label="Qualité séances /10"
-              />
-              <Ring value={weather.attendance} display={weather.attendance != null ? `${Math.round(weather.attendance * 100)}%` : '–'} label="Assiduité" />
-            </Row>
-          </Card>
-        </Animated.View>
+        <Card>
+          <Txt bold>Le groupe sur 14 jours</Txt>
+          <Row style={{ justifyContent: 'space-around', alignItems: 'flex-start' }}>
+            <Ring
+              value={weather.form != null ? (weather.form - 1) / 4 : undefined}
+              display={weather.form != null ? fmt(weather.form) : '–'}
+              label="Forme /5"
+            />
+            <Ring
+              value={weather.quality != null ? weather.quality / 10 : undefined}
+              display={weather.quality != null ? fmt(weather.quality) : '–'}
+              label="Qualité séances /10"
+            />
+            <Ring value={weather.attendance} display={weather.attendance != null ? `${Math.round(weather.attendance * 100)}%` : '–'} label="Assiduité" />
+          </Row>
+        </Card>
       )}
-
-      {/* Actions rapides */}
-      <Row style={{ gap: 10 }}>
-        <ActionTile icon="add-circle" label="Nouveau match" onPress={() => router.push('/match/edit')} />
-        <ActionTile
-          icon="clipboard"
-          label="Suivi du match"
-          tone="info"
-          onPress={() => (lastMatch ? router.push(`/match/${lastMatch.id}`) : router.push('/match/edit'))}
-        />
-        <ActionTile icon="grid" label="Compo" tone="accent" onPress={() => router.push('/compo')} />
-        <ActionTile icon="videocam" label="Vidéo" tone="violet" onPress={() => router.push({ pathname: '/media/edit', params: { source: 'library' } })} />
-      </Row>
 
       {lastMatch && (
         <>
-          <Section icon="time-outline" action={<Link title="Tous les matchs" onPress={() => router.push('/matchs')} />}>
+          <Section action={<Link title="Tous les matchs" onPress={() => router.push('/matchs')} />}>
             Dernier match
           </Section>
           <Card onPress={() => router.push(`/match/${lastMatch.id}`)}>
@@ -226,62 +210,25 @@ function Dashboard() {
               </View>
               <ScorePill m={lastMatch} />
             </Row>
-            <View style={{ gap: 6 }}>
-              <Row style={{ justifyContent: 'space-between' }}>
-                <Txt muted size={13}>
-                  Questionnaires remplis
-                </Txt>
-                <Txt bold size={13}>
-                  {lastMatchReports}/{active.length}
-                </Txt>
-              </Row>
-              <Progress value={active.length ? lastMatchReports / active.length : 0} />
-            </View>
+            {lastRequest?.dispatch ? (
+              <View style={{ gap: 6 }}>
+                <Row style={{ justifyContent: 'space-between' }}>
+                  <Txt muted size={13}>
+                    Questionnaires reçus
+                  </Txt>
+                  <Txt bold size={13}>
+                    {lastRequest.answered.size}/{lastRequest.recipients.length}
+                  </Txt>
+                </Row>
+                <Progress value={lastRequest.recipients.length ? lastRequest.answered.size / lastRequest.recipients.length : 0} height={6} />
+              </View>
+            ) : (
+              <Txt muted size={13}>
+                Questionnaire pas encore envoyé
+              </Txt>
+            )}
           </Card>
         </>
-      )}
-
-      {nextMatch && (
-        <Card onPress={() => router.push({ pathname: '/prepa', params: { matchId: nextMatch.id } })} stripe={t.info}>
-          <Row style={{ gap: 12 }}>
-            <IconCircle icon="clipboard" tone="info" />
-            <View style={{ flex: 1, gap: 2 }}>
-              <Txt bold>
-                Préparer {nextMatch.home ? 'vs' : '@'} {nextMatch.opponent}
-              </Txt>
-              <Txt muted size={13}>
-                {formatDate(nextMatch.date)} · préparation {PREP_FIELDS.filter((f) => nextMatch.prep?.[f.key]?.trim()).length}/{PREP_FIELDS.length}
-                {nextMatch.prep?.published ? ' · publiée' : ''} · compo {data.lineups.some((l) => l.matchId === nextMatch.id) ? '✓' : 'à faire'}
-              </Txt>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={t.muted} />
-          </Row>
-        </Card>
-      )}
-
-      {recentFb.length > 0 && (
-        <Card>
-          <Row>
-            <Ionicons name="pulse" size={18} color={t.primary} />
-            <Txt bold>Ressenti des séances · 14 derniers jours</Txt>
-          </Row>
-          <Row style={{ gap: 8 }}>
-            {(
-              [
-                ['Qualité', avg(recentFb.map((f) => f.quality)), 'success'],
-                ['Perf perso', avg(recentFb.map((f) => f.selfPerf)), 'accent'],
-                ['Intensité', avg(recentFb.map((f) => f.intensity)), 'warning'],
-              ] as const
-            ).map(([label, v, tone]) => (
-              <View key={label} style={{ flex: 1 }}>
-                <Badge text={`${label} ${fmt(v)}/10`} tone={tone} />
-              </View>
-            ))}
-          </Row>
-          <Txt muted size={12}>
-            {recentFb.length} réponses de joueurs
-          </Txt>
-        </Card>
       )}
 
       {lastSession && (
@@ -310,35 +257,28 @@ function Dashboard() {
         />
       )}
 
-      <Section icon="notifications-outline">Alertes ({alerts.length})</Section>
+      <Section>Alertes</Section>
       {alerts.length === 0 ? (
-        <Card>
-          <Row>
-            <IconCircle icon="checkmark-done" tone="success" />
-            <Txt>Aucune alerte. Tout le monde est opérationnel.</Txt>
-          </Row>
-        </Card>
+        <Txt muted size={14}>
+          Aucune alerte : tout le monde est opérationnel.
+        </Txt>
       ) : (
-        alerts.slice(0, showAll ? alerts.length : 5).map((a, i) => {
-          const p = players.get(a.playerId);
-          const tone: Tone = a.level === 'high' ? 'danger' : 'warning';
-          return (
-            <Animated.View key={i} entering={FadeInDown.delay(120 + i * 50).springify()}>
-              <Card onPress={() => router.push(`/joueur/${a.playerId}`)} style={{ paddingVertical: 12 }}>
-                <Row>
-                  <IconCircle icon={ALERT_ICON[a.kind]} tone={tone} />
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <Txt bold>{playerName(p)}</Txt>
-                    <Txt muted size={13}>
-                      {a.text}
-                    </Txt>
-                  </View>
-                  <Badge text={a.level === 'high' ? 'Prioritaire' : 'À surveiller'} tone={tone} />
-                </Row>
-              </Card>
-            </Animated.View>
-          );
-        })
+        <List>
+          {alerts.slice(0, showAll ? alerts.length : 5).map((a, i) => {
+            const p = players.get(a.playerId);
+            const tone: Tone = a.level === 'high' ? 'danger' : 'warning';
+            return (
+              <ListRow
+                key={i}
+                first={i === 0}
+                left={<IconCircle icon={ALERT_ICON[a.kind]} tone={tone} size={32} />}
+                title={playerName(p)}
+                subtitle={a.text}
+                onPress={() => router.push(`/joueur/${a.playerId}`)}
+              />
+            );
+          })}
+        </List>
       )}
 
       {alerts.length > 5 && (
@@ -353,14 +293,14 @@ function Dashboard() {
 
       {recentMedia.length > 0 && (
         <>
-          <Section icon="play-circle-outline" action={<Link title="Vidéothèque" onPress={() => router.push('/videos')} />}>
+          <Section action={<Link title="Vidéothèque" onPress={() => router.push('/videos')} />}>
             Dernières vidéos
           </Section>
           <MediaStrip items={recentMedia} />
         </>
       )}
 
-      {(top('goals').length > 0 || topRated.length > 0) && <Section icon="trophy-outline">Classements</Section>}
+      {(top('goals').length > 0 || topRated.length > 0) && <Section>Classements</Section>}
       <View style={{ gap: 12 }}>
         {top('goals').length > 0 && (
           <Leaderboard title="Buteurs" icon="football" rows={top('goals').map((s) => [s.player.id, s.player, String(s.totals.goals)])} />
@@ -376,7 +316,7 @@ function Dashboard() {
   );
 }
 
-const MEDALS = ['🥇', '🥈', '🥉'];
+
 function Leaderboard({ title, icon, rows }: { title: string; icon: IconName; rows: [string, Parameters<typeof initials>[0], string][] }) {
   const t = useTheme();
   return (
@@ -388,7 +328,7 @@ function Leaderboard({ title, icon, rows }: { title: string; icon: IconName; row
       {rows.map(([id, p, value], i) => (
         <Pressable key={id} onPress={() => router.push(`/joueur/${id}`)}>
           <Row>
-            <Text style={{ fontSize: 18, width: 26 }}>{MEDALS[i]}</Text>
+            <Text style={{ fontSize: 15, width: 20, color: t.muted, fontWeight: '700' }}>{i + 1}</Text>
             <Avatar size={32} colorKey={p.id} photo={p.photoUri} label={initials(p)} />
             <View style={{ flex: 1 }}>
               <Txt>{playerName(p)}</Txt>

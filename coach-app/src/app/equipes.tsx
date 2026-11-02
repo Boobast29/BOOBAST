@@ -2,7 +2,6 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ClubLogo } from '@/components/ClubLogo';
 import { Locked } from '@/components/Locked';
 import { TeamBadge } from '@/components/TeamBadge';
@@ -80,7 +79,7 @@ export default function Teams() {
 
       {club.teams.length > 0 && <Section icon="shield-outline">Équipes ({club.teams.length})</Section>}
       {club.teams.map((tm, i) => (
-        <Animated.View key={tm.id} entering={FadeInDown.delay(i * 40)}>
+        <View key={tm.id}>
           <Card onPress={() => enter(tm.id)} stripe={tm.color}>
             <Row style={{ gap: 12 }}>
               <TeamBadge team={tm} size={44} />
@@ -98,7 +97,7 @@ export default function Teams() {
               </Pressable>
             </Row>
           </Card>
-        </Animated.View>
+        </View>
       ))}
 
       {editing ? (

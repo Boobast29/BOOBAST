@@ -1,6 +1,7 @@
+import { migrateToSendModel } from './requests';
 import { QEA_QUESTIONS, QUESTION_TEMPLATES, statsForPosition } from './constants';
 import { autoLineup } from './formations';
-import type { AppData, Attendance, CustomQuestion, Objective, Survey, SurveyResponse, TrainingFeedback, TrainingSession, Injury, Match, MediaItem, Player, PostMatchReport } from './types';
+import type { AppData, Attendance, CustomQuestion, Interview, Objective, Survey, SurveyResponse, TrainingFeedback, TrainingSession, Injury, Match, MediaItem, Player, PostMatchReport } from './types';
 
 const iso = (daysAgo: number) => {
   const d = new Date();
@@ -290,11 +291,46 @@ export function buildDemoData(): AppData {
       updatedAt: created,
     }));
 
-  const data: AppData = { version: 1, teamName: 'Quimper Ergué Armel FC', players, matches, reports, injuries, questions, media, lineups: [], sessions, objectives, surveys, surveyResponses };
+  matches[2].teamMessage =
+    'Belle qualif les gars. On a souffert en 2e période mais on a su rester ensemble : c’est ça qu’on veut voir samedi à Vannes. Récup sérieuse cette semaine, on se voit mardi.';
+  const interviews: Interview[] = [
+    {
+      id: 'i0',
+      playerId: 'p9',
+      date: iso(9),
+      playerView: 'Se sent moins en confiance depuis qu’il joue moins. Envie de retrouver du temps de jeu.',
+      positives: 'Toujours présent aux séances, très bon état d’esprit.',
+      issues: 'Hésite dans les duels, perd des ballons faciles sous pression.',
+      decisions: 'Travail spécifique protection de balle mardi. Entrée en jeu prévue samedi.',
+      followUp: iso(1),
+      createdAt: created,
+      updatedAt: created,
+    },
+  ];
+
+  const data: AppData = {
+    version: 1,
+    teamName: 'Quimper Ergué Armel FC',
+    players,
+    matches,
+    reports,
+    injuries,
+    questions,
+    media,
+    lineups: [],
+    sessions,
+    objectives,
+    surveys,
+    surveyResponses,
+    interviews,
+  };
   const stamp = new Date().toISOString();
   data.lineups = [
     { ...autoLineup(data, 'm2', '4-3-3'), captainId: 'p4', published: true, updatedAt: stamp },
     { ...autoLineup(data, 'm3', '4-2-3-1'), captainId: 'p4', published: true, notes: 'Bloc médian, pressing déclenché sur leur 6. Transitions rapides côté gauche.', updatedAt: stamp },
   ];
-  return data;
+  // Questionnaires déjà envoyés, sauf le ressenti de la dernière séance (à envoyer par le coach)
+  const sent = migrateToSendModel(data);
+  sent.sessions = sent.sessions.map((x) => (x.id === 's5' ? { ...x, feedbackRequest: undefined } : x));
+  return sent;
 }

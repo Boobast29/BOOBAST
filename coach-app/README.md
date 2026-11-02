@@ -28,7 +28,19 @@ Application mobile pour qu'un coach suive ses joueurs après chaque match :
 - **Débrief d'après-match** (privé coach) : points positifs, problématiques rencontrées, solutions trouvées,
   à retravailler, note collective.
 - **Photo** pour chaque joueur.
-- **Espace joueur** : liste « À faire » (questionnaire de match, ressenti d'entraînement, questionnaires du coach),
+- **Bouton « Envoyer »** : un questionnaire (après-match, ressenti de séance, questionnaire du coach) ne part
+  vers les joueurs que lorsque le coach appuie sur « Envoyer » (toute l'équipe, la compo, les présents ou une sélection).
+  Les joueurs reçoivent une notification ; le coach voit qui a répondu et peut **relancer** ceux qui manquent.
+  Tout se retrouve dans l'accueil (« À faire ») et dans Suivi → Questionnaires (à envoyer, en attente, brouillons, historique).
+- **Signaux faibles** (accueil coach, fiche joueur) : ressenti ou forme en baisse sur les derniers questionnaires,
+  joueur qui ne répond plus aux questionnaires envoyés.
+- **Courbes d'évolution** par joueur : forme après match, perf perso (match et entraînement), note du coach.
+  Le joueur voit les siennes (sans la note du coach) dans « Ma progression ».
+- **Entretien individuel** (fiche joueur → Entretien) : l'appli prépare les points à aborder à partir des réponses
+  du joueur (tendances, temps de jeu, écart entre sa note et celle du coach, commentaires, dernier entretien) ;
+  le coach note ce qui est dit et décidé, avec une date de suivi rappelée dans « À faire ». Privé.
+- **Le mot du coach** (fiche match) : message à toute l'équipe après le match, notifié aux joueurs.
+- **Espace joueur** : liste « À remplir » (questionnaires envoyés par le coach, avec barre d'avancement),
   points à travailler, prochain match + préparation + compo, stats, vidéos.
 - **Entraînements** (onglet Agenda) : séances avec thème, durée, RPE, **appel** (présent, retard, absent, excusé, blessé),
   RPE individuel ; charge d'entraînement prise en compte dans les alertes ; taux d'assiduité par joueur ;
@@ -91,6 +103,18 @@ Construit avec [Expo](https://expo.dev) (React Native + Expo Router + TypeScript
 Astuce : dans l'appli, **Réglages → Charger les données de démo** pour voir un exemple rempli.
 
 Version navigateur : `npx expo start --web`.
+
+## Version web (HTTPS) et écran d'accueil du téléphone
+
+L'appli est publiée en HTTPS sur Vercel (ex. `https://qea-coach.vercel.app`). C'est une PWA : elle s'installe comme
+une vraie appli, sans store.
+
+- **iPhone (Safari)** : ouvrir le lien → bouton Partager → « Sur l'écran d'accueil ».
+- **Android (Chrome)** : ouvrir le lien → menu ⋮ → « Installer l'application » (ou « Ajouter à l'écran d'accueil »).
+
+Les fichiers concernés sont dans `public/` (manifest, icônes, service worker) et `vercel.json`.
+Sur Vercel : dossier racine `coach-app`, commande `npx expo export -p web`, dossier de sortie `dist`,
+variables `EXPO_PUBLIC_SUPABASE_URL` et `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
 
 ## Installer « pour de vrai » (sans ordinateur branché)
 

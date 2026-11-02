@@ -1,15 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, Share, Text, TextInput, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ClubLogo } from '@/components/ClubLogo';
 import { PinPad } from '@/components/PinPad';
 import { TeamBadge } from '@/components/TeamBadge';
 import { useTheme } from '@/components/theme';
 import { Avatar, Badge, Button, Card, Field, IconCircle, Row, Screen, Section, Txt } from '@/components/ui';
-import { coachSignIn, coachSignUp, createCloudTeam, humanError, joinAsCoach, joinAsPlayer, myTeams, signOut, teamRoster, updateCoachName } from '@/lib/cloud/api';
+import { coachSignIn, coachSignUp, createCloudTeam, humanError, joinAsCoach, joinAsPlayer, myTeams, signOut, teamRoster, updateCoachName, verifiedUser } from '@/lib/cloud/api';
 import type { RosterRow } from '@/lib/cloud/api';
 import { useCloud } from '@/lib/cloud/CloudSync';
 import { isCloudConfigured } from '@/lib/cloud/config';
@@ -67,7 +66,35 @@ function NotConfigured() {
 function SyncStatus() {
   const t = useTheme();
   const { status, lastSync, error, syncNow, user } = useCloud();
-  const { team } = useStore();
+  const { team, club, updateTeam } = useStore();
+  const [repairing, setRepairing] = useState(false);
+  const lost = !!error && error.includes('plus accessible en ligne');
+  // Équipe introuvable sur le serveur : on vérifie l'accès, sinon on la remet en ligne à partir de cet appareil
+  const repair = async () => {
+    if (!team?.cloudId) return;
+    setRepairing(true);
+    try {
+      const u = await verifiedUser();
+      if (!u || u.is_anonymous) {
+        await signOut();
+        notify('Session expirée', 'Reconnectez-vous avec votre e-mail et votre mot de passe de coach, puis relancez la synchronisation.');
+        return;
+      }
+      const mine = await myTeams();
+      if (mine.some((m) => m.team_id === team.cloudId && m.role === 'coach')) {
+        await syncNow();
+        return;
+      }
+      const r = await createCloudTeam(team, club.name);
+      updateTeam(team.id, { cloudId: r.id, joinCode: r.join_code, coachCode: r.coach_code, cloudVersion: 0 });
+      notify('Équipe remise en ligne', `Nouveau code joueurs : ${r.join_code}. Donnez-le aux joueurs pour qu’ils se reconnectent.`);
+      setTimeout(syncNow, 300);
+    } catch (e) {
+      notify('Impossible de remettre l’équipe en ligne', humanError(e));
+    } finally {
+      setRepairing(false);
+    }
+  };
   const map = {
     off: ['cloud-offline-outline', 'Désactivé', 'neutral'],
     idle: ['cloud-done-outline', 'À jour', 'success'],
@@ -98,6 +125,20 @@ function SyncStatus() {
           {error}
         </Txt>
       ) : null}
+      {lost && user && !user.is_anonymous ? (
+        <>
+          <Txt muted size={13}>
+            Les données de l’équipe sont toujours sur cet appareil. Si vous êtes bien connecté avec le bon compte coach, remettez l’équipe en ligne : un nouveau code joueurs sera
+            créé.
+          </Txt>
+          <Button small icon="cloud-upload-outline" title={repairing ? 'En cours…' : 'Remettre l’équipe en ligne'} disabled={repairing} onPress={repair} />
+        </>
+      ) : null}
+      {lost && (!user || user.is_anonymous) ? (
+        <Txt muted size={13}>
+          Reconnectez-vous avec votre compte coach (e-mail et mot de passe) ci-dessous.
+        </Txt>
+      ) : null}
     </Card>
   );
 }
@@ -108,16 +149,20 @@ function CoachCloud() {
   const { user, syncNow } = useCloud();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [coachName, setCoachName] = useState('');
+  const metaName = String(user?.user_metadata?.full_name ?? '');
+  const [coachName, setCoachName] = useState(metaName);
+  // Reprend le nom du compte quand il change (connexion, autre compte)
+  const [seenName, setSeenName] = useState(metaName);
+  if (metaName !== seenName) {
+    setSeenName(metaName);
+    setCoachName(metaName);
+  }
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [busy, setBusy] = useState(false);
   const [coachCode, setCoachCode] = useState('');
   const coachAccount = user && !user.is_anonymous;
   const localTeams = club.teams.filter((x) => x.joinedAs !== 'player');
 
-  useEffect(() => {
-    setCoachName(String(user?.user_metadata?.full_name ?? ''));
-  }, [user?.id, user?.user_metadata?.full_name]);
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -153,7 +198,7 @@ function CoachCloud() {
 
   const shareCode = (tm: Team) =>
     Share.share({
-      message: `⚽ ${club.name} — ${tm.name}\nTélécharge l’appli QEA Coach, touche « J’ai un code d’équipe » et saisis :\n\n${tm.joinCode}\n\nPuis choisis ton nom (ton code joueur te sera donné par le coach).`,
+      message: `${club.name} — ${tm.name}\nTélécharge l’appli QEA Coach, touche « J’ai un code d’équipe » et saisis :\n\n${tm.joinCode}\n\nPuis choisis ton nom (ton code joueur te sera donné par le coach).`,
     }).catch(() => {});
 
   if (!coachAccount)
@@ -208,7 +253,7 @@ function CoachCloud() {
         Équipes en ligne
       </Section>
       {localTeams.map((tm, i) => (
-        <Animated.View key={tm.id} entering={FadeInDown.delay(i * 40)}>
+        <View key={tm.id}>
           <Card stripe={tm.color}>
             <Row style={{ gap: 12 }}>
               <TeamBadge team={tm} size={40} />
@@ -233,7 +278,7 @@ function CoachCloud() {
               <Button small icon="cloud-upload-outline" title="Mettre l’équipe en ligne" onPress={() => publish(tm)} disabled={busy} />
             )}
           </Card>
-        </Animated.View>
+        </View>
       ))}
 
       <Section icon="people-outline">Coach adjoint</Section>
@@ -261,17 +306,15 @@ function CoachCloud() {
       <Section icon="notifications-outline">Notifications envoyées aux joueurs</Section>
       <Card>
         {[
-          ['⚽', 'Questionnaire d’après-match à remplir'],
-          ['🏃', 'Ressenti après chaque entraînement'],
-          ['📋', 'Nouveau questionnaire du coach'],
-          ['🎯', 'Nouveau point à travailler'],
-          ['📝', 'Préparation du match publiée'],
-          ['📣', 'Compo publiée (titulaire, remplaçant…)'],
-          ['⏰', 'Rappel à 18 h tant que ce n’est pas rempli'],
-          ['🩹', 'Au coach : douleur signalée par un joueur'],
-        ].map(([e, l]) => (
-          <Row key={l}>
-            <Text style={{ fontSize: 16 }}>{e}</Text>
+          'Questionnaire envoyé par le coach (après-match, séance, questionnaire)',
+          'Relance du coach à ceux qui n’ont pas répondu',
+          'Nouveau point à travailler',
+          'Préparation du match et compo publiées',
+          'Rappel à 18 h tant que ce n’est pas rempli',
+          'Au coach : douleur signalée par un joueur',
+        ].map((l) => (
+          <Row key={l} style={{ alignItems: 'flex-start' }}>
+            <Text style={{ color: t.muted, fontSize: 14 }}>–</Text>
             <Txt size={14}>{l}</Txt>
           </Row>
         ))}
@@ -368,7 +411,7 @@ function PlayerJoin() {
     return (
       <View style={{ alignItems: 'center', gap: 20, paddingTop: 10 }}>
         <Avatar size={80} colorKey={picked.player_id} photo={picked.photo_url ?? undefined} label={`${picked.first_name[0] ?? ''}${picked.last_name[0] ?? ''}`} />
-        <PinPad title={`Salut ${picked.first_name} 👋`} subtitle="Entre ton code joueur" onComplete={async (pin) => (await join(picked, pin)) ? undefined : false} />
+        <PinPad title={`Bonjour ${picked.first_name}`} subtitle="Entre ton code joueur" onComplete={async (pin) => (await join(picked, pin)) ? undefined : false} />
         <Button small kind="ghost" title="Ce n’est pas moi" onPress={() => setPicked(null)} />
       </View>
     );
@@ -391,7 +434,7 @@ function PlayerJoin() {
         </Card>
         <Section icon="person-outline">Qui es-tu ?</Section>
         {roster.map((r, i) => (
-          <Animated.View key={r.player_id} entering={FadeInDown.delay(Math.min(i, 12) * 25)}>
+          <View key={r.player_id}>
             <Card
               style={{ paddingVertical: 12 }}
               onPress={() => {
@@ -412,7 +455,7 @@ function PlayerJoin() {
                 <Ionicons name={r.has_pin ? 'lock-closed' : 'chevron-forward'} size={18} color={t.muted} />
               </Row>
             </Card>
-          </Animated.View>
+          </View>
         ))}
         <Button small kind="ghost" title="Changer de code" onPress={() => setRoster(null)} />
       </>

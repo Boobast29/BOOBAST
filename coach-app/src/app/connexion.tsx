@@ -1,9 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ClubLogo } from '@/components/ClubLogo';
 import { PinPad } from '@/components/PinPad';
@@ -69,7 +67,7 @@ export default function Connexion() {
   const teamGrid = (onPick: (tm: Team) => void, teams: Team[] = club.teams) => (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
       {teams.map((tm, i) => (
-        <Animated.View key={tm.id} entering={FadeInDown.delay(i * 50).springify()} style={{ width: '47%', flexGrow: 1 }}>
+        <View key={tm.id} style={{ width: '47%', flexGrow: 1 }}>
           <Pressable
             onPress={() => onPick(tm)}
             accessibilityLabel={`Équipe ${tm.name}`}
@@ -84,7 +82,7 @@ export default function Connexion() {
             </Text>
             <Text style={{ color: t.muted, fontSize: 12 }}>{tm.category}</Text>
           </Pressable>
-        </Animated.View>
+        </View>
       ))}
     </View>
   );
@@ -95,33 +93,21 @@ export default function Connexion() {
       <ScrollView contentContainerStyle={{ padding: 20, paddingTop: insets.top + 40, paddingBottom: 40, gap: 20, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         {step.k === 'home' && (
           <>
-            <Animated.View entering={FadeInUp.duration(500)}>
-              <LinearGradient colors={t.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 32, padding: 28, alignItems: 'center', gap: 14, overflow: 'hidden' }}>
-                {/* Cercles décoratifs */}
-                <View style={{ position: 'absolute', width: 260, height: 260, borderRadius: 130, backgroundColor: 'rgba(255,255,255,0.06)', top: -90, right: -80 }} />
-                <View style={{ position: 'absolute', width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.05)', bottom: -70, left: -50 }} />
-                <Animated.View entering={ZoomIn.delay(150).springify()}>
-                  <ClubLogo size={130} />
-                </Animated.View>
-                <Text style={{ color: t.heroText, fontSize: 25, fontWeight: '900', textAlign: 'center' }}>{club.name}</Text>
-                <Text style={{ color: t.heroMuted, fontSize: 15, textAlign: 'center' }}>Ressenti · suivi · compos · vidéos</Text>
-                {club.teams.length > 0 && (
-                  <Text style={{ color: t.heroMuted, fontSize: 13 }}>
-                    {club.teams.length} équipe{club.teams.length > 1 ? 's' : ''}
-                  </Text>
-                )}
-              </LinearGradient>
-            </Animated.View>
+            <View style={{ alignItems: 'center', gap: 10, paddingVertical: 12 }}>
+              <ClubLogo size={112} />
+              <Text style={{ color: t.text, fontSize: 22, fontWeight: '800', textAlign: 'center' }}>{club.name}</Text>
+              <Text style={{ color: t.muted, fontSize: 15, textAlign: 'center' }}>Suivi des joueurs</Text>
+            </View>
             <Txt muted>Qui utilise l’appli ?</Txt>
-            <Animated.View entering={FadeInDown.delay(200).springify()}>
+            <View>
               <RoleCard
                 icon="clipboard"
                 title="Je suis coach"
                 subtitle={club.coachPinHash ? 'Accès coach sur cet appareil' : 'Créer le code coach de cet appareil'}
                 onPress={() => setStep(club.coachPinHash ? { k: 'coach' } : { k: 'coach-create' })}
               />
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(300).springify()}>
+            </View>
+            <View>
               <RoleCard
                 icon="person"
                 title="Je suis joueur"
@@ -129,11 +115,11 @@ export default function Connexion() {
                 tone="info"
                 onPress={() => (club.teams.length ? setStep({ k: 'player-teams' }) : notify('Aucune équipe', 'Le coach doit d’abord créer son équipe.'))}
               />
-            </Animated.View>
+            </View>
             {isCloudConfigured() && (
-              <Animated.View entering={FadeInDown.delay(400).springify()}>
+              <View>
                 <RoleCard icon="cloud" title="J’ai un code d’équipe" subtitle="Retrouver mon compte sur ce téléphone" tone="violet" onPress={() => router.push('/cloud')} />
-              </Animated.View>
+              </View>
             )}
           </>
         )}
@@ -238,7 +224,7 @@ export default function Connexion() {
             )}
             {players.length === 0 && <Txt muted>Aucun joueur dans cette équipe pour le moment.</Txt>}
             {players.map((p, i) => (
-              <Animated.View key={p.id} entering={FadeInDown.delay(Math.min(i, 10) * 30)}>
+              <View key={p.id}>
                 <Card
                   style={{ paddingVertical: 12 }}
                   onPress={() => {
@@ -260,7 +246,7 @@ export default function Connexion() {
                     <Ionicons name={p.pinHash ? 'lock-closed' : 'chevron-forward'} size={18} color={t.muted} />
                   </Row>
                 </Card>
-              </Animated.View>
+              </View>
             ))}
           </View>
         )}
@@ -273,7 +259,7 @@ export default function Connexion() {
                 <>
                   <Avatar size={80} colorKey={p.id} photo={p.photoUri} label={initials(p)} />
                   <PinPad
-                    title={`Salut ${p.firstName} 👋`}
+                    title={`Bonjour ${p.firstName}`}
                     subtitle="Entre ton code joueur"
                     onComplete={async (pin) => {
                       if (!(await checkPin(pin, p.id, p.pinHash))) return false;
@@ -302,15 +288,14 @@ function RoleCard({ icon, title, subtitle, onPress, tone = 'success' }: { icon: 
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
-        { backgroundColor: t.card, borderRadius: 22, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 16, opacity: pressed ? 0.85 : 1, borderWidth: t.dark ? 1 : 0, borderColor: t.border },
-        shadow(t),
+        { backgroundColor: pressed ? t.cardAlt : t.card, borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: StyleSheet.hairlineWidth, borderColor: t.border },
       ]}
     >
-      <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
-        <Ionicons name={icon} size={28} color={c} />
+      <View style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+        <Ionicons name={icon} size={22} color={c} />
       </View>
       <View style={{ flex: 1, gap: 2 }}>
-        <Text style={{ color: t.text, fontSize: 18, fontWeight: '800' }}>{title}</Text>
+        <Text style={{ color: t.text, fontSize: 17, fontWeight: '700' }}>{title}</Text>
         <Text style={{ color: t.muted, fontSize: 14 }}>{subtitle}</Text>
       </View>
       <Ionicons name="chevron-forward" size={22} color={t.muted} />

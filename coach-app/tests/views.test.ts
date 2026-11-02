@@ -4,6 +4,9 @@ import assert from 'node:assert/strict';
 import { buildDemoData } from '../src/lib/demo';
 import { buildPlayerView, mergeEntries, rosterFor } from '../src/lib/cloud/views';
 import type { Entry } from '../src/lib/cloud/views';
+import { insightAlerts, interviewBrief, playerTimeline } from '../src/lib/insights';
+import { newDispatch, remind } from '../src/lib/requests';
+import { normalizeData } from '../src/lib/store';
 import type { Lineup } from '../src/lib/types';
 
 let ok = 0;
@@ -58,7 +61,27 @@ test('compo publiée : photos cloud conservées et URI locales masquées', () =>
 });
 test('vidéos : partagées ou où il est tagué', () => assert.ok(v.media.every((m) => m.shared || m.playerIds.includes('p1') || m.markers.some((k) => k.playerId === 'p1'))));
 test('la vidéo non partagée (lien d’exercice) est masquée', () => assert.ok(!v.media.some((m) => m.id === 'v3')));
-test('tâches calculées (ressenti de la dernière séance)', () => assert.ok(v.todos.some((t) => t.key.startsWith('seance:'))));
+test('rien n’est demandé tant que le coach n’a pas envoyé (dernière séance)', () => assert.ok(!v.todos.some((t) => t.key === 'seance:s5')));
+const s5 = data.sessions.find((x) => x.id === 's5')!;
+const presentIds = Object.entries(s5.attendance).filter(([, a]) => a === 'present' || a === 'retard').map(([id]) => id);
+const sentData = { ...data, sessions: data.sessions.map((x) => (x.id === 's5' ? { ...x, feedbackRequest: newDispatch(presentIds) } : x)) };
+const target = presentIds.find((id) => !s5.feedback?.[id])!;
+test('après « Envoyer » : la tâche apparaît chez le joueur présent', () => assert.ok(buildPlayerView(sentData, target).todos.some((t) => t.key === 'seance:s5')));
+const absent = data.players.find((p) => !presentIds.includes(p.id))!;
+test('après « Envoyer » : rien pour un joueur non destinataire', () => assert.ok(!buildPlayerView(sentData, absent.id).todos.some((t) => t.key.startsWith('seance:s5'))));
+const reminded = { ...sentData, sessions: sentData.sessions.map((x) => (x.id === 's5' ? { ...x, feedbackRequest: remind(x.feedbackRequest!) } : x)) };
+test('relance : nouvelle clé de notification', () => assert.ok(buildPlayerView(reminded, target).todos.some((t) => t.key === 'seance:s5:r1')));
+test('la vue joueur ne révèle pas les autres destinataires', () =>
+  assert.deepEqual(buildPlayerView(sentData, target).sessions.find((x) => x.id === 's5')!.feedbackRequest!.to, [target]));
+const draft = { ...data, surveys: [{ ...data.surveys[0], id: 'draft', dispatch: undefined }] };
+test('questionnaire brouillon invisible pour le joueur', () => assert.ok(!buildPlayerView(draft, 'p1').surveys.some((x) => x.id === 'draft')));
+test('migration : anciennes données considérées comme envoyées', () => {
+  const legacy = { ...data, sendModel: undefined, sessions: data.sessions.map((x) => ({ ...x, feedbackRequest: undefined })) };
+  const migrated = normalizeData(legacy, 'A');
+  assert.equal(migrated.sendModel, 1);
+  assert.ok(migrated.sessions.find((x) => x.id === 's5')!.feedbackRequest);
+  assert.deepEqual(normalizeData(migrated, 'A'), migrated);
+});
 test('news : compo et préparation du prochain match', () => assert.ok(v.news.some((n) => n.key === 'compo:m3') && v.news.some((n) => n.key === 'prepa:m3')));
 test('roster : code haché transmis, pas les notes', () => {
   const r = rosterFor(data).find((x) => x.id === 'p1')!;
@@ -89,4 +112,30 @@ test('une ancienne réponse n’écrase pas une plus récente', () => {
   const old: Entry[] = [{ kind: 'report', player_id: 'p1', ref_id: 'm2', payload: { ...existing, rpe: 10, updatedAt: '2000-01-01T00:00:00Z' } }];
   assert.equal(mergeEntries(m.data, old).data.reports.find((r) => r.playerId === 'p1' && r.matchId === 'm2')!.rpe, 3);
 });
+
+// Signaux faibles et entretiens
+test('les entretiens ne sont jamais transmis au joueur', () => assert.deepEqual(buildPlayerView(data, 'p9').interviews, []));
+test('le mot du coach est notifié aux joueurs', () => assert.ok(v.news.some((n) => n.key.startsWith('mot:m2'))));
+{
+  const base = { ...data, reports: data.reports.map((r) => ({ ...r })), sessions: data.sessions.map((x) => ({ ...x, feedback: { ...x.feedback } })) };
+  // p3 : perf perso en chute sur les 2 derniers matchs/séances
+  const pts = playerTimeline(base, 'p3');
+  const perf = [...pts.selfRating, ...pts.trainingPerf].sort((a, b) => a.date.localeCompare(b.date));
+  const lastDates = perf.slice(-2).map((p) => p.date);
+  for (const r of base.reports.filter((r) => r.playerId === 'p3')) {
+    const d = base.matches.find((m) => m.id === r.matchId)!.date;
+    r.selfRating = lastDates.includes(d) ? 3 : 8;
+  }
+  for (const x of base.sessions) if (x.feedback?.p3) x.feedback.p3 = { ...x.feedback.p3, selfPerf: lastDates.includes(x.date) ? 3 : 8 };
+  test('alerte « ressenti en baisse »', () => assert.ok(insightAlerts(base).some((a) => a.playerId === 'p3' && a.kind === 'decline')));
+  test('entretien : points à aborder préparés', () => assert.ok(interviewBrief(base, 'p3').some((l) => l.startsWith('Perf perso ressentie'))));
+}
+{
+  const old = new Date(Date.now() - 5 * 86_400_000).toISOString();
+  const silentData = {
+    ...data,
+    sessions: data.sessions.map((x) => ({ ...x, feedbackRequest: { sentAt: old, to: [ 'p6' ] as string[] }, feedback: { ...x.feedback, p6: undefined as never } })),
+  };
+  test('alerte « ne répond plus »', () => assert.ok(insightAlerts(silentData).some((a) => a.playerId === 'p6' && a.kind === 'silence')));
+}
 console.log(`\n${ok} tests OK`);

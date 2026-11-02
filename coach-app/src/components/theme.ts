@@ -25,6 +25,8 @@ const light = {
   input: '#F4F7F6',
   /** Dégradé du bandeau d'accueil */
   hero: ['#0A4A1B', '#107B2D', '#1E9A45'] as readonly [string, string, ...string[]],
+  /** Bandeau uni (vert du club) */
+  heroSolid: '#0E5E24',
   heroText: '#FFFFFF',
   heroMuted: 'rgba(255,255,255,0.75)',
 };
@@ -52,6 +54,7 @@ const dark: typeof light = {
   violetSoft: '#241A40',
   input: '#1B2521',
   hero: ['#062A10', '#0B5A22', '#107B2D'],
+  heroSolid: '#0B3F1A',
   heroText: '#FFFFFF',
   heroMuted: 'rgba(255,255,255,0.7)',
 };

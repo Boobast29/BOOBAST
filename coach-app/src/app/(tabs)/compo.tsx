@@ -35,25 +35,40 @@ export default function Compo() {
   const pitchRef = useRef<View>(null);
   const [clubRosters, setClubRosters] = useState<TeamRoster[]>([]);
 
+  // Valeurs de secours lues dans l'effet sans le relancer à chaque modification des données
+  const fallback = useRef({ team, data });
+  useEffect(() => {
+    fallback.current = { team, data };
+  }, [team, data]);
+  // Une erreur de synchro n'est signalée qu'une fois (pas une alerte à chaque modification)
+  const warned = useRef(false);
+  const warnOnce = (title: string, msg: string) => {
+    if (warned.current) return;
+    warned.current = true;
+    notify(title, msg);
+  };
+
   useEffect(() => {
     if (!isCoach) return;
     let active = true;
     loadSyncedClubRosters()
       .then(({ rosters, errors }) => {
-        if (active) {
-          setClubRosters(rosters);
-          if (errors.length) notify('Certains effectifs n’ont pas pu être synchronisés', errors.join('\n'));
-        }
+        if (!active) return;
+        setClubRosters(rosters);
+        if (errors.length) warnOnce('Certains effectifs n’ont pas pu être synchronisés', errors.join('\n'));
       })
       .catch((e) => {
-        if (active) {
-          loadClubRosters().then(setClubRosters).catch(() => setClubRosters(team ? [{ team, data }] : []));
-          notify('Effectifs indisponibles', String((e as Error)?.message ?? e));
-        }
+        if (!active) return;
+        const { team: tm, data: d } = fallback.current;
+        loadClubRosters()
+          .then((r) => active && setClubRosters(r))
+          .catch(() => active && setClubRosters(tm ? [{ team: tm, data: d }] : []));
+        warnOnce('Effectifs indisponibles', String((e as Error)?.message ?? e));
       });
     return () => {
       active = false;
     };
+    // Recharger quand l'équipe, la liste des équipes ou l'effectif change
   }, [isCoach, team?.id, club.teams, data.players, loadClubRosters, loadSyncedClubRosters]);
 
   const availablePlayers = useMemo<AvailablePlayer[]>(() => {

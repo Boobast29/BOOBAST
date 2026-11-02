@@ -72,6 +72,7 @@ function RootStack() {
       <Stack.Screen name="media/[id]" options={{ title: 'Vidéo' }} />
       <Stack.Screen name="media/edit" options={{ presentation: 'modal', title: 'Média' }} />
       <Stack.Screen name="questions/edit" options={{ presentation: 'modal', title: 'Question' }} />
+      <Stack.Screen name="entretien" options={{ title: 'Entretien individuel' }} />
     </Stack>
   );
 }

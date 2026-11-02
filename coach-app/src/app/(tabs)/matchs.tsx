@@ -1,119 +1,111 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { ScorePill } from '@/components/ScorePill';
 import { useTheme } from '@/components/theme';
-import { Badge, Button, Card, Empty, Progress, Row, Screen, Section, Txt } from '@/components/ui';
-import { ATTENDANCE } from '@/lib/constants';
+import { Button, Empty, List, ListRow, Progress, Row, Screen, Section, Segmented, Txt } from '@/components/ui';
+import { matchRequest, sessionRequest } from '@/lib/requests';
 import { useStore } from '@/lib/store';
-import { byDateDesc, formatDate, matchResult, sessionPresent, today, trainingLoad } from '@/lib/stats';
-import type { Match } from '@/lib/types';
+import { byDateDesc, sessionPresent, today } from '@/lib/stats';
+import type { Match, TrainingSession } from '@/lib/types';
 
 const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 
-export default function Matches() {
+/** Bloc date (jour + mois) en tête de ligne. */
+function DateBlock({ date, muted }: { date: string; muted?: boolean }) {
+  const t = useTheme();
+  const [, mo, d] = date.split('-');
+  return (
+    <View style={{ alignItems: 'center', width: 40 }}>
+      <Text style={{ color: muted ? t.muted : t.text, fontSize: 20, fontWeight: '700' }}>{d}</Text>
+      <Text style={{ color: t.muted, fontSize: 11, fontWeight: '600' }}>{MONTHS[Number(mo) - 1]}</Text>
+    </View>
+  );
+}
+
+export default function Agenda() {
+  const [view, setView] = useState<'matchs' | 'seances'>('matchs');
+  return (
+    <Screen>
+      <Segmented
+        value={view}
+        onChange={setView}
+        options={[
+          ['matchs', 'Matchs', 'football'],
+          ['seances', 'Entraînements', 'fitness'],
+        ]}
+      />
+      {view === 'seances' ? <Sessions /> : <Matches />}
+    </Screen>
+  );
+}
+
+function Matches() {
   const t = useTheme();
   const { data } = useStore();
   const matches = [...data.matches].sort(byDateDesc);
   const upcoming = matches.filter((m) => m.scoreFor == null && m.date >= today()).reverse();
   const past = matches.filter((m) => !upcoming.includes(m));
-  const activeCount = data.players.filter((p) => !p.archived).length;
-  const [view, setView] = useState<'matchs' | 'seances'>('matchs');
 
-  const stripe = (m: Match) => {
-    const tone = matchResult(m).tone;
-    return tone === 'win' ? t.primary : tone === 'loss' ? t.danger : tone === 'draw' ? t.muted : t.info;
+  const status = (m: Match) => {
+    const r = matchRequest(data, m);
+    if (!r.dispatch) return m.scoreFor != null || m.date < today() ? 'Questionnaire à envoyer' : undefined;
+    return `Questionnaires ${r.answered.size}/${r.recipients.length}`;
   };
 
-  const renderMatch = (m: Match) => {
-    const filled = data.reports.filter((r) => r.matchId === m.id).length;
-    const videos = data.media.filter((x) => x.matchId === m.id).length;
-    const [, mo, d] = m.date.split('-');
-    return (
-      <Card key={m.id} onPress={() => router.push(`/match/${m.id}`)} stripe={stripe(m)}>
-        <Row style={{ gap: 12 }}>
-          <View style={{ alignItems: 'center', width: 44 }}>
-            <Text style={{ color: t.text, fontSize: 22, fontWeight: '800' }}>{d}</Text>
-            <Text style={{ color: t.muted, fontSize: 12, fontWeight: '600' }}>{MONTHS[Number(mo) - 1]}</Text>
-          </View>
-          <View style={{ flex: 1, gap: 4 }}>
-            <Txt bold size={16} numberOfLines={1}>
-              {m.opponent}
-            </Txt>
-            <Row style={{ flexWrap: 'wrap', gap: 6 }}>
-              <Badge text={m.home ? 'Domicile' : 'Extérieur'} icon={m.home ? 'home' : 'airplane'} />
-              {m.competition ? <Badge text={m.competition} tone="info" /> : null}
-              {videos > 0 ? <Badge text={String(videos)} tone="violet" icon="videocam" /> : null}
-            </Row>
-          </View>
-          {m.scoreFor != null ? <ScorePill m={m} /> : <Badge text="À jouer" tone="info" icon="calendar" />}
-        </Row>
-        {m.scoreFor != null && activeCount > 0 && (
-          <Row style={{ gap: 10 }}>
-            <Ionicons name="clipboard-outline" size={15} color={t.muted} />
-            <View style={{ flex: 1 }}>
-              <Progress value={filled / activeCount} height={6} />
-            </View>
-            <Txt muted size={12}>
-              {filled}/{activeCount}
-            </Txt>
-          </Row>
-        )}
-      </Card>
-    );
-  };
-
-  return (
-    <Screen>
-      <Segmented value={view} onChange={setView} />
-      {view === 'seances' ? (
-        <Sessions />
-      ) : (
-        <>
-          <Button title="Nouveau match" icon="add-circle" onPress={() => router.push('/match/edit')} />
-          {matches.length === 0 && <Empty icon="football-outline" text="Aucun match enregistré. Créez votre premier match pour lancer les questionnaires." />}
-          {upcoming.length > 0 && <Section icon="calendar-outline">À venir</Section>}
-          {upcoming.map(renderMatch)}
-          {past.length > 0 && <Section icon="checkmark-done-outline">Joués · {past.length}</Section>}
-          {past.map(renderMatch)}
-        </>
-      )}
-    </Screen>
-  );
-}
-
-function Segmented({ value, onChange }: { value: 'matchs' | 'seances'; onChange: (v: 'matchs' | 'seances') => void }) {
-  const t = useTheme();
-  const opts = [
-    ['matchs', 'Matchs', 'football'],
-    ['seances', 'Entraînements', 'fitness'],
-  ] as const;
-  return (
-    <View style={{ flexDirection: 'row', backgroundColor: t.input, borderRadius: 14, padding: 4 }}>
-      {opts.map(([k, label, icon]) => {
-        const on = value === k;
+  const rows = (list: Match[]) => (
+    <List>
+      {list.map((m, i) => {
+        const videos = data.media.filter((x) => x.matchId === m.id).length;
+        const lineup = data.lineups.find((l) => l.matchId === m.id);
+        const st = status(m);
+        const sub = [
+          m.home ? 'Domicile' : 'Extérieur',
+          m.competition,
+          videos ? `${videos} vidéo${videos > 1 ? 's' : ''}` : undefined,
+          m.scoreFor == null ? (lineup?.published ? 'compo publiée' : lineup ? 'compo en cours' : 'compo à faire') : undefined,
+        ]
+          .filter(Boolean)
+          .join(' · ');
         return (
-          <Pressable
-            key={k}
-            onPress={() => onChange(k)}
-            style={{
-              flex: 1,
-              flexDirection: 'row',
-              gap: 6,
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingVertical: 10,
-              borderRadius: 11,
-              backgroundColor: on ? t.card : 'transparent',
-            }}
-          >
-            <Ionicons name={icon} size={16} color={on ? t.primary : t.muted} />
-            <Text style={{ color: on ? t.text : t.muted, fontWeight: on ? '800' : '600' }}>{label}</Text>
-          </Pressable>
+          <ListRow
+            key={m.id}
+            first={i === 0}
+            left={<DateBlock date={m.date} />}
+            title={`${m.home ? 'vs' : '@'} ${m.opponent}`}
+            subtitle={
+              <View style={{ gap: 2 }}>
+                <Text style={{ color: t.muted, fontSize: 13 }} numberOfLines={1}>
+                  {sub}
+                </Text>
+                {st ? <Text style={{ color: st.endsWith('envoyer') ? t.warning : t.muted, fontSize: 12, fontWeight: st.endsWith('envoyer') ? '600' : '400' }}>{st}</Text> : null}
+              </View>
+            }
+            right={m.scoreFor != null ? <ScorePill m={m} /> : null}
+            onPress={() => router.push(`/match/${m.id}`)}
+          />
         );
       })}
-    </View>
+    </List>
+  );
+
+  return (
+    <>
+      <Button title="Nouveau match" icon="add" onPress={() => router.push('/match/edit')} />
+      {matches.length === 0 && <Empty icon="football-outline" text="Aucun match enregistré. Créez votre premier match pour lancer les questionnaires." />}
+      {upcoming.length > 0 && (
+        <>
+          <Section>À venir</Section>
+          {rows(upcoming)}
+        </>
+      )}
+      {past.length > 0 && (
+        <>
+          <Section>Joués · {past.length}</Section>
+          {rows(past)}
+        </>
+      )}
+    </>
   );
 }
 
@@ -122,56 +114,75 @@ function Sessions() {
   const { data } = useStore();
   const list = [...data.sessions].sort(byDateDesc);
   const past = list.filter((x) => x.date <= today());
+  const upcoming = list.filter((x) => x.date > today()).reverse();
   const avgRate = past.length ? past.reduce((a, x) => a + sessionPresent(x) / Math.max(1, Object.keys(x.attendance).length), 0) / past.length : undefined;
-  return (
-    <>
-      <Button title="Nouvelle séance" icon="add-circle" onPress={() => router.push('/seance/edit')} />
-      {avgRate != null && (
-        <Card>
-          <Row>
-            <Ionicons name="stats-chart" size={18} color={t.primary} />
-            <Txt bold>Assiduité moyenne : {Math.round(avgRate * 100)} %</Txt>
-          </Row>
-          <Progress value={avgRate} />
-          <Txt muted size={12}>
-            Sur {past.length} séance{past.length > 1 ? 's' : ''}
-          </Txt>
-        </Card>
-      )}
-      {list.length === 0 && <Empty icon="fitness-outline" text="Aucune séance. Créez vos entraînements pour faire l’appel et suivre la charge de travail." />}
-      {list.map((x) => {
+
+  const rows = (items: TrainingSession[]) => (
+    <List>
+      {items.map((x, i) => {
         const total = Object.keys(x.attendance).length;
-        const present = sessionPresent(x);
-        const absent = Object.values(x.attendance).filter((a) => a === 'absent').length;
-        const load = Object.keys(x.attendance).reduce((a, pid) => a + trainingLoad(x, pid), 0);
-        const [, mo, d] = x.date.split('-');
+        const r = sessionRequest(data, x);
+        const st = !total
+          ? x.date <= today()
+            ? 'Appel à faire'
+            : undefined
+          : !r.dispatch
+            ? 'Ressenti à envoyer'
+            : `Ressentis ${r.answered.size}/${r.recipients.length}`;
         return (
-          <Card key={x.id} stripe={x.date > today() ? t.info : t.primary} onPress={() => router.push(`/seance/${x.id}`)}>
-            <Row style={{ gap: 12 }}>
-              <View style={{ alignItems: 'center', width: 44 }}>
-                <Text style={{ color: t.text, fontSize: 22, fontWeight: '800' }}>{d}</Text>
-                <Text style={{ color: t.muted, fontSize: 12, fontWeight: '600' }}>{MONTHS[Number(mo) - 1]}</Text>
+          <ListRow
+            key={x.id}
+            first={i === 0}
+            left={<DateBlock date={x.date} muted={x.date > today()} />}
+            title={x.theme ?? 'Entraînement'}
+            subtitle={
+              <View style={{ gap: 2 }}>
+                <Text style={{ color: t.muted, fontSize: 13 }}>{[x.time, `${x.durationMin}′`, x.rpe != null ? `RPE ${x.rpe}` : undefined].filter(Boolean).join(' · ')}</Text>
+                {st ? <Text style={{ color: st.includes('à ') ? t.warning : t.muted, fontSize: 12, fontWeight: st.includes('à ') ? '600' : '400' }}>{st}</Text> : null}
               </View>
-              <View style={{ flex: 1, gap: 4 }}>
-                <Txt bold size={16}>
-                  {x.theme ?? 'Entraînement'}
-                </Txt>
-                <Row style={{ flexWrap: 'wrap', gap: 6 }}>
-                  <Badge text={`${x.time ?? ''}${x.time ? ' · ' : ''}${x.durationMin}′`} icon="time-outline" />
-                  {x.rpe != null && <Badge text={`RPE ${x.rpe}`} tone="warning" icon="flame" />}
-                  {absent > 0 && <Badge text={`${absent} ${ATTENDANCE.absent.label.toLowerCase()}${absent > 1 ? 's' : ''}`} tone="danger" />}
-                </Row>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ color: t.primary, fontSize: 18, fontWeight: '800' }}>
-                  {present}/{total}
+            }
+            right={
+              total ? (
+                <Text style={{ color: t.text, fontSize: 15, fontWeight: '700' }}>
+                  {sessionPresent(x)}
+                  <Text style={{ color: t.muted, fontWeight: '400' }}>/{total}</Text>
                 </Text>
-                <Text style={{ color: t.muted, fontSize: 11 }}>{load ? `charge ${load}` : formatDate(x.date).slice(0, 5)}</Text>
-              </View>
-            </Row>
-          </Card>
+              ) : null
+            }
+            onPress={() => router.push(`/seance/${x.id}`)}
+          />
         );
       })}
+    </List>
+  );
+
+  return (
+    <>
+      <Button title="Nouvelle séance" icon="add" onPress={() => router.push('/seance/edit')} />
+      {avgRate != null && (
+        <View style={{ gap: 6 }}>
+          <Row style={{ justifyContent: 'space-between' }}>
+            <Txt size={14}>Assiduité moyenne</Txt>
+            <Txt bold size={14}>
+              {Math.round(avgRate * 100)} % · {past.length} séance{past.length > 1 ? 's' : ''}
+            </Txt>
+          </Row>
+          <Progress value={avgRate} height={6} />
+        </View>
+      )}
+      {list.length === 0 && <Empty icon="fitness-outline" text="Aucune séance. Créez vos entraînements pour faire l’appel et suivre la charge de travail." />}
+      {upcoming.length > 0 && (
+        <>
+          <Section>À venir</Section>
+          {rows(upcoming)}
+        </>
+      )}
+      {past.length > 0 && (
+        <>
+          <Section>Passées · {past.length}</Section>
+          {rows(past)}
+        </>
+      )}
     </>
   );
 }

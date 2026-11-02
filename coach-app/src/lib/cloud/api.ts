@@ -23,6 +23,8 @@ export function humanError(e: unknown): string {
     too_many_attempts: 'Trop d’essais. Réessaie dans 15 minutes.',
     coach_account_required: 'Un compte coach (e-mail) est nécessaire.',
     forbidden: 'Accès refusé.',
+    team_not_found: 'Cette équipe n’est plus accessible en ligne avec ce compte (supprimée sur le serveur, ou session expirée).',
+    push_failed: 'L’envoi vers le serveur n’a pas abouti. Réessayez.',
     conflict: 'Un autre coach a modifié l’équipe entre-temps.',
     'Invalid login credentials': 'E-mail ou mot de passe incorrect.',
     'User already registered': 'Un compte existe déjà avec cet e-mail : connectez-vous.',
@@ -36,6 +38,12 @@ export function humanError(e: unknown): string {
 export async function currentUser() {
   const { data } = await sb().auth.getSession();
   return data.session?.user ?? null;
+}
+
+/** Utilisateur vérifié par le serveur (null si la session a expiré). */
+export async function verifiedUser() {
+  const { data, error } = await sb().auth.getUser();
+  return error ? null : data.user;
 }
 
 export async function coachSignIn(email: string, password: string) {
@@ -132,6 +140,8 @@ export async function coachPull(teamCloudId: string, since?: string) {
   ]);
   if (e1) throw e1;
   if (e2) throw e2;
+  // Aucune ligne : équipe supprimée, ou ce compte n'en est pas (plus) coach
+  if (!team) throw new CloudError('team_not_found');
   return { team: team as { data: AppData; version: number; join_code: string; coach_code: string; name: string; color: string; category: string }, entries: (entries ?? []) as Entry[] };
 }
 
@@ -146,7 +156,8 @@ export async function coachPush(teamCloudId: string, expectedVersion: number, da
     p_views: views,
   });
   if (error) throw error;
-  return v as number;
+  if (typeof v !== 'number') throw new CloudError('push_failed');
+  return v;
 }
 
 export async function playerPull(teamCloudId: string, playerId: string) {

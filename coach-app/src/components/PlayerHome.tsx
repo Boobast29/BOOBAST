@@ -1,18 +1,19 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 import { visibleMedia } from '@/lib/access';
-import { pendingSurveys, pendingTrainingFeedback } from '@/lib/surveys';
+import { answerRoute, playerPending } from '@/lib/requests';
 import { INJURY_STATUS_LABEL, INJURY_STATUS_TONE, statsForPosition } from '@/lib/constants';
 import { FORMATIONS } from '@/lib/formations';
+import { playerTimeline } from '@/lib/insights';
 import { useStore } from '@/lib/store';
 import { daysBetween, fmt, formatDate, initials, matchLabel, playerName, reportsForPlayer, sessionLoad, summarizePlayer, today, wellnessScore } from '@/lib/stats';
 import { ClubLogo } from './ClubLogo';
 import { PlayerFeedback } from './Feedback';
 import { MediaStrip } from './Media';
+import { TrendChart } from './TrendChart';
 import { useTheme } from './theme';
-import { Avatar, Badge, Button, Card, Empty, HeroStat, IconCircle, Progress, Row, Screen, Section, StatBox, Txt } from './ui';
+import { Hero, Avatar, Badge, Button, Card, Empty, HeroStat, IconCircle, Progress, Row, Screen, Section, StatBox, Txt } from './ui';
 import type { IconName, Tone } from './ui';
 
 /** Accueil d'un joueur connecté : uniquement ses propres données. */
@@ -29,15 +30,11 @@ export function PlayerHome({ playerId }: { playerId: string }) {
 
   const s = summarizePlayer(data, player);
   const reports = reportsForPlayer(data, player.id);
-  const done = new Set(reports.map((r) => r.matchId));
   const matches = new Map(data.matches.map((m) => [m.id, m]));
-  // Questionnaires à remplir : matchs joués depuis moins de 30 jours
-  const todo = data.matches
-    .filter((m) => m.scoreFor != null && !done.has(m.id) && daysBetween(m.date, today()) <= 30 && m.date <= today())
-    .sort((a, b) => b.date.localeCompare(a.date));
-  const trainings = pendingTrainingFeedback(data, player.id);
-  const surveys = pendingSurveys(data, player.id);
-  const todoCount = todo.length + trainings.length + surveys.length;
+  // Questionnaires envoyés par le coach, pas encore remplis
+  // Les demandes relancées par le coach passent en premier
+  const pending = playerPending(data, player.id).sort((a, b) => (b.dispatch?.reminders ?? 0) - (a.dispatch?.reminders ?? 0));
+  const reminded = pending.filter((r) => r.dispatch?.reminders);
   const objectives = data.objectives.filter((o) => o.playerId === player.id && o.status !== 'abandonné').sort((a, b) => (a.status === b.status ? 0 : a.status === 'en cours' ? -1 : 1));
   const next = data.matches.filter((m) => m.scoreFor == null && m.date >= today()).sort((a, b) => a.date.localeCompare(b.date))[0];
   const nextLineup = next && data.lineups.find((l) => l.matchId === next.id && l.published);
@@ -52,15 +49,19 @@ export function PlayerHome({ playerId }: { playerId: string }) {
   const injuries = data.injuries.filter((i) => i.playerId === player.id && i.status !== 'guérie');
   const keeper = player.position === 'Gardien';
   const cleanSheets = reports.filter((r) => r.minutesPlayed > 0 && (r.stats.goalsConceded ?? 0) === 0 && r.stats.goalsConceded !== undefined).length;
+  const tl = playerTimeline(data, player.id);
+  const word = data.matches
+    .filter((m) => m.teamMessage?.trim() && m.date <= today() && daysBetween(m.date, today()) <= 10)
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
   const statFields = statsForPosition(player.position).filter((f) => !['yellowCards', 'redCards'].includes(f.key));
 
   return (
     <Screen>
-      <LinearGradient colors={t.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 24, padding: 20, gap: 16 }}>
+      <Hero style={{ padding: 20, gap: 16 }}>
         <Row style={{ gap: 14 }}>
           <Avatar size={68} colorKey={player.id} photo={player.photoUri} label={initials(player)} ring="rgba(255,255,255,0.9)" />
           <View style={{ flex: 1, gap: 3 }}>
-            <Text style={{ color: t.heroMuted, fontSize: 13, fontWeight: '600' }}>Salut 👋</Text>
+            <Text style={{ color: t.heroMuted, fontSize: 13, fontWeight: '600' }}>Bonjour</Text>
             <Text style={{ color: t.heroText, fontSize: 23, fontWeight: '800' }}>{playerName(player)}</Text>
             <Text style={{ color: t.heroMuted, fontSize: 14 }}>
               {[player.position, player.number != null && `n°${player.number}`].filter(Boolean).join(' · ')}
@@ -74,42 +75,52 @@ export function PlayerHome({ playerId }: { playerId: string }) {
           {keeper ? <HeroStat value={cleanSheets} label="Clean sheets" /> : <HeroStat value={s.totals.assists} label="Passes D." />}
           <HeroStat value={s.minutes} label="Minutes" />
         </Row>
-      </LinearGradient>
+      </Hero>
 
-      {todoCount > 0 && (
+      {reminded.length > 0 && (
+        <Card stripe={t.warning}>
+          <Row style={{ gap: 10 }}>
+            <Ionicons name="notifications" size={20} color={t.warning} />
+            <View style={{ flex: 1 }}>
+              <Txt bold>Le coach t’a relancé</Txt>
+              <Txt muted size={13}>
+                {reminded.length === 1 ? `« ${reminded[0].title} » t’attend.` : `${reminded.length} questionnaires t’attendent.`} Ça prend 2 minutes.
+              </Txt>
+            </View>
+          </Row>
+          <Button small icon="create-outline" title="Répondre maintenant" onPress={() => router.push(answerRoute(reminded[0], player.id) as never)} />
+        </Card>
+      )}
+
+      {pending.length > 0 && (
         <>
-          <Section icon="alert-circle-outline">À faire ({todoCount})</Section>
-          {todo.map((m) => (
+          <Section>À remplir ({pending.length})</Section>
+          {pending.map((r) => (
             <TodoCard
-              key={m.id}
-              icon="football"
-              tone="accent"
-              title="Questionnaire d’après-match"
-              subtitle={matchLabel(m)}
-              onPress={() => router.push({ pathname: '/questionnaire', params: { matchId: m.id, playerId: player.id } })}
-            />
-          ))}
-          {trainings.map((x) => (
-            <TodoCard
-              key={x.id}
-              icon="fitness"
-              tone="info"
-              title="Ressenti de l’entraînement"
-              subtitle={`${formatDate(x.date)}${x.theme ? ` · ${x.theme}` : ''}`}
-              onPress={() => router.push({ pathname: '/ressenti-seance', params: { sessionId: x.id, playerId: player.id } })}
-            />
-          ))}
-          {surveys.map((sv) => (
-            <TodoCard
-              key={sv.id}
-              icon="document-text"
-              tone="violet"
-              title={sv.title}
-              subtitle={sv.dueDate ? `À rendre avant le ${formatDate(sv.dueDate)}` : 'Questionnaire du coach'}
-              onPress={() => router.push(`/sondage/${sv.id}`)}
+              key={`${r.kind}:${r.id}`}
+              icon={r.kind === 'match' ? 'football' : r.kind === 'seance' ? 'fitness' : 'document-text'}
+              tone={r.kind === 'match' ? 'accent' : r.kind === 'seance' ? 'info' : 'violet'}
+              title={r.title}
+              subtitle={r.dispatch?.reminders ? `${r.subtitle} · le coach t’a relancé` : r.subtitle}
+              onPress={() => router.push(answerRoute(r, player.id) as never)}
             />
           ))}
         </>
+      )}
+
+      {word && (
+        <Card stripe={t.primary}>
+          <Row style={{ gap: 8 }}>
+            <Ionicons name="megaphone-outline" size={18} color={t.primary} />
+            <View style={{ flex: 1 }}>
+              <Txt bold>Le mot du coach</Txt>
+              <Txt muted size={12}>
+                Après {matchLabel(word)}
+              </Txt>
+            </View>
+          </Row>
+          <Text style={{ color: t.text, fontSize: 15, lineHeight: 22 }}>{word.teamMessage}</Text>
+        </Card>
       )}
 
       {next && (
@@ -194,6 +205,20 @@ export function PlayerHome({ playerId }: { playerId: string }) {
         </>
       )}
 
+      {(tl.form.length > 1 || tl.trainingPerf.length > 1) && (
+        <>
+          <Section>Ma progression</Section>
+          <Card style={{ gap: 18 }}>
+            {tl.form.length > 1 && <TrendChart title="Ma forme après match" points={tl.form} min={1} max={5} unit="/5" />}
+            {tl.selfRating.filter((p) => p.value != null).length > 1 && <TrendChart title="Ma perf en match" points={tl.selfRating} min={1} max={10} unit="/10" />}
+            {tl.trainingPerf.length > 1 && <TrendChart title="Ma perf à l’entraînement" points={tl.trainingPerf} min={1} max={10} unit="/10" />}
+            <Txt muted size={12}>
+              D’après tes réponses aux questionnaires. Touche une courbe pour voir le détail.
+            </Txt>
+          </Card>
+        </>
+      )}
+
       <Section icon="stats-chart-outline">Mes stats · {player.position ?? 'saison'}</Section>
       <Row style={{ flexWrap: 'wrap', gap: 10 }}>
         {statFields.map((f) => (
@@ -236,12 +261,6 @@ export function PlayerHome({ playerId }: { playerId: string }) {
           </Row>
         </Card>
       ))}
-      {data.matches.some((m) => m.scoreFor != null && !done.has(m.id)) && todo.length === 0 && (
-        <Button small kind="ghost" title="Remplir un questionnaire plus ancien" onPress={() => {
-          const m = data.matches.filter((x) => x.scoreFor != null && !done.has(x.id)).sort((a, b) => b.date.localeCompare(a.date))[0];
-          if (m) router.push({ pathname: '/questionnaire', params: { matchId: m.id, playerId: player.id } });
-        }} />
-      )}
     </Screen>
   );
 }

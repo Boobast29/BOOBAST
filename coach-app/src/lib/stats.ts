@@ -95,7 +95,7 @@ export function summarizePlayer(data: AppData, player: Player): PlayerSummary {
   };
 }
 
-export type AlertKind = 'injury' | 'pain' | 'wellness' | 'rpe' | 'load' | 'absence';
+export type AlertKind = 'injury' | 'pain' | 'wellness' | 'rpe' | 'load' | 'absence' | 'decline' | 'silence' | 'playtime';
 export type Alert = { playerId: string; level: 'high' | 'medium'; text: string; kind: AlertKind };
 
 /** Alertes basées sur le dernier questionnaire et la charge des 7 vs 28 derniers jours. */

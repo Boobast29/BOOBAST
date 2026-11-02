@@ -1,16 +1,15 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import type { GestureResponderEvent, LayoutChangeEvent } from 'react-native';
 import { useTheme } from './theme';
 import { tap } from './ui';
 
-const FACES = ['😣', '😕', '😐', '🙂', '😄', '🤩'];
-const COLORS = ['#DC2626', '#F97316', '#F59E0B', '#84CC16', '#22C55E', '#15803D'] as const;
-const COLORS_REV = [...COLORS].reverse() as unknown as typeof COLORS;
+const WORDS = ['Très mauvais', 'Mauvais', 'Moyen', 'Bien', 'Très bien', 'Excellent'];
+const WORDS_INVERTED = ['Très faible', 'Faible', 'Moyenne', 'Élevée', 'Très élevée', 'Maximale'];
+const COLORS = ['#C62828', '#E65100', '#B7791F', '#558B2F', '#2E7D32', '#1B5E20'] as const;
 
 /**
- * Curseur de ressenti. Le joueur glisse, sans voir de chiffre (smiley + mots) ;
+ * Curseur de ressenti. Le joueur glisse, sans voir de chiffre (des mots) ;
  * le coach voit la note chiffrée (`showValue`). Valeur entière entre `min` et `max`.
  */
 export function SliderScale({
@@ -43,8 +42,10 @@ export function SliderScale({
   const last = useRef<number | undefined>(value);
   const ratio = value == null ? 0.5 : (value - min) / (max - min || 1);
   const good = invert ? 1 - ratio : ratio;
-  const idx = Math.min(FACES.length - 1, Math.floor(good * FACES.length));
+  const idx = Math.min(COLORS.length - 1, Math.floor(good * COLORS.length));
   const color = value == null ? t.muted : COLORS[idx];
+  // Mot affiché au joueur : suit la valeur (pas le « bon / mauvais ») pour l'intensité, la douleur…
+  const word = invert ? WORDS_INVERTED[Math.min(5, Math.floor(ratio * 6))] : WORDS[idx];
 
   const pick = (e: GestureResponderEvent) => {
     if (!w) return;
@@ -57,7 +58,7 @@ export function SliderScale({
     }
   };
 
-  const THUMB = 34;
+  const THUMB = 30;
   return (
     <View style={{ gap: 10 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -65,14 +66,14 @@ export function SliderScale({
         {value == null ? (
           <Text style={{ color: t.muted, fontSize: 12 }}>Glisse le curseur</Text>
         ) : showValue ? (
-          <View style={{ backgroundColor: color, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 }}>
+          <View style={{ backgroundColor: color, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
             <Text style={{ color: '#fff', fontWeight: '800' }}>
               {value}
               <Text style={{ fontWeight: '400', fontSize: 12 }}>/{max}</Text>
             </Text>
           </View>
         ) : (
-          <Text style={{ fontSize: 22 }}>{FACES[idx]}</Text>
+          <Text style={{ fontSize: 14, fontWeight: '700', color }}>{word}</Text>
         )}
       </View>
       <View
@@ -92,13 +93,8 @@ export function SliderScale({
           onChange(Math.max(min, Math.min(max, base + (e.nativeEvent.actionName === 'increment' ? 1 : -1))));
         }}
       >
-        <View pointerEvents="none" style={{ height: 12, borderRadius: 6, overflow: 'hidden', backgroundColor: t.border }}>
-          <LinearGradient
-            colors={invert ? COLORS_REV : COLORS}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{ flex: 1, opacity: value == null ? 0.3 : 0.9 }}
-          />
+        <View pointerEvents="none" style={{ height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: t.border }}>
+          {value != null && <View style={{ width: `${ratio * 100}%`, height: 8, backgroundColor: color }} />}
         </View>
         {value != null && w > 0 && (
           <View
@@ -121,7 +117,7 @@ export function SliderScale({
               elevation: 3,
             }}
           >
-            <Text style={{ fontSize: showValue ? 13 : 16, fontWeight: '800', color }}>{showValue ? value : FACES[idx]}</Text>
+            {showValue ? <Text style={{ fontSize: 13, fontWeight: '800', color }}>{value}</Text> : <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} />}
           </View>
         )}
       </View>
