@@ -1,0 +1,26 @@
+{
+  "checks": [
+    "Onze parcours disponibles",
+    "Démarrage d’un parcours compatible",
+    "Démarrer ne donne aucun point et ne consomme aucun hasard",
+    "Quatre objectifs initialisés au niveau actuel",
+    "Suivi supplémentaire accepté",
+    "Suivi supplémentaire accepté",
+    "Suivi supplémentaire accepté",
+    "Capacité limitée à quatre suivis actifs",
+    "Focus manuel respecté et parcours suspendu",
+    "Une suspension libère une place",
+    "Redémarrage après suspension préserve le focus manuel",
+    "Annulation restaure le focus précédent",
+    "Le suivi hebdomadaire n’ajoute pas de points",
+    "Atteinte des objectifs détectée",
+    "Achèvement annoncé une seule fois",
+    "Progression stable après sauvegarde",
+    "Limite d’âge appliquée",
+    "Parcours incompatible refusé",
+    "Joueur d’un autre club refusé",
+    "Démarrage et arrêt depuis la fiche joueur",
+    "Fiche à 390 px sans débordement global"
+  ],
+  "errors": []
+}

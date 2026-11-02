@@ -65,3 +65,11 @@ Le nouvel outil classe uniquement les joueurs suivis à partir d’estimations d
 ## Recherche élargie aux licences copyleft
 
 Les projets GPL, LGPL et AGPL sont désormais inclus dans la sélection. Voir [DEPOTS_COPYLEFT.md](DEPOTS_COPYLEFT.md) : Openfoot Manager, Bygfoot, Foxtrick, OpenWebSoccer et soccer_ggplots, avec fichiers examinés, licences et lots de gestion proposés. Cette mise à jour ajoute des sources documentées ; elle ne copie pas leur code dans le moteur et ne change pas la licence globale du jeu.
+
+## Recherche complémentaire — développement individuel
+
+- [Juannx2376/pitchside-manager](https://github.com/Juannx2376/pitchside-manager), commit `0bfa7f56eabe446ce1c95d0a3c6864407244e0d4` : README, licence et `packages/core/src/growthPlans.ts` examinés. Les onze définitions de parcours, la sélection par poste et le calcul d’avancement sont adaptés dans js/parcours-progression.js. MIT © 2026 Pitchside Manager contributors ; original et licence conservés. Le bonus d’entraînement, l’XP et les révélations de potentiel ne sont pas repris.
+- [ho-dev/HattrickOrganizer](https://github.com/ho-dev/HattrickOrganizer), référence `8f57cd68e5d4bd67010e1f3363914eaace611334` : documentation, licence LGPL-3.0 et TrainingPerPlayer.java examinés. Référence pour le suivi d’entraînement, la distinction entre entraînement et baisse des compétences, et les minutes jouées. Aucun calcul propre à Hattrick n’est importé dans ce jeu.
+- [ElliotJBall/FootballManagerSimulator](https://github.com/ElliotJBall/FootballManagerSimulator), référence `c0057d228c1b320ccd72c02c2de6d8478c13f850` : README et licence MIT examinés. Simulateur console Java ; pas de moteur ni de base ancienne copiés.
+
+Deux autres résultats ont été repérés, Ahmed-ibrahim21/Nutmeg et Dardoe/Dream-Football, mais le chemin README.md essayé ne répondait pas : ils ne sont pas présentés comme audités et aucun code n’en est repris.
