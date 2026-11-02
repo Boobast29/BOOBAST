@@ -1,4 +1,9 @@
-# État du projet — v28 (2 novembre 2026)
+# État du projet — v29 (2 novembre 2026)
+
+## v29 — refonte visuelle : icônes, police, boutons, composants
+`vendor/lucide/`, `vendor/inter/`, `vendor/open-props/` (licences incluses) + `js/icones.js` (sprite), `js/theme.js`, `theme.css`.
+Vérifications (Chromium, 1366 px et 390 px) : police Inter chargée, 33 icônes posées, aucun écran de navigation sans icône, rendu des
+traits corrigé (fill none sur chaque icône), bouton principal sans flèche en double, simulation longue sans erreur.
 
 ## v28 — accessibilité, infobulles, tendances statistiques
 `vendor/micromodal/`, `vendor/floating-ui/`, `vendor/simple-statistics/` (licences incluses) + `js/accessibilite.js`.

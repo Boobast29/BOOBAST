@@ -1,0 +1,89 @@
+/* ============================================================
+   Thème v29 — police Inter (OFL), jetons Open Props (MIT), icônes Lucide (ISC) ; voir vendor/LISEZMOI.md
+   Chargé après style.css : n'ajoute que de la finition (aucune règle de mise en page cassante).
+   ============================================================ */
+@font-face { font-family: 'Inter'; font-style: normal; font-display: swap; font-weight: 400; src: url(vendor/inter/inter-latin-400-normal.woff2) format('woff2'), url(vendor/inter/inter-latin-ext-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-display: swap; font-weight: 500; src: url(vendor/inter/inter-latin-500-normal.woff2) format('woff2'), url(vendor/inter/inter-latin-ext-500-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-display: swap; font-weight: 600; src: url(vendor/inter/inter-latin-600-normal.woff2) format('woff2'), url(vendor/inter/inter-latin-ext-600-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-display: swap; font-weight: 700; src: url(vendor/inter/inter-latin-700-normal.woff2) format('woff2'), url(vendor/inter/inter-latin-ext-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-display: swap; font-weight: 800; src: url(vendor/inter/inter-latin-800-normal.woff2) format('woff2'), url(vendor/inter/inter-latin-ext-800-normal.woff2) format('woff2'); }
+
+:root {
+  font-family: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif !important;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+  --rayon: 12px; --rayon-s: 9px;
+  --anim: var(--ease-out-3, cubic-bezier(.215, .61, .355, 1));
+  --ombre-carte: 0 1px 0 rgba(255, 255, 255, .035) inset, 0 10px 30px -18px rgba(0, 0, 0, .7);
+  --anneau: 0 0 0 2px var(--bg, #0f141b), 0 0 0 4px color-mix(in srgb, var(--club1) 80%, #fff);
+}
+body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; letter-spacing: -.005em; }
+h1, h2, h3 { letter-spacing: -.015em; }
+h2 { font-weight: 700; }
+.tbl, .tbl td, .tbl th, .tinfo b, .af-it b, .tend-grille b, .chr-a { font-variant-numeric: tabular-nums; }
+
+/* icônes */
+.ico { width: 18px; height: 18px; flex: none; vertical-align: -3px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#nav button > span .ico { width: 17px; height: 17px; }
+#nav button.on > span .ico { color: color-mix(in srgb, var(--club1) 70%, #fff); }
+#tabbar button > span .ico { width: 21px; height: 21px; }
+.tir-grille button > span .ico { width: 24px; height: 24px; color: color-mix(in srgb, var(--club1) 55%, #cfd8e3); }
+#ariane b .ico { width: 15px; height: 15px; vertical-align: -2px; color: color-mix(in srgb, var(--club1) 65%, #fff); }
+.ico.ico-go { width: 15px; height: 15px; margin-right: 6px; vertical-align: -2px; fill: currentColor; stroke-width: 1.5; }
+
+/* boutons */
+.btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px;
+  background: linear-gradient(180deg, #232e3c, #1c2532); border: 1px solid #2f3c4d; border-radius: var(--rayon-s);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .05) inset, 0 1px 2px rgba(0, 0, 0, .35); font-weight: 500;
+  transition: transform .12s var(--anim), border-color .15s, background .15s, box-shadow .15s, filter .15s; }
+.btn:hover:not(:disabled) { border-color: color-mix(in srgb, var(--club1) 55%, #3a4a5e); background: linear-gradient(180deg, #283445, #202a38); }
+.btn:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 0 0 rgba(0, 0, 0, 0); }
+.btn:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: none; box-shadow: var(--anneau); }
+.btn.primary { background: linear-gradient(180deg, color-mix(in srgb, var(--acc) 92%, #fff) 0%, var(--acc2) 100%); color: #052016; border: 0;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .35) inset, 0 6px 16px -8px color-mix(in srgb, var(--acc) 80%, transparent); font-weight: 700; }
+.btn.primary:hover:not(:disabled) { filter: brightness(1.06) saturate(1.05); }
+.btn.danger { background: linear-gradient(180deg, #3a1f25, #2c171c); border-color: #6b2a33; color: #ffb3ba; }
+.btn.danger:hover:not(:disabled) { border-color: var(--red); }
+.btn.sm { min-height: 28px; border-radius: 8px; }
+.btn.big { min-height: 42px; border-radius: 11px; font-size: 15px; }
+#btnGo.blocked { animation: pouls 2.4s ease-in-out infinite; }
+@keyframes pouls { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, .0); } 50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, .18); } }
+
+/* cartes */
+.card { border-radius: var(--rayon); box-shadow: var(--ombre-carte); border-color: #243042;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 92%, #fff 1%), var(--panel)); }
+.card h2 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* champs */
+input, select, textarea { border-radius: 8px; border-color: #2f3c4d; transition: border-color .15s, box-shadow .15s; }
+input:hover, select:hover { border-color: #3c4c60; }
+input:focus, select:focus, textarea:focus { border-color: color-mix(in srgb, var(--club1) 70%, #3c4c60); }
+input::placeholder { color: #6c7d92; }
+
+/* onglets : segments */
+.tabs { background: #111821; border: 1px solid #243042; border-radius: 11px; padding: 3px; gap: 2px; }
+.tabs button { border-radius: 8px !important; transition: background .15s, color .15s; }
+.tabs button.on { background: linear-gradient(180deg, #2a3646, #222d3b) !important; color: #fff; box-shadow: 0 1px 0 rgba(255, 255, 255, .06) inset, 0 1px 3px rgba(0, 0, 0, .4); }
+
+/* tableaux */
+.tbl tbody tr { transition: background .12s; }
+.tbl tbody tr:hover { background: rgba(255, 255, 255, .025); }
+.tbl th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; color: #7f90a5; }
+
+/* barres de défilement */
+* { scrollbar-width: thin; scrollbar-color: #2a3646 transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; } ::-webkit-scrollbar-thumb { background: #243041; border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: #2f3e53; background-clip: padding-box; border: 2px solid transparent; }
+
+/* en-tête et menu */
+#top { box-shadow: 0 6px 24px -14px rgba(0, 0, 0, .8); }
+#nav button { font-weight: 500; }
+#nav button em { text-align: left; line-height: 1.25; }
+#nav button > span { color: #8fa0b5; }
+.nav-h { font-weight: 600; letter-spacing: .1em !important; }
+
+/* accueil : cartes de club plus vivantes */
+.club-pick { transition: transform .15s var(--anim), box-shadow .15s, border-color .15s; }
+.club-pick:hover { transform: translateY(-2px); box-shadow: 0 10px 22px -12px color-mix(in srgb, var(--c1, #2fd27a) 70%, transparent); }
+.logo-big b { background: linear-gradient(90deg, var(--acc), #8be9b5); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+@media (prefers-reduced-motion: reduce) { .btn, .club-pick, #btnGo.blocked { transition: none !important; animation: none !important; } }

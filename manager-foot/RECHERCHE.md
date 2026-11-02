@@ -188,6 +188,19 @@ Repérées : simple-statistics (ISC, statistiques), Micromodal (MIT, fenêtres a
 | [floating-ui/floating-ui](https://github.com/floating-ui/floating-ui) 1.8.0 | MIT | infobulles positionnées à la place des bulles natives ; explication de chaque attribut des joueurs au survol |
 | [simple-statistics/simple-statistics](https://github.com/simple-statistics/simple-statistics) 8.0.0 | ISC | Analyse → « Tendances de la saison » : forme (régression), projection de fin de saison, régularité, efficacité, joueurs en progression / en baisse |
 
+## Esthétique (v29)
+
+| Projet | Licence | Dans le jeu |
+|---|---|---|
+| [lucide-icons/lucide](https://github.com/lucide-icons/lucide) (lucide-static 1.66.0) | ISC | 41 icônes au trait remplacent les émojis du menu, de la barre mobile, du tiroir, du fil d'Ariane et du bouton principal (sprite SVG intégré : `js/icones.js`) |
+| [rsms/inter](https://github.com/rsms/inter) (@fontsource/inter 5.3.0) | OFL-1.1 | police de l'interface (400 à 800), chiffres tabulaires dans les tableaux |
+| [argyleink/open-props](https://github.com/argyleink/open-props) 1.7.23 | MIT | courbes d'animation et ombres utilisées par `theme.css` |
+
+`theme.css` (chargé après style.css) : boutons en relief avec survol, appui et anneau de focus clavier ; bouton principal qui pulse
+quand une décision bloque ; cartes avec ombre et reflet ; onglets en segments ; champs avec focus coloré ; en-têtes de tableaux
+en petites capitales ; barres de défilement discrètes ; cartes de club animées sur l'accueil ; animations coupées si
+« réduire les animations ».
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.

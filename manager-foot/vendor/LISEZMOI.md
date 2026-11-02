@@ -17,6 +17,9 @@ Toutes copiées sans modification depuis le registre npm (versions publiées off
 | `simple-statistics/` | [simple-statistics/simple-statistics](https://github.com/simple-statistics/simple-statistics) | 8.0.0 | ISC | tendances (régression linéaire, moyennes, écarts) dans l'Analyse |
 | `floating-ui/` | [floating-ui/floating-ui](https://github.com/floating-ui/floating-ui) | core/dom 1.8.0, utils 0.2.12 | MIT | infobulles positionnées (attributs, notes, boutons) |
 | `micromodal/` | [ghosh/Micromodal](https://github.com/ghosh/Micromodal) | 0.7.0 | MIT (dépôt ; ISC indiqué dans le paquet npm) | fenêtres accessibles : focus piégé, Échap, rôle de dialogue |
+| `lucide/` | [lucide-icons/lucide](https://github.com/lucide-icons/lucide) (lucide-static) | 1.66.0 | ISC | 41 icônes de navigation, intégrées en sprite dans `js/icones.js` |
+| `inter/` | [rsms/inter](https://github.com/rsms/inter) via @fontsource/inter | 5.3.0 | OFL-1.1 | police de l'interface (graisses 400 à 800, latin + latin étendu) |
+| `open-props/` | [argyleink/open-props](https://github.com/argyleink/open-props) | 1.7.23 | MIT | courbes d'animation et ombres (`easings`, `shadows`) |
 | `retroFootballManager/` | [FredericusRadicalus/retroFootballManager](https://github.com/FredericusRadicalus/retroFootballManager) | commit dans VERSION | MIT | logique des sponsors de tribunes (adaptée dans js/tribunes.js) |
 
 `modules.mjs` expose Fuse et ZzFX (modules ES) en variables globales ; il ne fonctionne qu'avec le serveur local (http),
