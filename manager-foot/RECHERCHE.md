@@ -143,6 +143,21 @@ Les dépôts **GPL** (openfootmanager, ohmyhattrick) imposeraient de passer tout
 | [GallagherAiden/footballSimulationEngine](https://github.com/GallagherAiden/footballSimulationEngine) | MIT | non copié | moteur de match complet (≈ 9 500 lignes) qui remplacerait le nôtre, déjà calibré sur les vraies statistiques |
 | [noddy703/tacticmesh](https://github.com/noddy703/tacticmesh) | MIT | non copié | application complète de simulation (moteur + interface + stockage), pas un module réutilisable tel quel |
 
+## Bibliothèques hors football intégrées (v25)
+
+Copiées depuis le registre npm (versions officielles), licences d'origine dans chaque dossier de `vendor/` (détail : `vendor/LISEZMOI.md`).
+
+| Projet | Licence | Ce que ça apporte |
+|---|---|---|
+| [catdad/canvas-confetti](https://github.com/catdad/canvas-confetti) 1.9.4 | ISC | confettis aux couleurs du club sur trophées, montées, qualifications (désactivés si « réduire les animations ») |
+| [leeoniya/uPlot](https://github.com/leeoniya/uPlot) 1.6.32 | MIT | graphiques : trésorerie journée par journée (Finances), position journée par journée (Classements) |
+| [krisk/Fuse](https://github.com/krisk/Fuse) 7.5.0 | Apache-2.0 | palette Ctrl+K tolérante aux fautes (« Chirstian Touré » → Christian Touré) |
+| [101arrowz/fflate](https://github.com/101arrowz/fflate) 0.8.3 | MIT | export compressé `.mfz` (3,2 Mo → 448 Ko), import `.mfz` ou `.json` |
+| [KilledByAPixel/ZzFX](https://github.com/KilledByAPixel/ZzFX) 1.4.0 | MIT | sons synthétisés : fanfare, signature d'un transfert, but de ton équipe |
+
+Repérées, non intégrées (pas utiles pour l'instant) : SortableJS (MIT, glisser-déposer : la tactique a déjà le sien), tinykeys (MIT,
+raccourcis : déjà gérés), lz-string (MIT, compression : fflate est plus efficace).
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.

@@ -1,4 +1,15 @@
-# État du projet — v24 (2 novembre 2026)
+# État du projet — v25 (2 novembre 2026)
+
+## v25 — bibliothèques open source hors football
+`vendor/` (canvas-confetti, uPlot, Fuse.js, fflate, ZzFX, avec licences) + `js/extras.js`.
+- Confettis + fanfare sur les nouvelles « trophée » de la partie affichée (pas pendant les simulations) et au bilan de saison avec trophée.
+- Suivi par journée (`G.suivi` : trésorerie, position) → graphiques uPlot dans Finances et Classements.
+- Palette Ctrl+K : résultats « approchés » Fuse.js en plus de la recherche exacte.
+- Options : « Exporter compressé (.mfz) » ; accueil : l'import accepte `.mfz` (gzip) et `.json`.
+- Sons ZzFX : signature d'un transfert, but de ton équipe en direct.
+- Fuse.js et ZzFX sont des modules ES (`vendor/modules.mjs`) : disponibles avec le serveur local, absents en `file://` sans erreur.
+Vérifications (Chromium) : 5 bibliothèques chargées, recherche avec lettres inversées trouvée, gzip 3 244 Ko → 448 Ko et aller-retour
+identique, graphiques affichés (graduations entières), simulation longue 2 graines × 2 saisons sans erreur.
 
 ## v24 — sponsors des tribunes (code MIT copié de retroFootballManager)
 - `vendor/retroFootballManager/` : copie intacte de `sponsors.js` et `stadium.js` + LICENSE MIT + commit d'origine.
