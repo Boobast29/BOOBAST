@@ -1,4 +1,16 @@
-# État du projet — v31 (2 novembre 2026)
+# État du projet — v32 (2 novembre 2026)
+
+## v32 — 30 dépôts GitHub de plus
+`js/lot30.js`, `js/donnees_ouvertes2.js` (+ `outils/donnees_ouvertes2.py`), 24 dossiers ajoutés dans `vendor/` (détail : vendor/LISEZMOI.md).
+- Vrais drapeaux, noms et régions des nations ; écran **Aide** (documentation) ; durées en toutes lettres ; export **CSV** ; **défi partageable**
+  (lien + QR code : même graine, même club, même règlement, testé dans un second onglet) ; feu d'artifice au titre ; cartes de club en relief ;
+  texte lisible sur les couleurs du club ; **plein écran** et écran allumé pendant le match ; listes longues avec recherche ; animation du score
+  sur un but ; avatars générés ; police d'affichage des scores ; **interface en anglais** (partielle, Options) ; raccourcis « g puis … » et « ? » ;
+  barre de progression des vacances ; listes animées ; **palmarès réels** (Coupe du monde, Euro, Ligue des champions) ; **profil physique**
+  estimé (SkillCorner) ; trophées illustrés.
+Vérifications (Chromium) : 20 bibliothèques globales présentes, 25 drapeaux sur l'effectif, noms (Croatie, Corée du Sud…), « 3 semaines et 2 jours »,
+CSV téléchargé, Aide rendue, QR code, défi rejoué (même graine et club), palmarès, raccourci g f → Finances, feu d'artifice, navigation en anglais,
+couleur d'encre calculée, simulation longue 2 graines × 2 saisons sans erreur.
 
 ## v31 — événements aléatoires, conférences de presse d'avant-match, sélectionneur national
 Nouveau `js/vie_du_jeu.js` (chargé après `js/traits.js`).

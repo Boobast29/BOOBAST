@@ -98,3 +98,22 @@ input::placeholder { color: #6c7d92; }
 /* événements et conférences de presse */
 .evt-opts { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 6px; }
 .evt-opts .btn { justify-content: flex-start; text-align: left; white-space: normal; min-height: 40px; padding: 8px 14px; }
+
+/* ---------- lot de 30 dépôts (v32) ---------- */
+@font-face { font-family: 'Bebas Neue'; font-display: swap; font-weight: 400; src: url(vendor/bebas-neue/bebas-neue-latin-400-normal.woff2) format('woff2'), url(vendor/bebas-neue/bebas-neue-latin-ext-400-normal.woff2) format('woff2'); }
+.scoreboard .sc, .scoreboard b, .tend-grille b, .chr-a, .af-next b + small { font-family: 'Bebas Neue', 'Inter', sans-serif; letter-spacing: .02em; }
+.tend-grille b { font-size: 26px; font-weight: 400; }
+.nat.drap { display: inline-flex; align-items: center; gap: 5px; }
+.fi { display: inline-block; width: 1.333em; height: 1em; background-size: cover; background-position: center; border-radius: 2px; box-shadow: 0 0 0 1px rgba(255,255,255,.12); flex: none; }
+.aide { line-height: 1.6; } .aide table { border-collapse: collapse; margin: 8px 0; } .aide td, .aide th { border: 1px solid var(--line); padding: 4px 8px; font-size: 13px; }
+.aide h1, .aide h2 { margin-top: 18px; } .aide code { background: #111821; padding: 1px 5px; border-radius: 5px; } .aide a { color: var(--acc); }
+.defi { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; } .defi .qr svg { background: #fff; border-radius: 8px; display: block; } .defi input { width: 100%; min-width: 240px; margin-bottom: 8px; }
+.defi-recu { margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border-color: color-mix(in srgb, var(--acc) 50%, var(--line)); }
+.feu { position: fixed; inset: 0; z-index: 500; pointer-events: none; }
+.coach-ava.ident { background: #0f1620; padding: 8px; } .coach-ava.ident svg { width: 100%; height: 100%; }
+.gi { vertical-align: -4px; border-radius: 4px; }
+.phys { margin: 4px 0; }
+#nprogress .bar { background: var(--acc) !important; height: 3px !important; } #nprogress .peg { box-shadow: 0 0 10px var(--acc), 0 0 5px var(--acc) !important; }
+.choices { margin-bottom: 0; min-width: 220px; } .choices__inner { background: var(--panel2) !important; border: 1px solid #2f3c4d !important; border-radius: 8px !important; min-height: 36px !important; padding: 4px 8px !important; color: var(--txt); }
+.choices__list--dropdown, .choices__list[aria-expanded] { background: #111822 !important; border-color: #2f3c4d !important; color: var(--txt); z-index: 50; }
+.choices__list--dropdown .choices__item--selectable.is-highlighted { background: #1e2a38 !important; } .choices__input { background: #0e151e !important; color: var(--txt) !important; }

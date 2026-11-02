@@ -218,6 +218,17 @@ Idées reprises (code et textes originaux, en français) :
 | [DWYCA-org/FMNarrative](https://github.com/DWYCA-org/FMNarrative) | MIT | conférences de presse selon le contexte → avant-match : grand match, série de défaites, leader, rumeur de départ, crise de blessés, lutte pour le maintien |
 | [openfootmanager/openfootmanager](https://github.com/openfootmanager/openfootmanager) | GPL-3.0 (idée seulement) | sélectionneur national → offre après une saison dans le top 2 avec objectif atteint, cumul avec le club |
 
+## Lot de 30 dépôts GitHub (v32)
+
+Bibliothèques (dans `vendor/`, licences conservées) — [lipis/flag-icons](https://github.com/lipis/flag-icons) (MIT), [michaelwittig/node-i18n-iso-countries](https://github.com/michaelwittig/node-i18n-iso-countries) (MIT), [markedjs/marked](https://github.com/markedjs/marked) (MIT), [cure53/DOMPurify](https://github.com/cure53/DOMPurify) (Apache-2.0 ou MPL-2.0), [iamkun/dayjs](https://github.com/iamkun/dayjs) (MIT), [EvanHahn/HumanizeDuration.js](https://github.com/EvanHahn/HumanizeDuration.js) (Unlicense), [mholt/PapaParse](https://github.com/mholt/PapaParse) (MIT), [eligrey/FileSaver.js](https://github.com/eligrey/FileSaver.js) (MIT), [kazuhikoarase/qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) (MIT), [pieroxy/lz-string](https://github.com/pieroxy/lz-string) (MIT), [crashmax-dev/fireworks-js](https://github.com/crashmax-dev/fireworks-js) (MIT), [micku7zu/vanilla-tilt.js](https://github.com/micku7zu/vanilla-tilt.js) (MIT), [gka/chroma.js](https://github.com/gka/chroma.js) (BSD-3-Clause et Apache-2.0), [sindresorhus/screenfull](https://github.com/sindresorhus/screenfull) (MIT), [richtr/NoSleep.js](https://github.com/richtr/NoSleep.js) (MIT), [Choices-js/Choices](https://github.com/Choices-js/Choices) (MIT), [juliangarnier/anime](https://github.com/juliangarnier/anime) (MIT), [laurentpayot/minidenticons](https://github.com/laurentpayot/minidenticons) (MIT), [dharmatype/Bebas-Neue](https://github.com/dharmatype/Bebas-Neue) (OFL-1.1), [i18next/i18next](https://github.com/i18next/i18next) (MIT), [jamiebuilds/tinykeys](https://github.com/jamiebuilds/tinykeys) (MIT), [rstacruz/nprogress](https://github.com/rstacruz/nprogress) (MIT), [formkit/auto-animate](https://github.com/formkit/auto-animate) (MIT), [game-icons/icons](https://github.com/game-icons/icons) (CC BY 3.0 (attribution)).
+
+Données (faits dérivés dans `js/donnees_ouvertes2.js`, générés par `outils/donnees_ouvertes2.py`) :
+[datasets/country-codes](https://github.com/datasets/country-codes) (ODC-PDDL, codes FIFA → ISO), [mledoze/countries](https://github.com/mledoze/countries)
+(ODbL, régions et noms français), [openfootball/worldcup.json](https://github.com/openfootball/worldcup.json) (CC0, 22 vainqueurs),
+[openfootball/euro.json](https://github.com/openfootball/euro.json) (CC0), [openfootball/champions-league](https://github.com/openfootball/champions-league)
+(CC0, 15 finales), [SkillCorner/opendata](https://github.com/SkillCorner/opendata) (MIT, agrégats physiques A-League 2024/25 → distances par poste).
+Écartés : typed.js (GPL-3.0), progressbar.js (dépendances).
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.
