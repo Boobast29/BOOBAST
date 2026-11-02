@@ -110,6 +110,14 @@ Les principaux réglages se trouvent dans `match.js` :
 - **Interface** : Finances > Saison / Budget prévisionnel / Budgets des clubs / Bilans. Le bilan financier figure aussi dans le résumé de fin de saison, et l'actionnaire se règle dans l'éditeur de club.
 - **Équilibre constaté** (3 saisons simulées) : les gros clubs ont 100 à 200 M€ de recettes et 50 à 90 M€ de salaires. Les clubs de D2 ont 6 à 40 M€ de recettes et terminent souvent près de l'équilibre. Les excédents viennent surtout de l'Europe et des ventes.
 
+- **Demande d'apport** (`requestOwnerFunds`) : une fois par saison, depuis Budget prévisionnel. 80 % de l'apport va au budget transferts, sauf en cas de sanction. La **trésorerie projetée** (`projectedTreasury`) annonce le verdict probable du contrôle de gestion.
+
+## 5 ter. Sauvegarde et reprise
+
+- **Reprise automatique** (`autoResume` dans `app.js`) : à l'ouverture, la dernière partie se rouvre sur le dernier écran consulté (`SETTINGS.lastView`). L'option se règle dans Options > Démarrage (`SETTINGS.autoResume`, dans localStorage `mf-settings`).
+- **Sauvegarde de sécurité** quand l'onglet est masqué ou fermé (`visibilitychange` / `pagehide`), sauf pendant un match en direct.
+- **Points de restauration** (clé `backups-v2`, 5 au maximum) : un nouveau point à chaque tranche de 4 journées (`G.lastBackup`). Ils sont restaurables depuis l'accueil et les Options.
+
 ## 6. Comment tester
 
 Toutes les commandes se lancent depuis `manager-foot/`.

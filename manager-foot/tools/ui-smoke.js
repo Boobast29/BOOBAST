@@ -59,6 +59,14 @@ const SP = process.argv[2] || require('os').tmpdir();
     await pg.click('#btnCont'); await pg.waitForSelector('#top');
     await pg.click('#nav button[data-v=options]'); await pg.click('#autoRes');
   });
+  await step('owner + restore points', async () => {
+    await pg.click('#nav button[data-v=finances]'); await pg.click('[data-ft=plan]'); await pg.click('#askOwner'); await pg.waitForTimeout(200);
+    await pg.screenshot({ path: SP + '/v9-fin-plan2.png', fullPage: true });
+    await pg.click('#nav button[data-v=options]'); await pg.waitForSelector('[data-restore]', { timeout: 5000 });
+    const n = await pg.$$eval('[data-restore]', x => x.length);
+    await pg.click('[data-restore] >> nth=-1'); await pg.click('#cfYes'); await pg.waitForTimeout(800);
+    console.log('  backups', n, 'restored to', await pg.evaluate(() => `${G.season} ${weekLabel(G)}`));
+  });
   console.log('ERRORS:', errs.length ? errs.join('\n') : 'none');
   await b.close();
 })();

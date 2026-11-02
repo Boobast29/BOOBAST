@@ -9,10 +9,39 @@ let SETTINGS = { speed: 120, show2d: true, autoResume: true };
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('mf-settings') || '{}')); } catch { }
 function saveSettings() { try { localStorage.setItem('mf-settings', JSON.stringify(SETTINGS)); } catch { } }
 
+const BACKUP_KEY = 'backups-v2', BACKUP_MAX = 5;
 async function save() {
   if (!G) return;
-  try { const { pmap, ...rest } = G; await Store.set(SAVE_KEY, rest); }
+  let backup = false;
+  try {
+    const key = `${G.season}-${Math.floor(leagueRoundAt(G) / 4)}`;
+    if (G.lastBackup !== key && !LIVE) { G.lastBackup = key; backup = true; }
+  } catch { }
+  try { const { pmap, ...rest } = G; await Store.set(SAVE_KEY, rest); if (backup) await addBackup(rest); }
   catch (e) { toast('Sauvegarde impossible : ' + (e?.message || e), 'err'); }
+}
+// points de restauration automatiques (début de saison puis toutes les 4 journées)
+async function addBackup(data) {
+  try {
+    const list = (await Store.get(BACKUP_KEY)) || [];
+    const c = data.clubs.find(x => x.id === data.clubId);
+    list.unshift({ id: Date.now(), at: new Date().toISOString(), club: c?.name || '?', mgr: data.managerName, season: data.season, label: weekLabel(data), data });
+    await Store.set(BACKUP_KEY, list.slice(0, BACKUP_MAX));
+  } catch (e) { console.warn('Point de restauration non enregistré', e); }
+}
+async function backupList() { try { return (await Store.get(BACKUP_KEY)) || []; } catch { return []; } }
+async function backupsHTML() {
+  const list = await backupList();
+  if (!list.length) return '<p class="muted">Aucun point de restauration pour l\'instant (créés automatiquement en début de saison puis toutes les 4 journées).</p>';
+  return `<table class="tbl compact">${list.map(b => `<tr><td class="nm">${esc(b.club)}</td><td>${b.season}/${String(b.season + 1).slice(2)} · ${esc(b.label)}</td><td><small>${fmtDate(new Date(b.at))} ${new Date(b.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</small></td><td><button class="btn sm" data-restore="${b.id}">↺ Restaurer</button></td></tr>`).join('')}</table>`;
+}
+function bindRestore(root) {
+  root.querySelectorAll('[data-restore]').forEach(btn => btn.onclick = () => confirmBox('Restaurer ce point de sauvegarde ? La partie en cours sera remplacée.', async () => {
+    const b = (await backupList()).find(x => x.id === +btn.dataset.restore);
+    if (!b) return toast('Point de restauration introuvable.', 'err');
+    LIVE?.pitch?.stop(); LIVE = null;
+    loadGame(JSON.parse(JSON.stringify(b.data))); await save(); VIEW = 'inbox'; enterGame(); toast(`Partie restaurée : ${b.season}/${b.season + 1}, ${b.label}.`);
+  }, 'Restaurer'));
 }
 async function saveDB() { try { await Store.set(DB_KEY, DB); } catch (e) { toast('Base non sauvegardée : ' + (e?.message || e), 'err'); } }
 function loadGame(g) { migrateGame(g); reindex(g); NEXT_PID = Math.max(...g.players.map(p => p.id)) + 1; G = g; }
@@ -64,12 +93,14 @@ async function startScreen() {
         }).join('')}
       </div>
     </div>
-    <div class="card row gap wrap">
-      <h2 class="grow">Sauvegardes</h2>
-      <button class="btn" id="btnLoadFile">📂 Charger un fichier de sauvegarde</button>
+    <div class="card">
+      <div class="row gap wrap"><h2 class="grow">Sauvegardes</h2>
+      <button class="btn" id="btnLoadFile">📂 Charger un fichier de sauvegarde</button></div>
+      <h3>Points de restauration automatiques</h3><div id="bkList"><span class="muted">…</span></div>
     </div>
   </div>`;
   $('#btnCont')?.addEventListener('click', () => { loadGame(ex); enterGame(); });
+  backupsHTML().then(h => { const el = $('#bkList'); if (el) { el.innerHTML = h; bindRestore(el); } });
   $('#btnEdit').onclick = () => editorScreen();
   $('#btnImp').onclick = () => pickFile(async raw => {
     try { DB = importDatabase(raw); await saveDB(); toast('Base importée !'); startScreen(); }
@@ -1202,6 +1233,10 @@ function finPlanPanel(c) {
     ${P.mid ? `<p class="hint">Point de mi-saison : ${money(P.mid.got)} encaissés pour ${money(P.mid.exp)} attendus.</p>` : '<p class="hint">Point budgétaire au mercato d\'hiver : si les recettes sont en retard sur le prévisionnel, le président réduit le budget transferts (et l\'augmente si elles sont en avance).</p>'}
   </section>
   <div class="col">
+    <section class="card"><h2>🔮 Trésorerie projetée</h2>
+      ${(() => { const pt = projectedTreasury(G), lvl = dncgLevel({ budget: pt, plan: P }); return `<p>Fin de saison, si rien ne change : <b class="${pt < 0 ? 'neg' : 'pos'}">${money(pt)}</b> (aujourd'hui ${money(c.budget)})</p><p>Verdict probable du contrôle de gestion : ${dncgTag(lvl)}</p>`; })()}
+      <p class="hint">Projection : recettes prévues restant à encaisser, moins les salaires actuels et les frais fixes jusqu'à la dernière journée (hors transferts).</p>
+    </section>
     <section class="card"><h2>⚖ Ratio salaires / recettes</h2>
       <p><b class="${ratio > P.ratio + .05 ? 'neg' : ratio > P.ratio ? '' : 'pos'}">${Math.round(ratio * 100)} %</b> des recettes prévues partent dans les salaires · cible du président : <b>${Math.round(P.ratio * 100)} %</b></p>
       ${bar(clamp(ratio * 100, 0, 100), 100, ratio > P.ratio ? 'low' : '')}
@@ -1210,6 +1245,7 @@ function finPlanPanel(c) {
     <section class="card"><h2>💼 Actionnaire</h2>
       <p><b>${own.label}</b> — ${own.desc}</p>
       <table class="tbl kv compact"><tr><td>Fortune mobilisable / saison</td><td>${money(c.owner?.purse || 0)}</td></tr><tr><td>Déjà apporté cette saison</td><td>${money(c.owner?.used || 0)}</td></tr><tr><td>Part des pertes épongée</td><td>${Math.round(own.cover * 100)} %</td></tr></table>
+      <div class="row gap wrap mt"><button class="btn" id="askOwner" ${G.ownerAsk === G.season ? 'disabled' : ''}>🤝 Demander un apport</button><span class="hint">Une fois par saison. Les chances dépendent du type d'actionnaire, de sa fortune restante et de la confiance du président.</span></div>
     </section>
     <section class="card"><h2>🏛 Contrôle de gestion</h2>
       <p>Situation : ${dncgTag(c.dncg)}</p>
@@ -1290,6 +1326,7 @@ function vFinances(el) {
       <section class="card"><h2>Plus gros salaires</h2><table class="tbl compact">${top.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 24)}</td><td class="nm">${esc(p.name)}</td><td>${money(p.wage)}/sem.</td><td>${p.contract} an(s)</td></tr>`).join('')}</table></section>
     </div>
   </div>`}`;
+  $('#askOwner')?.addEventListener('click', () => { const r = requestOwnerFunds(G); save(); toast(r.msg, r.ok ? '' : 'err'); vFinances(el); });
   el.querySelectorAll('[data-ft]').forEach(b => b.onclick = () => { FIN_TAB = b.dataset.ft; vFinances(el); });
   el.querySelectorAll('[data-fdiv]').forEach(b => b.onclick = () => { FIN_DIV = +b.dataset.fdiv; vFinances(el); });
   el.querySelectorAll('a[data-club]').forEach(a => a.onclick = e => { e.preventDefault(); viewClub(+a.dataset.club); });
@@ -1645,6 +1682,7 @@ function vOptions(el) {
     <h3>Démarrage</h3>
     <div class="row gap wrap"><label class="chk"><input type="checkbox" id="autoRes" ${SETTINGS.autoResume !== false ? 'checked' : ''}> Reprendre automatiquement la dernière partie à l'ouverture du jeu</label></div>
     <p class="hint">Le jeu rouvre directement ta partie, sur le dernier écran consulté. Le bouton « Menu principal » permet toujours de revenir à l'accueil.</p>
+    <h3>Points de restauration</h3><div id="bkList"><span class="muted">…</span></div>
     <h3>🏖 Vacances</h3>
     <div class="row gap wrap"><label>Simuler <select id="hol">${[1, 2, 4, 8, 99].map(n => `<option value="${n}">${n === 99 ? 'jusqu\'à la fin de saison' : n + ' semaine(s)'}</option>`).join('')}</select></label>
       <button class="btn" id="holGo">Partir en vacances</button></div>
@@ -1656,6 +1694,7 @@ function vOptions(el) {
   $('#sp').value = String(SETTINGS.speed);
   $('#sp').onchange = e => { SETTINGS.speed = +e.target.value; saveSettings(); };
   $('#s2d').onchange = e => { SETTINGS.show2d = e.target.checked; saveSettings(); };
+  backupsHTML().then(h => { const b = $('#bkList'); if (b) { b.innerHTML = h; bindRestore(b); } });
   $('#autoRes').onchange = e => { SETTINGS.autoResume = e.target.checked; saveSettings(); };
   $('#snd').onchange = e => { SETTINGS.sound = e.target.checked; Sound.on = e.target.checked; saveSettings(); };
   $('#holGo').onclick = () => holiday(+$('#hol').value);

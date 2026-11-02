@@ -360,3 +360,31 @@ function relegationWageCut(G, ids) {
     if (id === G.clubId) news(G, '✂ Clause de relégation : tous les salaires de l\'effectif baissent de 30 %.', 'board');
   }
 }
+
+// demande d'apport à l'actionnaire (une fois par saison)
+function requestOwnerFunds(G) {
+  const c = myClub(G), own = OWNER_TYPES[c.owner?.type] || OWNER_TYPES.local, P = c.plan;
+  if (G.ownerAsk === G.season) return { ok: false, msg: 'Tu as déjà sollicité l\'actionnaire cette saison.' };
+  G.ownerAsk = G.season;
+  if (!own.cover) return { ok: false, msg: '« Le club appartient à ses socios : pas d\'argent extérieur. »' };
+  const left = Math.max(0, (c.owner.purse || 0) - (c.owner.used || 0));
+  if (left < 5e5) return { ok: false, msg: '« J\'ai déjà beaucoup donné cette saison. »' };
+  const conf = G.board.conf;
+  const chance = { local: .25, fonds: .2, mecene: .55 }[c.owner.type] + (conf - 50) / 100 + (c.budget < 0 ? .15 : 0);
+  if (rnd() > chance) { G.board.conf = clamp(conf - 2, 0, 100); return { ok: false, msg: '« Pas maintenant. Montre-moi d\'abord des résultats. »' }; }
+  const v = roundMoney(Math.min(left, (P?.revT || 1e7) * ({ local: .05, fonds: .08, mecene: .15 }[c.owner.type])));
+  flow(G, c, v, 'owner'); c.owner.used = (c.owner.used || 0) + v;
+  if (!G.board.ban && c.dncg !== 'encadrement') G.board.transfer = roundMoney(G.board.transfer + v * .8);
+  news(G, `💶 ${own.label} accepte d'apporter ${money(v)} au club.`, 'board');
+  return { ok: true, msg: `Accordé : ${money(v)} versés (dont ${money(G.board.ban || c.dncg === 'encadrement' ? 0 : v * .8)} pour les transferts).` };
+}
+// trésorerie projetée en fin de saison si rien ne change
+function projectedTreasury(G) {
+  const c = myClub(G), P = c.plan, led = c.led || emptyLedger(), R = leagueRoundsTotal(G) || 38, lr = leagueRoundAt(G);
+  if (!P) return c.budget;
+  let rest = 0;
+  for (const k of ['gate', 'merch', 'sponsor', 'prize']) rest += Math.max(0, (P.rev[k] || 0) - (led.inc[k] || 0));
+  rest += Math.max(0, P.rev.tv - (led.inc.tv || 0));
+  const left = Math.max(0, R - lr) / R;
+  return c.budget + rest - wageBill(G) * (R - lr) - P.fixed * left;
+}
