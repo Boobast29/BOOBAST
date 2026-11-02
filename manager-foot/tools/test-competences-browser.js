@@ -1,6 +1,6 @@
 // Playwright pour les tests seulement ; aucune dépendance ajoutée au jeu.
 const {chromium}=require('playwright'),fs=require('fs'),path=require('path');
-(async()=>{const b=await chromium.launch({executablePath:process.env.MF_CHROMIUM||undefined,args:['--no-sandbox','--disable-gpu','--disable-dev-shm-usage']});try{const p=await b.newPage({viewport:{width:1440,height:1000}}),errors=[],checks=[];p.on('pageerror',e=>errors.push(e.message));await p.goto(process.env.MF_URL||'http://127.0.0.1:8765/');await p.waitForSelector('.club-pick');await p.locator('.club-pick').first().click();await p.waitForSelector('#top');
+(async()=>{const b=await chromium.launch({executablePath:process.env.MF_CHROMIUM||undefined,args:['--no-sandbox','--disable-gpu','--disable-dev-shm-usage']});try{const p=await b.newPage({viewport:{width:1440,height:1000}}),errors=[],checks=[];p.on('pageerror',e=>errors.push(e.stack));await p.goto(process.env.MF_URL||'http://127.0.0.1:8765/');await p.waitForSelector('.club-pick');await p.locator('.club-pick').first().click();await p.waitForSelector('#top');
 const results=await p.evaluate(()=>{const checks=[],ok=(x,m)=>{if(!x)throw Error(m);checks.push(m);};const p=clubPlayers(G,G.clubId)[0],clone=()=>JSON.parse(JSON.stringify(p));
 ok(Object.keys(SKILL41).length===41&&Object.values(SKILL41).filter(x=>x.group!=='gar').length===36,'41 compétences / 36 hors gardien');
 for(const role of Object.keys(ROLES)){const w=skillWeights(role);ok(Math.abs(Object.values(w).reduce((a,b)=>a+b,0)-1)<1e-9,'Poids normalisés '+role);}

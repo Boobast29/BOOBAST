@@ -48,3 +48,16 @@ Le référentiel officiel des compétitions repose sur les organismes compétent
 - [nicolasLepy/TheManager](https://github.com/nicolasLepy/TheManager), arborescence `d71e1f97f4a95d148b157747f5ab8929758dbd89` et `Readme.md` examinés : simulation de carrière et attention à l’inflation des niveaux. Aucun moteur C# incorporé.
 
 Le nouveau calcul des 41 compétences, ses pondérations et le système de langues sont des développements originaux pour ce jeu. Ils ne sont pas présentés comme une méthode officielle d’évaluation du football.
+
+## Recherche complémentaire — profils similaires
+
+| Dépôt examiné | Décision |
+|---|---|
+| [racsolpz211-cpu/football-player-similarity-engine](https://github.com/racsolpz211-cpu/football-player-similarity-engine) | README, moteur et licence examinés. Approche hybride cosinus/euclidienne adaptée dans js/profils-similaires.js ; original et licence MIT © 2026 Oscar López Andreu conservés. Commit 95ec7505f405b09fa74fceaec424d71beeeb2297. Pas de PCA ni de scraping intégrés. |
+| [mljs/distance](https://github.com/mljs/distance) | Fonction cosine TypeScript portée en JS, avec gardes pour vecteurs invalides et plats ; source et MIT © 2014 ml.js conservées. Commit c5f1643257e4c4c7dac03ebbdff54adb8d493ae6. |
+| [SebastianMiramontes/football-player-similarity-scouting](https://github.com/SebastianMiramontes/football-player-similarity-scouting) | README et arborescence examinés : comparaison explicable, échantillons de minutes et profils statistiques. Référence seulement ; aucune base ni réseau neuronal repris. |
+| [JoshRGW/Player-Similarity-and-Valuation](https://github.com/JoshRGW/Player-Similarity-and-Valuation) | README examiné : clustering et estimation marchande à partir de FM/Transfermarkt. Pas de modèle entraîné ni de données FM incorporés. |
+| [souzaaugusto-code/soccer-manager-js](https://github.com/souzaaugusto-code/soccer-manager-js) | README examiné : exercices pédagogiques de tableaux et simulation de scores uniformes ; aucun apport justifiant de remplacer le moteur existant. |
+| [helmedeiros/championship](https://github.com/helmedeiros/championship) | README examiné : gestion de tournois et historiques. Aucun import, réimport silencieux ou composant de stockage repris. |
+
+Le nouvel outil classe uniquement les joueurs suivis à partir d’estimations détaillées mémorisées lors des nouveaux rapports. Il n’interroge pas les compétences cachées des candidats à l’affichage. Les scripts tiers restent des références et ne créent aucune dépendance Python/Node pour jouer.

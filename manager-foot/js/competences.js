@@ -118,6 +118,10 @@ integrationWeekly=function(g){
 const __reportBefore41=makeReport;
 makeReport=function(g,m,p,missionId){
  const r=__reportBefore41(g,m,p,missionId),langs=Object.entries(languageLevels(p));
+ // Connaissance figée à la date du rapport : jamais recalculée à l’ouverture.
+ const error=Math.max(.75,(r.hi-r.lo)/10);
+ r.skills41=Object.fromEntries(Object.keys(SKILL41).map(k=>[k,Math.round(clamp(skillValue(p,k).value+skillSeed({srcId:r.id+'|'+p.id},k)*error,1,20)*10)/10]));
+ r.skills41Error=error;
  if(langs.length)r.known.push('Langues du modèle : '+langs.map(([k,v])=>k+' '+v.toFixed(1)+'/3').join(', ')+(p.real||p.srcId?' (simulation, non vérifié biographiquement)':' (profil fictif)'));
  else r.unknown.push('Langues réellement parlées');
  return r;
