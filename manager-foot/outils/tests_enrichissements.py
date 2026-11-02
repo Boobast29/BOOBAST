@@ -48,6 +48,10 @@ with open(d / 'players.csv', 'w', encoding='utf-8', newline='') as f:
 with open(d / 'transfers.csv', 'w', encoding='utf-8', newline='') as f:
     w = csv.writer(f); w.writerow(['player_id','transfer_date','transfer_season','from_club_id','to_club_id','transfer_fee','market_value_in_eur','player_name','from_club_name','to_club_name'])
     w.writerow([de['key_transfermarkt'],'2023-08-12','23/24','131','583','50400000','60000000','Ousmane Dembélé','Barcelona','PSG'])
+with open(d / 'appearances.csv', 'w', encoding='utf-8', newline='') as f:
+    w = csv.writer(f); w.writerow(['appearance_id','game_id','player_id','player_club_id','player_current_club_id','date','player_name','competition_id','yellow_cards','red_cards','goals','assists','minutes_played'])
+    for i, (dt, g, a) in enumerate([('2025-08-17', 1, 0), ('2025-09-20', 0, 2), ('2026-02-01', 2, 1), ('2024-10-05', 1, 0)]):
+        w.writerow([f'a{i}', f'g{i}', de['key_transfermarkt'], '583', '583', dt, 'Ousmane Dembélé', 'FR1', 0, 0, g, a, 90])
 print('TM', importer_transfermarkt.importer(con, d, verbeux=False))
 # 3) Wikidata (réponses simulées au format SPARQL JSON)
 def fake(q):
@@ -67,7 +71,7 @@ s = scenario.construire(con, "France"); json.dump(s, open(sys.argv[2], 'w')) if 
 psg = next(c for c in s['clubs'] if c['srcId'] == 'c_psg')
 print('club', {k: psg.get(k) for k in ('stadium', 'capacity', 'founded', 'coach', 'logo', 'marketValue', 'sources', 'colorsLabel')})
 pl = {p['srcId']: p for p in s['players']}
-print('Dembélé', {k: pl['j2'].get(k) for k in ('marketValue', 'contractEnd', 'foot', 'agent')})
+print('Dembélé', {k: pl['j2'].get(k) for k in ('marketValue', 'contractEnd', 'foot', 'agent', 'seasonsReal', 'transfersReal')})
 print('wd squad', [(p['srcId'], p['name'], p['pos'], p['photo'], p.get('quality')) for p in s['players'] if p['srcId'].startswith('wd:')])
 R = images.Ressources(lambda: con, tmp)
 print('img wd coach', R.source(con, 'wd', 'Q222789'), '| logo club', R.source(con, 'club', 'c_psg'), '| photo Mbappé', R.source(con, 'joueur', 'j1'))

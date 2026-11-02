@@ -84,8 +84,17 @@ def infos_joueur(con, tm_id):
     r = _un(con, 'SELECT valeur, fin_contrat, pied, agent, selections, taille FROM tm_joueurs WHERE tm=?', (str(tm_id),))
     if not r:
         return {}
-    return {k: v for k, v in {'marketValue': r['valeur'], 'contractEnd': r['fin_contrat'], 'foot': r['pied'], 'agent': r['agent'],
-                              'caps': r['selections'], 'heightTm': r['taille']}.items() if v not in (None, '')}
+    out = {k: v for k, v in {'marketValue': r['valeur'], 'contractEnd': r['fin_contrat'], 'foot': r['pied'], 'agent': r['agent'],
+                             'caps': r['selections'], 'heightTm': r['taille']}.items() if v not in (None, '')}
+    if a_table(con, 'tm_transferts'):  # 6 derniers transferts réels
+        t = con.execute('SELECT date, de_nom, vers_nom, indemnite, valeur FROM tm_transferts WHERE joueur_tm=? ORDER BY date DESC LIMIT 6', (str(tm_id),)).fetchall()
+        if t:
+            out['transfersReal'] = [[x['date'], x['de_nom'], x['vers_nom'], x['indemnite'], x['valeur']] for x in t]
+    if a_table(con, 'tm_saisons'):  # 3 dernières saisons réelles (compétitions couvertes par transfermarkt-datasets)
+        t = con.execute('SELECT * FROM tm_saisons WHERE joueur_tm=? ORDER BY saison DESC LIMIT 3', (str(tm_id),)).fetchall()
+        if t:
+            out['seasonsReal'] = [[x['saison'], x['matchs'], x['minutes'], x['buts'], x['passes'], x['jaunes'], x['rouges']] for x in t]
+    return out
 
 
 def effectif_wikidata(con, cid, deja):

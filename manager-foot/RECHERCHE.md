@@ -89,6 +89,24 @@ Elo calculé (novembre 2026) : Espagne 2367, Argentine 2253, Angleterre 2228, Fr
 | Salaires (Capology), finances des clubs, blessures, arbitres | — | Aucune source ouverte et réutilisable trouvée sur GitHub (dépôts de scraping sans licence uniquement). |
 | Noms de vrais joueurs non buteurs | — | Le filtre des noms générés ne connaît que les buteurs internationaux : une combinaison peut encore, rarement, correspondre à un autre vrai joueur. |
 
+## Recherche n° 4 — mécaniques du mercato, données joueurs (v21)
+
+Sur GitHub, presque tous les dépôts « transferts / valeurs / statistiques » sont des scrapers ou des modèles sans licence :
+la base réutilisable reste **transfermarkt-datasets (CC0)**, désormais importée aussi pour les **statistiques par saison**
+(`appearances` agrégé : matchs, minutes, buts, passes, cartons) et l'**historique réel des transferts** de chaque joueur.
+Les règles du mercato viennent des textes officiels (règlement FIFA RSTP, règles anglaises du permis de travail) et de leur analyse :
+
+| Règle | Source | Dans le jeu |
+|---|---|---|
+| Mécanisme de solidarité : 5 % de l'indemnité aux clubs formateurs (0,25 %/an de 12 à 15 ans, 0,5 %/an de 16 à 23 ans) | RSTP annexe 5 ([LawInSport](https://lawinsport.com/topics/sports/item/a-guide-to-training-compensation-and-solidarity-payments-in-football), [11KBW](https://www.11kbw.com/knowledge-events/article/a-legal-guide-to-solidarity-payments-in-football-under-the-fifa-regulations/)) | prélevé sur le vendeur à chaque transfert payant, reversé aux clubs formateurs (centre de formation + saisons avant 24 ans) ; message quand ton club touche sa part |
+| Indemnité de formation | RSTP art. 20 / annexe 4 | départ libre d'un joueur de 23 ans ou moins : forfait annuel selon la catégorie du club acheteur (90 / 60 / 30 / 10 k€), simplifié |
+| Prêts : 6 entrants / 6 sortants par saison, 3 au plus avec un même club, jeunes formés au club exemptés | RSTP art. 10 ([notes explicatives FIFA](https://digitalhub.fifa.com/m/785652de48694c8c/original/Explanatory-Notes-on-the-New-Loan-Provisions-in-the-Regulations-on-the-Status-and-Transfer-of-Players.pdf)) | blocage des prêts au-delà, avec message ; appliqué à tous les prêts (en réalité : prêts internationaux) |
+| Autorisation de travail anglaise (GBE), 15 points, commission d'exceptions | FA ([Mills & Reeve](https://mills-reeve.com/stand-alone-pages/faqs-on-the-fa-s-governing-body-endorsement-requirements/mens-gbe-criteria), [Premier League](https://premierleague.com/news/597662)) | barème simplifié (sélections × rang Elo de la sélection, niveau du club vendeur, temps de jeu, niveau) ; points affichés sur la fiche ; refus avec message |
+| Rupture de contrat (art. 17) revue après l'arrêt Diarra (cadre provisoire du 1er janvier 2025) | [Withers](https://www.withersworldwide.com/en-gb/insight/read/the-new-fifa-regulations-on-the-status-and-transfer-of-players-what-changes-in-the-post-diarra-er), [Inside World Football](https://www.insideworldfootball.com/2025/01/02/fifa-makes-temporary-transfer-rule-change-fifpro-objects/) | non modélisé (piste : rupture unilatérale d'un joueur) |
+| Plafond des commissions d'agents (FFAR) | suspendu depuis fin 2023 ([Lewis Silkin](https://lewissilkin.com/en/insights/the-new-football-agent-regulations-where-are-we-now), [Crowe](https://www.crowe.com/uk/insights/football-players-agent-fees-update)) | pas de plafond (cohérent) ; l'agent réel de transfermarkt-datasets remplace l'agence générée |
+| Fenêtres 2026 : Premier League 15 juin – 1er sept., LaLiga / Bundesliga / Ligue 1 1er juillet – 31 août / 1er sept., Serie A 29 juin – 1er sept. | [ESPN](https://africa.espn.com/football/story/_/id/48833505/when-does-summer-transfer-window-close-premier-league-serie-laliga-bundesliga-ligue-1), [Sky Sports](https://www.skysports.com/football/news/12040/13546220/summer-transfer-window-2026-dates-when-is-deadline-day-for-premier-league-and-efl-clubs-to-sign-players) | inchangé (fenêtre du jeu ≈ 6 journées, cohérente avec une fermeture au 1er septembre) |
+| Valeur selon le poste | ewenme/transfers (agrégats 2015-2022) : gardiens ≈ moitié des milieux, attaquants au-dessus | coefficient de poste dans la valeur marchande (GB 0,6 → BU 1,15) |
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.

@@ -1,4 +1,18 @@
-# État du projet — v20 (2 novembre 2026)
+# État du projet — v21 (2 novembre 2026)
+
+## v21 — mécaniques réelles du mercato, statistiques et transferts réels
+- `js/mercato_reel.js` (branché sur `logTransfer`, par lequel passent tous les transferts) : mécanisme de solidarité FIFA (5 %),
+  indemnité de formation, limites de prêts FIFA (6/6, 3 avec un même club, exemption des jeunes formés au club), autorisation de
+  travail anglaise (GBE, 15 points, commission d'exceptions stable), valeur marchande pondérée par le poste, « formé au club »
+  marqué à la promotion des jeunes (et pour les jeunes déjà au club), historique de carrière avec identifiant du club.
+- Fiche joueur : statistiques réelles des 3 dernières saisons, transferts réels, clubs formateurs, points GBE ; pied fort et agent réels.
+- `outils/importer_transfermarkt.py` : + `appearances` agrégé par saison (table tm_saisons) ; `enrichissements.infos_joueur` :
+  + transferts et saisons réels.
+Vérifications (Chromium) : solidarité 300 k€ pour un jeune formé 3 saisons revendu 20 M€ entre deux autres clubs (le vendeur garde sa
+part de formateur), indemnité de formation 180 k€, 7e prêt entrant refusé, GBE refusé à 6 points / star à 22 points ; mini-base :
+saisons réelles agrégées et transfert Barcelona → PSG affichés ; simulation longue 2 graines × 2 saisons sans erreur.
+Limites : solidarité et indemnité de formation calculées sur l'historique connu du jeu (pas sur le vrai parcours junior) ;
+limites de prêts appliquées aux écrans du joueur seulement (pas à l'IA) ; barème GBE simplifié ; art. 17 post-Diarra non modélisé.
 
 ## v20 — sélections nationales réelles, noms crédibles, maillots réels
 - `js/donnees_ouvertes.js` (généré par `outils/donnees_internationales.py`, source CC0) + `js/ouvert.js` :

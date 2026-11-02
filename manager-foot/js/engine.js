@@ -764,7 +764,7 @@ function endSeason(G) {
   for (const p of G.players) {
     if (p.club != null && p.stats.apps > 0) {
       const c = getClub(G, p.club);
-      p.hist = [...(p.hist || []), { season: G.season, club: c?.short || '?', apps: p.stats.apps, goals: p.stats.goals, assists: p.stats.assists, avg: Math.round(p.stats.rating / p.stats.apps * 100) / 100 }];
+      p.hist = [...(p.hist || []), { season: G.season, club: c?.short || '?', cid: c?.id, apps: p.stats.apps, goals: p.stats.goals, assists: p.stats.assists, avg: Math.round(p.stats.rating / p.stats.apps * 100) / 100 }];
     }
     p.age++;
     const o = playerOvr(p);

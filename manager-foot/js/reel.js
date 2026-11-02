@@ -30,6 +30,7 @@ buildRealWorld = function (scn) {
     const sp = p.srcId && bySp.get(p.srcId); if (!sp) continue;
     if (sp.marketValue) p.marketValueReal = sp.marketValue;
     if (sp.foot) p.footReal = sp.foot;
+    if (sp.foot && { right: 1, left: 1, both: 1 }[sp.foot]) p.foot = { right: 'Droit', left: 'Gauche', both: 'Les deux' }[sp.foot];
     if (sp.agent) p.agentReal = sp.agent;
     if (sp.contractEnd) { // saison 2026/27 : contrat jusqu'en juin 2027 = 1 an
       const y = +sp.contractEnd.slice(0, 4), m = +sp.contractEnd.slice(5, 7);
