@@ -131,6 +131,18 @@ accueil réécrit. Idées de jeu notées dans PLAN.md.
 | [manuelarte/footballpitchsvggenerator](https://github.com/manuelarte/footballpitchsvggenerator) | aucune | terrain SVG aux vraies dimensions : la vue 2D du jeu l'est déjà |
 | Prédiction de blessures (dépôts Apache-2.0 de modèles d'apprentissage) | Apache-2.0 | données non fournies ou synthétiques : non réutilisables pour calibrer |
 
+## Code copié depuis GitHub (v24)
+
+Règle suivie : on ne copie que du code dont la licence l'autorise (MIT, Apache-2.0…), en gardant l'avis de copyright.
+Les dépôts **sans licence** (pitch-to-glory, league-manager-ui, football-logos…) restent « tous droits réservés » : idées seulement.
+Les dépôts **GPL** (openfootmanager, ohmyhattrick) imposeraient de passer tout le jeu sous GPL : non copiés.
+
+| Dépôt | Licence | Copié | Où |
+|---|---|---|---|
+| [FredericusRadicalus/retroFootballManager](https://github.com/FredericusRadicalus/retroFootballManager) | MIT | `sponsors.js`, `stadium.js` copiés tels quels (commit dans `VERSION`) ; logique des sponsors de tribunes adaptée | `vendor/retroFootballManager/` (copie + LICENSE), `js/tribunes.js` (adaptation, attribution en en-tête) |
+| [GallagherAiden/footballSimulationEngine](https://github.com/GallagherAiden/footballSimulationEngine) | MIT | non copié | moteur de match complet (≈ 9 500 lignes) qui remplacerait le nôtre, déjà calibré sur les vraies statistiques |
+| [noddy703/tacticmesh](https://github.com/noddy703/tacticmesh) | MIT | non copié | application complète de simulation (moteur + interface + stockage), pas un module réutilisable tel quel |
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.

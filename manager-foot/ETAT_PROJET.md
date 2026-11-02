@@ -1,4 +1,13 @@
-# État du projet — v23 (2 novembre 2026)
+# État du projet — v24 (2 novembre 2026)
+
+## v24 — sponsors des tribunes (code MIT copié de retroFootballManager)
+- `vendor/retroFootballManager/` : copie intacte de `sponsors.js` et `stadium.js` + LICENSE MIT + commit d'origine.
+- `js/tribunes.js` : 4 tribunes (nord, sud, est, ouest), 2 offres par tribune libre à chaque saison (générées sans toucher l'aléatoire
+  de la partie), prime de signature de 25 % du montant annuel, paiement à chaque journée de championnat, fin de contrat automatique
+  puis nouvelles offres ; montants indexés sur le sponsor maillot de référence (rapports de l'original : 150/400 et 120/400).
+- Finances : plan du stade avec les 4 tribunes autour de la pelouse, offres et bouton « Signer ».
+Vérifications : prime = 25 % (arrondi), 73 journées restantes après 3 journées sur un contrat de 2 saisons, affichage ordinateur et mobile,
+simulation longue 2 graines × 2 saisons sans erreur.
 
 ## v23 — centre « À faire » et chronique de carrière
 Nouveau `js/hub.js`.
