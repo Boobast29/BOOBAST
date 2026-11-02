@@ -1,4 +1,14 @@
-# État du projet — v22 (2 novembre 2026)
+# État du projet — v23 (2 novembre 2026)
+
+## v23 — centre « À faire » et chronique de carrière
+Nouveau `js/hub.js`.
+- Tableau de bord : encadré « Continuer va : … » (jouer tel match, simuler la semaine, décider d'abord, clore la saison) + liste
+  « À faire » triée par urgence et colorée : décisions obligatoires, négociations, offres reçues, fin de mercato, effectif non conforme,
+  déficit au-delà du seuil de sanction, entretiens, cadres en fin de contrat, titulaires blessés, messages non lus — un clic ouvre l'écran.
+- Bureau → Chronique : chaque saison racontée (classement, objectif, montée/descente, barrages, coupe, sacre européen, meilleur buteur,
+  plus gros achat et plus grosse vente, sanction, licenciement), frise colorée ; saisons antérieures reconstruites depuis l'historique.
+Vérifications (Chromium, ordinateur et mobile) : liste « À faire » correcte après une saison simulée et un déficit forcé (8 types d'alertes),
+chronique de fin de saison, simulation longue 2 graines × 2 saisons sans erreur.
 
 ## v22 — interface plus claire et plus jolie
 Nouveau `js/interface.js` + section « Interface v22 » de `style.css`.

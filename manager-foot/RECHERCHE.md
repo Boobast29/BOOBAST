@@ -120,6 +120,17 @@ Les règles du mercato viennent des textes officiels (règlement FIFA RSTP, règ
 Fait en v22 : menu repliable, palette « Aller à… » (Ctrl+K), barre d'onglets et tiroir sur mobile, notifications discrètes, fil d'Ariane,
 accueil réécrit. Idées de jeu notées dans PLAN.md.
 
+## Recherche n° 6 — moteurs, presse, expérience de jeu (v23)
+
+| Source | Licence | Idée / usage |
+|---|---|---|
+| [Lewandowskista/pitch-to-glory](https://github.com/Lewandowskista/pitch-to-glory) | aucune | **repris en idée (v23)** : liste « à faire » triée par urgence et bouton « Continuer » qui dit ce qu'il va faire ; **chronique de carrière** saison par saison ; traits cachés révélés avec le temps (piste) |
+| [zocram4cc/GameplayFootball](https://github.com/zocram4cc/GameplayFootball) (League-Soccer) | Apache-2.0 | moteur 3D, IA tactique (pressing par zones, contre-attaques), traits de joueurs, penalties : idées pour le moteur de match |
+| [noddy703/tacticmesh](https://github.com/noddy703/tacticmesh) | MIT | simulateur de match dans le navigateur, paquets d'équipes JSON : idée d'import/export de « paquets » de base |
+| [DWYCA-org/FMNarrative](https://github.com/DWYCA-org/FMNarrative) | MIT | conférences de presse contextuelles (questions selon la situation, ton) : piste pour enrichir la presse |
+| [manuelarte/footballpitchsvggenerator](https://github.com/manuelarte/footballpitchsvggenerator) | aucune | terrain SVG aux vraies dimensions : la vue 2D du jeu l'est déjà |
+| Prédiction de blessures (dépôts Apache-2.0 de modèles d'apprentissage) | Apache-2.0 | données non fournies ou synthétiques : non réutilisables pour calibrer |
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.
