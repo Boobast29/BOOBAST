@@ -1,4 +1,14 @@
-# État du projet — v27 (2 novembre 2026)
+# État du projet — v28 (2 novembre 2026)
+
+## v28 — accessibilité, infobulles, tendances statistiques
+`vendor/micromodal/`, `vendor/floating-ui/`, `vendor/simple-statistics/` (licences incluses) + `js/accessibilite.js`.
+- Fenêtres (Micromodal) : boîte avec identifiant unique à chaque ouverture (Micromodal mémorise par identifiant), role=dialog,
+  aria-modal, aria-labelledby, focus piégé, Échap ; les fenêtres bloquantes (sans bouton de fermeture) gardent leur comportement.
+- Infobulles (floating-ui) : les attributs title deviennent des infobulles positionnées (souris et clavier) ; aide sur les 9 attributs.
+- Tendances (simple-statistics) : régression de la forme (moyenne glissante sur 5 matchs), projection au rythme actuel et selon la
+  tendance, buts pour/contre et écart-type, efficacité buts/xG, 3 joueurs en progression et 3 en baisse (pente des notes).
+Vérifications (Chromium) : rôle de dialogue et focus dans la fenêtre après 40 Tab, Échap ferme, ouvertures successives sans erreur,
+infobulle d'attribut affichée, tendances calculées après 10 matchs, simulation longue sans erreur.
 
 ## v27 — tri des tableaux, chiffres animés, bilan PDF
 `vendor/tablesort/`, `vendor/countup/`, `vendor/jspdf/` (MIT, licences incluses) + `js/outils_ui.js`.

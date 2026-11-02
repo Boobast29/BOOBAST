@@ -180,6 +180,14 @@ qrcode-generator (MIT, partager une partie par QR code), i18next (MIT, traductio
 
 Repérées : simple-statistics (ISC, statistiques), Micromodal (MIT, fenêtres accessibles), floating-ui (MIT, infobulles) — pistes.
 
+## Bibliothèques hors football, 4e lot (v28)
+
+| Projet | Licence | Dans le jeu |
+|---|---|---|
+| [ghosh/Micromodal](https://github.com/ghosh/Micromodal) 0.7.0 | MIT | toutes les fenêtres deviennent de vrais dialogues : rôle annoncé, focus piégé (Tab), Échap, retour du focus |
+| [floating-ui/floating-ui](https://github.com/floating-ui/floating-ui) 1.8.0 | MIT | infobulles positionnées à la place des bulles natives ; explication de chaque attribut des joueurs au survol |
+| [simple-statistics/simple-statistics](https://github.com/simple-statistics/simple-statistics) 8.0.0 | ISC | Analyse → « Tendances de la saison » : forme (régression), projection de fin de saison, régularité, efficacité, joueurs en progression / en baisse |
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.

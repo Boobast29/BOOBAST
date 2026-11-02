@@ -14,6 +14,9 @@ Toutes copiées sans modification depuis le registre npm (versions publiées off
 | `jspdf/` | [parallax/jsPDF](https://github.com/parallax/jsPDF) | 4.2.1 | MIT | bilan de carrière en PDF |
 | `tablesort/` | [tristen/tablesort](https://github.com/tristen/tablesort) | 5.7.1 | MIT | tri des tableaux en cliquant sur les en-têtes |
 | `countup/` | [inorganik/countUp.js](https://github.com/inorganik/countUp.js) | 2.10.1 | MIT | chiffres animés (budget de l'en-tête) |
+| `simple-statistics/` | [simple-statistics/simple-statistics](https://github.com/simple-statistics/simple-statistics) | 8.0.0 | ISC | tendances (régression linéaire, moyennes, écarts) dans l'Analyse |
+| `floating-ui/` | [floating-ui/floating-ui](https://github.com/floating-ui/floating-ui) | core/dom 1.8.0, utils 0.2.12 | MIT | infobulles positionnées (attributs, notes, boutons) |
+| `micromodal/` | [ghosh/Micromodal](https://github.com/ghosh/Micromodal) | 0.7.0 | MIT (dépôt ; ISC indiqué dans le paquet npm) | fenêtres accessibles : focus piégé, Échap, rôle de dialogue |
 | `retroFootballManager/` | [FredericusRadicalus/retroFootballManager](https://github.com/FredericusRadicalus/retroFootballManager) | commit dans VERSION | MIT | logique des sponsors de tribunes (adaptée dans js/tribunes.js) |
 
 `modules.mjs` expose Fuse et ZzFX (modules ES) en variables globales ; il ne fonctionne qu'avec le serveur local (http),
