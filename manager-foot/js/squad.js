@@ -16,7 +16,7 @@ const LANG = {
   FRA: 'Francophones', BEL: 'Francophones', SUI: 'Francophones', CIV: 'Francophones', SEN: 'Francophones', CMR: 'Francophones', MLI: 'Francophones', MAR: 'Maghrébins', ALG: 'Maghrébins', TUN: 'Maghrébins',
   ESP: 'Hispanophones', ARG: 'Hispanophones', URU: 'Hispanophones', COL: 'Hispanophones', POR: 'Lusophones', BRA: 'Lusophones',
   ENG: 'Anglophones', USA: 'Anglophones', GHA: 'Anglophones', GER: 'Germaniques & nordiques', NED: 'Germaniques & nordiques', DEN: 'Germaniques & nordiques', NOR: 'Germaniques & nordiques',
-  ITA: 'Italiens', CRO: 'Balkans & Est', SRB: 'Balkans & Est', POL: 'Balkans & Est', JPN: 'Asiatiques'
+  ITA: 'Italiens', CRO: 'Balkans & Est', SRB: 'Balkans & Est', POL: 'Balkans & Est', CZE: 'Balkans & Est', GRE: 'Balkans & Est', JPN: 'Asiatiques', AUT: 'Germaniques & nordiques', SWE: 'Germaniques & nordiques', SCO: 'Anglophones', TUR: 'Turcs'
 };
 function langOf(p) { return LANG[p.nat] || 'Autres'; }
 

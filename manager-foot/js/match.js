@@ -21,7 +21,7 @@ const COMM2 = {
 
 class Match {
   constructor(G, f, homeTac, awayTac, opts = {}) {
-    this.G = G; this.f = f; this.cup = !!opts.cup;
+    this.G = G; this.f = f; this.cup = !!opts.cup; this.firstLeg = opts.firstLeg || null;
     this.minute = 0; this.done = false; this.et = false; this.extra = rint(1, 5);
     this.sides = [makeSide(G, f.h, homeTac), makeSide(G, f.a, awayTac)];
     this.score = [0, 0]; this.events = []; this.log = []; this.mom = 0; this.momLog = [];
@@ -225,13 +225,14 @@ class Match {
     this.xgTl.push([+this.stats[0].xg.toFixed(2), +this.stats[1].xg.toFixed(2)]);
     const m = this.minute;
     if (m === 45 && !this.et) { this.say(fmt(COMM.half[0], { SC: this.scoreStr() }), 'half'); this.kickoff(1); }
+    const level = () => this.firstLeg ? this.score[0] + this.firstLeg[0] === this.score[1] + this.firstLeg[1] : this.score[0] === this.score[1];
     if (!this.et && m >= 90 + this.extra) {
-      if (this.cup && this.score[0] === this.score[1]) {
+      if (this.cup && level()) {
         this.et = true; this.minute = 90; this.sides.forEach(s => s.subsLeft++);
         this.say(COMM.et[0], 'half'); this.kickoff(0);
       } else this.finish();
     } else if (this.et && m >= 120) {
-      if (this.score[0] === this.score[1]) this.shootout();
+      if (level()) this.shootout();
       this.finish();
     }
   }
@@ -647,6 +648,7 @@ class Match {
     this.penScore = sc;
   }
   winner() {
+    if (this.firstLeg) { const A = this.score[0] + this.firstLeg[0], B = this.score[1] + this.firstLeg[1]; if (A !== B) return A > B ? 0 : 1; if (this.penScore) return this.penScore[0] > this.penScore[1] ? 0 : 1; return this.done && !this.cup ? null : null; }
     if (this.score[0] !== this.score[1]) return this.score[0] > this.score[1] ? 0 : 1;
     if (this.penScore) return this.penScore[0] > this.penScore[1] ? 0 : 1;
     return null;

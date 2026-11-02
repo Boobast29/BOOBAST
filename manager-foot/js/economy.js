@@ -3,7 +3,7 @@
 //  (droits TV, prix des billets, salaires, sponsors, merchandising),
 //  budgets fixés par le président, dette, DNCG, sponsor maillot.
 // ============================================================
-const COUNTRY_ECO = { ENG: 1.7, ESP: 1.3, GER: 1.25, ITA: 1.15, FRA: 1, POR: .6, NED: .65, BEL: .5, CRO: .35, SRB: .3, SUI: .5, DEN: .45 };
+const COUNTRY_ECO = { ENG: 1.7, ESP: 1.3, GER: 1.25, ITA: 1.15, FRA: 1, POR: .6, NED: .65, BEL: .5, CRO: .35, SRB: .3, SUI: .5, DEN: .45, TUR: .55, AUT: .5, SCO: .45, CZE: .35, GRE: .35, POL: .3, SWE: .4, NOR: .4 };
 const SPONSOR_BRANDS = ['Volta Énergie', 'Kerys Télécom', 'Atlas Assurances', 'Nordis Banque', 'Solano Airlines', 'Brava Sport', 'Lumen Auto', 'Orka Mobile', 'Vertigo Boissons', 'Helios Solaire', 'Kaïros Immobilier', 'Mistral Logistique', 'Pixelia Jeux', 'Azur Croisières'];
 const TICKET_LEVELS = [{ m: .6, label: 'Très bas' }, { m: .8, label: 'Bas' }, { m: 1, label: 'Normal' }, { m: 1.25, label: 'Élevé' }, { m: 1.6, label: 'Très élevé' }];
 const INC_LABELS = { tv: 'Droits TV', gate: 'Billetterie', merch: 'Merchandising', sponsor: 'Sponsors', prize: 'Primes de compétitions', sales: 'Ventes de joueurs', other: 'Divers' };
@@ -78,12 +78,12 @@ function clubFormPts(c) { const r = c.recent || []; return r.length ? r.reduce((
 function ticketPrice(G, f) {
   const H = getClub(G, f.h), eco = clubEco(G, H);
   const m = H.id === G.clubId ? TICKET_LEVELS[G.ticket ?? 2].m : 1;
-  return eco.ticket * (.8 + H.rep / 250) * m * (f.comp === 'EUR' ? 1.5 : f.comp === 'CUP' ? .8 : 1);
+  return eco.ticket * (.8 + H.rep / 250) * m * (isEuroComp(f.comp) ? 1.5 : f.comp === 'CUP' ? .8 : f.comp === 'SUP' ? 1.1 : 1);
 }
 function attendanceFor(G, f, weather) {
   const H = getClub(G, f.h), A = getClub(G, f.a);
   const m = H.id === G.clubId ? TICKET_LEVELS[G.ticket ?? 2].m : 1;
-  let d = .42 + H.rep / 230 + A.rep / 600 + (clubFormPts(H) - .5) * .25 + (f.comp === 'CUP' ? .03 : f.comp === 'EUR' ? .12 : 0) + (weather?.att || 0);
+  let d = .42 + H.rep / 230 + A.rep / 600 + (clubFormPts(H) - .5) * .25 + (f.comp === 'CUP' ? .03 : isEuroComp(f.comp) ? .12 : f.comp === 'SUP' ? .08 : 0) + (weather?.att || 0);
   if (A.rep > H.rep + 10) d += .05; // grosse affiche
   d *= Math.pow(m, -.6);
   if (H.id === G.clubId) d *= .9 + (G.fans ?? 60) / 500;

@@ -141,7 +141,8 @@ const NATIONS = [
   ['NED', 'Pays-Bas', 3], ['CMR', 'Cameroun', 3], ['MLI', 'Mali', 3], ['CRO', 'Croatie', 2],
   ['SRB', 'Serbie', 2], ['ENG', 'Angleterre', 2], ['URU', 'Uruguay', 2], ['COL', 'Colombie', 2],
   ['DEN', 'Danemark', 2], ['SUI', 'Suisse', 2], ['NOR', 'Norvège', 1], ['JPN', 'Japon', 1],
-  ['TUN', 'Tunisie', 2], ['GHA', 'Ghana', 2], ['USA', 'États-Unis', 1], ['POL', 'Pologne', 1]
+  ['TUN', 'Tunisie', 2], ['GHA', 'Ghana', 2], ['USA', 'États-Unis', 1], ['POL', 'Pologne', 1],
+  ['AUT', 'Autriche', 1], ['SWE', 'Suède', 1], ['TUR', 'Turquie', 1], ['CZE', 'Tchéquie', 1], ['SCO', 'Écosse', 1], ['GRE', 'Grèce', 1]
 ];
 
 const NAMES = {
@@ -163,13 +164,15 @@ const NAMES = {
         l: ['Weber','Schulz','Hoffmann','Rossi','Bianchi','Colombo','De Vries','Van Dijkhuis','Bakker','Horvat','Kovačić','Petrović','Jovanović','Walker','Hughes','Fletcher','Nielsen','Larsen','Andersen','Meier','Keller','Peeters','Janssens','Nowak','Kowalski'] },
   LA: { f: ['Federico','Rodrigo','Juan','Camilo','Andrés','Sebastián','Luis','Darwin','Mauricio','Tyler','Christian'],
         l: ['Álvarez','Pereira','Rodríguez','Cuesta','Mosquera','Vargas','Suárez','Torres','Ramírez','Miller','Adams'] },
+  TR: { f: ['Emre','Burak','Arda','Kerem','Cengiz','Hakan','Ozan','Yusuf','Mert','Kaan'],
+        l: ['Yılmaz','Kaya','Demir','Şahin','Çelik','Aydın','Öztürk','Arslan','Doğan','Kılıç'] },
   JP: { f: ['Takumi','Kaoru','Daichi','Ritsu','Wataru','Ko'],
         l: ['Tanaka','Suzuki','Nakamura','Watanabe','Itō','Kubota'] }
 };
 const NAT_POOL = {
   FRA: ['FR','FR','FR','AF','MA'], ESP: ['ES'], POR: ['PT'], BRA: ['BR'], ARG: ['AR'], SEN: ['AF'], CIV: ['AF'],
   MAR: ['MA'], ALG: ['MA'], TUN: ['MA'], BEL: ['EU','FR'], GER: ['EU'], ITA: ['EU'], NED: ['EU'], CMR: ['AF'], MLI: ['AF'], GHA: ['AF'],
-  CRO: ['EU'], SRB: ['EU'], ENG: ['EU'], URU: ['LA'], COL: ['LA'], USA: ['LA'], DEN: ['EU'], SUI: ['EU','FR'], NOR: ['EU'], POL: ['EU'], JPN: ['JP']
+  CRO: ['EU'], SRB: ['EU'], ENG: ['EU'], URU: ['LA'], COL: ['LA'], USA: ['LA'], DEN: ['EU'], SUI: ['EU','FR'], NOR: ['EU'], POL: ['EU'], JPN: ['JP'], AUT: ['EU'], SWE: ['EU'], TUR: ['TR'], CZE: ['EU'], SCO: ['EU'], GRE: ['EU']
 };
 
 const SQUAD_TEMPLATE = ['GB','GB','GB','DC','DC','DC','DC','DG','DG','DD','DD','MDC','MDC','MC','MC','MC','MOC','MOC','AG','AG','AD','AD','BU','BU','BU'];

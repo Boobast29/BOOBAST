@@ -114,7 +114,7 @@ function prepareMatch(f) {
     validateLineup();
     closeModal();
     const ht = home ? G.tactics : oppTac, at = home ? oppTac : G.tactics;
-    const mt = new Match(G, f, ht, at, { cup: isKO(f), weather: LIVE_WX });
+    const mt = new Match(G, f, ht, at, { cup: isKO(f), weather: LIVE_WX, firstLeg: f.firstRes });
     mt.my = home ? 0 : 1;
     mt.sides[1 - mt.my].ai = true;
     if (G.pressMod === 'conf') mt.sides[mt.my].talk = 1.01;
@@ -392,7 +392,9 @@ function seasonEnd() {
         <h3>Champions</h3>
         ${S.leagues.map(l => `<p>🏆 ${esc(l.name)} : <b>${esc(l.champion)}</b></p>`).join('')}
         ${S.cupWinner ? `<p>🏆 ${esc(G.cupName)} : <b>${esc(S.cupWinner)}</b></p>` : ''}
-        ${S.euroWinner ? `<p>⭐ ${esc(G.euroName)} : <b>${esc(S.euroWinner)}</b></p>` : ''}
+        ${(S.euroWinners || []).map(x => `<p>⭐ ${esc(x.name)} : <b>${esc(x.club)}</b></p>`).join('')}
+        ${S.intl ? `<p>🌍 ${esc(S.intl.name)} ${S.intl.year} : <b>${esc(natName(S.intl.winner))}</b></p>` : ''}
+        ${S.ballon?.list?.[0] ? `<p>🌟 Ballon d'or : <b>${esc(S.ballon.list[0].name)}</b> (${esc(S.ballon.list[0].club || '')})</p>` : ''}
       </div>
       <div>
         <h3>Récompenses</h3>
@@ -438,7 +440,7 @@ function holiday(n) {
       Object.assign(G.tactics, autoLineup(G, G.clubId, G.tactics.formation, G.tactics));
       const home = f.h === G.clubId, opp = home ? f.a : f.h;
       const oppTac = aiTactics(G, opp, G.clubId);
-      const mt = new Match(G, f, home ? G.tactics : oppTac, home ? oppTac : G.tactics, { cup: isKO(f) });
+      const mt = new Match(G, f, home ? G.tactics : oppTac, home ? oppTac : G.tactics, { cup: isKO(f), firstLeg: f.firstRes });
       mt.my = home ? 0 : 1; mt.sides[0].ai = mt.sides[1].ai = true; mt.auto = true;
       mt.runToEnd(); applyMatch(G, mt, f); boardAfterMatch(G, f);
       const w = mt.winner();

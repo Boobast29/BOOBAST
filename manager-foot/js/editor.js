@@ -29,7 +29,7 @@ function vEditor(el, W, inGame) {
     <div class="row gap wrap mt">
       ${divs.map((d, i) => `<label>Nom division ${d} <input data-ln="${i}" data-div="${d}" value="${esc(W.leagueNames?.[i] || 'Division ' + d)}"></label>`).join('')}
       <label>Nom de la coupe <input id="cupN" value="${esc(W.cupName || 'Coupe Nationale')}"></label>
-      <label>Nom de la coupe d'Europe <input id="euroN" value="${esc(W.euroName || 'Coupe des Étoiles')}"></label>
+      ${Object.keys(COMP_NAMES_DEF).map(k => `<label>${{ C1: 'Coupe d\'Europe n°1', C2: 'Coupe d\'Europe n°2', C3: 'Coupe d\'Europe n°3', SUP: 'Supercoupe nationale', ESUP: 'Supercoupe d\'Europe', WC: 'Mondial des nations', EURO: 'Euro des nations' }[k]} <input data-cn="${k}" value="${esc(compNameOf(W, k))}"></label>`).join('')}
     </div>
     <details class="mt"><summary>💶 Économie des championnats</summary>
       <div class="form-grid mt">${divs.map(d => { const e = leagueEcoByDiv(W, d); return `<label>Div. ${d} — droits TV (M€/saison) <input data-eco="tv" data-div="${d}" type="number" value="${Math.round(e.tv / 1e6)}"></label><label>Div. ${d} — prix moyen du billet (€) <input data-eco="ticket" data-div="${d}" type="number" value="${Math.round(e.ticket)}"></label><label>Div. ${d} — niveau économique (salaires, sponsors : 0.1-2) <input data-eco="coef" data-div="${d}" type="number" step="0.05" value="${e.coef}"></label>`; }).join('')}</div>
@@ -92,7 +92,7 @@ function vEditor(el, W, inGame) {
     W.eco[k][i.dataset.eco] = i.dataset.eco === 'tv' ? v * 1e6 : v;
     persistWorld(W); toast('Économie mise à jour.');
   });
-  $('#euroN').onchange = e => { W.euroName = e.target.value.trim() || 'Coupe des Étoiles'; if (W === G && G.comps.EUR) G.comps.EUR.name = W.euroName; persistWorld(W); toast('Nom mis à jour.'); };
+  el.querySelectorAll('[data-cn]').forEach(i => i.onchange = () => { W.compNames ||= {}; W.compNames[i.dataset.cn] = i.value.trim() || COMP_NAMES_DEF[i.dataset.cn]; if (W === G && G.comps[i.dataset.cn]) G.comps[i.dataset.cn].name = W.compNames[i.dataset.cn]; persistWorld(W); toast('Nom mis à jour.'); });
   $('#cupN').onchange = e => { W.cupName = e.target.value.trim() || 'Coupe Nationale'; if (W === G) G.comps.CUP.name = W.cupName; persistWorld(W); toast('Nom mis à jour.'); };
   $('#edQ').oninput = e => { ED.q = e.target.value; clearTimeout(ED.t); ED.t = setTimeout(() => { rerender(); const i = $('#edQ'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 250); };
   $('#bulkPh').onclick = () => pickFile(async files => {

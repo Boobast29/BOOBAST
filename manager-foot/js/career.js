@@ -141,10 +141,10 @@ function careerAfterMatch(G, f, mt) {
   G.fans = clamp((G.fans ?? 60) + d + (60 - (G.fans ?? 60)) * .03, 0, 100);
 }
 function careerSeasonEnd(G, S) {
-  G.mgr.rep = clamp(G.mgr.rep + (S.met ? 4 : -3) + (S.rank === 1 ? 8 : 0) + (G.comps.CUP.winner === G.clubId ? 4 : 0) + (G.comps.EUR?.winner === G.clubId ? 10 : 0), 0, 100);
+  G.mgr.rep = clamp(G.mgr.rep + (S.met ? 4 : -3) + (S.rank === 1 ? 8 : 0) + (G.comps.CUP.winner === G.clubId ? 4 : 0) + (G.comps.C1?.winner === G.clubId ? 12 : 0) + (G.comps.C2?.winner === G.clubId ? 6 : 0) + (G.comps.C3?.winner === G.clubId ? 4 : 0), 0, 100);
   if (S.rank === 1) unlock(G, 'title');
   if (G.comps.CUP.winner === G.clubId) unlock(G, 'cup');
-  if (G.comps.EUR?.winner === G.clubId) unlock(G, 'euro');
+  if (G.comps.C1?.winner === G.clubId) unlock(G, 'euro');
   if (S.promoted.includes(myClub(G).name)) unlock(G, 'promo');
   const L = clubLeague(G, G.clubId);
   if (L && S.rank >= L.clubs.length - promoSpots(L) - 1 && S.met && !S.relegated.includes(myClub(G).name)) unlock(G, 'saver');

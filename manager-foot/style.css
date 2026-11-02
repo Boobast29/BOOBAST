@@ -426,3 +426,6 @@ td.stars { white-space: nowrap; }
 #nav button { padding: 7px 4px; }
 #nav button span { font-size: 18px; }
 #nav button em { font-size: 10.5px; }
+
+.bracket.vert { flex-direction: column; } .bracket.vert .bround { min-width: 0; } .bracket.vert .bround > .btie { display: inline-block; width: calc(50% - 6px); margin: 0 4px 6px 0; vertical-align: top; }
+ol li { margin: 3px 0; }

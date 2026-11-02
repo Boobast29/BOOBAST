@@ -164,7 +164,7 @@ function exportDatabase(W) {
 // ============================================================
 const NAV = [
   ['inbox', '🏠', 'Accueil'], ['squad', '👥', 'Effectif'], ['tactics', '📋', 'Tactique'], ['training', '🏋', 'Entraînement'], ['staff', '🧑‍💼', 'Staff'], ['medical', '🏥', 'Infirmerie'], ['dressing', '🤝', 'Vestiaire'], ['youth', '🌱', 'Formation'], ['analysis', '📈', 'Analyse'],
-  ['fixtures', '📅', 'Calendrier'], ['comps', '🏆', 'Compétitions'], ['transfers', '💱', 'Mercato'], ['finances', '💶', 'Finances'],
+  ['fixtures', '📅', 'Calendrier'], ['comps', '🏆', 'Compétitions'], ['intl', '🌍', 'International'], ['transfers', '💱', 'Mercato'], ['finances', '💶', 'Finances'],
   ['club', '🏟', 'Club'], ['editor', '✏', 'Éditeur'], ['options', '⚙', 'Options']
 ];
 
@@ -187,7 +187,7 @@ function myNextFixture() {
     const f = weekFixtures(G, w).find(f => f.h === G.clubId || f.a === G.clubId);
     if (f) return { f, w };
     if (e.t === 'C' && !G.comps.CUP.rounds[e.r] && G.comps.CUP.alive.includes(G.clubId) && !G.comps.CUP.winner) return { f: null, w, cupTbd: true };
-    if (e.t === 'E' && e.r >= 6 && G.comps.EUR && !G.comps.EUR.ko[e.r - 6] && G.comps.EUR.teams.includes(G.clubId) && !G.comps.EUR.winner) return { f: null, w, cupTbd: true };
+    if (e.t === 'E' && e.r >= 8 && inEuroAlive(G) && !weekFixtures(G, w).length) return { f: null, w, cupTbd: true };
   }
   return null;
 }
@@ -235,7 +235,7 @@ function show(v) {
   VIEW = v;
   $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   renderTop();
-  const fn = { inbox: vInbox, squad: vSquad, tactics: vTactics, training: vTraining, staff: vStaff, medical: vMedical, dressing: vDressing, youth: vYouth, analysis: vAnalysis, fixtures: vFixtures, comps: vComps, transfers: vTransfers, finances: vFinances, club: vClub, editor: el => vEditor(el, G, true), options: vOptions }[v] || vInbox;
+  const fn = { inbox: vInbox, squad: vSquad, tactics: vTactics, training: vTraining, staff: vStaff, medical: vMedical, dressing: vDressing, youth: vYouth, analysis: vAnalysis, fixtures: vFixtures, comps: vComps, intl: vIntl, transfers: vTransfers, finances: vFinances, club: vClub, editor: el => vEditor(el, G, true), options: vOptions }[v] || vInbox;
   const main = $('#main'); main.innerHTML = '';
   fn(main);
   main.scrollTop = 0;
@@ -337,7 +337,8 @@ function vInbox(el) {
 function fxKey(f) { return `${f.comp}|${f.h}|${f.a}`; }
 function findFx(key) {
   const [comp, h, a] = key.split('|');
-  const list = comp === 'CUP' ? G.comps.CUP.rounds.flatMap(r => r.ties) : comp === 'EUR' ? [...(G.comps.EUR?.groups || []).flatMap(g => g.fixtures.flat()), ...(G.comps.EUR?.ko || []).flatMap(k => k.ties)] : (G.comps[comp]?.fixtures.flat() || []);
+  const C = G.comps[comp];
+  const list = !C ? [] : C.type === 'cup' ? C.rounds.flatMap(r => r.ties) : C.type === 'euro' ? [...C.league.flat(), ...C.ko.flatMap(s => s ? s.ties.flatMap(t => [t.f1, t.f2]) : [])].filter(Boolean) : C.type === 'super' ? C.ties : C.fixtures.flat();
   return list.find(f => f.h === +h && f.a === +a);
 }
 function resultRow(f, opts = {}) {
@@ -347,7 +348,7 @@ function resultRow(f, opts = {}) {
     const w = fixtureWinner(f);
     cls = w === G.clubId ? 'win' : w == null ? 'draw' : 'loss';
   }
-  const sc = f.res ? `${f.res[0]} - ${f.res[1]}${f.pens ? `<small> (${f.pens[0]}-${f.pens[1]} tab)</small>` : f.et ? '<small> ap</small>' : ''}` : (opts.date || '-');
+  const sc = f.res ? `${f.res[0]} - ${f.res[1]}${f.firstRes ? `<small> (cumul ${f.res[0] + f.firstRes[0]}-${f.res[1] + f.firstRes[1]})</small>` : ''}${f.pens ? `<small> (${f.pens[0]}-${f.pens[1]} tab)</small>` : f.et ? '<small> ap</small>' : ''}` : (opts.date || '-');
   return `<tr class="${cls}" ${f.res ? `data-fx="${fxKey(f)}"` : ''}><td class="r">${esc(H.name)} ${crest(H, 18)}</td><td class="sc">${sc}</td><td>${crest(A, 18)} ${esc(A.name)}</td></tr>`;
 }
 function matchReport(key) {
@@ -468,6 +469,7 @@ function playerModal(pid, tab = 'profil') {
         <tr><td>Passes décisives</td><td>${p.stats.assists}</td></tr><tr><td>Note moyenne</td><td>${p.stats.apps ? (p.stats.rating / p.stats.apps).toFixed(2) : '-'}</td></tr>
         <tr><td>Homme du match</td><td>${p.stats.motm}</td></tr><tr><td>Cartons</td><td>🟨 ${p.stats.yel} · 🟥 ${p.stats.red}</td></tr>
         <tr><td>Minutes</td><td>${p.stats.min || 0}</td></tr>
+        <tr><td>Sélections (${esc(natName(p.nat))})</td><td>${p.caps || 0} · ${p.intlGoals || 0} but(s)${p.intlTitles ? ` · ${'🏆'.repeat(p.intlTitles)}` : ''}${p.ballons ? ` · 🌟×${p.ballons}` : ''}</td></tr>
         <tr><td>Tirs · xG</td><td>${p.stats.sh || 0} · ${(p.stats.xg || 0).toFixed(2)} (${p.stats.goals - (p.stats.xg || 0) >= 0 ? '+' : ''}${(p.stats.goals - (p.stats.xg || 0)).toFixed(1)})</td></tr>
         <tr><td>Passes réussies</td><td>${p.stats.pas ? Math.round(p.stats.pasOk / p.stats.pas * 100) + ' %' : '-'} (${p.stats.pas || 0})</td></tr>
         <tr><td>Passes clés · dribbles</td><td>${p.stats.kp || 0} · ${p.stats.dri || 0}</td></tr>
@@ -838,15 +840,16 @@ function vFixtures(el) {
   const rows = G.schedule.map((e, w) => ({ w, e, f: weekFixtures(G, w).find(f => f.h === G.clubId || f.a === G.clubId) }));
   const week = rows[FIX_WEEK];
   const fsAll = week.e.t === 'L' ? leagueComps(G).map(l => ({ name: l.name, fs: l.fixtures[week.e.r] || [] }))
-    : week.e.t === 'E' ? (week.e.r < 6 ? (G.comps.EUR?.groups || []).map(g => ({ name: `${G.comps.EUR.name} — Groupe ${g.name}`, fs: g.fixtures[week.e.r] || [] })) : [{ name: G.comps.EUR.name + ' — ' + weekLabel(G, week.w), fs: G.comps.EUR.ko[week.e.r - 6]?.ties || [] }])
+    : week.e.t === 'E' ? euroComps(G).map(C => ({ name: `${C.name} — ${weekLabel(G, week.w).replace('Europe · ', '')}`, fs: weekFixtures(G, week.w).filter(f => f.comp === C.id) }))
+    : week.e.t === 'S' ? [{ name: G.comps[week.e.r === 0 ? 'SUP' : 'ESUP']?.name || 'Supercoupe', fs: weekFixtures(G, week.w) }]
     : [{ name: G.comps.CUP.name + ' — ' + (G.comps.CUP.rounds[week.e.r]?.name || 'à venir'), fs: G.comps.CUP.rounds[week.e.r]?.ties || [] }];
   el.innerHTML = `<div class="grid2">
     <section class="card"><h2>📅 Mon calendrier</h2><div class="scroll"><table class="tbl">
       ${rows.map(({ w, e, f }) => {
-        if (!f) { if (e.t === 'E' && !G.comps.EUR?.teams.includes(G.clubId)) return ''; return `<tr class="muted ${w === G.week ? 'next' : ''}" data-w="${w}"><td>${esc(weekLabel(G, w))}</td><td>${fmtDate(dateOfWeek(G, w))}</td><td colspan="3">${e.t === 'C' ? (G.comps.CUP.rounds[e.r] ? 'Pas de match (éliminé/exempté)' : 'Coupe — tirage à venir') : e.t === 'E' ? 'Europe — pas de match' : '-'}</td></tr>`; }
+        if (!f) { if ((e.t === 'E' || e.t === 'S') && !(e.t === 'E' && euroComps(G).some(C => C.teams.includes(G.clubId)))) return ''; return `<tr class="muted ${w === G.week ? 'next' : ''}" data-w="${w}"><td>${esc(weekLabel(G, w))}</td><td>${fmtDate(dateOfWeek(G, w))}</td><td colspan="3">${e.t === 'C' ? (G.comps.CUP.rounds[e.r] ? 'Pas de match (éliminé/exempté)' : 'Coupe — tirage à venir') : e.t === 'E' ? 'Europe — pas de match' : '-'}</td></tr>`; }
         const home = f.h === G.clubId, o = getClub(G, home ? f.a : f.h);
         const w2 = fixtureWinner(f); const cls = f.res ? (w2 === G.clubId ? 'win' : w2 == null ? 'draw' : 'loss') : '';
-        return `<tr class="${cls} ${w === G.week ? 'next' : ''} ${e.t === 'C' ? 'cup' : e.t === 'E' ? 'euro' : ''}" data-w="${w}" ${f.res ? `data-fx="${fxKey(f)}"` : ''}><td>${esc(weekLabel(G, w))}</td><td>${fmtDate(dateOfWeek(G, w))}</td><td>${home ? 'Dom.' : 'Ext.'}</td><td>${crest(o, 20)} ${esc(o.name)}</td><td class="sc">${f.res ? (home ? f.res.join('-') : f.res.slice().reverse().join('-')) + (f.pens ? ' tab' : '') : ''}</td></tr>`;
+        return `<tr class="${cls} ${w === G.week ? 'next' : ''} ${e.t === 'C' ? 'cup' : e.t === 'E' || e.t === 'S' ? 'euro' : ''}" data-w="${w}" ${f.res ? `data-fx="${fxKey(f)}"` : ''}><td>${esc(weekLabel(G, w))}</td><td>${fmtDate(dateOfWeek(G, w))}</td><td>${home ? 'Dom.' : 'Ext.'}</td><td>${crest(o, 20)} ${esc(o.name)}</td><td class="sc">${f.res ? (home ? f.res.join('-') : f.res.slice().reverse().join('-')) + (f.pens ? ' tab' : '') : ''}</td></tr>`;
       }).join('')}
     </table></div></section>
     <section class="card"><h2>Semaine <select id="wsel">${G.schedule.map((_, w) => `<option value="${w}" ${w === FIX_WEEK ? 'selected' : ''}>${esc(weekLabel(G, w))}</option>`).join('')}</select></h2>
@@ -864,7 +867,7 @@ let COMP_TAB = null;
 function vComps(el) {
   if (!COMP_TAB || !G.comps[COMP_TAB]) COMP_TAB = clubLeague(G, G.clubId).id;
   const comp = G.comps[COMP_TAB];
-  const tabs = `<div class="tabs">${[...leagueComps(G), G.comps.CUP, ...(G.comps.EUR ? [G.comps.EUR] : [])].map(c => `<button data-c="${c.id}" class="${c.id === COMP_TAB ? 'on' : ''}">${esc(c.name)}</button>`).join('')}<button data-c="AW" class="${COMP_TAB === 'AW' ? 'on' : ''}">🏅 Récompenses</button></div>`;
+  const tabs = `<div class="tabs">${[...leagueComps(G), G.comps.CUP, ...euroComps(G)].map(c => `<button data-c="${c.id}" class="${c.id === COMP_TAB ? 'on' : ''}">${esc(c.name)}</button>`).join('')}<button data-c="AW" class="${COMP_TAB === 'AW' ? 'on' : ''}">🏅 Récompenses</button></div>`;
   el.innerHTML = `<section class="card">${tabs}</section><div id="compBody"></div>`;
   el.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { COMP_TAB = b.dataset.c; vComps(el); });
   const body = $('#compBody');
@@ -1233,6 +1236,41 @@ function vFinances(el) {
 }
 
 // ============================================================
+//  International
+// ============================================================
+let INTL_TAB = 'rank';
+function vIntl(el) {
+  const tabs = [['rank', '🌍 Sélections'], ['mine', '🎽 Mes internationaux'], ['tourn', '🏆 Tournois'], ['ballon', '🌟 Ballon d\'or']];
+  el.innerHTML = `<section class="card"><div class="tabs">${tabs.map(([k, l]) => `<button data-it="${k}" class="${INTL_TAB === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <p class="hint mt">Prochains grands tournois : ${compNameOf(G, 'EURO')} en ${G.season + 1 + ((4 - (G.season + 1) % 4) % 4 || 0)} · ${compNameOf(G, 'WC')} en ${(() => { let y = G.season + 1; while (y % 4 !== 2) y++; return y; })()} (simulés à la fin de la saison). Trêves internationales en cours de saison.</p></section><div id="itBody"></div>`;
+  el.querySelectorAll('[data-it]').forEach(b => b.onclick = () => { INTL_TAB = b.dataset.it; vIntl(el); });
+  const body = $('#itBody');
+  const plink = id => { const p = G.pmap[id]; return p ? `<a href="#" data-pid="${id}">${esc(p.name)}</a>` : '<span class="muted">?</span>'; };
+  if (INTL_TAB === 'rank') {
+    const rk = nationRanking(G);
+    body.innerHTML = `<section class="card"><h2>Classement des sélections</h2><table class="tbl compact"><tr><th>#</th><th>Nation</th><th>Force</th><th>Meilleurs joueurs</th><th>Dont chez toi</th></tr>
+      ${rk.map((r, i) => { const sq = nationSquad(G, r.code); const mine = sq.filter(p => p.club === G.clubId); return `<tr><td>${i + 1}</td><td class="nm">${natFlag(r.code)} ${esc(natName(r.code))}</td><td>${ovrBadge(r.pow)}</td><td><small>${sq.slice(0, 3).map(p => plink(p.id)).join(', ')}</small></td><td>${mine.length ? `<b class="pos">${mine.length}</b>` : ''}</td></tr>`; }).join('')}</table></section>`;
+  } else if (INTL_TAB === 'mine') {
+    const mine = clubPlayers(G, G.clubId).filter(p => !p.academy).sort((a, b) => (b.caps || 0) - (a.caps || 0));
+    body.innerHTML = `<section class="card"><h2>Mes internationaux</h2><table class="tbl compact"><tr><th>Joueur</th><th>Nation</th><th>Statut</th><th>Sélections</th><th>Buts</th><th>Titres</th></tr>
+      ${mine.map(p => { const sel = nationSquad(G, p.nat).includes(p); return `<tr data-pid="${p.id}"><td class="nm">${esc(p.name)}</td><td>${natFlag(p.nat)} ${esc(natName(p.nat))}</td><td>${sel ? '<span class="tag grn">Sélectionné</span>' : '<span class="muted">-</span>'}</td><td>${p.caps || 0}</td><td>${p.intlGoals || 0}</td><td>${p.intlTitles ? '🏆'.repeat(p.intlTitles) : ''}</td></tr>`; }).join('')}</table>
+      <p class="hint">Les sélectionnés reviennent de trêve avec un peu de fatigue (et parfois une blessure), mais le moral gonflé.</p></section>`;
+  } else if (INTL_TAB === 'tourn') {
+    const T = (G.intlHistory || [])[0];
+    if (!T) body.innerHTML = '<section class="card"><p class="muted">Aucun tournoi disputé pour l\'instant. Ils se jouent l\'été (fin de saison).</p></section>';
+    else body.innerHTML = `<section class="card"><h2>🏆 ${esc(T.name)} ${T.year} — vainqueur : ${natFlag(T.winner)} ${esc(natName(T.winner))}</h2>
+      ${T.scorer ? `<p>Meilleur buteur : ${plink(T.scorer.pid)} (${T.scorer.n} buts)</p>` : ''}
+      <div class="egroups">${T.groups.map(g => `<div class="card egroup"><h3>Groupe ${g.name}</h3><table class="tbl compact">${g.table.map((r, i) => `<tr class="${i < 2 ? 'z-el' : ''}"><td>${natFlag(r.code)} ${esc(natName(r.code))}</td><td>${r.gd > 0 ? '+' : ''}${r.gd}</td><td><b>${r.pts}</b></td></tr>`).join('')}</table></div>`).join('')}</div>
+      <div class="bracket">${T.rounds.map(r => `<div class="bround"><h3>${r.name}</h3>${r.matches.map(m => { const w = intlWinner(m); return `<div class="btie"><div class="${w === m.a ? 'bw' : 'bl'}">${natFlag(m.a)} <span>${esc(natName(m.a))}</span><b>${m.s[0]}</b></div><div class="${w === m.b ? 'bw' : 'bl'}">${natFlag(m.b)} <span>${esc(natName(m.b))}</span><b>${m.s[1]}</b></div>${m.pens ? `<small>tab ${m.pens[0]}-${m.pens[1]}</small>` : ''}</div>`; }).join('')}</div>`).join('')}</div>
+      ${(G.intlHistory || []).length > 1 ? `<h3>Palmarès</h3><p>${G.intlHistory.map(x => `${esc(x.name)} ${x.year} : <b>${esc(natName(x.winner))}</b>`).join(' · ')}</p>` : ''}</section>`;
+  } else {
+    body.innerHTML = `<section class="card"><h2>🌟 Ballon d'or</h2>${(G.ballon || []).map(b => `<h3>${b.season + 1}</h3><ol>${b.list.map((x, i) => `<li>${i === 0 ? '🌟 ' : ''}${plink(x.pid)} <small class="muted">${esc(x.club || '')} · ${esc(natName(x.nat))}</small></li>`).join('')}</ol>`).join('') || '<p class="muted">Décerné à la fin de chaque saison.</p>'}</section>`;
+  }
+  body.querySelectorAll('a[data-pid]').forEach(x => x.onclick = e => { e.preventDefault(); playerModal(+x.dataset.pid); });
+  body.querySelectorAll('tr[data-pid]').forEach(r => r.onclick = () => playerModal(+r.dataset.pid));
+}
+
+// ============================================================
 //  Centre de formation
 // ============================================================
 function vYouth(el) {
@@ -1494,13 +1532,20 @@ function vStaff(el) {
   });
 }
 
-function vEuro(body, E) {
-  const grp = g => { const t = tableOf(g.clubs, g.fixtures); return `<div class="card egroup"><h3>Groupe ${g.name}</h3><table class="tbl compact standings">${t.map((r, i) => { const c = getClub(G, r.id); return `<tr class="${i < 2 ? 'z-el' : ''} ${r.id === G.clubId ? 'me' : ''}" data-c="${c.id}"><td>${i + 1}</td><td class="nm">${crest(c, 18)} ${esc(c.name)} ${c.foreign ? `<small class="muted">${esc(c.country)}</small>` : ''}</td><td>${r.p}</td><td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td><b>${r.pts}</b></td></tr>`; }).join('')}</table></div>`; };
-  body.innerHTML = `<section class="card"><h2>⭐ ${esc(E.name)} ${E.winner ? `— vainqueur : ${crest(getClub(G, E.winner), 24)} ${esc(getClub(G, E.winner).name)}` : ''}</h2>
-    <p class="hint">16 clubs : les 4 premiers de ${esc(leagueComps(G)[0].name)} et 12 clubs étrangers. Les 2 premiers de chaque groupe vont en quarts. Primes : 3 M€ de participation, 2,5 M€ par victoire, jusqu'à 15 M€ pour le titre.</p>
-    <div class="egroups">${E.groups.map(grp).join('')}</div>
-    <h3>Phase finale</h3>
-    <div class="bracket">${['Quarts de finale', 'Demi-finales', 'Finale'].map((n, i) => { const r = E.ko[i]; return `<div class="bround"><h3>${n}</h3>${r ? r.ties.map(f => { const w = fixtureWinner(f); const line = id => `<div class="${w === id ? 'bw' : w ? 'bl' : ''} ${id === G.clubId ? 'me' : ''}">${crest(getClub(G, id), 16)} <span>${esc(getClub(G, id).short)}</span><b>${f.res ? f.res[id === f.h ? 0 : 1] : ''}</b></div>`; return `<div class="btie" ${f.res ? `data-fx="${fxKey(f)}"` : ''}>${line(f.h)}${line(f.a)}${f.pens ? `<small>tab ${f.pens[0]}-${f.pens[1]}</small>` : ''}</div>`; }).join('') : '<p class="muted">À venir</p>'}</div>`; }).join('')}</div>
+function vEuro(body, C) {
+  const t = euroTable(C), me = G.clubId;
+  const ES = G.comps.ESUP;
+  const tie = tt => {
+    const w = tieWinner(tt);
+    const line = id => `<div class="${w === id ? 'bw' : w ? 'bl' : ''} ${id === me ? 'me' : ''}">${crest(getClub(G, id), 16)} <span>${esc(getClub(G, id).short)}</span><b>${tt.f1.res ? [tt.f1, tt.f2].filter(f => f && f.res).reduce((s, f) => s + f.res[id === f.h ? 0 : 1], 0) : ''}</b></div>`;
+    const last = tt.f2 || tt.f1;
+    return `<div class="btie" ${tt.f1.res ? `data-fx="${fxKey(last.res ? last : tt.f1)}"` : ''}>${line(tt.b)}${line(tt.a)}${last.pens ? `<small>tab ${last.pens[0]}-${last.pens[1]}</small>` : tt.f2 ? '<small>aller-retour</small>' : ''}</div>`;
+  };
+  body.innerHTML = `<section class="card"><h2>⭐ ${esc(C.name)} ${C.winner ? `— vainqueur : ${crest(getClub(G, C.winner), 24)} ${esc(getClub(G, C.winner).name)}` : ''}</h2>
+    <p class="hint">36 clubs, phase de ligue en 8 matchs. 1er-8e : qualifiés pour les 8es · 9e-24e : barrages · 25e-36e : éliminés. Matchs à élimination aller-retour, finale sur terrain neutre.${ES && C.id === 'C1' && ES.winner ? ` · ${esc(ES.name)} : ${esc(getClub(G, ES.winner).name)}` : ''}</p>
+    <div class="grid2 wide-left"><div class="scroll"><table class="tbl standings compact"><thead><tr><th>#</th><th>Club</th><th>Pays</th><th>J</th><th>Diff</th><th>Pts</th></tr></thead>
+      <tbody>${t.map((r, i) => { const c = getClub(G, r.id); return `<tr class="${i < 8 ? 'z-cl' : i < 24 ? 'z-el' : 'z-rel'} ${r.id === me ? 'me' : ''}" data-c="${c.id}"><td>${i + 1}</td><td class="nm">${crest(c, 16)} ${esc(c.name)}</td><td><small>${c.foreign ? esc(c.country) : 'FRA'}</small></td><td>${r.p}</td><td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td><b>${r.pts}</b></td></tr>`; }).join('')}</tbody></table></div>
+    <div><h3>Phase finale</h3><div class="bracket vert">${KO_NAMES.map((n, i) => { const s = C.ko[i]; return `<div class="bround"><h3>${n}</h3>${s ? s.ties.map(tie).join('') : '<p class="muted">À venir</p>'}</div>`; }).join('')}</div></div></div>
   </section>`;
   body.querySelectorAll('tr[data-c]').forEach(r => r.onclick = () => viewClub(+r.dataset.c));
   body.querySelectorAll('[data-fx]').forEach(r => r.onclick = () => matchReport(r.dataset.fx));

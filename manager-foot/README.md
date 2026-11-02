@@ -16,7 +16,19 @@ Raccourcis : `Espace` = continuer · `1`…`9` = menus · `/` = recherche · `É
 ## Contenu
 
 - **2 divisions de 20 clubs** avec montées et descentes, plus une **coupe** à élimination directe (prolongations, tirs au but).
-- **Coupe d'Europe** : les 4 premiers du championnat et 12 clubs étrangers. Phase de groupes, puis quarts, demies et finale, avec de grosses primes.
+- **3 coupes d'Europe au format actuel** (36 clubs chacune) :
+  - phase de ligue en 8 matchs ;
+  - barrages (9e-24e), puis 8es, quarts et demies en aller-retour (cumul, prolongation, tirs au but), finale sur terrain neutre ;
+  - qualification : 4 premiers du championnat, 5e et vainqueur de la coupe, 6e ;
+  - grosses primes à chaque étape.
+- **Supercoupes** nationale et européenne en début de saison.
+- **109 clubs étrangers** répartis dans 19 pays, richesse selon le pays.
+- **Football international** :
+  - classement des sélections ;
+  - 3 trêves par saison (sélections, buts, fatigue, blessures) ;
+  - Mondial des nations (2030, 2034…) et Euro des nations (2028, 2032…), avec groupes, tableau final et meilleur buteur ;
+  - Ballon d'or chaque saison.
+- Noms des compétitions génériques par défaut, renommables dans l'éditeur.
 - **Staff** (adjoint, entraîneur technique, kiné, recruteur, formateur) et **infrastructures** (centre d'entraînement, académie, agrandissement du stade).
 - **Recrutement réaliste** : les joueurs que tu ne connais pas ont une note estimée (~) et un potentiel inconnu. Envoie ton recruteur pour obtenir un rapport.
 - **Prêts** de jeunes joueurs pour les faire progresser.

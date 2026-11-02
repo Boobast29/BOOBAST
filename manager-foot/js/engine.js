@@ -216,12 +216,10 @@ function applyMatch(G, mt, f) {
   for (const e of mt.events) if (e.type === 'inj' || e.type === 'knock') applyInjury(G, getPlayer(G, e.pid), e.inj);
   if (f.h === G.clubId || f.a === G.clubId) { squadAfterMatch(G, mt); learnFromMatch(G, mt.sides[f.h === G.clubId ? 0 : 1]); careerAfterMatch(G, f, mt); }
   const wnr = fixtureWinner(f);
-  if (f.grp) {
-    if (wnr) flow(G, getClub(G, wnr), 2.5e6, 'prize'); else { flow(G, getClub(G, f.h), .8e6, 'prize'); flow(G, getClub(G, f.a), .8e6, 'prize'); }
-  }
+  euroMatchPrize(G, f);
   [f.h, f.a].forEach(id => { const c = getClub(G, id); const pts = wnr === id ? 3 : wnr == null ? 1 : 0; c.recent = [...(c.recent || []), pts].slice(-5); });
   if (wnr === G.clubId && isLeague && G.sponsor?.winBonus) flow(G, myClub(G), G.sponsor.winBonus, 'sponsor');
-  if (f.a === G.clubId) flow(G, myClub(G), -(f.comp === 'EUR' ? 180000 : 25000) * clubEco(G, myClub(G)).coef, 'travel');
+  if (f.a === G.clubId) flow(G, myClub(G), -(isEuroComp(f.comp) ? 180000 : 25000) * clubEco(G, myClub(G)).coef, 'travel');
   const win = mt.winner();
   mt.sides.forEach((side, i) => {
     const won = win === i, lost = win === 1 - i;
@@ -237,9 +235,15 @@ function applyMatch(G, mt, f) {
   else flow(G, home, gate, 'gate');
 }
 
-function isKO(f) { return f.comp === 'CUP' || (f.comp === 'EUR' && !f.grp); }
+function isKO(f) { return f.comp === 'CUP' || !!f.ko; }
 function fixtureWinner(f) {
   if (!f.res) return null;
+  if (f.firstRes) {
+    const A = f.res[0] + f.firstRes[0], B = f.res[1] + f.firstRes[1];
+    if (A !== B) return A > B ? f.h : f.a;
+    if (f.pens) return f.pens[0] > f.pens[1] ? f.h : f.a;
+    return null;
+  }
   if (f.res[0] !== f.res[1]) return f.res[0] > f.res[1] ? f.h : f.a;
   if (f.pens) return f.pens[0] > f.pens[1] ? f.h : f.a;
   return null;
@@ -301,71 +305,19 @@ function setupSeason(G) {
   const R = Math.max(...leagueComps(G).map(l => l.fixtures.length));
   const mid = {};
   const addMid = (r, entry) => { r = clamp(r, 0, R - 1); while ((mid[r] || []).length >= 1 && r < R - 1) r++; (mid[r] ||= []).push(entry); };
+  setupEuropean(G);
+  const mid2 = {};
+  const addFirst = (r, entry) => { (mid2[r] ||= []).push(entry); };
+  if (G.comps.SUP) addFirst(0, { t: 'S', r: 0 });
+  if (G.comps.ESUP) addFirst(Math.min(1, R - 1), { t: 'S', r: 1 });
+  if (euroComps(G).length) euroSlots(R).forEach((x, i) => addFirst(x, { t: 'E', r: i }));
+  for (const k in mid) delete mid[k];
+  for (const k in mid2) mid[k] = mid2[k];
   for (let i = 0; i < nCup; i++) addMid(Math.round((i + 1) * R / (nCup + 1)) - 1, { t: 'C', r: i });
-  setupEuro(G);
-  if (G.comps.EUR) {
-    for (let i = 0; i < 6; i++) addMid(1 + i * 3, { t: 'E', r: i });
-    [.62, .76, .9].forEach((x, i) => addMid(Math.round(R * x), { t: 'E', r: 6 + i }));
-  }
   G.schedule = [];
-  for (let r = 0; r < R; r++) { G.schedule.push({ t: 'L', r }); for (const m of (mid[r] || []).sort((a, b) => a.t.localeCompare(b.t))) G.schedule.push(m); }
+  for (let r = 0; r < R; r++) { G.schedule.push({ t: 'L', r }); for (const m of (mid[r] || [])) G.schedule.push(m); }
   G.week = 0;
   drawCup(G);
-}
-
-const EURO_KO = ['Quarts de finale', 'Demi-finales', 'Finale'];
-function setupEuro(G) {
-  const foreign = G.clubs.filter(c => c.foreign);
-  const L1 = leagueComps(G)[0];
-  if (foreign.length < 4 || !L1) { delete G.comps.EUR; return; }
-  let dom = (G.euroQual || []).filter(id => { const c = getClub(G, id); return c && !c.foreign; });
-  if (dom.length < 4) dom = L1.clubs.slice().sort((a, b) => getClub(G, b).rep - getClub(G, a).rep).slice(0, 4);
-  const fr = foreign.map(c => ({ id: c.id, k: c.rep + rnd() * 14 })).sort((a, b) => b.k - a.k).slice(0, 12).map(x => x.id);
-  const teams = [...dom.slice(0, 4), ...fr];
-  const sorted = teams.slice().sort((a, b) => getClub(G, b).rep - getClub(G, a).rep);
-  const pots = [0, 1, 2, 3].map(i => shuffle(sorted.slice(i * 4, i * 4 + 4)));
-  const groups = 'ABCD'.split('').map((n, gi) => ({ name: n, clubs: pots.map(p => p[gi]).filter(x => x != null) }));
-  groups.forEach(g => { g.fixtures = makeFixtures(g.clubs, 'EUR').slice(0, 6); g.fixtures.flat().forEach(f => f.grp = g.name); });
-  const name = G.euroName || 'Coupe des Étoiles';
-  G.comps.EUR = { id: 'EUR', type: 'euro', name, groups, ko: [], winner: null, teams };
-  teams.forEach(id => flow(G, getClub(G, id), 3e6, 'prize'));
-  const g = groups.find(g => g.clubs.includes(G.clubId));
-  if (g) news(G, `${name} : tirage au sort ! Groupe ${g.name} avec ${g.clubs.filter(id => id !== G.clubId).map(id => getClub(G, id).name).join(', ')}. Prime de participation : 3 M€.`, 'cup');
-}
-
-function afterEuroRound(G, r) {
-  const E = G.comps.EUR; if (!E) return;
-  const me = G.clubId;
-  if (r === 5) {
-    const q = E.groups.map(g => tableOf(g.clubs, g.fixtures).map(x => x.id));
-    const pairs = [[q[0]?.[0], q[1]?.[1]], [q[1]?.[0], q[0]?.[1]], [q[2]?.[0], q[3]?.[1]], [q[3]?.[0], q[2]?.[1]]].filter(p => p[0] != null && p[1] != null);
-    E.ko.push({ name: EURO_KO[0], ties: pairs.map(([h, a]) => ({ h, a, res: null, comp: 'EUR' })) });
-    if (E.teams.includes(me)) {
-      const ok = pairs.flat().includes(me);
-      news(G, ok ? `${E.name} : qualifiés pour les quarts de finale !` : `${E.name} : éliminés en phase de groupes.`, ok ? 'trophy' : 'loss');
-      G.board.conf = clamp(G.board.conf + (ok ? 6 : -3), 0, 100);
-    }
-  } else if (r >= 6) {
-    const last = E.ko[E.ko.length - 1]; if (!last) return;
-    const winners = last.ties.map(fixtureWinner).filter(Boolean);
-    const prize = [5e6, 8e6, 15e6][E.ko.length - 1] || 0;
-    winners.forEach(id => flow(G, getClub(G, id), prize, 'prize'));
-    const mineTie = last.ties.find(t => t.h === me || t.a === me);
-    if (mineTie && fixtureWinner(mineTie) !== me) news(G, `${E.name} : élimination en ${last.name.toLowerCase()}.`, 'loss');
-    if (winners.length === 1) {
-      E.winner = winners[0];
-      const wc = getClub(G, E.winner);
-      wc.trophies = [...(wc.trophies || []), { season: G.season, name: E.name }];
-      wc.rep = clamp(wc.rep + 3, 30, 97);
-      news(G, `🏆 ${wc.name} remporte la ${E.name} !`, E.winner === me ? 'trophy' : 'info', E.winner !== me);
-      if (E.winner === me) G.board.conf = clamp(G.board.conf + 20, 0, 100);
-    } else {
-      const ties = [];
-      for (let i = 0; i + 1 < winners.length; i += 2) ties.push({ h: winners[i], a: winners[i + 1], res: null, comp: 'EUR' });
-      E.ko.push({ name: EURO_KO[E.ko.length] || 'Tour', ties });
-      if (winners.includes(me)) news(G, `${E.name} : qualifiés pour les ${EURO_KO[E.ko.length - 1].toLowerCase()} !`, 'trophy');
-    }
-  }
 }
 
 function drawCup(G) {
@@ -422,15 +374,17 @@ function weekFixtures(G, w = G.week) {
   const e = G.schedule[w];
   if (!e) return [];
   if (e.t === 'L') return leagueComps(G).flatMap(l => l.fixtures[e.r] || []);
-  if (e.t === 'E') { const E = G.comps.EUR; if (!E) return []; return e.r < 6 ? E.groups.flatMap(g => g.fixtures[e.r] || []) : (E.ko[e.r - 6]?.ties || []); }
+  if (e.t === 'E') return euroWeekFixtures(G, e.r);
+  if (e.t === 'S') return G.comps[e.r === 0 ? 'SUP' : 'ESUP']?.ties || [];
   return G.comps.CUP.rounds[e.r]?.ties || [];
 }
-function compName(G, f) { return f.comp === 'CUP' ? G.comps.CUP.name : f.comp === 'EUR' ? G.comps.EUR?.name : G.comps[f.comp]?.name; }
+function compName(G, f) { return G.comps[f.comp]?.name || ''; }
 function weekLabel(G, w = G.week) {
   const e = G.schedule?.[w];
   if (!e) return 'Fin de saison';
   if (e.t === 'L') return `J${e.r + 1}`;
-  if (e.t === 'E') return e.r < 6 ? `Europe J${e.r + 1}` : `Europe ${EURO_KO[e.r - 6]}`;
+  if (e.t === 'E') { const st = euroStage(e.r); return !st ? `Europe J${e.r + 1}` : st.s === 4 ? 'Europe · Finale' : `Europe · ${KO_NAMES[st.s]} (${st.leg ? 'retour' : 'aller'})`; }
+  if (e.t === 'S') return e.r === 0 ? 'Supercoupe' : 'Supercoupe d\'Europe';
   return G.comps.CUP.rounds[e.r]?.name || 'Coupe';
 }
 function dateOfWeek(G, w) {
@@ -760,8 +714,11 @@ function endSeason(G) {
   S.met = S.rank <= G.objective;
   S.cupWinner = G.comps.CUP.winner ? getClub(G, G.comps.CUP.winner).name : null;
   S.awards = seasonAwards(G);
-  S.euroWinner = G.comps.EUR?.winner ? getClub(G, G.comps.EUR.winner).name : null;
-  G.euroQual = standings(G, L[0].id).slice(0, 4).map(r => r.id);
+  S.euroWinners = euroComps(G).filter(C => C.winner).map(C => ({ name: C.name, club: getClub(G, C.winner).name }));
+  G.lastTable = standings(G, L[0].id).map(r => r.id);
+  G.lastWinners = { L1: G.lastTable[0], CUP: G.comps.CUP.winner, C1: G.comps.C1?.winner, C2: G.comps.C2?.winner };
+  S.intl = summerTournament(G);
+  S.ballon = ballonDor(G, S.intl);
   S.met = S.rank <= G.objective;
   seasonEndFinances(G, S, L);
   const relegatedTop = L.length > 1 ? standings(G, L[0].id).slice(-Math.min(promoSpots(L[0]), promoSpots(L[1]))).map(r => r.id) : [];
@@ -903,6 +860,7 @@ function normalizeWorld(W) {
     const fr = genForeignClubs(Math.max(...W.clubs.map(c => c.id)) + 1, Math.max(0, ...W.players.map(p => p.id)) + 1);
     W.clubs.push(...fr.clubs); W.players.push(...fr.players);
   }
+  ensureForeignPool(W);
   const hasDiv = W.clubs.some(c => c.div && !c.foreign);
   const byRep = W.clubs.slice().sort((a, b) => b.rep - a.rep);
   W.clubs.forEach(c => {
@@ -942,6 +900,12 @@ function migrateGame(G) {
     const fr = genForeignClubs(Math.max(...G.clubs.map(c => c.id)) + 1, Math.max(...G.players.map(p => p.id)) + 1);
     G.clubs.push(...fr.clubs); G.players.push(...fr.players);
   }
+  if (G.comps) { const before = G.clubs.length; ensureForeignPool(G); if (G.clubs.length !== before) reindex(G); }
+  if (G.comps?.EUR) {
+    delete G.comps.EUR;
+    G.schedule = G.schedule.filter((e, i) => e.t !== 'E' || i < G.week);
+    news(G, 'Les coupes d\'Europe passent au nouveau format (36 clubs) dès la saison prochaine.', 'info');
+  }
   if (G.board && G.comps && G.board.wageCap == null) { reindex(G); setBoardBudgets(G); }
   if (G.comps && !G.sponsor && !G.sponsorOffers) makeSponsorOffers(G);
   return G;
@@ -955,7 +919,7 @@ function newGame(db, clubId, managerName) {
     inbox: [], offers: [], history: [], shortlist: [], promises: [], awards: { monthly: [], seasons: [] },
     fin: emptyFin(),
     board: { conf: 60 }, training: { focus: 'equilibre', intensity: 1 }, talked: {}, euroName: db.euroName || 'Coupe des Étoiles',
-    eco: JSON.parse(JSON.stringify(db.eco || {})), wagesScaled: !!db.wagesScaled
+    eco: JSON.parse(JSON.stringify(db.eco || {})), wagesScaled: !!db.wagesScaled, compNames: { ...(db.compNames || {}) }
   };
   migrateGame(G);
   normalizeWorld(G);
@@ -978,7 +942,7 @@ function newGame(db, clubId, managerName) {
 
 // ---------- Simulation d'une semaine (hors match du joueur) ----------
 function simFixture(G, f) {
-  const m = new Match(G, f, aiTactics(G, f.h, f.a), aiTactics(G, f.a, f.h), { cup: isKO(f) });
+  const m = new Match(G, f, aiTactics(G, f.h, f.a), aiTactics(G, f.a, f.h), { cup: isKO(f), firstLeg: f.firstRes });
   m.sides[0].ai = m.sides[1].ai = true; m.auto = true;
   m.runToEnd(); applyMatch(G, m, f);
   return m;
@@ -987,9 +951,13 @@ function simFixture(G, f) {
 // Termine la semaine : simule les autres matchs et fait avancer le monde
 function completeWeek(G, skipFixture) {
   const e = G.schedule[G.week];
-  for (const f of weekFixtures(G)) if (f !== skipFixture && !f.res) simFixture(G, f);
+  for (const f of weekFixtures(G)) {
+    if (f === skipFixture || f.res) continue;
+    if (getClub(G, f.h).foreign && getClub(G, f.a).foreign) quickSimFixture(G, f); else simFixture(G, f);
+  }
   if (e.t === 'C') afterCupRound(G);
-  if (e.t === 'E') afterEuroRound(G, e.r);
+  if (e.t === 'E') afterEuroWeek(G, e.r);
+  if (e.t === 'S') afterSuperWeek(G, e.r === 0 ? 'SUP' : 'ESUP');
   const full = e.t === 'L';
   weeklyUpdate(G, full);
   if (full) { aiTransfers(G); aiOffers(G); aiMarketExtras(G); }
@@ -998,6 +966,7 @@ function completeWeek(G, skipFixture) {
   if (!full) return G.week > 10 && G.board.conf < 10 ? 'sacked' : null;
   const lr = leagueRoundAt(G), R = leagueRoundsTotal(G), mid = Math.floor(R / 2);
   if (lr % 4 === 0 && lr < R) monthlyAwards(G);
+  if ([9, 20, 30].map(x => Math.round(x * R / 38)).includes(lr)) intlBreak(G);
   pressHeadlines(G);
   if (lr === 6) news(G, 'Le mercato d\'été est fermé.', 'info');
   if (lr === mid) news(G, 'Le mercato d\'hiver ouvre pour 4 semaines !', 'info');
