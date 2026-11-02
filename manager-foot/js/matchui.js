@@ -86,6 +86,7 @@ function prepareMatch(f) {
       </div>
     </div>
     <div class="press"><h3>🎯 Plan de match</h3><div class="form-grid">
+      <label>Discours d'avant-match <select id="pmTalk">${PRE_TALKS.map(t => `<option value="${t.k}">${t.label}</option>`).join('')}</select></label>
       ${(G.tacPresets || []).some(Boolean) ? `<label>Tactique <select id="pmPreset"><option value="">Actuelle (${G.tactics.formation})</option>${G.tacPresets.map((pr, i) => pr ? `<option value="${i}">${esc(pr.name)} (${pr.formation})</option>` : '').join('')}</select></label>` : ''}
       ${[0, 1].map(k => `<label>Marquage individuel ${k + 1} <select class="pmMark"><option value="">— Aucun —</option>${oppTac.lineup.map(id => getPlayer(G, id)).filter(p => p && p.pos !== 'GB').sort((a, b) => playerOvr(b) - playerOvr(a)).map(p => `<option value="${p.id}">${esc(p.name)} (${p.pos} ${playerOvr(p)})</option>`).join('')}</select></label>`).join('')}
     </div><p class="hint">Un marquage individuel gêne le joueur ciblé (dribbles, passes reçues), au prix d'un peu de fatigue pour tes défenseurs.</p></div>
@@ -106,6 +107,10 @@ function prepareMatch(f) {
     const pi = $('#pmPreset')?.value;
     if (pi) applyPreset(G, G.tacPresets[+pi]);
     G.tactics.mark = [...new Set($$('.pmMark').map(s => +s.value).filter(Boolean))];
+    const talkK = $('#pmTalk')?.value;
+    const sMy = teamStrength(G, makeSide(G, G.clubId, G.tactics)), sOp = teamStrength(G, makeSide(G, opp.id, oppTac));
+    const diff = (sMy.def + sMy.mid + sMy.att) / 3 - (sOp.def + sOp.mid + sOp.att) / 3;
+    G.preTalk = talkK ? preTalkEffect(talkK, { diff, home }) : 0;
     validateLineup();
     closeModal();
     const ht = home ? G.tactics : oppTac, at = home ? oppTac : G.tactics;
@@ -113,6 +118,8 @@ function prepareMatch(f) {
     mt.my = home ? 0 : 1;
     mt.sides[1 - mt.my].ai = true;
     if (G.pressMod === 'conf') mt.sides[mt.my].talk = 1.01;
+    mt.sides[mt.my].talk = clamp((mt.sides[mt.my].talk || 1) + (G.preTalk || 0), .95, 1.06);
+    if (G.preTalk) mt.say(`Vestiaire : ${G.preTalk > .012 ? 'les joueurs entrent sur le terrain gonflés à bloc !' : G.preTalk > 0 ? 'discours bien reçu.' : 'le discours n\'a pas pris…'}`, 'info', mt.my);
     if (G.pressMod === 'prov') mt.sides[1 - mt.my].talk = 1.01;
     if (instant) { mt.auto = true; mt.sides[mt.my].ai = true; mt.runToEnd(); finishMatch(mt, f); }
     else liveMatch(mt, f);
@@ -361,6 +368,11 @@ function finishMatch(mt, f) {
   $$('#nav button').forEach(b => b.disabled = false);
   enterGame();
   afterWeek(r);
+  if (!$('#modal') && r !== 'sacked' && G.week < G.schedule.length && rnd() < .45) {
+    const res = w === my ? 'win' : w == null ? 'draw' : 'loss', Q = POST_PRESS[res];
+    modal(`<h2>🎤 Conférence de presse d'après-match</h2><p>« ${esc(Q.q)} »</p><div class="talk-opts">${Q.a.map(([t, k]) => `<button class="btn" data-pp="${k}">${esc(t)}</button>`).join('')}</div><p class="hint mt">Tes mots comptent pour le vestiaire, le président et les supporters.</p>`);
+    $$('[data-pp]').forEach(b => b.onclick = () => { const t = postPressEffect(G, b.dataset.pp); save(); closeModal(); toast(t); });
+  }
 }
 
 // ---------- Fin de saison / licenciement ----------

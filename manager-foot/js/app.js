@@ -163,7 +163,7 @@ function exportDatabase(W) {
 //  Jeu principal
 // ============================================================
 const NAV = [
-  ['inbox', '🏠', 'Accueil'], ['squad', '👥', 'Effectif'], ['tactics', '📋', 'Tactique'], ['training', '🏋', 'Entraînement'], ['staff', '🧑‍💼', 'Staff'], ['medical', '🏥', 'Infirmerie'], ['dressing', '🤝', 'Vestiaire'],
+  ['inbox', '🏠', 'Accueil'], ['squad', '👥', 'Effectif'], ['tactics', '📋', 'Tactique'], ['training', '🏋', 'Entraînement'], ['staff', '🧑‍💼', 'Staff'], ['medical', '🏥', 'Infirmerie'], ['dressing', '🤝', 'Vestiaire'], ['youth', '🌱', 'Formation'], ['analysis', '📈', 'Analyse'],
   ['fixtures', '📅', 'Calendrier'], ['comps', '🏆', 'Compétitions'], ['transfers', '💱', 'Mercato'], ['finances', '💶', 'Finances'],
   ['club', '🏟', 'Club'], ['editor', '✏', 'Éditeur'], ['options', '⚙', 'Options']
 ];
@@ -235,7 +235,7 @@ function show(v) {
   VIEW = v;
   $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   renderTop();
-  const fn = { inbox: vInbox, squad: vSquad, tactics: vTactics, training: vTraining, staff: vStaff, medical: vMedical, dressing: vDressing, fixtures: vFixtures, comps: vComps, transfers: vTransfers, finances: vFinances, club: vClub, editor: el => vEditor(el, G, true), options: vOptions }[v] || vInbox;
+  const fn = { inbox: vInbox, squad: vSquad, tactics: vTactics, training: vTraining, staff: vStaff, medical: vMedical, dressing: vDressing, youth: vYouth, analysis: vAnalysis, fixtures: vFixtures, comps: vComps, transfers: vTransfers, finances: vFinances, club: vClub, editor: el => vEditor(el, G, true), options: vOptions }[v] || vInbox;
   const main = $('#main'); main.innerHTML = '';
   fn(main);
   main.scrollTop = 0;
@@ -305,6 +305,7 @@ function vInbox(el) {
         <div><small>Confiance du président</small>${meter(G.board.conf)}</div>
         <div><small>Cohésion du groupe</small>${meter(myClub(G).coh ?? 60)}</div>
         <div><small>Moral moyen</small>${meter(avgMor)}</div>
+        <div><small>Supporters</small>${meter(G.fans ?? 60)}</div>
       </div>
     </section>
   </div>
@@ -377,7 +378,7 @@ const POS_ORDER = Object.keys(ROLES);
 function vSquad(el, clubId = G.clubId) {
   const mine = clubId === G.clubId;
   const club = getClub(G, clubId);
-  let list = clubPlayers(G, clubId);
+  let list = clubPlayers(G, clubId).filter(p => !p.academy);
   if (SQUAD_LINE) list = list.filter(p => ROLES[p.pos].line === SQUAD_LINE);
   const key = SQUAD_SORT.k, d = SQUAD_SORT.d;
   const val = p => ({ num: p.num || 99, pos: POS_ORDER.indexOf(p.pos) * 1000 - playerOvr(p), name: p.name, age: p.age, ovr: playerOvr(p), pot: p.pot, fit: p.fit, mor: p.morale, val: p.value, wage: p.wage, apps: p.stats.apps, goals: p.stats.goals, rat: p.stats.apps ? p.stats.rating / p.stats.apps : 0, con: p.contract })[key];
@@ -426,7 +427,7 @@ function playerModal(pid, tab = 'profil') {
   const best = Object.keys(ROLES).map(r => [r, playerRoleRating(p, r) * familiarity(p, r)]).sort((a, b) => b[1] - a[1]).slice(0, 4);
   const shortlisted = G.shortlist.includes(p.id);
   const form = (p.form || []).filter(x => x.s === G.season).map(x => x.r);
-  const tabs = `<div class="tabs">${[['profil', 'Profil'], ['stats', 'Statistiques'], ...(mine ? [['talk', 'Discuter']] : [])].map(([k, l]) => `<button data-t="${k}" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+  const tabs = `<div class="tabs">${[['profil', 'Profil'], ['stats', 'Statistiques'], ...(mine ? [['dev', 'Développement'], ['talk', 'Discuter']] : [])].map(([k, l]) => `<button data-t="${k}" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
   let body = '';
   if (tab === 'profil') {
     body = `<div class="grid2">
@@ -479,6 +480,21 @@ function playerModal(pid, tab = 'profil') {
       <table class="tbl compact"><tr><th>Saison</th><th>Club</th><th>MJ</th><th>Buts</th><th>PD</th><th>Moy.</th></tr>
       ${(p.hist || []).slice().reverse().map(h => `<tr><td>${h.season}/${String(h.season + 1).slice(2)}</td><td>${esc(h.club)}</td><td>${h.apps}</td><td>${h.goals}</td><td>${h.assists}</td><td>${h.avg}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">Pas encore d\'historique.</td></tr>'}</table>
     </div></div>`;
+  } else if (tab === 'dev') {
+    initPosFam(p); p.train ||= {};
+    const seniors = clubPlayers(G, G.clubId).filter(x => x.id !== p.id && x.age >= 27 && !x.academy).sort((a, b) => influence(G, b) - influence(G, a));
+    body = `<div class="grid2"><div>
+      <h3>Entraînement individuel</h3>
+      <label>Attribut à travailler <select id="dvAttr">${Object.entries(TRAIN_ATTRS).map(([k, l]) => `<option value="${k}" ${(p.train.attr || '') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label>Apprendre un nouveau poste <select id="dvLearn"><option value="">— Aucun —</option>${Object.keys(ROLES).filter(r => r !== p.pos && (r === 'GB') === (p.pos === 'GB')).map(r => `<option value="${r}" ${p.train.learn === r ? 'selected' : ''}>${r} — ${ROLES[r].label}</option>`).join('')}</select></label>
+      <label>Parrain (joueur expérimenté) <select id="dvMentor"><option value="">— Aucun —</option>${seniors.map(x => `<option value="${x.id}" ${p.mentor === x.id ? 'selected' : ''}>${esc(x.name)} (${x.age} ans, ${esc(x.pers)})</option>`).join('')}</select></label>
+      <p class="hint">Un parrain Professionnel, Leader ou Loyal peut transmettre sa personnalité à un jeune. L'apprentissage d'un poste avance aussi quand le joueur y est aligné en match.</p>
+      <h3>Progression cette saison</h3>
+      <p>${Object.keys(ATTRS).map(k => { const d = p.attrs[k] - (p.attrs0?.[k] ?? p.attrs[k]); return d ? `<span class="${d > 0 ? 'pos' : 'neg'}">${ATTRS[k]} ${d > 0 ? '+' : ''}${d}</span>` : ''; }).filter(Boolean).join(' · ') || '<span class="muted">Pas encore d\'évolution.</span>'}</p>
+      </div><div>
+      <h3>Polyvalence</h3>
+      ${Object.keys(ROLES).filter(r => (r === 'GB') === (p.pos === 'GB')).map(r => `<div class="attr"><span>${r}</span>${bar(posFamOf(p, r), 100, posFamOf(p, r) >= 90 ? '' : posFamOf(p, r) >= 60 ? 'a3' : 'low')}<b>${Math.round(posFamOf(p, r))}</b></div>`).join('')}
+      <p class="hint">≥ 90 : poste maîtrisé (aucun malus).</p></div></div>`;
   } else if (tab === 'talk') {
     const done = G.talked[p.id];
     const promised = G.promises.some(x => x.pid === p.id);
@@ -514,6 +530,9 @@ function playerModal(pid, tab = 'profil') {
   <div class="pm-body">${body}</div>
   <div class="row gap wrap mt">${actions}<div class="grow"></div><button class="btn" onclick="editPlayerModal(${p.id}, G, () => playerModal(${p.id}))" title="Modifier dans l'éditeur">✏ Éditer</button></div>`, 'wide');
   $$('#modal [data-t]').forEach(b => b.onclick = () => playerModal(pid, b.dataset.t));
+  $('#dvAttr')?.addEventListener('change', e => { p.train = { ...(p.train || {}), attr: e.target.value || null }; save(); toast('Programme individuel mis à jour.'); });
+  $('#dvLearn')?.addEventListener('change', e => { p.train = { ...(p.train || {}), learn: e.target.value || null, done: false }; save(); toast(e.target.value ? `${p.name} commence à apprendre le poste ${e.target.value}.` : 'Apprentissage arrêté.'); });
+  $('#dvMentor')?.addEventListener('change', e => { p.mentor = e.target.value ? +e.target.value : null; save(); toast(p.mentor ? `${getPlayer(G, p.mentor).name} prend ${p.name} sous son aile.` : 'Parrainage arrêté.'); });
   $('#pmStatus')?.addEventListener('change', e => { const m = setStatus(G, p, e.target.value); if (m) toast(m, m.includes('ravi') ? '' : 'err'); save(); playerModal(pid); });
   $('#pmRest')?.addEventListener('change', e => { p.rest = e.target.checked; if (p.rest) removeFromTactics(p.id); save(); toast(p.rest ? `${p.name} sera au repos au prochain match.` : `${p.name} est de nouveau disponible.`); });
   $('#pmRes')?.addEventListener('change', e => { p.reserve = e.target.checked; if (p.reserve) { removeFromTactics(p.id); if (STATUS_ORDER.indexOf(p.status) <= 2) { p.morale = clamp(p.morale - 10, 5, 100); p.trust = clamp((p.trust ?? 55) - 10, 0, 100); } } save(); toast(p.reserve ? `${p.name} rejoint l'équipe réserve.` : `${p.name} réintègre le groupe pro.`); });
@@ -608,7 +627,7 @@ function vTactics(el) {
   T.inst = { ...defaultInst(), ...(T.inst || {}) }; T.takers ||= {}; T.pos ||= {}; T.styles ||= {}; T.duties ||= {};
   G.tacPresets ||= [null, null, null];
   const nSlots = FORMATIONS[T.formation].length;
-  const squad = clubPlayers(G, G.clubId).sort((a, b) => POS_ORDER.indexOf(a.pos) - POS_ORDER.indexOf(b.pos) || playerOvr(b) - playerOvr(a));
+  const squad = clubPlayers(G, G.clubId).filter(p => !p.academy).sort((a, b) => POS_ORDER.indexOf(a.pos) - POS_ORDER.indexOf(b.pos) || playerOvr(b) - playerOvr(a));
   const side = makeSide(G, G.clubId, T);
   const S = teamStrength(G, side);
   const fam = tacFam(G, T.formation);
@@ -925,7 +944,7 @@ let TF = { q: '', pos: '', maxv: '', maxage: '', minovr: '', free: false };
 let TR_TAB = 'search';
 function vTransfers(el) {
   const club = myClub(G);
-  const tabs = [['search', '🔎 Recherche'], ['shortlist', `👁 Suivi (${G.shortlist.length})`], ['scout', `🔎 Recrutement (${G.scouting.length})`], ['offers', `📩 Offres reçues (${G.offers.length})`], ['selling', '🏷 Mes joueurs en vente'], ['history', '📜 Historique']];
+  const tabs = [['search', '🔎 Recherche'], ['shortlist', `👁 Suivi (${G.shortlist.length})`], ['scout', `🔎 Recrutement (${G.scouting.length + (G.missions || []).filter(m => m.left > 0).length})`], ['offers', `📩 Offres reçues (${G.offers.length})`], ['selling', '🏷 Mes joueurs en vente'], ['history', '📜 Historique']];
   el.innerHTML = `<section class="card">
     <div class="row gap wrap"><h2 class="grow">💱 Mercato ${windowOpen(G) ? '<span class="tag grn">Ouvert</span>' : '<span class="tag red">Fermé — agents libres uniquement</span>'}</h2>
     <span>Budget : <b>${money(club.budget)}</b> · Effectif : ${clubPlayers(G, G.clubId).length}/32</span></div>
@@ -968,9 +987,25 @@ function vTransfers(el) {
       <div><h3>Plus gros transferts de la saison</h3><table class="tbl compact">${top.map(row).join('') || '<tr><td class="muted">Aucun.</td></tr>'}</table>
       <h3>Engagements financiers</h3><p>À payer (échéancier) : <b class="neg">${money(payablesOwed(G))}</b> · À recevoir : <b class="pos">${money(receivablesDue(G))}</b></p></div></div>`;
   } else if (TR_TAB === 'scout') {
-    body.innerHTML = `<p>Recruteur : <b>niveau ${G.staff.scout}/5</b>. Un rapport prend ${Math.max(1, 4 - Math.floor(G.staff.scout / 2))} semaine(s). Les joueurs non supervisés affichent une note <b>estimée (~)</b> et un potentiel inconnu.</p>
+    const ms = G.missions || [];
+    body.innerHTML = `<h3>🧭 Missions de recrutement (${ms.filter(m => m.left > 0).length}/${maxMissions(G)})</h3>
+      <div class="row gap wrap filters">
+        <select id="msPos"><option value="">Tous postes</option>${Object.keys(ROLES).map(r => `<option value="${r}">${r} — ${ROLES[r].label}</option>`).join('')}</select>
+        <select id="msAge">${[19, 21, 23, 26, 30].map(v => `<option value="${v}" ${v === 23 ? 'selected' : ''}>≤ ${v} ans</option>`).join('')}</select>
+        <select id="msPot">${[60, 70, 75, 80, 85].map(v => `<option value="${v}" ${v === 75 ? 'selected' : ''}>Potentiel ≥ ${v}</option>`).join('')}</select>
+        <select id="msReg">${Object.entries(REGIONS).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select>
+        <button class="btn primary" id="msGo">Lancer la mission</button>
+      </div>
+      ${ms.length ? `<table class="tbl compact">${ms.slice().reverse().slice(0, 8).map(m => `<tr><td>${m.pos || 'Tous'} · ≤ ${m.maxAge} ans · pot ≥ ${m.minPot}</td><td>${esc(REGIONS[m.region])}</td><td>${m.left > 0 ? `<span class="tag yel">${m.left} sem.</span>` : `<span class="tag grn">${m.found.length} trouvé(s)</span>`}</td><td>${m.found.map(id => { const p = getPlayer(G, id); return p ? `<a href="#" data-pid="${id}">${esc(p.name)}</a> (${p.age})` : ''; }).join(', ')}</td></tr>`).join('')}</table>` : '<p class="muted">Aucune mission. Les missions « Monde » peuvent dénicher des pépites inconnues.</p>'}
+      <p>Recruteur : <b>niveau ${G.staff.scout}/5</b>. Un rapport individuel prend ${Math.max(1, 4 - Math.floor(G.staff.scout / 2))} semaine(s). Les joueurs non supervisés affichent une note <b>estimée (~)</b> et un potentiel inconnu.</p>
       <h3>En cours</h3>${table(G.scouting.map(s => getPlayer(G, s.pid)).filter(Boolean))}
       <h3>Joueurs connus (${G.known.length})</h3>${table(G.known.map(id => getPlayer(G, id)).filter(p => p && p.club !== G.clubId).slice(-40).reverse())}`;
+    $('#msGo').onclick = () => {
+      if ((G.missions || []).filter(m => m.left > 0).length >= maxMissions(G)) return toast('Tous tes recruteurs sont occupés (améliore le recruteur dans Staff).', 'err');
+      startMission(G, { pos: $('#msPos').value || null, maxAge: +$('#msAge').value, minPot: +$('#msPot').value, region: $('#msReg').value });
+      save(); toast('Mission lancée !'); vTransfers(el);
+    };
+    body.querySelectorAll('a[data-pid]').forEach(x => x.onclick = e => { e.preventDefault(); playerModal(+x.dataset.pid); });
   } else if (TR_TAB === 'shortlist') {
     body.innerHTML = table(G.shortlist.map(id => getPlayer(G, id)).filter(p => p && p.club !== G.clubId));
   } else if (TR_TAB === 'offers') {
@@ -1013,6 +1048,7 @@ function acceptOffer(oid) {
   removeFromTactics(p.id);
   G.offers = G.offers.filter(x => x.pid !== p.id);
   news(G, `${p.name} est transféré à ${buyer.name} pour ${money(o.fee)}.`, 'transfer');
+  if (o.fee >= 30e6) unlock(G, 'bigSale');
   save(); toast(`${p.name} vendu ${money(o.fee)} !`); refresh();
 }
 function offerModal(pid) {
@@ -1083,7 +1119,7 @@ function offerModal(pid) {
         return render(`❌ Offre rejetée. ${esc(seller.name)} veut au moins ~<b>${money(roundMoney(ask * .9))}</b> (valeur perçue de ton offre : ${money(roundMoney(v))}).`);
       }
       deal.wage = +$('#wg').value; deal.yrs = +$('#yrs').value; deal.status = $('#stt').value; deal.clause = +$('#cls').value || 0;
-      const repGap = playerOvr(p) - me.rep;
+      const repGap = playerOvr(p) - me.rep - (G.mgr.rep - 50) * .15;
       if (repGap > 18 && rnd() < .7) { closeModal(); return toast(`${p.name} ne veut pas rejoindre un club de ce niveau.`, 'err'); }
       const sGap = STATUS_ORDER.indexOf(deal.status) - STATUS_ORDER.indexOf(wantStatus);
       let need = baseWage * .9 * (1 + Math.max(0, sGap) * .12) * (deal.clause ? .95 : 1) * (deal.clause && deal.clause < p.value * 1.2 ? .93 : 1);
@@ -1197,6 +1233,82 @@ function vFinances(el) {
 }
 
 // ============================================================
+//  Centre de formation
+// ============================================================
+function vYouth(el) {
+  const ac = G.players.filter(p => p.academy && p.club === G.clubId).sort((a, b) => youthPotEstimate(G, b) - youthPotEstimate(G, a));
+  const young = clubPlayers(G, G.clubId).filter(p => !p.academy && p.age <= 21);
+  el.innerHTML = `
+  <div class="kpis card"><div><small>Joueurs à l'académie</small><b>${ac.length}</b></div><div><small>Formateur</small><b class="stars">${'★'.repeat(G.staff.youth)}${'☆'.repeat(5 - G.staff.youth)}</b></div><div><small>Académie</small><b class="stars">${'★'.repeat(G.fac.youth || 2)}${'☆'.repeat(5 - (G.fac.youth || 2))}</b></div>
+    <div><small>Recrutement des jeunes</small><b><select id="yFocus"><option value="">Tous postes</option>${Object.keys(ROLES).map(r => `<option value="${r}" ${G.youthFocus === r ? 'selected' : ''}>${ROLES[r].label}</option>`).join('')}</select></b></div></div>
+  <div class="grid2">
+    <section class="card"><h2>🌱 Académie</h2>
+      ${ac.length ? `<table class="tbl wrap">${ac.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 30)}</td><td class="nm">${esc(p.name)}${p.gem ? ' 💎' : ''}<br><small class="muted">${p.pos} · ${p.age} ans · ${esc(p.pers)} · promo ${p.intake || '-'}</small></td><td>${ovrBadge(playerOvr(p))}</td><td title="Estimation du formateur">${stars(youthPotEstimate(G, p))}</td>
+        <td class="row gap"><button class="btn sm primary" data-prom="${p.id}">Promouvoir</button><button class="btn sm danger" data-rel="${p.id}">Libérer</button></td></tr>`).join('')}</table>` : '<p class="muted">Académie vide. Une nouvelle promotion arrive chaque été.</p>'}
+      <p class="hint">Le potentiel affiché est une estimation de ton formateur (plus il est bon, plus elle est précise). 💎 = pépite repérée. À 20 ans, un joueur non promu quitte l'académie.</p>
+    </section>
+    <section class="card"><h2>⭐ Jeunes de l'équipe première</h2>
+      ${young.length ? `<table class="tbl compact">${young.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 26)}</td><td class="nm">${esc(p.name)}</td><td>${p.pos}</td><td>${p.age}</td><td>${ovrBadge(playerOvr(p))}</td><td>${stars(p.pot)}</td><td>${p.stats.apps} MJ</td><td>${p.mentor ? '🧑‍🏫' : ''}${p.loan ? '🔁' : ''}</td></tr>`).join('')}</table>` : '<p class="muted">Aucun.</p>'}
+      <p class="hint">Fais-les jouer, donne-leur un parrain (fiche joueur › Développement) ou prête-les pour accélérer leur progression.</p>
+    </section>
+  </div>`;
+  $('#yFocus').onchange = e => { G.youthFocus = e.target.value || null; save(); toast('Les recruteurs jeunes ciblent ce poste.'); };
+  el.querySelectorAll('tr[data-pid]').forEach(r => r.onclick = e => { if (e.target.closest('button')) return; playerModal(+r.dataset.pid); });
+  el.querySelectorAll('[data-prom]').forEach(b => b.onclick = () => { promoteYouth(G, getPlayer(G, +b.dataset.prom)); save(); vYouth(el); });
+  el.querySelectorAll('[data-rel]').forEach(b => b.onclick = () => { const p = getPlayer(G, +b.dataset.rel); p.academy = false; p.club = null; news(G, `${p.name} est libéré de l'académie.`, 'youth'); save(); vYouth(el); });
+}
+
+// ============================================================
+//  Analyse
+// ============================================================
+let CMP = [null, null];
+function vAnalysis(el) {
+  const myF = [];
+  for (let w = 0; w < G.week; w++) { const f = weekFixtures(G, w).find(x => (x.h === G.clubId || x.a === G.clubId) && x.res); if (f) myF.push(f); }
+  const side = f => f.h === G.clubId ? 0 : 1;
+  const xgF = myF.filter(f => f.xg).map(f => f.xg[side(f)]), xgA = myF.filter(f => f.xg).map(f => f.xg[1 - side(f)]);
+  const gf = myF.map(f => f.res[side(f)]), ga = myF.map(f => f.res[1 - side(f)]);
+  const poss = myF.filter(f => f.report).map(f => f.report.poss[side(f)]);
+  const avg = a => a.length ? (a.reduce((s, x) => s + x, 0) / a.length) : 0;
+  const roll = (a, n = 5) => a.map((_, i) => avg(a.slice(Math.max(0, i - n + 1), i + 1)));
+  const L = clubLeague(G, G.clubId);
+  const tbl = L.clubs.map(id => { let xf = 0, xa = 0, n = 0; for (const r of G.comps[L.id].fixtures) for (const f of r) if (f.res && f.xg && (f.h === id || f.a === id)) { const s = f.h === id ? 0 : 1; xf += f.xg[s]; xa += f.xg[1 - s]; n++; } const st = standings(G, L.id).find(x => x.id === id); return { id, xf, xa, n, gf: st.gf, ga: st.ga, pts: st.pts }; }).sort((a, b) => (b.xf - b.xa) - (a.xf - a.xa));
+  const squad = clubPlayers(G, G.clubId).filter(p => !p.academy);
+  CMP[0] ??= squad[0]?.id; CMP[1] ??= squad[1]?.id;
+  const radar = () => {
+    const ps = CMP.map(id => getPlayer(G, id)).filter(Boolean);
+    const keys = Object.keys(ATTRS).filter(k => k !== 'gar' || ps.some(p => p.pos === 'GB'));
+    const R = 90, cx = 120, cy = 110, n = keys.length;
+    const pt = (i, v) => { const a = -Math.PI / 2 + i / n * Math.PI * 2; return [cx + Math.cos(a) * R * v / 20, cy + Math.sin(a) * R * v / 20]; };
+    const grid = [5, 10, 15, 20].map(v => `<polygon points="${keys.map((_, i) => pt(i, v).join(',')).join(' ')}" fill="none" stroke="#33404f" stroke-width="1"/>`).join('');
+    const cols = ['#2fd27a', '#4aa3ff'];
+    const polys = ps.map((p, j) => `<polygon points="${keys.map((k, i) => pt(i, knows(G, p) ? p.attrs[k] : clamp(p.attrs[k], 1, 20)).join(',')).join(' ')}" fill="${cols[j]}" fill-opacity=".22" stroke="${cols[j]}" stroke-width="2"/>`).join('');
+    const labels = keys.map((k, i) => { const [x, y] = pt(i, 23.5); return `<text x="${x}" y="${y}" font-size="9" fill="#8a99ab" text-anchor="middle" dominant-baseline="middle">${ATTRS[k]}</text>`; }).join('');
+    return `<svg viewBox="0 0 240 225" class="radar">${grid}${polys}${labels}</svg>`;
+  };
+  const pick2 = i => `<select data-cmp="${i}">${G.players.filter(p => p.club != null && (p.club === G.clubId || knows(G, p))).sort((a, b) => playerOvr(b) - playerOvr(a)).slice(0, 300).map(p => `<option value="${p.id}" ${CMP[i] === p.id ? 'selected' : ''}>${esc(p.name)} (${p.pos}, ${esc(getClub(G, p.club)?.short || '')})</option>`).join('')}</select>`;
+  el.innerHTML = `
+  <div class="kpis card"><div><small>Matchs</small><b>${myF.length}</b></div><div><small>Buts / match</small><b>${avg(gf).toFixed(2)}</b><em>xG ${avg(xgF).toFixed(2)}</em></div><div><small>Encaissés / match</small><b>${avg(ga).toFixed(2)}</b><em>xG contre ${avg(xgA).toFixed(2)}</em></div><div><small>Possession moyenne</small><b>${poss.length ? Math.round(avg(poss)) : '-'} %</b></div>
+    <div><small>Efficacité</small><b class="${avg(gf) - avg(xgF) >= 0 ? 'pos' : 'neg'}">${(avg(gf) - avg(xgF) >= 0 ? '+' : '') + (avg(gf) - avg(xgF)).toFixed(2)}</b><em>buts − xG / match</em></div></div>
+  <div class="grid2">
+    <section class="card"><h2>📈 Tendance (moyenne sur 5 matchs)</h2>
+      ${xgF.length > 1 ? `<svg viewBox="0 0 400 120" class="trend"><polyline fill="none" stroke="#2fd27a" stroke-width="2.5" points="${roll(xgF).map((v, i, a) => `${i / Math.max(1, a.length - 1) * 400},${115 - v / 3 * 110}`).join(' ')}"/><polyline fill="none" stroke="#ef4f5a" stroke-width="2.5" points="${roll(xgA).map((v, i, a) => `${i / Math.max(1, a.length - 1) * 400},${115 - v / 3 * 110}`).join(' ')}"/></svg>
+      <p class="legend"><span><i style="background:#2fd27a"></i>xG pour</span><span><i style="background:#ef4f5a"></i>xG contre</span></p>` : '<p class="muted">Joue quelques matchs pour voir les tendances.</p>'}
+      <h3>Classement xG (${esc(L.name)})</h3>
+      <table class="tbl compact"><tr><th>Club</th><th>xG pour</th><th>xG contre</th><th>Diff.</th><th title="Buts marqués − xG">Réal.</th><th>Pts</th></tr>${tbl.map(r => `<tr class="${r.id === G.clubId ? 'me' : ''}"><td class="nm">${crest(getClub(G, r.id), 16)} ${esc(getClub(G, r.id).short)}</td><td>${r.xf.toFixed(1)}</td><td>${r.xa.toFixed(1)}</td><td class="${r.xf - r.xa >= 0 ? 'pos' : 'neg'}">${(r.xf - r.xa).toFixed(1)}</td><td>${(r.gf - r.xf >= 0 ? '+' : '') + (r.gf - r.xf).toFixed(1)}</td><td>${r.pts}</td></tr>`).join('')}</table>
+      <p class="hint">Un club qui marque bien plus que ses xG surperforme (chance ou finisseurs d'élite) : attention au retour sur terre.</p>
+    </section>
+    <section class="card"><h2>🆚 Comparer deux joueurs</h2>
+      <div class="row gap wrap">${pick2(0)}${pick2(1)}</div>
+      ${radar()}
+      <table class="tbl compact">${(() => { const [a, b] = CMP.map(id => getPlayer(G, id)); if (!a || !b) return ''; const r = (l, x, y) => `<tr><td>${l}</td><td class="pos">${x}</td><td style="color:#4aa3ff">${y}</td></tr>`; const s = p => p.stats; return r('Note', knows(G, a) ? playerOvr(a) : '~' + estOvr(G, a), knows(G, b) ? playerOvr(b) : '~' + estOvr(G, b)) + r('Âge', a.age, b.age) + r('Valeur', money(a.value), money(b.value)) + r('Matchs', s(a).apps, s(b).apps) + r('Buts / xG', `${s(a).goals} / ${(s(a).xg || 0).toFixed(1)}`, `${s(b).goals} / ${(s(b).xg || 0).toFixed(1)}`) + r('Passes réussies', s(a).pas ? Math.round(s(a).pasOk / s(a).pas * 100) + ' %' : '-', s(b).pas ? Math.round(s(b).pasOk / s(b).pas * 100) + ' %' : '-') + r('Note moyenne', s(a).apps ? (s(a).rating / s(a).apps).toFixed(2) : '-', s(b).apps ? (s(b).rating / s(b).apps).toFixed(2) : '-'); })()}</table>
+      <p class="hint">Seuls tes joueurs et les joueurs connus de ton recruteur sont comparables.</p>
+    </section>
+  </div>`;
+  el.querySelectorAll('[data-cmp]').forEach(s => s.onchange = () => { CMP[+s.dataset.cmp] = +s.value; vAnalysis(el); });
+}
+
+// ============================================================
 //  Vestiaire (dynamique de groupe)
 // ============================================================
 function vDressing(el) {
@@ -1281,12 +1393,34 @@ function vClub(el) {
       <p class="${conf < 25 ? 'neg' : ''}">${mood}</p>
       <h3>Armoire à trophées</h3>
       <div class="trophies">${(c.trophies || []).map(t => `<div class="trophy">🏆<b>${esc(t.name)}</b><small>${t.season}/${t.season + 1}</small></div>`).join('') || '<p class="muted">Vide pour l\'instant… à toi de la remplir !</p>'}</div>
+      <h3>Demandes au président</h3>
+      <div class="row gap wrap"><button class="btn" data-req="transfer">💰 Plus de budget transferts</button><button class="btn" data-req="wage">📈 Relever le plafond salarial</button><button class="btn" data-req="facility">🏗 Financer les installations</button></div>
+      <p class="hint">Le président accepte plus facilement quand il a confiance. Une demande toutes les 6 semaines au maximum.</p>
+      <h3>Supporters</h3><div class="row gap">${meter(G.fans ?? 60)} <b>${Math.round(G.fans ?? 60)}/100</b></div>
+      <p class="hint">L'humeur des supporters dépend des résultats et de tes déclarations ; elle influe sur l'affluence.</p>
       <p class="hint mt">Logo, couleurs, nom, stade : menu ✏ Éditeur.</p>
+    </section>
+    <div class="col">
+    <section class="card"><h2>🧑‍💼 ${esc(G.managerName)}</h2>
+      <div class="kpis"><div><small>Réputation</small><b>${Math.round(G.mgr.rep)}</b><em>${meter(G.mgr.rep)}</em></div><div><small>Matchs</small><b>${G.mgr.matches}</b><em>${G.mgr.w} V · ${G.mgr.d} N · ${G.mgr.l} D</em></div><div><small>% victoires</small><b>${G.mgr.matches ? Math.round(G.mgr.w / G.mgr.matches * 100) : 0} %</b></div></div>
+      <h3>🏅 Succès (${Object.keys(G.ach || {}).length}/${Object.keys(ACHIEVEMENTS).length})</h3>
+      <div class="achs">${Object.entries(ACHIEVEMENTS).map(([k, l]) => `<span class="ach ${G.ach?.[k] ? 'on' : ''}" title="${G.ach?.[k] ? 'Obtenu en ' + G.ach[k].season : 'À débloquer'}">${G.ach?.[k] ? '🏅' : '🔒'} ${esc(l)}</span>`).join('')}</div>
+      <h3>🪑 Postes vacants</h3>
+      ${(G.vacancies || []).length ? `<table class="tbl compact">${G.vacancies.map(v => { const vc = getClub(G, v.club); return `<tr><td>${crest(vc, 22)} <b>${esc(vc.name)}</b></td><td>${esc(clubLeague(G, vc.id)?.name || '')}</td><td>${stars(vc.rep)}</td><td><button class="btn sm" data-apply="${vc.id}">Postuler</button></td></tr>`; }).join('')}</table>` : '<p class="muted">Aucun poste vacant pour l\'instant.</p>'}
+      <p class="hint">Ta réputation augmente avec les résultats et les succès : elle attire les joueurs et ouvre les portes des grands clubs.</p>
     </section>
     <section class="card"><h2>📜 Ma carrière</h2>
       <table class="tbl compact"><tr><th>Saison</th><th>Club</th><th>Championnat</th><th>Rang</th><th>Coupe</th><th>Objectif</th></tr>
       ${G.history.slice().reverse().map(h => `<tr><td>${h.season}/${String(h.season + 1).slice(2)}</td><td>${esc(h.club || '')}</td><td>${esc(h.comp)}</td><td>${h.rank}<sup>e</sup> (${h.pts} pts)</td><td>${esc(h.cup)}</td><td>${h.met ? '✅' : '❌'} ${esc(h.objLabel || '')}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">Première saison en cours.</td></tr>'}</table>
-    </section></div>`;
+    </section></div></div>`;
+  el.querySelectorAll('[data-req]').forEach(b => b.onclick = () => { const r = boardRequest(G, b.dataset.req); save(); toast(r.msg, r.ok ? '' : 'err'); vClub(el); });
+  el.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => {
+    const vc = getClub(G, +b.dataset.apply);
+    confirmBox(`Postuler à ${esc(vc.name)} ? Si tu es retenu, tu quittes ${esc(c.name)} immédiatement.`, () => {
+      if (applyForJob(G, vc.id)) { takeJob(G, vc.id); save(); enterGame(); toast(`Tu es le nouvel entraîneur de ${vc.name} !`); }
+      else { save(); toast(`${vc.name} a choisi un autre candidat.`, 'err'); vClub(el); }
+    }, 'Postuler');
+  });
 }
 
 function ovrCell(p) { return knows(G, p) ? ovrBadge(playerOvr(p)) : `<span class="ovr o2 fogo" title="Note estimée — supervise le joueur pour la connaître">~${estOvr(G, p)}</span>`; }

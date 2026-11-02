@@ -86,6 +86,7 @@ function attendanceFor(G, f, weather) {
   let d = .42 + H.rep / 230 + A.rep / 600 + (clubFormPts(H) - .5) * .25 + (f.comp === 'CUP' ? .03 : f.comp === 'EUR' ? .12 : 0) + (weather?.att || 0);
   if (A.rep > H.rep + 10) d += .05; // grosse affiche
   d *= Math.pow(m, -.6);
+  if (H.id === G.clubId) d *= .9 + (G.fans ?? 60) / 500;
   return Math.round(H.capacity * clamp(d + rnd() * .06, .15, 1));
 }
 

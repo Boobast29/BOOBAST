@@ -57,6 +57,13 @@ Raccourcis : `Espace` = continuer · `1`…`9` = menus · `/` = recherche · `É
   - prêts entrants avec part du salaire et option d'achat ;
   - surenchères et batailles entre clubs, dernier jour du mercato ;
   - historique des transferts et échéancier financier.
+- **Développement individuel** : attribut à travailler, apprentissage d'un nouveau poste (polyvalence par poste), parrainage d'un jeune par un ancien (transmission de la personnalité).
+- **Centre de formation** : promotion annuelle de 4 à 7 jeunes (pépites possibles), potentiel estimé selon le formateur, poste ciblé, promotion ou libération.
+- **Missions de recrutement** : critères (poste, âge, potentiel) et zone (France, Europe, monde, libres). Les missions « monde » dénichent des pépites inconnues.
+- **Carrière d'entraîneur** : réputation, bilan, 12 succès à débloquer, limogeages d'entraîneurs adverses et postes vacants auxquels postuler.
+- **Président** : demandes de budget, de plafond salarial ou d'investissement dans les installations.
+- **Supporters & médias** : humeur des supporters (influe sur l'affluence), discours d'avant-match, conférence de presse d'après-match.
+- **Analyse** : tendances xG, classement xG de la ligue, comparaison de deux joueurs en radar.
 - **Entraînement** : programme de la semaine, intensité, cohésion du groupe, réunions d'équipe.
 - **Vie du vestiaire** : personnalités, moral, forme, discussions individuelles et promesses de temps de jeu.
 - **Président** : objectifs, jauge de confiance. Tu peux être licencié ou recevoir des offres d'autres clubs.

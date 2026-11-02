@@ -253,6 +253,7 @@ function playerOvr(p) { return Math.round(playerRoleRating(p, p.pos)); }
 
 function familiarity(p, role) {
   if (p.pos === role) return 1;
+  if (p.posFam && p.posFam[role] != null && (p.pos === 'GB') === (role === 'GB')) return famFromValue(p.posFam[role]);
   if ((p.pos === 'GB') !== (role === 'GB')) return .35;
   if ((COMPAT[p.pos] || []).includes(role)) return .92;
   return .78;

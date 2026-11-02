@@ -1,3 +1,4 @@
+function firstTeam(G) { return clubPlayers(G, G.clubId).filter(p => !p.academy); }
 // ============================================================
 //  Gestion d'effectif & dynamique de groupe
 //  statuts (temps de jeu promis), confiance, hiérarchie, clans,
@@ -46,7 +47,7 @@ function growBonds(G, ids) {
   }
 }
 function decayBonds(G) {
-  const mine = new Set(clubPlayers(G, G.clubId).map(p => p.id));
+  const mine = new Set(firstTeam(G).map(p => p.id));
   for (const k in G.bonds || {}) {
     const [a, b] = k.split('-').map(Number);
     if (!mine.has(a) || !mine.has(b)) { delete G.bonds[k]; continue; }
@@ -64,13 +65,13 @@ function influence(G, p) {
   return (p.pers === 'Leader' ? 30 : 0) + Math.min(p.age, 34) * 1.2 + seasons * 5 + playerOvr(p) * .35 + (capt ? 15 : 0) + (p.status === 'star' ? 8 : 0);
 }
 function hierarchy(G) {
-  const sq = clubPlayers(G, G.clubId).filter(p => !p.loan).map(p => ({ p, inf: influence(G, p) })).sort((a, b) => b.inf - a.inf);
+  const sq = firstTeam(G).filter(p => !p.loan).map(p => ({ p, inf: influence(G, p) })).sort((a, b) => b.inf - a.inf);
   return { leaders: sq.slice(0, 3).map(x => x.p), influent: sq.slice(3, 8).map(x => x.p), others: sq.slice(8).map(x => x.p), all: sq };
 }
 function socialGroups(G) {
   const groups = {};
-  for (const p of clubPlayers(G, G.clubId)) (groups[langOf(p)] ||= []).push(p);
-  const young = clubPlayers(G, G.clubId).filter(p => p.age <= 21);
+  for (const p of firstTeam(G)) (groups[langOf(p)] ||= []).push(p);
+  const young = firstTeam(G).filter(p => p.age <= 21);
   const out = Object.entries(groups).filter(([, v]) => v.length >= 2).map(([name, members]) => ({ name, members }));
   if (young.length >= 3) out.push({ name: 'Jeunes du club', members: young });
   return out.map(g => ({ ...g, mood: g.members.reduce((s, p) => s + p.morale, 0) / g.members.length }));
@@ -101,7 +102,7 @@ function squadAfterMatch(G, mt) {
   if (!side) return;
   const playedMin = {};
   for (const id in mt.pr) if (mt.pr[id].side === mt.sides.indexOf(side)) playedMin[id] = Math.min(90, mt.pr[id].min);
-  for (const p of clubPlayers(G, G.clubId)) {
+  for (const p of firstTeam(G)) {
     if (p.injury > 0 && !playedMin[p.id]) continue; // un blessé ne compte pas
     p.recentMin = [...(p.recentMin || []), playedMin[p.id] || 0].slice(-6);
     p.rest = false;
@@ -112,7 +113,7 @@ function squadAfterMatch(G, mt) {
 
 // ---------- chaque semaine ----------
 function squadWeekly(G) {
-  const sq = clubPlayers(G, G.clubId);
+  const sq = firstTeam(G);
   if (!sq.length) return;
   assignStatuses(G, G.clubId);
   // temps de jeu vs statut

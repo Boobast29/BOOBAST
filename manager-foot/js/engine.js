@@ -21,7 +21,7 @@ function effRating(p, role, cond = p.fit) {
 // ---------- Composition ----------
 function autoLineup(G, clubId, formation, tac = null) {
   const slots = FORMATIONS[formation].map((s, i) => tac ? [slotRole({ ...tac, formation }, i)] : s);
-  const pool = clubPlayers(G, clubId).filter(p => available(p) && !(clubId === G.clubId && (p.rest || p.reserve)));
+  const pool = clubPlayers(G, clubId).filter(p => available(p) && !p.academy && !(clubId === G.clubId && (p.rest || p.reserve)));
   const used = new Set();
   const lineup = new Array(slots.length).fill(null);
   const order = slots.map((s, i) => i).sort((a, b) => (slots[a][0] === 'GB' ? -1 : 0) - (slots[b][0] === 'GB' ? -1 : 0));
@@ -214,7 +214,7 @@ function applyMatch(G, mt, f) {
     p.form = [...(p.form || []), { w: G.week, s: G.season, r: p.lastRating }].slice(-10);
   }
   for (const e of mt.events) if (e.type === 'inj' || e.type === 'knock') applyInjury(G, getPlayer(G, e.pid), e.inj);
-  if (f.h === G.clubId || f.a === G.clubId) squadAfterMatch(G, mt);
+  if (f.h === G.clubId || f.a === G.clubId) { squadAfterMatch(G, mt); learnFromMatch(G, mt.sides[f.h === G.clubId ? 0 : 1]); careerAfterMatch(G, f, mt); }
   const wnr = fixtureWinner(f);
   if (f.grp) {
     if (wnr) flow(G, getClub(G, wnr), 2.5e6, 'prize'); else { flow(G, getClub(G, f.h), .8e6, 'prize'); flow(G, getClub(G, f.a), .8e6, 'prize'); }
@@ -504,6 +504,9 @@ function weeklyUpdate(G, full = true) {
   weeklyFinances(G);
   processPayables(G);
   squadWeekly(G);
+  developWeekly(G);
+  missionsWeekly(G);
+  aiManagersWeekly(G);
   if (tr.focus === 'tactique') growTacFam(G, G.tactics.formation, true);
   G.promises = (G.promises || []).filter(pr => {
     const p = getPlayer(G, pr.pid);
@@ -819,12 +822,16 @@ function endSeason(G) {
   for (const p of retired) if (p.club === G.clubId) news(G, `${p.name} prend sa retraite à ${p.age} ans.`, 'info');
   G.players = G.players.filter(p => !rset.has(p.id));
   G.shortlist = (G.shortlist || []).filter(id => !rset.has(id));
+  careerSeasonEnd(G, S);
+  for (const p of G.players.filter(x => x.academy && x.club === G.clubId)) {
+    if (p.age >= 20) { p.academy = false; p.club = null; news(G, `${p.name} quitte l'académie (trop âgé, non promu).`, 'youth'); }
+  }
   for (const c of G.clubs) {
     const mineC = c.id === G.clubId;
     const yb = mineC ? ((G.staff?.youth || 2) + (G.fac?.youth || 2) - 4) : 0;
     const n = rint(2, 3) + (mineC && (G.fac?.youth || 2) >= 4 ? 1 : 0);
     if (c.foreign) c.rep = clamp(c.rep + rint(-1, 1), 65, 95);
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < (mineC ? 0 : n); i++) {
       const y = genPlayer(pick(SQUAD_TEMPLATE), 4 + c.rep / 14 + gauss() + yb * .3, { club: c.id, age: rint(16, 18), rep: c.rep });
       y.pot = clamp(y.pot + rint(0, 10) + yb * 2, playerOvr(y), 95); y.wage = 1000; y.contract = 3;
       if (c.id === G.clubId) news(G, `Centre de formation : ${y.name} (${ROLES[y.pos].label}, ${y.age} ans, potentiel ${starsTxt(y.pot)}) intègre l'effectif.`, 'youth');
@@ -838,6 +845,8 @@ function endSeason(G) {
     c.coh = clamp((c.coh ?? 60) * .8 + 10, 0, 100);
   }
   for (let i = 0; i < 20; i++) G.players.push(genPlayer(pick(SQUAD_TEMPLATE), 6 + rnd() * 7, { club: null, age: rint(20, 32) }));
+  reindex(G);
+  if (!S.sacked) youthIntake(G);
   for (const p of G.players) p.value = calcValue(p);
   reindex(G);
 
@@ -871,6 +880,7 @@ function takeJob(G, clubId) {
   setObjective(G);
   G.sponsor = null; G.ticket = 2;
   assignStatuses(G, clubId, true); G.bonds = {}; G.tacFam = { [f]: 60 };
+  G.mgr.rep = clamp(G.mgr.rep + 2, 0, 100); G.vacancies = (G.vacancies || []).filter(v => v.club !== clubId); c.mgrName = G.managerName;
   setBoardBudgets(G); makeSponsorOffers(G);
   news(G, `${G.managerName} quitte ${old.name} et devient le nouvel entraîneur de ${c.name} ! Objectif : ${objectiveLabel(G).toLowerCase()}.`, 'board');
 }
@@ -922,6 +932,8 @@ function migrateGame(G) {
   G.fac.medical ??= 2;
   G.ticket ??= 2;
   G.medLog ||= [];
+  G.mgr ||= { rep: clamp(Math.round((G.clubs.find(c => c.id === G.clubId)?.rep || 60) - 25), 10, 60), matches: 0, w: 0, d: 0, l: 0 };
+  G.fans ??= 60; G.missions ||= []; G.ach ||= {};
   for (const p of G.players) {
     p.frag ??= clamp(Math.round(8 + gauss() * 3.5), 1, 20);
     if (p.injury > 0 && !p.inj) { p.injury *= 7; p.inj = { name: 'Blessure', part: '', kind: 'contact', days: p.injury, total: p.injury }; }
@@ -957,6 +969,7 @@ function newGame(db, clubId, managerName) {
   setBoardBudgets(G);
   assignStatuses(G, clubId, true);
   G.tacFam = { [f]: 75 };
+  youthIntake(G);
   news(G, `Bienvenue à ${club.name}, ${G.managerName} ! Objectif du président : ${objectiveLabel(G).toLowerCase()}. Budget : ${money(club.budget)}.`, 'board');
   news(G, 'Le mercato d\'été est ouvert pendant les 6 premières semaines. Raccourcis : Espace = continuer, 1-9 = menus, / = recherche.', 'info');
   makeSponsorOffers(G);

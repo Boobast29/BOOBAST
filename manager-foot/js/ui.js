@@ -98,7 +98,8 @@ function fmtDate(d) { return d.toLocaleDateString('fr-FR', { day: 'numeric', mon
 function toast(msg, type = '') {
   let box = $('#toasts'); if (!box) { box = document.createElement('div'); box.id = 'toasts'; document.body.appendChild(box); }
   const t = document.createElement('div'); t.className = 'toast ' + type; t.textContent = msg;
-  box.appendChild(t); setTimeout(() => t.classList.add('show'), 10);
+  box.appendChild(t);
+  while (box.children.length > 4) box.firstChild.remove(); setTimeout(() => t.classList.add('show'), 10);
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3200);
 }
 function modal(html, cls = '', opts = {}) {
