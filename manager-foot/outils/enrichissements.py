@@ -132,3 +132,24 @@ def rep_elo(con, cid):
     if not r:
         return None
     return max(30, min(95, round(38 + (r[0] - 1300) * .08)))
+
+
+def maillot(con, cid):
+    """Maillot le plus récent du club (open-jersey-db, ODbL) : couleurs domicile/extérieur, équipementier, sponsor."""
+    if not a_table(con, 'maillots'):
+        return None
+    import json
+    rows = con.execute("SELECT * FROM maillots WHERE club_id=? ORDER BY saison DESC", (cid,)).fetchall()
+    if not rows:
+        return None
+    saison = rows[0]['saison']
+    par = {r['type']: r for r in rows if r['saison'] == saison}
+    dom, ext = par.get('home'), par.get('away')
+    ref = dom or ext or rows[0]
+    out = {'season': saison, 'manufacturer': ref['equipementier'], 'sponsor': ref['sponsor'], 'source': 'open-jersey-db (ODbL)'}
+    if dom and json.loads(dom['couleurs'] or '[]'):
+        out['home'] = json.loads(dom['couleurs'])
+    if ext and json.loads(ext['couleurs'] or '[]'):
+        out['away'] = json.loads(ext['couleurs'])
+    out = {k: v for k, v in out.items() if v}
+    return out if any(k in out for k in ('home', 'away', 'manufacturer', 'sponsor')) else None

@@ -7,6 +7,7 @@ where py >nul 2>nul && (set PY=py -3) || (set PY=python)
 %PY% outils\importer_reep.py || goto fin
 %PY% outils\importer_transfermarkt.py
 %PY% outils\importer_clubelo.py
+%PY% outils\importer_maillots.py
 %PY% outils\enrichir_wikidata.py %*
 :fin
 pause

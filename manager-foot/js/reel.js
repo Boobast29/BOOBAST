@@ -23,6 +23,7 @@ buildRealWorld = function (scn) {
     if (sc.marketValue) c.marketValueReal = sc.marketValue;
     if (sc.coach) c.coachReal = { ...sc.coach, nat: natCode(sc.coach.natLabel) };
     if (sc.sources) c.sourcesReal = sc.sources;
+    if (sc.kit) c.kitReal = sc.kit;
   }
   const bySp = new Map(scn.players.map(p => [p.srcId, p]));
   for (const p of W.players) {
@@ -58,12 +59,14 @@ newGame = function (...a) {
 
 // fiche club : entraîneur, stade, fondation, valeur de l'effectif
 function blocReelClub(c) {
-  if (!c || !(c.coachReal || c.founded || c.marketValueReal || c.capacitySim === false)) return '';
+  if (!c || !(c.coachReal || c.founded || c.marketValueReal || c.capacitySim === false || c.kitReal)) return '';
+  const k = c.kitReal;
   const cr = c.coachReal;
   const ph = cr?.photo ? `<span class="ph" style="width:44px;height:44px"><img src="${esc(cr.photo)}" alt="" loading="lazy" onerror="this.parentNode.remove()"></span>` : '';
   return `<div class="row gap reel-club">${ph}<div>${cr ? `<b>Entraîneur : ${esc(cr.name)}</b>${cr.age ? ` · ${cr.age} ans` : ''}${cr.natLabel ? ` · ${esc(cr.natLabel)}` : ''}${cr.since ? ` · en poste depuis ${esc(cr.since.slice(0, 4))}` : ''}<br>` : ''}
     <small class="muted">${c.capacitySim === false ? `${esc(c.stadium)} : ${c.capacity.toLocaleString('fr-FR')} places (réel)` : ''}${c.founded ? ` · fondé en ${esc(String(c.founded))}` : ''}${c.marketValueReal ? ` · valeur de l'effectif ${money(c.marketValueReal)} (Transfermarkt)` : ''}
-    ${c.sourcesReal ? ` · sources : ${c.sourcesReal.map(esc).join(', ')}` : ''}</small></div></div>`;
+    ${c.sourcesReal ? ` · sources : ${c.sourcesReal.map(esc).join(', ')}` : ''}
+    ${k ? `<br>Maillot ${esc(k.season)}${k.manufacturer ? ` : ${esc(k.manufacturer)}` : ''}${k.sponsor ? ` · sponsor ${esc(k.sponsor)}` : ''} ${(k.home || []).concat(k.away || []).map(h => `<i class="kit-pt" style="background:${esc(h)}"></i>`).join('')} <span class="muted">(open-jersey-db, ODbL)</span>` : ''}</small></div></div>`;
 }
 const __viewClubX = viewClub;
 viewClub = function (id) {

@@ -1,4 +1,16 @@
-# État du projet — v19 (2 novembre 2026)
+# État du projet — v20 (2 novembre 2026)
+
+## v20 — sélections nationales réelles, noms crédibles, maillots réels
+- `js/donnees_ouvertes.js` (généré par `outils/donnees_internationales.py`, source CC0) + `js/ouvert.js` :
+  force des sélections = Elo réel calculé sur 49 940 matchs (niveau 55-86) ; écran International : bilan historique réel et meilleurs
+  buteurs ; joueurs générés (centre de formation, monde fictif) nommés avec des prénoms/noms de buteurs du pays, jamais le nom complet
+  d'un vrai buteur (14 842 noms exclus, re-tirage).
+- `outils/importer_maillots.py` (open-jersey-db, ODbL) : couleurs domicile/extérieur, équipementier et sponsor → couleurs du club et fiche club.
+  Ajouté à `Enrichir_Base.bat`.
+Vérifications : Elo cohérent (Espagne, Argentine, Angleterre, France en tête) ; noms générés vérifiés (ITA, GER, ESP, BRA, NED) ; Álvaro
+Negredo et Kylian Mbappé reconnus comme vrais et exclus ; maillots : PSG et Brest reliés (alias), couleurs allemandes converties ;
+écran International dans Chromium sans erreur ; simulation longue 2 graines × 2 saisons sans erreur.
+Limites : maillots peu renseignés pour la France dans la source ; filtre des noms limité aux buteurs internationaux.
 
 ## v19 — vrais entraîneurs, stades, photos et logos libres, valeurs et contrats réels
 Nouveaux outils (bibliothèque standard Python) et `Enrichir_Base.bat` ; module de jeu `js/reel.js` ; détails dans RECHERCHE.md.

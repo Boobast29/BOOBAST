@@ -198,6 +198,11 @@ def construire(con, pays):
             'stadium': None, 'capacity': None,
         }
         club.update(enrichissements.infos_club(con, cid))
+        kit = enrichissements.maillot(con, cid)
+        if kit:
+            club['kit'] = kit
+            if kit.get('home'):  # couleurs du club = maillot domicile réel (2e couleur : détail du maillot ou maillot extérieur)
+                club['colors'] = [kit['home'][0], (kit['home'][1:] or kit.get('away') or [club['colors'][1]])[0]]
         if not club['logo'] and enrichissements.logo_wd(con, cid):
             club['logo'] = f'/img/club/{cid}'
         if sum(1 for j in effectif if not j.get('estimated')) < 18:

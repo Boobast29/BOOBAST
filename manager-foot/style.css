@@ -589,3 +589,5 @@ b.big { font-size: 18px; }
 /* Coût total d'un contrat */
 .cost { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 6px; }
 .cost > div { background: var(--panel2); border-radius: 8px; padding: 8px; } .cost small { display: block; color: var(--mut); } .cost b { font-size: 16px; } .cost em { display: block; font-style: normal; font-size: 11px; color: var(--mut); }
+
+.kit-pt { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(128,128,128,.6); margin-left: 2px; vertical-align: middle; }

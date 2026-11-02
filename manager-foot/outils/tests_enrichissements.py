@@ -75,3 +75,10 @@ import importer_clubelo
 importer_clubelo.importer(con, "Rank,Club,Country,Level,Elo,From,To\n5,Paris SG,FRA,1,1950.5,2026-08-01,2026-08-02\nNone,Brest,FRA,1,1600.0,2026-08-01,2026-08-02\n", '2026-08-01')
 print('elo', [dict(r) for r in con.execute('SELECT * FROM liens_elo')], 'rep Brest', enrichissements.rep_elo(con, 'c_bre'))
 s2 = scenario.construire(con, 'France'); print('rep scénario Brest (sans joueurs notés)', next(c for c in s2['clubs'] if c['srcId'] == 'c_bre')['rep'])
+# maillots : open-jersey-db (vraies données ODbL si le dossier dist est fourni en 3e argument)
+if len(sys.argv) > 3:
+    import importer_maillots
+    print('maillots', importer_maillots.importer(con, importer_maillots.charger(sys.argv[3], 'teams.json'), importer_maillots.charger(sys.argv[3], 'kits.json')))
+    s3 = scenario.construire(con, 'France')
+    for c in s3['clubs']:
+        print('maillot', c['name'], c.get('kit'), c['colors'])

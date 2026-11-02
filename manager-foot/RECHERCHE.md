@@ -70,6 +70,25 @@ Ordre de priorité dans le jeu : Transfermarkt (mis à jour chaque semaine) > Wi
 | [jalapic/engsoccerdata](https://github.com/jalapic/engsoccerdata) | aucune licence | Résultats historiques 1871-2022 : redondant avec openfootball (CC0). |
 | Staff technique (adjoints, préparateurs) | — | Aucune source ouverte fiable trouvée : le staff reste généré. |
 
+## Recherche n° 3 — sélections, maillots, données de match (v20)
+
+| Source | Licence | Usage dans le jeu |
+|---|---|---|
+| [martj42/international_results](https://github.com/martj42/international_results) | CC0 | 49 940 matchs internationaux (1872 → 2026), 47 914 buts, 700 séances de tirs au but. `outils/donnees_internationales.py` génère `js/donnees_ouvertes.js` : **Elo réel de 81 sélections** (méthode eloratings.net) → force des sélections du jeu ; **bilan historique et meilleurs buteurs** (écran International) ; **réservoirs de prénoms et noms** de buteurs par pays pour les joueurs générés, avec exclusion des noms complets de vrais buteurs. |
+| [dmnk-rdr/open-jersey-db](https://github.com/dmnk-rdr/open-jersey-db) | ODbL 1.0 | `outils/importer_maillots.py` : maillots 2025/26 (couleurs, équipementier, sponsor principal) → couleurs du club et fiche club, attribution affichée. Couverture inégale : bien renseigné pour l'Allemagne, encore vide (couleurs, équipementier) pour beaucoup de clubs français. |
+
+Elo calculé (novembre 2026) : Espagne 2367, Argentine 2253, Angleterre 2228, France 2187, Portugal 2143, Brésil 2088, Colombie 2074, Suisse 2058, Pays-Bas 2049, Belgique 2029, Maroc 2025, Italie 1988.
+
+### Repéré, non intégré
+| Source | Licence | Pourquoi / piste |
+|---|---|---|
+| [SkillCorner/opendata](https://github.com/SkillCorner/opendata) | MIT | 10 matchs en données de suivi : distances parcourues, sprints. Piste : ajouter « distance parcourue » et la fatigue réaliste dans le moteur de match. |
+| [metrica-sports/sample-data](https://github.com/metrica-sports/sample-data) | aucune licence | Suivi + événements de 3 matchs : idées seulement. |
+| [openfootball/clubs](https://github.com/openfootball/clubs) | CC0 | Clubs et stades (capacité, année d'ouverture) ; données anciennes, redondantes avec reep / Transfermarkt / Wikidata. |
+| [jcrochet-netizen/ranking-uefa-pays](https://github.com/jcrochet-netizen/ranking-uefa-pays) | aucune licence | Coefficients UEFA par pays : piste pour répartir les places européennes selon le vrai classement. |
+| Salaires (Capology), finances des clubs, blessures, arbitres | — | Aucune source ouverte et réutilisable trouvée sur GitHub (dépôts de scraping sans licence uniquement). |
+| Noms de vrais joueurs non buteurs | — | Le filtre des noms générés ne connaît que les buteurs internationaux : une combinaison peut encore, rarement, correspondre à un autre vrai joueur. |
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.
