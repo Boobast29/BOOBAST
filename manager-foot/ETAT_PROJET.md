@@ -1,4 +1,13 @@
-# État du projet — v33 (2 novembre 2026)
+# État du projet — v34 (2 novembre 2026)
+
+## v34 — le moteur de match joue avec les 37 attributs
+Nouveau `js/moteur37.js` : `Match.prototype.ea` renvoie une combinaison d'attributs détaillés selon l'action en cours
+(tir : finition, frappe lointaine au-delà de 22 m, tête, penalty, coup franc, face-à-face ; passes courte/longue/vers l'avant/en profondeur ;
+centre ; dribble et duel ; jeu aérien ; hors-jeu ; gardien : réflexes, plongeon, placement, sorties). Moyennes pondérées sur la même
+échelle 1-20 : calibrage conservé. Désactivable (`window.MOTEUR37 = false`).
+Vérifications : calibrage 120 matchs × 3 divisions sans / avec (2,28-2,63 → 2,43-2,64 buts, 16-29 % de nuls) ; effet ciblé : buteur
++7 en tête et détente → 177 têtes au lieu de 153, réussite 12 % au lieu de 9 %, 22 buts de la tête au lieu de 14 (114 matchs) ;
+simulation longue et 6 scénarios de barrages sans erreur. Tests : `tests/moteur37_calibrage.js`, `tests/moteur37_effet.js`.
 
 ## v33 — 37 attributs par joueur, note de poste, percentiles, 34 statistiques
 Nouveau `js/attributs.js` ; `outils/scenario.py` et `js/monde.js` transmettent les sous-notes réelles (sur 99) du pack.
