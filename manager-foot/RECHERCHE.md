@@ -209,6 +209,15 @@ Mise en œuvre originale d'idées déjà repérées :
   (Fragile, Robuste, Bosseur, Dilettante, Leader, Joueur de grands matchs, Nerveux, Fidèle) avec effets réels.
 - **Records et Panthéon** (pitch-to-glory : records et Hall of Fame).
 
+## Vie du jeu (v31)
+
+Idées reprises (code et textes originaux, en français) :
+| Source | Licence | Idée |
+|---|---|---|
+| [FredericusRadicalus/retroFootballManager](https://github.com/FredericusRadicalus/retroFootballManager) | MIT | événements aléatoires légers → 10 événements à choix (bienfaiteur, photo embarrassante, pelouse, visite à l'hôpital, match amical, colère des supporters, grand club qui rôde, tournage, rénovation cofinancée, campagne publicitaire) |
+| [DWYCA-org/FMNarrative](https://github.com/DWYCA-org/FMNarrative) | MIT | conférences de presse selon le contexte → avant-match : grand match, série de défaites, leader, rumeur de départ, crise de blessés, lutte pour le maintien |
+| [openfootmanager/openfootmanager](https://github.com/openfootmanager/openfootmanager) | GPL-3.0 (idée seulement) | sélectionneur national → offre après une saison dans le top 2 avec objectif atteint, cumul avec le club |
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.

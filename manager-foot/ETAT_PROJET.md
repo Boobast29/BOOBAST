@@ -1,4 +1,16 @@
-# État du projet — v30 (2 novembre 2026)
+# État du projet — v31 (2 novembre 2026)
+
+## v31 — événements aléatoires, conférences de presse d'avant-match, sélectionneur national
+Nouveau `js/vie_du_jeu.js` (chargé après `js/traits.js`).
+- Un sujet en attente à la fois (`G.evt`), visible dans « À faire » ; fenêtre à choix ; sans réponse, choix par défaut la semaine suivante ;
+  en simulation automatique, choix par défaut immédiat. Tirage stable (empreinte graine + semaine), historique `G.evtHist`.
+- Effets : argent (journal comptable), confiance du président, supporters, moral (équipe ou joueur), condition, places du stade,
+  niveau de prix des billets, prolongation d'un jeune.
+- Conférence d'avant-match (environ un match sur deux quand le contexte s'y prête) ; événement aléatoire environ une semaine sur dix.
+- Sélectionneur : offre en fin de saison (top 2 + objectif atteint), +2 de force pour la sélection, bilan des tournois, titre = président
+  et supporters en hausse.
+Vérifications (Chromium) : 8 sujets en 30 semaines, choix par défaut appliqué sans réponse, réponse par la fenêtre (supporters 60 → 66,
+prix des billets 2 → 1), offre de sélection acceptée (+2), simulation longue (11 sujets sur 2 saisons) et 6 scénarios de barrages sans erreur.
 
 ## v30 — traits cachés, records et Panthéon
 Nouveau `js/traits.js`.

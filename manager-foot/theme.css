@@ -94,3 +94,7 @@ input::placeholder { color: #6c7d92; }
   background: color-mix(in srgb, var(--acc) 16%, #121a24); border: 1px solid color-mix(in srgb, var(--acc) 45%, #2f3c4d); color: #d8f5e6; cursor: help; }
 .trait.neg { background: color-mix(in srgb, var(--red) 14%, #121a24); border-color: color-mix(in srgb, var(--red) 45%, #2f3c4d); color: #ffd3d7; }
 .trait.inconnu { background: #121a24; border: 1px dashed #3a4a5e; color: var(--mut); font-weight: 500; }
+
+/* événements et conférences de presse */
+.evt-opts { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 6px; }
+.evt-opts .btn { justify-content: flex-start; text-align: left; white-space: normal; min-height: 40px; padding: 8px 14px; }
