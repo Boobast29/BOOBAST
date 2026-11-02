@@ -441,11 +441,11 @@ function weeklyUpdate(G, full = true) {
     trainingInjuries(G, p);
     const target = p.pers === 'Loyal' ? 72 : 66;
     p.morale = clamp(p.morale + (target - p.morale) * .05 + (mine && tr.focus === 'repos' ? 3 : 0), 5, 100);
-    if (p.club == null) continue;
+    if (p.club == null || p.academy) continue; // académie : progression propre (realisme.js), plafonnée
     const o = playerOvr(p);
     let chance = p.age <= 21 ? .16 : p.age <= 24 ? .11 : p.age <= 28 ? .04 : 0;
     if (p.pers === 'Professionnel') chance *= 1.25;
-    if (p.loan) chance *= 1.15;
+    if (p.loan) { const lr = Math.max(1, leagueRoundAt(G)); chance *= clamp(.55 + (p.stats.min || 0) / lr / 90 * .6, .55, 1.15); } // prêt : progression selon les minutes réellement jouées, sans bonus automatique
     if (mine) chance *= [.6, 1, 1.4][tr.intensity] * (tr.focus === 'repos' ? 0 : 1) * (.75 + .1 * (st.coach || 2) + .07 * (fac.training || 2));
     if (o < p.pot && rnd() < chance) {
       const k = bumpAttr(p, 1, mine ? focus.keys : null);
@@ -721,9 +721,11 @@ function endSeason(G) {
   S.ballon = ballonDor(G, S.intl);
   S.met = S.rank <= G.objective;
   seasonEndFinances(G, S, L);
-  const relegatedTop = L.length > 1 ? standings(G, L[0].id).slice(-Math.min(promoSpots(L[0]), promoSpots(L[1]))).map(r => r.id) : [];
+  const relegatedTop = L.length > 1 && (!G.real || G.real.promoValidated) ? standings(G, L[0].id).slice(-Math.min(promoSpots(L[0]), promoSpots(L[1]))).map(r => r.id) : [];
 
-  for (let i = 0; i + 1 < L.length; i++) {
+  const promoOn = !G.real || G.real.promoValidated;
+  if (!promoOn) news(G, 'Montées et descentes non appliquées : les règles de ces compétitions réelles ne sont pas validées (Options → Règles de la saison réelle).', 'info');
+  for (let i = 0; promoOn && i + 1 < L.length; i++) {
     const down = L[i], up = L[i + 1];
     const n = Math.min(promoSpots(up), promoSpots(down));
     const tu = standings(G, up.id), td = standings(G, down.id);
@@ -911,15 +913,19 @@ function migrateGame(G) {
   return G;
 }
 
-function newGame(db, clubId, managerName) {
+function newGame(db, clubId, managerName, seed) {
+  seed = (seed ?? Math.floor(Math.random() * 4294967296)) >>> 0;
+  seedGameRng(seed);
   const G = {
+    seed,
     version: 2, managerName: managerName || 'Coach', season: 2026, clubId,
     leagueNames: [...(db.leagueNames || [db.leagueName || 'Ligue Élite', 'Ligue Pro 2'])], cupName: db.cupName || 'Coupe Nationale',
     clubs: JSON.parse(JSON.stringify(db.clubs)), players: JSON.parse(JSON.stringify(db.players)),
     inbox: [], offers: [], history: [], shortlist: [], promises: [], awards: { monthly: [], seasons: [] },
     fin: emptyFin(),
     board: { conf: 60 }, training: { focus: 'equilibre', intensity: 1 }, talked: {}, euroName: db.euroName || 'Coupe des Étoiles',
-    eco: JSON.parse(JSON.stringify(db.eco || {})), wagesScaled: !!db.wagesScaled, compNames: { ...(db.compNames || {}) }
+    eco: JSON.parse(JSON.stringify(db.eco || {})), wagesScaled: !!db.wagesScaled, compNames: { ...(db.compNames || {}) },
+    real: db.real ? JSON.parse(JSON.stringify(db.real)) : undefined
   };
   migrateGame(G);
   normalizeWorld(G);

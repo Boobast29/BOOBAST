@@ -11,11 +11,11 @@ function saveSettings() { try { localStorage.setItem('mf-settings', JSON.stringi
 
 async function save() {
   if (!G) return;
-  try { const { pmap, ...rest } = G; await Store.set(SAVE_KEY, rest); }
+  try { if (RNGS.s != null) G.rngState = RNGS.s; const { pmap, ...rest } = G; await Store.set(SAVE_KEY, rest); }
   catch (e) { toast('Sauvegarde impossible : ' + (e?.message || e), 'err'); }
 }
 async function saveDB() { try { await Store.set(DB_KEY, DB); } catch (e) { toast('Base non sauvegardée : ' + (e?.message || e), 'err'); } }
-function loadGame(g) { migrateGame(g); reindex(g); NEXT_PID = Math.max(...g.players.map(p => p.id)) + 1; G = g; }
+function loadGame(g) { if (g.rngState != null) seedGameRng(g.rngState); else seedGameRng(g.seed ?? Math.floor(Math.random() * 4294967296)); migrateGame(g); reindex(g); NEXT_PID = Math.max(...g.players.map(p => p.id)) + 1; G = g; }
 
 // ============================================================
 //  Écran d'accueil
@@ -23,9 +23,8 @@ function loadGame(g) { migrateGame(g); reindex(g); NEXT_PID = Math.max(...g.play
 let START_DIV = 1;
 async function startScreen() {
   LIVE?.pitch?.stop(); LIVE = null; G = null;
-  const existing = await Store.get(SAVE_KEY);
-  if (existing && existing.version !== 2) { await Store.del(SAVE_KEY); }
-  const ex = existing?.version === 2 ? existing : null;
+  await migrateLegacySave();
+  const ex = null; // parties : emplacements multiples (gestion.js)
   document.body.className = 'start';
   const divs = [...new Set(DB.clubs.filter(c => !c.foreign).map(c => c.div || 1))].sort();
   const exClub = ex ? ex.clubs.find(c => c.id === ex.clubId) : null;
@@ -40,9 +39,11 @@ async function startScreen() {
       <div><b>${esc(exClub.name)}</b><br><small>${esc(ex.managerName)} · Saison ${ex.season}/${ex.season + 1} · ${weekLabel(ex)}</small></div>
       <button class="btn primary big" id="btnCont">▶ Continuer la partie</button>
     </div>` : ''}
+    <div id="slotsCard"></div>
+    <div id="mondeCard"></div>
     <div class="card">
       <div class="row gap wrap">
-        <h2 class="grow">Nouvelle partie</h2>
+        <h2 class="grow">Nouvelle partie (monde fictif)</h2>
         <button class="btn" id="btnEdit">✏ Éditer la base</button>
         <button class="btn" id="btnImp">📂 Importer (JSON)</button>
         <button class="btn" id="btnExp">⬇ Exporter (JSON)</button>
@@ -50,6 +51,7 @@ async function startScreen() {
       </div>
       <div class="row gap wrap mt">
         <label>Nom de l'entraîneur <input id="mgr" value="${esc(ex?.managerName || localStorage.getItem('mf-mgr') || '')}" placeholder="Ton nom" maxlength="30"></label>
+        ${typeof roleSelectHTML === 'function' ? roleSelectHTML() : ''}
         <div class="grow"></div>
         <div class="tabs">${divs.map((d, i) => `<button class="${d === START_DIV ? 'on' : ''}" data-div="${d}">${esc((DB.leagueNames || [])[i] || 'Division ' + d)}</button>`).join('')}</div>
       </div>
@@ -65,10 +67,13 @@ async function startScreen() {
       </div>
     </div>
     <div class="card row gap wrap">
-      <h2 class="grow">Sauvegardes</h2>
-      <button class="btn" id="btnLoadFile">📂 Charger un fichier de sauvegarde</button>
+      <h2 class="grow">Fichiers</h2>
+      <button class="btn" id="btnLoadFile">📂 Charger un fichier de sauvegarde (nouvel emplacement)</button>
     </div>
   </div>`;
+  renderSlots($('#slotsCard'));
+  if (typeof bindRoleSelect === 'function') bindRoleSelect();
+  renderMondeCard($('#mondeCard'));
   $('#btnCont')?.addEventListener('click', () => { loadGame(ex); enterGame(); });
   $('#btnEdit').onclick = () => editorScreen();
   $('#btnImp').onclick = () => pickFile(async raw => {
@@ -79,7 +84,7 @@ async function startScreen() {
   $('#btnReset').onclick = () => confirmBox('Revenir à la base d\'origine ? Tes modifications de la base (pas ta partie) seront perdues.', async () => { await Store.del(DB_KEY); DB = buildDefaultDatabase(); startScreen(); }, 'Réinitialiser', true);
   $('#btnLoadFile').onclick = () => pickFile(g => {
     if (!g.clubs || !g.players || g.version !== 2) return toast('Ce fichier n\'est pas une sauvegarde compatible.', 'err');
-    loadGame(g); save(); enterGame();
+    g.slot = 's' + Date.now(); loadGame(g); save(); enterGame();
   });
   $$('.tabs button[data-div]').forEach(b => b.onclick = () => { START_DIV = +b.dataset.div; startScreen(); });
   $$('.club-pick').forEach(b => b.onclick = () => {
@@ -90,7 +95,7 @@ async function startScreen() {
       VIEW = 'inbox';
       save(); enterGame();
     };
-    if (ex) confirmBox('Une partie est déjà en cours. La remplacer par une nouvelle ?', go, 'Nouvelle partie', true); else go();
+    go();
   });
 }
 
@@ -315,6 +320,7 @@ function vInbox(el) {
         <div class="tabs sm">${[['all', 'Tous'], ['club', 'Club'], ['transfer', 'Mercato'], ['press', 'Presse'], ['world', 'Ligue']].map(([k, l]) => `<button data-f="${k}" class="${INBOX_FILTER === k ? 'on' : ''}">${l}</button>`).join('')}</div>
       </div>
       ${G.sponsorOffers?.length && !G.sponsor ? `<div class="alert">💼 Trois sponsors attendent ta réponse. <a href="#" onclick="show('finances');return false">Choisir</a></div>` : ''}
+      ${pendingDecisions(G).length ? `<div class="alert req">❗ ${pendingDecisions(G).length} décision(s) en attente${blockingDecisions(G).length ? ' — obligatoire(s) avant de continuer' : ''}. <a href="#" onclick="MAIL_FILTER='todo';show('mail');return false">Répondre</a></div>` : ''}
       ${G.offers.length ? `<div class="alert">💱 ${G.offers.length} offre(s) de transfert en attente. <a href="#" onclick="TR_TAB='offers';show('transfers');return false">Voir</a></div>` : ''}
       <ul class="inbox">${msgs.map(m => `<li class="${m.read ? '' : 'unread'} t-${m.type}"><small>${esc(m.label || '')} · ${m.season}</small>${esc(m.text)}</li>`).join('') || '<li class="muted">Aucun message.</li>'}</ul>
     </section>
@@ -331,8 +337,7 @@ function vInbox(el) {
   el.querySelectorAll('tr[data-c]').forEach(r => r.onclick = () => viewClub(+r.dataset.c));
   el.querySelectorAll('[data-pid]').forEach(r => r.onclick = () => playerModal(+r.dataset.pid));
   el.querySelectorAll('tr[data-fx]').forEach(r => r.onclick = () => matchReport(r.dataset.fx));
-  G.inbox.forEach(m => m.read = true);
-  setTimeout(() => { const s = $('#nav button[data-v=inbox] span'); if (s) s.dataset.n = ''; }, 0);
+  el.querySelectorAll('.inbox li').forEach((li, i) => li.onclick = () => { const m = msgs[i]; if (m) { MAIL_FILTER = 'all'; MAIL_SEL = m.id; show('mail'); } });
 }
 function fxKey(f) { return `${f.comp}|${f.h}|${f.a}`; }
 function findFx(key) {
@@ -396,10 +401,10 @@ function vSquad(el, clubId = G.clubId) {
     ${SQUAD_VIEW === 'stats' ? squadStatsTable(list) : `<div class="scroll"><table class="tbl players">
       <thead><tr>${th('num', '#')}<th></th>${th('name', 'Joueur')}${th('pos', 'Poste')}${th('age', 'Âge')}<th>Nat.</th>${th('ovr', 'Note')}${th('pot', 'Pot.', 'Potentiel')}<th>Forme</th>${th('fit', 'Cond.', 'Condition physique')}${th('mor', 'Moral')}${th('apps', 'MJ')}${th('goals', 'Buts')}${th('rat', 'Moy.')}${th('val', 'Valeur')}${th('wage', 'Salaire')}${th('con', 'Contrat')}<th></th></tr></thead>
       <tbody>${list.map(p => `<tr data-pid="${p.id}" class="${inXI.has(p.id) ? 'xi' : inB.has(p.id) ? 'bn' : ''} ${available(p) ? '' : 'unav'}">
-        <td class="muted">${p.num ?? ''}</td><td>${avatar(p, 32)}</td><td class="nm">${esc(p.name)}</td><td><span class="pos-${ROLES[p.pos].line}">${p.pos}</span></td><td>${p.age}</td><td>${natFlag(p.nat)}</td>
+        <td class="muted">${p.num ?? ''}</td><td>${avatar(p, 32)}</td><td class="nm">${esc(p.name)}${fictionalTag(p)}</td><td><span class="pos-${ROLES[p.pos].line}">${p.pos}</span></td><td>${p.age}</td><td>${natFlag(p.nat)}</td>
         <td>${ovrCell(p)}</td><td>${potCell(p)}</td><td>${formDots(p)}</td><td>${bar(p.fit, 100, p.fit < 70 ? 'low' : '')}</td><td>${bar(p.morale, 100, 'mor')}</td>
         <td>${p.stats.apps}</td><td>${p.stats.goals}</td><td>${p.stats.apps ? (p.stats.rating / p.stats.apps).toFixed(2) : '-'}</td>
-        <td>${money(p.value)}</td><td>${money(p.wage)}</td><td>${p.contract} an${p.contract > 1 ? 's' : ''}</td><td>${status(p)}</td></tr>`).join('')}</tbody>
+        <td>${money(p.value)}</td><td>${wageM(p.wage)}</td><td>${contractEnd(p)}</td><td>${status(p)}</td></tr>`).join('')}</tbody>
     </table></div>`}</section>
     ${mine ? (() => { const ln = G.players.filter(p => p.loan?.from === G.clubId); return ln.length ? `<section class="card"><h2>🔁 Joueurs prêtés</h2><table class="tbl compact">${ln.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 26)}</td><td class="nm">${esc(p.name)}</td><td>${p.pos}</td><td>${ovrBadge(playerOvr(p))}</td><td>${crest(getClub(G, p.club), 18)} ${esc(getClub(G, p.club).name)}</td><td>${p.stats.apps} MJ · ${p.stats.goals} buts · ${p.stats.apps ? (p.stats.rating / p.stats.apps).toFixed(2) : '-'}</td></tr>`).join('')}</table></section>` : ''; })() : ''}`;
   el.querySelectorAll('th[data-k]').forEach(t => t.onclick = () => { SQUAD_SORT = { k: t.dataset.k, d: SQUAD_SORT.k === t.dataset.k ? -SQUAD_SORT.d : (['name', 'pos', 'age', 'num'].includes(t.dataset.k) ? 1 : -1) }; vSquad(el, clubId); });
@@ -428,7 +433,7 @@ function playerModal(pid, tab = 'profil') {
   const best = Object.keys(ROLES).map(r => [r, playerRoleRating(p, r) * familiarity(p, r)]).sort((a, b) => b[1] - a[1]).slice(0, 4);
   const shortlisted = G.shortlist.includes(p.id);
   const form = (p.form || []).filter(x => x.s === G.season).map(x => x.r);
-  const tabs = `<div class="tabs">${[['profil', 'Profil'], ['stats', 'Statistiques'], ...(mine ? [['dev', 'Développement'], ['talk', 'Discuter']] : [])].map(([k, l]) => `<button data-t="${k}" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+  const tabs = `<div class="tabs">${[['profil', 'Profil'], ['stats', 'Statistiques'], ...(mine ? [['dev', 'Développement'], ['talk', 'Discuter']] : []), ...(p.srcId && MONDE.ok ? [['base', 'Base réelle']] : [])].map(([k, l]) => `<button data-t="${k}" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
   let body = '';
   if (tab === 'profil') {
     body = `<div class="grid2">
@@ -449,8 +454,8 @@ function playerModal(pid, tab = 'profil') {
           ${p.clause && (mine || known) ? `<tr><td>Clause libératoire</td><td>${money(p.clause)}</td></tr>` : ''}
           ${p.loan?.inLoan ? `<tr><td>Prêt</td><td>De ${esc(getClub(G, p.loan.from).name)} · tu paies ${Math.round((p.loan.share ?? 1) * 100)} % du salaire${p.loan.option ? ` · option ${money(p.loan.option)}` : ''}</td></tr>` : ''}
           <tr><td>Valeur</td><td>${money(p.value)}</td></tr>
-          <tr><td>Salaire</td><td>${money(p.wage)} / sem.</td></tr>
-          <tr><td>Contrat</td><td>${p.contract} saison(s)</td></tr>
+          <tr><td>Salaire</td><td>${wageM(p.wage)}</td></tr>
+          <tr><td>Contrat</td><td>${contractEnd(p, true)}</td></tr>
           <tr><td>Condition</td><td>${bar(p.fit)} ${Math.round(p.fit)}%</td></tr>
           <tr><td>Moral</td><td>${bar(p.morale, 100, 'mor')} ${Math.round(p.morale)}%</td></tr>
           ${known ? `<tr><td>Postes</td><td>${best.map(([r, v]) => `${r} ${ovrBadge(v)}`).join(' ')}</td></tr>` : ''}
@@ -522,16 +527,16 @@ function playerModal(pid, tab = 'profil') {
        ${club ? `<button class="btn" onclick="closeModal();viewClub(${club.id})">Voir le club</button>` : ''}`;
   modal(`
   <div class="pm-head">${avatar(p, 100)}
-    <div><h2>${p.num ? `<span class="num">${p.num}</span>` : ''}${esc(p.name)}</h2>
-      <p>${ROLES[p.pos].label} · ${p.age} ans · ${natFlag(p.nat)} ${esc(NATIONS.find(n => n[0] === p.nat)?.[1] || p.nat)} · Pied ${esc(p.foot.toLowerCase())}</p>
+    <div><h2>${p.num ? `<span class="num">${p.num}</span>` : ''}${esc(p.name)}${fictionalTag(p)}</h2>
+      <p>${ROLES[p.pos].label} · ${p.ageKnown === false ? 'âge inconnu' : p.age + ' ans'} · ${natFlag(p.nat)} ${esc(NATIONS.find(n => n[0] === p.nat)?.[1] || p.nat)} · Pied ${esc(p.foot.toLowerCase())}</p>
       <p>${club ? crest(club, 20) + ' ' + esc(club.name) : '<i>Agent libre</i>'} ${status(p)} ${formDots(p)}</p>
     </div>
     <div class="pm-ovr">${known ? ovrBadge(ovr) : `<span class="ovr o2 fogo" title="Estimation">~${estOvr(G, p)}</span>`}<small>Potentiel</small>${known ? stars(p.pot) : '<span class="muted">?</span>'}</div>
   </div>
   ${tabs}
   <div class="pm-body">${body}</div>
-  <div class="row gap wrap mt">${actions}<div class="grow"></div><button class="btn" onclick="editPlayerModal(${p.id}, G, () => playerModal(${p.id}))" title="Modifier dans l'éditeur">✏ Éditer</button></div>`, 'wide');
-  $$('#modal [data-t]').forEach(b => b.onclick = () => playerModal(pid, b.dataset.t));
+  <div class="row gap wrap mt">${actions}<div class="grow"></div>${p.srcId && MONDE.ok ? `<button class="btn" onclick="portraitManuel('joueur', '${esc(p.srcId)}', () => playerModal(${p.id}))" title="Associer un portrait à l'identifiant ${esc(p.srcId)}">🖼 Portrait</button>` : ''}<button class="btn" onclick="editPlayerModal(${p.id}, G, () => playerModal(${p.id}))" title="Modifier dans l'éditeur">✏ Éditer</button></div>`, 'wide');
+  $$('#modal [data-t]').forEach(b => b.onclick = () => b.dataset.t === 'base' ? ficheBase(p.srcId, 'gen', false) : playerModal(pid, b.dataset.t));
   $('#dvAttr')?.addEventListener('change', e => { p.train = { ...(p.train || {}), attr: e.target.value || null }; save(); toast('Programme individuel mis à jour.'); });
   $('#dvLearn')?.addEventListener('change', e => { p.train = { ...(p.train || {}), learn: e.target.value || null, done: false }; save(); toast(e.target.value ? `${p.name} commence à apprendre le poste ${e.target.value}.` : 'Apprentissage arrêté.'); });
   $('#dvMentor')?.addEventListener('change', e => { p.mentor = e.target.value ? +e.target.value : null; save(); toast(p.mentor ? `${getPlayer(G, p.mentor).name} prend ${p.name} sous son aile.` : 'Parrainage arrêté.'); });
@@ -594,7 +599,7 @@ function renewModal(pid) {
     <div class="row gap mt"><div class="grow"></div><button class="btn primary" id="ok">Proposer</button></div><p id="resp" class="hint"></p>`);
   $('#ok').onclick = () => {
     const w = +$('#wg').value, y = +$('#yrs').value;
-    if (wageBill(G) - p.wage + w > G.board.wageCap) { $('#resp').innerHTML = `❌ Le président refuse : plafond salarial (${money(G.board.wageCap)}/sem.) dépassé.`; return; }
+    if (wageBill(G) - p.wage + w > G.board.wageCap) { $('#resp').innerHTML = `❌ Le président refuse : plafond salarial (${wageM(G.board.wageCap)}) dépassé.`; return; }
     if (w >= ask * .92 || (w >= ask * .8 && rnd() < .5)) {
       p.wage = w; p.contract = y; p.morale = clamp(p.morale + 10, 0, 100); save(); closeModal(); toast(`${p.name} prolonge de ${y} saison(s) !`); refresh();
     } else { p.morale = clamp(p.morale - 4, 0, 100); $('#resp').innerHTML = `❌ ${esc(p.name)} refuse. Il veut au moins ~${money(roundMoney(ask * .92))}.`; }
@@ -959,7 +964,7 @@ function vTransfers(el) {
       <thead><tr><th></th><th>Joueur</th><th>Poste</th><th>Âge</th><th>Nat.</th><th>Note</th><th>Pot.</th><th>Club</th><th>Valeur</th><th>Salaire</th><th></th></tr></thead>
       <tbody>${list.map(p => { const c = p.club != null ? getClub(G, p.club) : null; return `<tr data-pid="${p.id}">
         <td>${avatar(p, 30)}</td><td class="nm">${esc(p.name)}</td><td><span class="pos-${ROLES[p.pos].line}">${p.pos}</span></td><td>${p.age}</td><td>${natFlag(p.nat)}</td><td>${ovrCell(p)}</td><td>${potCell(p)}</td>
-        <td>${c ? crest(c, 18) + ' ' + esc(c.short) : '<i>Libre</i>'}</td><td>${c ? money(p.value) : '-'}</td><td>${money(p.wage)}</td><td>${status(p)}</td></tr>`; }).join('') || '<tr><td colspan="11" class="muted">Aucun joueur.</td></tr>'}</tbody>
+        <td>${c ? crest(c, 18) + ' ' + esc(c.short) : '<i>Libre</i>'}</td><td>${c ? money(p.value) : '-'}</td><td>${wageM(p.wage)}</td><td>${status(p)}</td></tr>`; }).join('') || '<tr><td colspan="11" class="muted">Aucun joueur.</td></tr>'}</tbody>
     </table></div>`;
   if (TR_TAB === 'search') {
     let list = G.players.filter(p => p.club !== G.clubId && !p.loan);
@@ -1075,7 +1080,7 @@ function offerModal(pid) {
     modal(`<h2>${seller ? 'Transfert' : 'Contrat'} : ${esc(p.name)}</h2>
       <div class="row gap">${avatar(p, 56)}<div><p>${ROLES[p.pos].label} · ${p.age} ans · ${ovrCell(p)} ${potCell(p)}</p>
       <p>${seller ? `${crest(seller, 18)} ${esc(seller.name)} · valeur estimée <b>${money(p.value)}</b>${p.clause && known ? ` · clause libératoire <b>${money(p.clause)}</b>` : p.clause ? ' · clause libératoire (montant inconnu, supervise-le)' : ''}` : 'Agent libre — pas d\'indemnité.'}</p></div></div>
-      <p>Budget transferts : <b>${money(G.board.transfer)}</b> · Marge salariale : <b class="${room() < baseWage ? 'neg' : ''}">${money(room())}/sem.</b></p>
+      <p>Budget transferts : <b>${money(G.board.transfer)}</b> · Marge salariale : <b class="${room() < baseWage ? 'neg' : ''}">${wageM(room())}</b></p>
       <div class="steps"><span class="${stage === 'fee' ? 'on' : 'done'}">${seller ? '1. Accord avec le club' : ''}</span><span class="${stage === 'wage' ? 'on' : ''}">${seller ? '2. ' : ''}Contrat du joueur</span></div>
       ${stage === 'fee' ? `<div class="form-grid">
           <label>Indemnité (€) <input id="fee" type="number" step="100000" value="${deal.fee}"></label>
@@ -1128,7 +1133,7 @@ function offerModal(pid) {
       let need = baseWage * .9 * (1 + Math.max(0, sGap) * .12) * (deal.clause ? .95 : 1) * (deal.clause && deal.clause < p.value * 1.2 ? .93 : 1);
       if (sGap >= 2 && (p.pers === 'Ambitieux' || playerOvr(p) > me.rep)) return render(`❌ ${esc(p.name)} refuse d'être « ${STATUS[deal.status].label} ». Il veut être au moins « ${STATUS[STATUS_ORDER[STATUS_ORDER.indexOf(wantStatus) + 1]].label} ».`);
       if (deal.wage < need) return render(`❌ ${esc(p.name)} refuse ce salaire. Pour ce statut, il veut au moins ~<b>${money(roundMoney(need))}</b>.`);
-      if (wageBill(G) + deal.wage > G.board.wageCap) return render(`❌ Le président bloque : la masse salariale dépasserait le plafond (${money(G.board.wageCap)}/sem.).`);
+      if (wageBill(G) + deal.wage > G.board.wageCap) return render(`❌ Le président bloque : la masse salariale dépasserait le plafond (${wageM(G.board.wageCap)}).`);
       const plan = PAY_PLANS.find(x => x.k === deal.plan);
       const nowPay = roundMoney(deal.fee * plan.now);
       const agent = roundMoney(seller ? deal.fee * .08 : deal.wage * 4);
@@ -1155,7 +1160,7 @@ function offerModal(pid) {
 function loanInModal(pid) {
   const p = getPlayer(G, pid), seller = getClub(G, p.club);
   if (!windowOpen(G)) return toast('Les prêts se font pendant le mercato.', 'err');
-  modal(`<h2>Demande de prêt : ${esc(p.name)}</h2><p>${crest(seller, 18)} ${esc(seller.name)} · salaire ${money(p.wage)}/sem. · jusqu'à la fin de saison.</p>
+  modal(`<h2>Demande de prêt : ${esc(p.name)}</h2><p>${crest(seller, 18)} ${esc(seller.name)} · salaire ${wageM(p.wage)} · jusqu'à la fin de saison.</p>
     <div class="form-grid"><label>Part du salaire payée par toi <select id="ls">${[1, .75, .5, .25].map(v => `<option value="${v}">${v * 100} %</option>`).join('')}</select></label>
     <label>Option d'achat (€, 0 = aucune) <input id="lo" type="number" step="500000" value="0"></label></div>
     <div class="row gap mt"><div class="grow"></div><button class="btn primary" id="ok">Proposer</button></div><p class="hint" id="resp"></p>`);
@@ -1188,13 +1193,13 @@ function vFinances(el) {
   <div class="kpis card">
     <div><small>Trésorerie</small><b class="${c.budget < 0 ? 'neg' : ''}">${money(c.budget)}</b></div>
     <div><small>Budget transferts</small><b>${G.board.ban ? '<span class="neg">Interdit</span>' : money(G.board.transfer)}</b></div>
-    <div><small>Masse salariale</small><b>${money(wages)}<small>/sem.</small></b><em>plafond ${money(G.board.wageCap)} ${bar(capPct, 100, capPct > 98 ? 'low' : '')}</em></div>
+    <div><small>Masse salariale</small><b>${wageM(wages)}</b><em>plafond ${money(G.board.wageCap)} ${bar(capPct, 100, capPct > 98 ? 'low' : '')}</em></div>
     <div><small>Valeur de l'effectif</small><b>${money(sqVal)}</b></div>
     <div><small>Solde de la saison</small><b class="${incT - expT < 0 ? 'neg' : 'pos'}">${money(incT - expT)}</b></div>
   </div>
   ${G.sponsorOffers?.length && !G.sponsor ? `<section class="card sponsor-pick"><h2>💼 Choisis ton sponsor maillot</h2><div class="sp-grid">${G.sponsorOffers.map((o, i) => `<div class="sp">
       <h3>${esc(o.name)}</h3><span class="tag">${o.kind}</span>
-      <p><b>${money(o.weekly)}</b>/semaine · ${o.seasons} saison(s)</p>
+      <p><b>${wageM(o.weekly)}</b> · ${o.seasons} saison(s)</p>
       <p class="hint">${o.objBonus ? `Prime objectif : ${money(o.objBonus)}` : 'Aucune prime : revenu garanti'}${o.winBonus ? ` · ${money(o.winBonus)} par victoire en championnat` : ''}</p>
       <button class="btn primary" data-sp="${i}">Signer</button></div>`).join('')}</div></section>` : ''}
   <div class="grid2">
@@ -1212,19 +1217,19 @@ function vFinances(el) {
       <section class="card"><h2>🏛 Répartition du président</h2>
         <p>Transfère du budget vers les salaires ou l'inverse (1 € de salaire hebdo = ${leagueRoundsTotal(G)} € de budget transferts).</p>
         <div class="row gap wrap"><button class="btn" data-sw="-1" ${G.board.ban ? 'disabled' : ''}>− 10 k€ salaires / + transferts</button><button class="btn" data-sw="1" ${G.board.ban ? 'disabled' : ''}>+ 10 k€ salaires / − transferts</button></div>
-        <h3>Sponsor maillot</h3>${G.sponsor ? `<p><b>${esc(G.sponsor.name)}</b> (${G.sponsor.kind}) : ${money(G.sponsor.weekly)}/sem. · encore ${G.sponsor.seasons} saison(s)${G.sponsor.objBonus ? ` · prime objectif ${money(G.sponsor.objBonus)}` : ''}${G.sponsor.winBonus ? ` · ${money(G.sponsor.winBonus)}/victoire` : ''}</p>` : '<p class="muted">Aucun sponsor signé.</p>'}
+        <h3>Sponsor maillot</h3>${G.sponsor ? `<p><b>${esc(G.sponsor.name)}</b> (${G.sponsor.kind}) : ${wageM(G.sponsor.weekly)} · encore ${G.sponsor.seasons} saison(s)${G.sponsor.objBonus ? ` · prime objectif ${money(G.sponsor.objBonus)}` : ''}${G.sponsor.winBonus ? ` · ${money(G.sponsor.winBonus)}/victoire` : ''}</p>` : '<p class="muted">Aucun sponsor signé.</p>'}
         <h3>Économie de ${esc(L?.name || 'ton championnat')}</h3>
         <table class="tbl kv compact"><tr><td>Droits TV (total ligue)</td><td>${money(eco.tv)} / saison</td></tr><tr><td>Répartition</td><td>50 % égalitaire · 25 % notoriété · 25 % classement</td></tr><tr><td>Prix moyen du billet</td><td>${Math.round(eco.ticket)} €</td></tr><tr><td>Niveau des salaires</td><td>×${wageFactor(G, c).toFixed(2)}</td></tr></table>
         <p class="hint">Dette : intérêts de ~8 %/an. Sous -25 M€ en fin de saison : interdiction de recruter (contrôle de gestion).</p>
       </section>
-      <section class="card"><h2>Plus gros salaires</h2><table class="tbl compact">${top.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 24)}</td><td class="nm">${esc(p.name)}</td><td>${money(p.wage)}/sem.</td><td>${p.contract} an(s)</td></tr>`).join('')}</table></section>
+      <section class="card"><h2>Plus gros salaires</h2><table class="tbl compact">${top.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 24)}</td><td class="nm">${esc(p.name)}</td><td>${wageM(p.wage)}</td><td>${p.contract} an(s)</td></tr>`).join('')}</table></section>
     </div>
   </div>`;
   el.querySelectorAll('tr[data-pid]').forEach(r => r.onclick = () => playerModal(+r.dataset.pid));
   el.querySelectorAll('[data-tk]').forEach(b => b.onclick = () => { G.ticket = +b.dataset.tk; save(); vFinances(el); });
   el.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => {
     G.sponsor = { ...G.sponsorOffers[+b.dataset.sp] }; G.sponsorOffers = null;
-    news(G, `💼 Contrat signé avec ${G.sponsor.name} : ${money(G.sponsor.weekly)}/semaine pendant ${G.sponsor.seasons} saison(s).`, 'board');
+    news(G, `💼 Contrat signé avec ${G.sponsor.name} : ${wageM(G.sponsor.weekly)} pendant ${G.sponsor.seasons} saison(s).`, 'board');
     save(); toast(`Sponsor : ${G.sponsor.name} !`); vFinances(el);
   });
   el.querySelectorAll('[data-sw]').forEach(b => b.onclick = () => {
@@ -1497,7 +1502,7 @@ function vStaff(el) {
   el.innerHTML = `<div class="grid2">
     <section class="card"><h2>🧑‍💼 Staff technique</h2>
       <table class="tbl wrap">${Object.entries(STAFF).map(([k, s]) => `<tr><td><b>${s.label}</b><br><small class="muted">${esc(G.staffNames?.[k] || '')} — ${esc(s.tip)}</small></td>
-        <td class="stars">${lvl(st[k])}</td><td>${money(staffWage(st[k], G))}/sem.</td>
+        <td class="stars">${lvl(st[k])}</td><td>${wageM(staffWage(st[k], G))}</td>
         <td class="row gap"><button class="btn sm" data-dn="${k}" ${st[k] <= 1 ? 'disabled' : ''} title="Remplacer par moins cher">−</button><button class="btn sm primary" data-up="${k}" ${st[k] >= 5 ? 'disabled' : ''} title="Recruter un meilleur profil">+</button></td></tr>`).join('')}</table>
       <p>Masse salariale du staff : <b>${money(total)}</b>/sem.</p>
       <p class="hint">Recruter un meilleur membre coûte une prime de signature (8 semaines de son nouveau salaire).</p>
@@ -1514,7 +1519,7 @@ function vStaff(el) {
     </section></div>`;
   el.querySelectorAll('[data-up]').forEach(b => b.onclick = () => {
     const k = b.dataset.up, nl = st[k] + 1, fee = staffWage(nl, G) * 8;
-    confirmBox(`Recruter un ${STAFF[k].label.toLowerCase()} de niveau ${nl} ? Prime : <b>${money(fee)}</b>, salaire ${money(staffWage(nl, G))}/sem.`, () => {
+    confirmBox(`Recruter un ${STAFF[k].label.toLowerCase()} de niveau ${nl} ? Prime : <b>${money(fee)}</b>, salaire ${wageM(staffWage(nl, G))}`, () => {
       if (c.budget < fee) return toast('Budget insuffisant.', 'err');
       flow(G, c, -fee, 'staff'); st[k] = nl; G.staffNames[k] = pick(STAFF_NAMES.filter(n => !Object.values(G.staffNames).includes(n)));
       news(G, `${G.staffNames[k]} rejoint le staff (${STAFF[k].label}, niveau ${nl}).`, 'board'); save(); vStaff(el);
@@ -1573,6 +1578,15 @@ function vOptions(el) {
     <div class="row gap wrap"><label>Simuler <select id="hol">${[1, 2, 4, 8, 99].map(n => `<option value="${n}">${n === 99 ? 'jusqu\'à la fin de saison' : n + ' semaine(s)'}</option>`).join('')}</select></label>
       <button class="btn" id="holGo">Partir en vacances</button></div>
     <p class="hint">Ton adjoint dirige l'équipe (composition auto) pendant ton absence. Le mercato et les offres restent en attente.</p>
+    ${G.real ? `<h3>🌍 Monde réel — ${esc(G.real.countryLabel)} ${esc(G.real.season)}</h3>
+    <p class="hint">${esc(G.real.notice)} Conversion des attributs : ${esc(G.real.conversion)}. Import de la base : ${esc(G.real.imported || '?')}.</p>
+    <div class="row gap wrap">${(() => { const tiers = G.real.divisions.map(d => d.tier); const groups = tiers.length !== new Set(tiers).size;
+      return groups ? '<span class="muted">Montées/descentes automatiques indisponibles : niveaux à groupes régionaux (règles spécifiques non modélisées).</span>'
+        : `<label class="chk"><input type="checkbox" id="rPromo" ${G.real.promoValidated ? 'checked' : ''}> Je valide l'application de montées/descentes automatiques (3 places entre niveaux, sans barrages) pour ce scénario</label>`; })()}
+      <button class="btn" id="rInc">Effectifs incomplets (${G.real.incomplete.length})</button>
+      ${MONDE.ok ? '<button class="btn" id="rBase">🔎 Base mondiale</button><button class="btn" id="rRes">🖼 Ressources</button>' : ''}</div>` : ''}
+    <h3>Affichage</h3>
+    <div class="row gap wrap"><label class="chk"><input type="checkbox" id="sEd" ${SETTINGS.editorMode ? 'checked' : ''}> Mode éditeur : afficher les potentiels source exacts dans la base</label></div>
     <h3>Raccourcis</h3>
     <p class="hint">Espace / Entrée : continuer · 1 à 9 : menus · / : recherche · Échap : fermer · Espace en match : pause.</p>
     <p class="hint">La partie est sauvegardée automatiquement dans le navigateur (IndexedDB) après chaque action importante.</p>
@@ -1582,15 +1596,22 @@ function vOptions(el) {
   $('#s2d').onchange = e => { SETTINGS.show2d = e.target.checked; saveSettings(); };
   $('#snd').onchange = e => { SETTINGS.sound = e.target.checked; Sound.on = e.target.checked; saveSettings(); };
   $('#holGo').onclick = () => holiday(+$('#hol').value);
+  $('#sEd').onchange = e => { SETTINGS.editorMode = e.target.checked; saveSettings(); };
+  $('#rPromo')?.addEventListener('change', e => { G.real.promoValidated = e.target.checked; save(); toast(e.target.checked ? 'Montées/descentes activées pour ce scénario (choix de l’utilisateur).' : 'Montées/descentes désactivées.'); });
+  $('#rBase')?.addEventListener('click', () => baseScreen());
+  $('#rRes')?.addEventListener('click', () => ressourcesModal());
+  $('#rInc')?.addEventListener('click', () => modal(`<h2>Effectifs incomplets</h2><p class="hint">Clubs comptant moins de 18 joueurs notés dans le snapshot. Le jeu les a complétés par des joueurs fictifs (marqués F). Pour valider un effectif : recrute ou édite les joueurs, ou complète la base source.</p><table class="tbl"><thead><tr><th>Club</th><th>Compétition</th><th>Joueurs notés</th><th>Autres fiches (non jouables)</th><th>Fictifs ajoutés</th></tr></thead><tbody>${G.real.incomplete.map(x => { const c = G.clubs.find(c => c.srcId === x.srcId); return `<tr><td>${esc(x.club)}</td><td>${esc(x.competition)}</td><td>${x.joueurs_notes}</td><td>${x.autres_fiches}</td><td>${c ? G.real.fill[c.id] || 0 : '?'}</td></tr>`; }).join('')}</tbody></table>`, 'wide'));
   $('#o1').onclick = async () => { await save(); toast('Partie sauvegardée.'); };
-  $('#o2').onclick = () => { const { pmap, ...rest } = G; download(`manager-foot-${G.season}-${weekLabel(G).replace(/\s+/g, '-')}.json`, rest); };
+  $('#o2').onclick = () => { G.rngState = RNGS.s; const { pmap, ...rest } = G; download(`manager-foot-${G.season}-${weekLabel(G).replace(/\s+/g, '-')}.json`, rest); };
   $('#o5').onclick = () => exportDatabase(G);
   $('#o3').onclick = async () => { await save(); startScreen(); };
-  $('#o4').onclick = () => confirmBox('Supprimer définitivement la partie ?', async () => { await Store.del(SAVE_KEY); startScreen(); }, 'Supprimer', true);
+  $('#o4').onclick = () => confirmBox('Supprimer définitivement cette partie (les autres parties sont conservées) ?', async () => { await slotDelete(G.slot); G = null; startScreen(); }, 'Supprimer', true);
 }
 
 // ---------- Démarrage ----------
 (async function init() {
+  // attendre que tous les scripts (modules de gestion) soient chargés avant d'afficher l'accueil
+  if (document.readyState !== 'complete') await new Promise(r => addEventListener('load', r, { once: true }));
   await Store.open();
   DB = await Store.get(DB_KEY);
   if (!DB || !DB.clubs) DB = buildDefaultDatabase();

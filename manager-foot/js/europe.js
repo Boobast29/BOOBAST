@@ -57,6 +57,7 @@ function ensureForeignPool(W) {
   let nextId = Math.max(...W.clubs.map(c => c.id)) + 1;
   NEXT_PID = Math.max(NEXT_PID, ...W.players.map(p => p.id)) + 1;
   for (const [country, [count, lo, hi]] of Object.entries(FOREIGN_PLAN)) {
+    if (W.real && country === W.real.country) continue;
     const have = W.clubs.filter(c => c.foreign && c.country === country).length;
     for (let i = have; i < count; i++) {
       const rep = Math.round(hi - (hi - lo) * (i / Math.max(1, count - 1)) + gauss() * 2);

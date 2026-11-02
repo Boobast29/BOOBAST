@@ -425,7 +425,7 @@ function sackedScreen(S) {
     if (S) startClubSeason(G);
     save(); closeModal(); enterGame(); toast('Nouveau départ !');
   });
-  $('#quit').onclick = async () => { closeModal(); await Store.del(SAVE_KEY); startScreen(); };
+  $('#quit').onclick = async () => { closeModal(); await slotDelete(G.slot); G = null; startScreen(); };
 }
 
 // ---------- Vacances : l'adjoint gère l'équipe ----------

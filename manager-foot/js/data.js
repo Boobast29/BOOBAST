@@ -188,6 +188,17 @@ function mulberry32(a) {
 }
 let RNG = Math.random;
 function rnd() { return RNG(); }
+// Générateur de la partie : graine et état sauvegardés (G.seed, G.rngState) pour reproduire le futur après rechargement.
+const RNGS = { s: null };
+function seedGameRng(state) {
+  RNGS.s = state >>> 0;
+  RNG = function () {
+    let a = RNGS.s = (RNGS.s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
 function rint(a, b) { return Math.floor(rnd() * (b - a + 1)) + a; }
 function pick(arr) { return arr[Math.floor(rnd() * arr.length)]; }
 function gauss() { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }

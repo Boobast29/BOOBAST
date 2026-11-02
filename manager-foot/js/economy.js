@@ -15,6 +15,11 @@ function defaultLeagueEco(rank) {
 // économie d'un championnat (modifiable dans l'éditeur via W.eco['L1'] = { tv, ticket, coef })
 function leagueEcoByDiv(W, div) {
   const divs = [...new Set(W.clubs.filter(c => !c.foreign).map(c => c.div || 1))].sort((a, b) => a - b);
+  if (W.real) {
+    // monde réel : rang = niveau de la pyramide (groupes régionaux au même rang), richesse selon le pays
+    const tier = W.real.divisions[div - 1]?.tier ?? div, k = COUNTRY_ECO[W.real.country] ?? 1, d = defaultLeagueEco(tier - 1);
+    return { tv: d.tv * k, ticket: d.ticket * (.7 + .3 * k), coef: d.coef * (tier === 1 ? k : 1), ...((W.eco || {})['L' + div] || {}) };
+  }
   return { ...defaultLeagueEco(Math.max(0, divs.indexOf(div))), ...((W.eco || {})['L' + div] || {}) };
 }
 function leagueEco(G, comp) { return leagueEcoByDiv(G, comp.div); }

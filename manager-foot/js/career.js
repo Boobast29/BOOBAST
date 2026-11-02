@@ -41,10 +41,7 @@ function developWeekly(G) {
       }
     } else if (p.mentor) p.mentor = null;
   }
-  // académie
-  for (const p of G.players.filter(x => x.academy && x.club === G.clubId)) {
-    if (playerOvr(p) < p.pot && rnd() < .12 + (G.fac?.youth || 2) * .02 + (st.youth || 2) * .015) bumpAttr(p, 1);
-  }
+  // académie : progression gérée par youthWeekly (realisme.js), plafonnée par saison
 }
 // en match : on apprend le poste où l'on joue
 function learnFromMatch(G, side) {
@@ -198,7 +195,7 @@ function boardRequest(G, kind) {
     if (conf < 60) { b.conf = clamp(conf - 2, 0, 100); return { ok: false, msg: 'Refusé : « Pas question d\'alourdir la masse salariale. »' }; }
     const add = roundMoney(b.wageCap * .08);
     b.wageCap = roundMoney(b.wageCap + add);
-    return { ok: true, msg: `Accordé : plafond salarial +${money(add)}/semaine.` };
+    return { ok: true, msg: `Accordé : plafond salarial +${wageM(add)}.` };
   }
   if (kind === 'facility') {
     if (conf < 72 || c.budget < 10e6 || G.fac.build) { b.conf = clamp(conf - 1, 0, 100); return { ok: false, msg: 'Refusé : « Pas d\'investissement dans les installations pour le moment. »' }; }

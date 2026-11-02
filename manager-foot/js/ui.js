@@ -38,15 +38,16 @@ function clubOf(id, W = world()) { return W.clubs.find(c => c.id === id); }
 function avatar(p, size = 40, W = world()) {
   const club = p.club != null ? clubOf(p.club, W) : null;
   const shirt = club ? club.colors : ['#555', '#999'];
+  const real = p.srcId || p.real;
   if (p.photo) {
-    const fb = faceSVG(p, size, shirt).replace(/"/g, '&quot;');
-    return `<span class="ph" style="width:${size}px;height:${size}px"><img src="${esc(p.photo)}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.outerHTML=this.dataset.fb" data-fb="${fb}"></span>`;
+    const fb = (real ? initialsSVG(p, size) : faceSVG(p, size, shirt)).replace(/"/g, '&quot;');
+    return `<span class="ph" style="width:${size}px;height:${size}px"><img src="${esc(p.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.outerHTML=this.dataset.fb" data-fb="${fb}"></span>`;
   }
-  return faceSVG(p, size, shirt);
+  return real ? initialsSVG(p, size) : faceSVG(p, size, shirt);
 }
 function crest(c, size = 36) {
   if (!c) return '';
-  if (c.logo) return `<img class="crest" src="${esc(c.logo)}" width="${size}" height="${size}" alt="" referrerpolicy="no-referrer" style="width:${size}px;height:${size}px">`;
+  if (c.logo) return `<img class="crest" src="${esc(c.logo)}" width="${size}" height="${size}" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:${size}px;height:${size}px" onerror="this.outerHTML=this.dataset.fb" data-fb="${esc(crest({ ...c, logo: null }, size))}">`;
   const [a, b] = c.colors;
   const txt = (c.short || c.name.slice(0, 3)).toUpperCase().slice(0, 4);
   return `<svg class="crest" width="${size}" height="${size}" viewBox="0 0 40 46">
