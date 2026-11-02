@@ -1,4 +1,11 @@
-# État du projet — v26 (2 novembre 2026)
+# État du projet — v27 (2 novembre 2026)
+
+## v27 — tri des tableaux, chiffres animés, bilan PDF
+`vendor/tablesort/`, `vendor/countup/`, `vendor/jspdf/` (MIT, licences incluses) + `js/outils_ui.js`.
+- Tri d'un clic sur tous les tableaux à en-têtes (observateur sur l'écran et les fenêtres), tri numérique français (M€, k€, notes, âges).
+- Budget de l'en-tête animé (désactivé si « réduire les animations »).
+- Bilan de carrière PDF (A4, bandeau aux couleurs du club).
+Vérifications (Chromium) : tri croissant/décroissant des valeurs du mercato correct, PDF généré et relu, simulation longue sans erreur.
 
 ## v26 — visite guidée, export en image, application installable
 `vendor/driver/`, `vendor/html-to-image/` (licences MIT) + `js/visite.js` ; `manifest.webmanifest`, `sw.js`, `icone.svg`.

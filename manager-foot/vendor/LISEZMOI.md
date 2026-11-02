@@ -11,6 +11,9 @@ Toutes copiées sans modification depuis le registre npm (versions publiées off
 | `zzfx/` | [KilledByAPixel/ZzFX](https://github.com/KilledByAPixel/ZzFX) | 1.4.0 | MIT | effets sonores synthétisés (but, sifflet, trophée) |
 | `driver/` | [nilbuild/driver.js](https://github.com/nilbuild/driver.js) | 1.10.2 | MIT | visite guidée du jeu |
 | `html-to-image/` | [bubkoo/html-to-image](https://github.com/bubkoo/html-to-image) | 1.11.13 | MIT | export en image (chronique, classement, bilan) |
+| `jspdf/` | [parallax/jsPDF](https://github.com/parallax/jsPDF) | 4.2.1 | MIT | bilan de carrière en PDF |
+| `tablesort/` | [tristen/tablesort](https://github.com/tristen/tablesort) | 5.7.1 | MIT | tri des tableaux en cliquant sur les en-têtes |
+| `countup/` | [inorganik/countUp.js](https://github.com/inorganik/countUp.js) | 2.10.1 | MIT | chiffres animés (budget de l'en-tête) |
 | `retroFootballManager/` | [FredericusRadicalus/retroFootballManager](https://github.com/FredericusRadicalus/retroFootballManager) | commit dans VERSION | MIT | logique des sponsors de tribunes (adaptée dans js/tribunes.js) |
 
 `modules.mjs` expose Fuse et ZzFX (modules ES) en variables globales ; il ne fonctionne qu'avec le serveur local (http),

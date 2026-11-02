@@ -170,6 +170,16 @@ raccourcis : déjà gérés), lz-string (MIT, compression : fflate est plus effi
 (AGPL / licence commerciale) : licences non libres pour un usage sans publier tout le jeu. Pistes : jsPDF (MIT, bilan de saison en PDF),
 qrcode-generator (MIT, partager une partie par QR code), i18next (MIT, traduction).
 
+## Bibliothèques hors football, 3e lot (v27)
+
+| Projet | Licence | Dans le jeu |
+|---|---|---|
+| [tristen/tablesort](https://github.com/tristen/tablesort) 5.7.1 | MIT | tous les tableaux à en-têtes se trient d'un clic (▲/▼), avec un tri adapté aux montants (« 4,8 M€ » < « 123 M€ », « k€/mois ») |
+| [inorganik/countUp.js](https://github.com/inorganik/countUp.js) 2.10.1 | MIT | le budget de l'en-tête défile jusqu'à sa nouvelle valeur après une recette ou une dépense importante |
+| [parallax/jsPDF](https://github.com/parallax/jsPDF) 4.2.1 | MIT | « 📄 PDF » sur la Chronique (et Ctrl+K) : bilan de carrière — chronique, classement, finances, meilleurs joueurs |
+
+Repérées : simple-statistics (ISC, statistiques), Micromodal (MIT, fenêtres accessibles), floating-ui (MIT, infobulles) — pistes.
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.

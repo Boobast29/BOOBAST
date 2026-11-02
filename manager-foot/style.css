@@ -732,3 +732,9 @@ label.chk input[type=checkbox] { width: 16px !important; height: 16px; margin: 0
 .driver-popover.mf-visite button { background: #1b2735; color: var(--txt); border: 1px solid #314155; text-shadow: none; border-radius: 8px; padding: 5px 10px; }
 .driver-popover.mf-visite .driver-popover-next-btn { background: var(--acc); color: #06120b; border-color: transparent; font-weight: 700; }
 .driver-popover.mf-visite .driver-popover-arrow { border-color: #111822; }
+
+/* tableaux triables (tablesort) */
+table.triable th[role=columnheader]:not(.no-sort) { cursor: pointer; user-select: none; white-space: nowrap; }
+table.triable th[role=columnheader]:not(.no-sort):hover { color: var(--txt); }
+table.triable th[aria-sort=ascending]::after { content: " ▲"; font-size: 9px; color: var(--acc); }
+table.triable th[aria-sort=descending]::after { content: " ▼"; font-size: 9px; color: var(--acc); }
