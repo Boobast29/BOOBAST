@@ -10,6 +10,7 @@ Règles :
 import datetime
 import json
 
+import enrichissements
 from commun import normaliser, unpack
 
 PAYS = {  # pays V9 -> code du jeu
@@ -122,6 +123,7 @@ def joueur_jeu(row, con):
         'weakFoot': cap.get('pied_faible_sur_5'), 'skills': cap.get('gestes_techniques_sur_5'),
         'photo': f'/img/joueur/{row["id"]}' if (row['photo_local'] or row['photo_url']) else None,
         'real': True, 'quality': row['qualite'],
+        **enrichissements.infos_joueur(con, row['tm_id']),
     }
 
 
@@ -167,10 +169,24 @@ def construire(con, pays):
                                  'dob': r['naissance'], 'pos': r['poste'], 'posRaw': r['poste_brut'], 'height': r['taille'], 'attrs': None, 'attrCoverage': 0,
                                  'ovr99': None, 'pot99': None, 'estimated': True, 'quality': r['qualite'], 'real': True, 'clubSrc': cid,
                                  'photo': f'/img/joueur/{r["id"]}' if (r['photo_local'] or r['photo_url']) else None})
+        # Complément Wikidata (effectif actuel déclaré sur Wikidata) pour les clubs sans assez de joueurs notés
+        if len(effectif) < 22:
+            for w in enrichissements.effectif_wikidata(con, cid, [j['srcId'] for j in effectif]):
+                if len(effectif) >= 24:
+                    break
+                k = 'wd:' + w['qid']
+                if k in vu_joueurs:
+                    continue
+                vu_joueurs.add(k)
+                age = age_au(w['naissance'])
+                effectif.append({'srcId': k, 'name': w['nom'], 'nat': code_nat(w['nat']), 'natLabel': w['nat'], 'age': age, 'ageKnown': age is not None,
+                                 'dob': w['naissance'], 'pos': w['poste'] or 'MC', 'posRaw': None, 'posGuessed': not w['poste'], 'height': None, 'attrs': None,
+                                 'attrCoverage': 0, 'ovr99': None, 'pot99': None, 'estimated': True, 'quality': 'wikidata', 'real': True, 'clubSrc': cid,
+                                 'photo': f'/img/wd/{w["qid"]}' if w['image'] else None, 'source': 'Wikidata'})
         top = sorted((j['ovr99'] for j in effectif if j.get('ovr99')), reverse=True)[:14]
         moy = sum(top) / len(top) if top else None
         tier = comp['niveau']
-        rep = round((moy - 50) * 1.45 + 40) if moy else {1: 70, 2: 58, 3: 48, 4: 42}.get(tier, 45)
+        rep = round((moy - 50) * 1.45 + 40) if moy else (enrichissements.rep_elo(con, cid) or {1: 70, 2: 58, 3: 48, 4: 42}.get(tier, 45))
         rep = max(30, min(95, rep))
         hist = con.execute("SELECT count(*) FROM joueurs WHERE club_id=? AND qualite<>'rated_snapshot'", (cid,)).fetchone()[0]
         club = {
@@ -181,6 +197,9 @@ def construire(con, pays):
             'realPlayers': sum(1 for j in effectif if not j.get('estimated')), 'estimatedPlayers': sum(1 for j in effectif if j.get('estimated')), 'linkProposed': lien, 'otherProfiles': hist, 'identityStatus': c['statut_identite'] if c else 'inconnu',
             'stadium': None, 'capacity': None,
         }
+        club.update(enrichissements.infos_club(con, cid))
+        if not club['logo'] and enrichissements.logo_wd(con, cid):
+            club['logo'] = f'/img/club/{cid}'
         if sum(1 for j in effectif if not j.get('estimated')) < 18:
             incomplets.append({'club': nom, 'srcId': cid, 'competition': comp['nom'], 'joueurs_notes': sum(1 for j in effectif if not j.get('estimated')),
                                'profils_estimes': sum(1 for j in effectif if j.get('estimated')), 'lien_propose': lien, 'autres_fiches': hist})
@@ -208,6 +227,7 @@ def construire(con, pays):
         'incomplete': incomplets, 'conversion': {'version': VERSION_CONVERSION, 'poids': CONVERSION},
         'sources': json.loads(meta.get('dates_sources', '{}')), 'imported': meta.get('import_termine'),
         'notice': ("Effectifs : joueurs notés du snapshot EA FC27 du 12/09/2026, non vérifiés comme effectifs officiels actuels. "
-                   "Règles de compétition non validées : montées/descentes désactivées tant que tu ne les valides pas. "
-                   "Contrats, salaires, budgets et stades sont des valeurs de simulation."),
+                   "Règlements 2026/27 appliqués (écran Compétitions → Règlement). "
+                   "Contrats, salaires et budgets sont des valeurs de simulation ; stades, entraîneurs, valeurs marchandes et fins de contrat "
+                   "réels quand les imports complémentaires (reep, transfermarkt-datasets, Wikidata) ont été faits."),
     }

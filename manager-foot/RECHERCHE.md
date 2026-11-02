@@ -46,8 +46,32 @@ Moteur avant / après calibrage (monde fictif, 200 matchs par division) :
 | [ihofmann/open-websoccer](https://github.com/ihofmann/open-websoccer) | LGPL-3.0 | Jeu en ligne PHP : idées (sponsors, stades, primes). |
 | [salimt/football-datasets](https://github.com/salimt/football-datasets) | aucune licence | 93 000 joueurs (Transfermarkt) : non réutilisable sans licence. |
 
+## Recherche n° 2 — vrais joueurs, photos, logos, clubs, entraîneurs (v19)
+
+| Source | Licence | Usage dans le jeu |
+|---|---|---|
+| [withqwerty/reep](https://github.com/withqwerty/reep) | CC0 | **Registre d'identités** : 444 707 personnes (401 061 joueurs, 43 646 entraîneurs) et 45 337 clubs, avec identifiants Wikidata, Transfermarkt, SoFIFA/EA, FBref… `outils/importer_reep.py` relie tes joueurs (identifiant EA, puis Transfermarkt, puis nom + date de naissance) et tes clubs (nom + pays) à Wikidata, et complète les tailles inconnues. |
+| [dcaribou/transfermarkt-datasets](https://github.com/dcaribou/transfermarkt-datasets) | CC0 | `outils/importer_transfermarkt.py` : **entraîneur actuel, stade et capacité, valeur de l'effectif** (premières divisions) ; **valeur marchande, fin de contrat, pied fort, agent, sélections** des joueurs ; historique des transferts. |
+| Wikidata (via les identifiants reep) | CC0 (données) | `outils/enrichir_wikidata.py` : **entraîneur en poste de chaque club, tous niveaux** (nom, âge, nationalité, photo), **logo** et **stade/capacité/couleurs/fondation**, **photos** des joueurs sans portrait, **effectifs actuels** des clubs sans joueurs notés (Ligue 3, Primera Federación, Serie C…). |
+| Wikimedia Commons | licence propre à chaque fichier (souvent CC BY-SA) | Photos et logos **libres** téléchargés à la demande par le jeu (cache local, signature vérifiée). Les logos protégés absents de Commons ne sont pas récupérés. |
+| [ClubElo](http://clubelo.com) (API publique) | usage libre de l'API | `outils/importer_clubelo.py` : force Elo du jour → réputation réaliste des clubs sans joueurs notés. |
+
+Tout se lance avec **`Enrichir_Base.bat`** (internet nécessaire, après `Importer_Base.bat`) : reep → transfermarkt-datasets → ClubElo → Wikidata.
+Ordre de priorité dans le jeu : Transfermarkt (mis à jour chaque semaine) > Wikidata > reep.
+
+### Repéré, non intégré
+| Source | Licence | Pourquoi |
+|---|---|---|
+| [Leo4815162342/football-logos](https://github.com/Leo4815162342/football-logos) (5 900 logos PNG/SVG) | aucune licence | Les logos de clubs sont des marques déposées et le dépôt ne donne aucun droit : non intégré. Le pack Football_Monde et Wikimedia Commons restent les sources. |
+| Photos Transfermarkt (`image_url` de transfermarkt-datasets) | droits des photographes | Non utilisées : seules les photos libres de Commons sont ajoutées. |
+| [GallagherAiden/footballSimulationEngine](https://github.com/GallagherAiden/footballSimulationEngine) | MIT | Moteur de match JavaScript (positions des joueurs à chaque itération) : réutilisable, à étudier pour enrichir la vue 2D. |
+| [probberechts/soccerdata](https://github.com/probberechts/soccerdata) | non précisée | Collecteur Python (FBref, Sofascore, ClubElo…) : alternative pour des statistiques de saison, conditions d'utilisation des sites à respecter. |
+| [inker/draw](https://github.com/inker/draw) | aucune licence | Simulateur de tirage de la Ligue des champions (protection par pays) : idée pour le tirage européen. |
+| [jalapic/engsoccerdata](https://github.com/jalapic/engsoccerdata) | aucune licence | Résultats historiques 1871-2022 : redondant avec openfootball (CC0). |
+| Staff technique (adjoints, préparateurs) | — | Aucune source ouverte fiable trouvée : le staff reste généré. |
+
 ## À faire (pistes issues de la recherche)
-1. Importer transfermarkt-datasets (CC0) en local : historique réel des transferts, valeurs de marché par date, clubs de 3e et 4e niveau.
+1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.
 3. Calibrer tirs, passes et xG du moteur avec StatsBomb open-data (usage personnel).
 4. Vérifier les points « à vérifier » de l'écran Règlement (ordre des critères de départage en France, seuils financiers 2026/27).

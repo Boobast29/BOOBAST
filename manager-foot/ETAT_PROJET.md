@@ -1,4 +1,26 @@
-# État du projet — v18 (2 novembre 2026)
+# État du projet — v19 (2 novembre 2026)
+
+## v19 — vrais entraîneurs, stades, photos et logos libres, valeurs et contrats réels
+Nouveaux outils (bibliothèque standard Python) et `Enrichir_Base.bat` ; module de jeu `js/reel.js` ; détails dans RECHERCHE.md.
+- `outils/importer_reep.py` : registre reep (CC0) → liens joueurs/clubs ↔ Wikidata (identifiant EA, Transfermarkt, nom + naissance), tailles complétées.
+- `outils/importer_transfermarkt.py` : transfermarkt-datasets (CC0) → entraîneur, stade, capacité, valeur de l'effectif ; valeur marchande,
+  fin de contrat, pied, agent des joueurs ; transferts. Club ↔ club Transfermarkt par vote des joueurs de l'effectif (≥ 3 et ≥ 60 %).
+- `outils/enrichir_wikidata.py` : entraîneurs en poste (tous niveaux, avec photo), logos et photos libres (Commons), stades, couleurs,
+  fondation, effectifs actuels des clubs sans joueurs notés. Requêtes groupées, pauses, identification du programme.
+- `outils/importer_clubelo.py` : Elo du jour → réputation des clubs sans joueurs notés.
+- `outils/enrichissements.py` : lecture tolérante (sans import, rien ne change) ; `scenario.py` et le gestionnaire d'images l'utilisent
+  (route `/img/wd/<QID>` pour les personnes Wikidata ; logo Commons en repli).
+- Jeu (`js/reel.js`) : vrai stade et capacité, fondation, valeur de l'effectif et **entraîneur réel** sur la fiche club ; ton entraîneur
+  (mode directeur sportif) prend l'identité de l'entraîneur réel (compétences de jeu estimées) ; fiche joueur : valeur, fin de contrat
+  (→ durée du contrat en jeu), pied, agent ; joueurs d'effectif venus de Wikidata marqués comme estimés.
+Vérifications : `outils/tests_enrichissements.py` (vrai registre reep + réponses Transfermarkt/Wikidata simulées au format réel) :
+liens Mbappé (EA) et Dembélé (Transfermarkt), PSG ↔ Q483020, entraîneur Luis Enrique fusionné Transfermarkt + Wikidata (âge, photo),
+Parc des Princes 47 929 places, effectif complété sans doublon, URLs Commons servies, Elo → réputation (Brest 62).
+Navigateur : fiche club et fiche joueur affichent les données réelles, message de bienvenue avec le vrai entraîneur ; simulation longue
+2 graines × 2 saisons sans erreur.
+Limites : **non exécuté contre les vrais services** (Wikidata, Commons, stockage transfermarkt-datasets et ClubElo bloqués dans cette
+session) : à lancer sur ton PC avec `Enrichir_Base.bat` ; liens de clubs par nom (des homonymes peuvent rester non reliés) ;
+staff technique toujours généré ; photos Transfermarkt volontairement non utilisées (droits).
 
 ## v18 — post-saison jouable, coupes nationales, mercato et contrôle financier par pays
 Tout dans `js/reglements.js`.

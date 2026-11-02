@@ -14,6 +14,7 @@ import queue
 import threading
 import urllib.request
 
+import enrichissements
 from commun import CACHE_IMAGES
 
 MAX_OCTETS = 3 * 1024 * 1024
@@ -77,10 +78,14 @@ class Ressources:
 
     def source(self, con, typ, ident):
         """Renvoie (chemin_local, url) connus pour la ressource."""
+        if typ == 'wd':  # personne Wikidata (entraîneur, joueur d'effectif) : fichier Wikimedia Commons
+            return (None, enrichissements.image_wd(con, ident))
         if typ == 'joueur':
             r = con.execute('SELECT photo_local, photo_url FROM joueurs WHERE id=?', (ident,)).fetchone()
         else:
             r = con.execute('SELECT logo_local, logo_url FROM clubs WHERE id=?', (ident,)).fetchone()
+            if r and not (r[0] or r[1]):
+                return (None, enrichissements.logo_wd(con, ident))  # logo libre de Wikimedia Commons
         return (r[0], r[1]) if r else (None, None)
 
     def trouver(self, con, typ, ident, telecharger=True):

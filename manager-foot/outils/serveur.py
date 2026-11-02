@@ -237,7 +237,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if parts[:1] == ['api']:
                 return self.api_get(parts[1:], p)
-            if parts[:1] == ['img'] and len(parts) == 3 and parts[1] in ('joueur', 'club'):
+            if parts[:1] == ['img'] and len(parts) == 3 and parts[1] in ('joueur', 'club', 'wd'):
                 f = RES.trouver(db(), parts[1], parts[2], telecharger=p.get('dl', '1') == '1')
                 if not f:
                     return self.envoyer(404, {'erreur': 'aucune image disponible'})
