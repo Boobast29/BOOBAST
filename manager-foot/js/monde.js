@@ -139,7 +139,7 @@ function realPlayer(sp, clubId, rep) {
   const p = genPlayer(sp.pos, sp.estimated ? q : 10, { club: clubId, age: sp.age ?? 25, nat: sp.nat || 'FRA', name: sp.name, photo: sp.photo, rep });
   if (sp.estimated) p.estimated = true;
   else for (const k in ATTRS) if (sp.attrs[k] != null) p.attrs[k] = sp.attrs[k];
-  p.srcId = sp.srcId; p.real = true; p.ageKnown = sp.ageKnown; p.dob = sp.dob; p.natLabel = sp.natLabel;
+  p.srcId = sp.srcId; p.real = true; if (sp.posRaw) p.posRaw = sp.posRaw; p.ageKnown = sp.ageKnown; p.dob = sp.dob; p.natLabel = sp.natLabel;
   if (sp.detail99) p.detail99 = sp.detail99;
   p.ovr99 = sp.ovr99; p.pot99 = sp.pot99; p.attrCoverage = sp.attrCoverage; p.weakFoot = sp.weakFoot; p.skillMoves = sp.skills;
   if (typeof skillInit === 'function') skillInit(p, sp.detail99 || {});

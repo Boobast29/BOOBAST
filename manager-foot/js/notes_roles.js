@@ -47,7 +47,7 @@ function poidsContexte(poste, style, devoir = 0, inst = null) {
 function notePosteContexte(p, ctx, D = attributsDetail(p)) {
   const w = poidsContexte(ctx.poste, ctx.style, ctx.devoir, ctx.equipe ? ctx.inst : null);
   let s = 0; for (const [k, x] of Object.entries(w)) s += (D[k] ?? 10) * x;
-  return { n20: s, w };
+  return { n20: typeof horsSpecialite === 'function' ? horsSpecialite(p, ctx.poste, s) : s, w };
 }
 function contexteParDefaut(p) {
   const T = G?.tactics, mine = p.club === G?.clubId, i = mine && T?.lineup ? T.lineup.indexOf(p.id) : -1;

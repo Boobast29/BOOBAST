@@ -1,3 +1,12 @@
+# État du projet — v66 (3 novembre 2026)
+
+## Notes aux postes réalistes (js/attributs.js)
+- Avant : un gardien pouvait afficher 66 en milieu, un attaquant 60 en défense (qualités de champ générées à un niveau moyen, aucune pénalité dans la note détaillée ; moteur : 0,78 pour tout poste non voisin).
+- Gardien ↔ joueur de champ : note divisée par deux, plafonnée à 35/100. Entre joueurs de champ : pénalité selon la distance entre les postes (latéral → défense centrale ≈ −10 %, milieu → défense centrale ≈ −20 %, attaquant → défense centrale ≈ −40 %). Même logique dans le moteur (familiarité).
+- Exceptions : postes secondaires réels des données source (`posRaw` : « ST, CB »…) comptés comme maîtrisés ; joueurs polyvalents (≈ 5 %, stables, pénalité divisée par deux, signalés « polyvalent ») ; postes appris à l'entraînement.
+- Exemple : gardien 82 au poste, 25 à 33 ailleurs ; attaquant 72 au poste, 40 en défense centrale (44 s'il est polyvalent, 61 si la défense centrale est un de ses postes réels).
+- Vérifié : hasard intact, 2 saisons sans erreur, audit des écrans propre, réalisme ligue 1 conservé (champion 90 pts, 25 % de nuls).
+
 # État du projet — v65 (3 novembre 2026)
 
 ## Visages des joueurs sans photo
