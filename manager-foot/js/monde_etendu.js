@@ -19,10 +19,16 @@ async function lirePaysMonde(file) {
   const noms=await correctifsNomsMonde;
   for(const c of pays.clubs){const n=noms.clubs[c.fmUid];if(n){c.previousSourceName=c.name;c.name=n.name;}}
   for(const c of pays.competitions){const n=noms.competitions[c.fmUid];if(n){c.previousSourceName=c.name;c.name=n.name;}}
-  // Seules les photos réellement présentes dans le catalogue local sont proposées en carrière.
-  portraitsLocauxMonde ||= fetch('packs/portraits-locaux-fmb.json').then(r=>r.ok?r.json():{players:[]}).then(d=>new Set(d.players.map(String))).catch(()=>new Set());
+  // Le pack distingue les portraits locaux des liens externes ; aucun lien n'est inventé.
+  portraitsLocauxMonde ||= fetch('packs/portraits-locaux-fmb.json').then(r=>r.ok?r.json():{players:[],external:[]}).then(d=>({local:new Set(d.players.map(String)),external:new Set(d.external.map(String))})).catch(()=>({local:new Set(),external:new Set()}));
   const portraits=await portraitsLocauxMonde;
-  for(const c of pays.clubs)for(const p of c.players)if(portraits.has(String(p.fmUid)))p.photo=`/api/catalogue/image/players/${encodeURIComponent(p.fmUid)}`;
+  for(const c of pays.clubs)for(const p of c.players){
+    const uid=String(p.fmUid), distant=portraits.external.has(uid) ? `https://media.footballmanagerblog.org/faces/${encodeURIComponent(uid)}.webp` : null;
+    if(portraits.local.has(uid)){
+      p.photo=`/api/catalogue/image/players/${encodeURIComponent(uid)}`;
+      p.photoFallbackUrl=distant;
+    }else if(distant)p.photo=distant;
+  }
   return pays;
 }
 function construireCarriereMonde(pays, groupeD3) {
@@ -60,6 +66,7 @@ function construireCarriereMonde(pays, groupeD3) {
     p.dataQuality=info ? (info.detailed?'documented_attributes':'estimated_attributes') : 'generated_filler';
     if(info) {
       appliquerBiographieTransfermarkt(p,info.source);
+      if(info.source.photoFallbackUrl)p.photoFallbackUrl=info.source.photoFallbackUrl;
       p.sourceProfile={url:info.source.sourceUrl,database:info.source.sourceDatabase,squad:info.source.squad,contract:info.source.contractEndText};
       if(Number.isFinite(info.source.wageWeekly))p.wage=info.source.wageWeekly;
       if(Number.isFinite(info.source.value))p.value=info.source.value;
