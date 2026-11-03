@@ -367,6 +367,7 @@ def main():
     ap.add_argument('--port', type=int, default=8765)
     ap.add_argument('--donnees', help='dossier Football_Monde')
     ap.add_argument('--hors-ligne', action='store_true', help='ne jamais télécharger d\'image')
+    ap.add_argument('--ouvrir', action='store_true', help='ouvre le jeu dans le navigateur une fois le serveur prêt')
     a = ap.parse_args()
     FM = trouver_football_monde(a.donnees or lire_config().get('football_monde'))
     CATALOGUE = Catalogue(FM)
@@ -375,8 +376,19 @@ def main():
         RES.hors_ligne = a.hors_ligne
     else:
         print('Catalogue FMB inclus prêt. Pour une carrière mondiale : outils/importer_monde.py --donnees CHEMIN/Football_Monde', flush=True)
-    srv = ThreadingHTTPServer(('127.0.0.1', a.port), Handler)
-    print(f'Manager Foot prêt : http://127.0.0.1:{a.port}/  (Ctrl+C pour arrêter)', flush=True)
+    try:
+        srv = ThreadingHTTPServer(('127.0.0.1', a.port), Handler)
+    except OSError:
+        print(f'Le port {a.port} est déjà utilisé : le jeu tourne peut-être déjà (http://127.0.0.1:{a.port}/).', flush=True)
+        print('Ferme l\'autre fenêtre du serveur, ou lance : python outils/serveur.py --port 8766', flush=True)
+        if a.ouvrir:
+            import webbrowser
+            webbrowser.open(f'http://127.0.0.1:{a.port}/')
+        return
+    print(f'Manager Foot prêt : http://127.0.0.1:{a.port}/  (laisse cette fenêtre ouverte pendant la partie, Ctrl+C pour arrêter)', flush=True)
+    if a.ouvrir:  # le navigateur s'ouvre seulement maintenant : plus de « connexion refusée » au démarrage
+        import webbrowser
+        webbrowser.open(f'http://127.0.0.1:{a.port}/')
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

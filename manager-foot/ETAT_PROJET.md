@@ -1,3 +1,9 @@
+# État du projet — v72 (3 novembre 2026)
+
+## Lancement plus fiable (Lancer_Manager_Foot.bat, outils/serveur.py)
+- Avant : le navigateur s'ouvrait avant que le serveur soit prêt (chargement de la base) → « 127.0.0.1 n'autorise pas la connexion ».
+- Maintenant : `serveur.py --ouvrir` ouvre le navigateur une fois le serveur à l'écoute ; port déjà pris → message clair (et ouverture du jeu déjà lancé) ; le lanceur vérifie que le zip est extrait et que Python est installé, et garde la fenêtre ouverte avec un message si le serveur s'arrête.
+
 # État du projet — v71 (3 novembre 2026)
 
 ## Fusion de la branche Manager-foot
