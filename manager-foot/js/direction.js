@@ -145,17 +145,47 @@ function dirCompareAdd(pid) {
 }
 function vCompare(el) {
   const d = dirState(), ps = d.comparison.map(id => getPlayer(G, id)).filter(Boolean);
-  const fields = [ ['Poste', p => p.pos], ['Âge', p => p.ageKnown === false ? '?' : p.age], ['Club', p => p.club == null ? 'Libre' : getClub(G, p.club)?.short || '—'], ['Note globale', p => knows(G, p) ? Math.round(playerOvr(p)) : `~${estOvr(G, p)}`], ['Potentiel', p => knows(G, p) ? p.pot : '?'], ['Valeur', p => money(p.value)], ['Salaire', p => knows(G, p) ? wageM(p.wage) : '?'], ['Moral', p => p.club === G.clubId ? `${Math.round(p.morale)} / 100` : '—'], ['Matchs', p => p.stats.apps], ['Buts', p => p.stats.goals], ['Passes décisives', p => p.stats.assists], ['Note moyenne', p => p.stats.apps ? (p.stats.rating / p.stats.apps).toFixed(2) : '—'], ...Object.entries(ATTRS).map(([k, label]) => [label, p => knows(G, p) ? p.attrs[k] ?? '—' : '?']) ];
-  el.innerHTML = `<div class="dir-heading"><div><small>CELLULE DE RECRUTEMENT</small><h1>Comparer les joueurs</h1><p>Jusqu’à quatre profils côte à côte. Les attributs inconnus restent masqués tant que le joueur n’a pas été supervisé.</p></div><button class="btn" id="cmpBack">Voir l’effectif</button></div><section class="card"><label class="dir-search-label" for="cmpSearch">Ajouter un joueur</label><input id="cmpSearch" type="search" placeholder="Rechercher par nom, club ou poste…" autocomplete="off"><div id="cmpResults" class="dir-results"></div><div class="dir-selected">${ps.map(p => `<span>${avatar(p, 26)} ${esc(p.name)} <button data-remove="${p.id}" aria-label="Retirer ${esc(p.name)}">×</button></span>`).join('') || '<small>Sélectionne deux à quatre joueurs pour comparer leurs profils.</small>'}</div></section>
-    ${ps.length ? `<section class="card dir-compare-scroll"><table class="tbl dir-compare"><thead><tr><th>Critère</th>${ps.map(p => `<th>${avatar(p, 40)}<strong>${esc(p.name)}</strong><small>${esc(p.pos)} · ${p.age} ans</small></th>`).join('')}</tr></thead><tbody>${fields.map(([label, fn]) => `<tr><th scope="row">${esc(label)}</th>${ps.map(p => `<td>${esc(String(fn(p)))}</td>`).join('')}</tr>`).join('')}</tbody></table></section>` : ''}`;
+  const known = p => knows(G, p);
+  const value = (p, fn) => known(p) ? fn(p) : null;
+  const fields = [
+    { section: 'Profil' },
+    ['Poste', p => p.pos], ['Âge', p => p.ageKnown === false ? '?' : p.age],
+    ['Club', p => p.club == null ? 'Libre' : getClub(G, p.club)?.short || '—'],
+    ['Note globale', p => known(p) ? Math.round(playerOvr(p)) : `~${estOvr(G, p)}`, p => value(p, playerOvr), 100],
+    ['Potentiel', p => known(p) ? p.pot : '?', p => value(p, x => x.pot), 100],
+    ['Valeur', p => money(p.value)], ['Salaire', p => known(p) ? wageM(p.wage) : '?'],
+    ['Moral', p => p.club === G.clubId ? `${Math.round(p.morale)} / 100` : '—'],
+    { section: 'Saison' },
+    ['Matchs', p => p.stats?.apps ?? 0], ['Buts', p => p.stats?.goals ?? 0],
+    ['Passes décisives', p => p.stats?.assists ?? 0],
+    ['Note moyenne', p => p.stats?.apps ? (p.stats.rating / p.stats.apps).toFixed(2) : '—'],
+    { section: 'Attributs / 20' },
+    ...Object.entries(ATTRS).map(([k, label]) => [label, p => known(p) ? p.attrs?.[k] ?? '—' : '?', p => value(p, x => x.attrs?.[k]), 20])
+  ];
+  const top = p => known(p) ? Object.entries(ATTRS).filter(([k]) => Number.isFinite(p.attrs?.[k])).sort((a, b) => p.attrs[b[0]] - p.attrs[a[0]]).slice(0, 3) : [];
+  const row = f => {
+    if (f.section) return `<tr class="dir-section"><th colspan="${ps.length + 1}" scope="colgroup">${esc(f.section)}</th></tr>`;
+    const [label, display, metric, max] = f;
+    const values = metric ? ps.map(metric).filter(Number.isFinite) : [];
+    const best = values.length > 1 ? Math.max(...values) : null;
+    return `<tr><th scope="row">${esc(label)}</th>${ps.map(p => {
+      const n = metric?.(p), highlight = best != null && n === best;
+      const fill = Number.isFinite(n) && max ? `<span class="dir-metric-track" aria-hidden="true"><i style="width:${clamp(n / max * 100, 0, 100)}%"></i></span>` : '';
+      return `<td class="${highlight ? 'dir-best' : ''}"><span class="dir-metric-value">${esc(display(p))}${highlight ? '<span class="dir-best-mark" aria-label="Meilleur du groupe">↑</span>' : ''}</span>${fill}</td>`;
+    }).join('')}</tr>`;
+  };
+  el.innerHTML = `<div class="dir-heading"><div><small>CELLULE DE RECRUTEMENT</small><h1>Comparer les joueurs</h1><p>Jusqu’à quatre profils côte à côte. Les notes non supervisées restent masquées ; une note précédée de ~ est une estimation.</p></div><button class="btn" id="cmpBack">Voir l’effectif</button></div><section class="card"><label class="dir-search-label" for="cmpSearch">Ajouter un joueur <small>(${ps.length}/4)</small></label><div class="dir-search-row"><input id="cmpSearch" type="search" placeholder="Nom, club ou poste…" autocomplete="off" ${ps.length >= 4 ? 'disabled' : ''}><select id="cmpScope" aria-label="Périmètre de recherche" ${ps.length >= 4 ? 'disabled' : ''}><option value="all">Tous les joueurs</option><option value="squad">Mon effectif</option><option value="known">Joueurs supervisés</option></select></div><div id="cmpResults" class="dir-results" role="status" aria-live="polite"></div><div class="dir-selected">${ps.map(p => `<span>${avatar(p, 26)} ${esc(p.name)} <button data-remove="${p.id}" aria-label="Retirer ${esc(p.name)}">×</button></span>`).join('') || '<small>Sélectionne deux à quatre joueurs pour comparer leurs profils.</small>'}</div></section>
+    ${ps.length ? `<section class="dir-compare-cards" aria-label="Profils sélectionnés">${ps.map(p => `<article class="card dir-compare-card"><div class="dir-compare-person">${avatar(p, 48)}<div><strong>${esc(p.name)}</strong><small>${esc(p.pos)} · ${esc(p.club == null ? 'Libre' : getClub(G, p.club)?.name || '—')}</small></div></div><div class="dir-compare-rating"><b>${known(p) ? Math.round(playerOvr(p)) : `~${estOvr(G, p)}`}</b><span>Note globale<br><small>${known(p) ? 'Rapport disponible' : 'Estimation · à superviser'}</small></span></div><div class="dir-strengths">${top(p).length ? top(p).map(([k, label]) => `<span>${esc(label)} <b>${p.attrs[k]}</b></span>`).join('') : '<span>Attributs à découvrir</span>'}</div></article>`).join('')}</section><section class="card dir-compare-scroll"><h2>Détail des profils</h2><p class="hint">La flèche signale la meilleure valeur connue parmi les joueurs sélectionnés. Les barres reflètent la note sur 20 ou 100.</p><table class="tbl dir-compare"><thead><tr><th>Critère</th>${ps.map(p => `<th>${avatar(p, 40)}<strong>${esc(p.name)}</strong><small>${esc(p.pos)} · ${p.ageKnown === false ? 'âge inconnu' : `${p.age} ans`}</small></th>`).join('')}</tr></thead><tbody>${fields.map(row).join('')}</tbody></table></section>` : ''}`;
   $('#cmpBack').onclick = () => show('squad');
   el.querySelectorAll('[data-remove]').forEach(b => b.onclick = () => dirCompareAdd(+b.dataset.remove));
-  $('#cmpSearch').oninput = e => {
-    const q = e.target.value.trim().toLocaleLowerCase('fr');
-    const list = q.length < 2 ? [] : G.players.filter(p => !d.comparison.includes(p.id) && `${p.name} ${p.pos} ${p.club == null ? '' : getClub(G, p.club)?.name || ''}`.toLocaleLowerCase('fr').includes(q)).slice(0, 12);
-    const box = $('#cmpResults'); box.innerHTML = list.map(p => `<button data-add="${p.id}">${avatar(p, 26)} <span>${esc(p.name)} <small>${esc(p.pos)} · ${esc(p.club == null ? 'Libre' : getClub(G, p.club)?.short || '')}</small></span><b>Ajouter +</b></button>`).join('');
+  const search = () => {
+    const q = $('#cmpSearch').value.trim().toLocaleLowerCase('fr'), scope = $('#cmpScope').value;
+    const list = q.length < 2 ? [] : G.players.filter(p => !d.comparison.includes(p.id) && (scope === 'all' || scope === 'squad' && p.club === G.clubId || scope === 'known' && known(p)) && `${p.name} ${p.pos} ${p.club == null ? '' : getClub(G, p.club)?.name || ''}`.toLocaleLowerCase('fr').includes(q)).slice(0, 12);
+    const box = $('#cmpResults'); box.innerHTML = list.map(p => `<button data-add="${p.id}">${avatar(p, 26)} <span>${esc(p.name)} <small>${esc(p.pos)} · ${esc(p.club == null ? 'Libre' : getClub(G, p.club)?.short || '')}</small></span><b>Ajouter +</b></button>`).join('') || (q.length >= 2 ? '<p class="hint">Aucun joueur trouvé avec ce filtre.</p>' : '');
     box.querySelectorAll('[data-add]').forEach(b => b.onclick = () => dirCompareAdd(+b.dataset.add));
   };
+  $('#cmpSearch').oninput = search;
+  $('#cmpScope').onchange = search;
 }
 const dirShow = show;
 show = function (view) {
