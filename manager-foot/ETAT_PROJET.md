@@ -1,3 +1,9 @@
+# État du projet — v80 (3 novembre 2026)
+
+## Fiche joueur compacte et personnalisable (js/fiche_joueur.js)
+- Onglet Profil façon Football Manager : attributs détaillés à gauche (technique, mental, physique côte à côte), informations à droite ; texte plus petit, fenêtre plus large. Hauteur : 2 379 px → 963 px.
+- « Personnaliser » (en-tête de la fiche) : afficher ou masquer chaque bloc (informations, traits, profil physique, évolution et avis du staff, données réelles, parcours, analyse du profil, 9 qualités de base) ; mémorisé pour toutes les fiches.
+
 # État du projet — v79 (3 novembre 2026)
 
 ## Préférences de partie (js/preferences_partie.js) — au début de chaque nouvelle partie, puis dans Options
