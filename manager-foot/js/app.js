@@ -536,7 +536,7 @@ function playerModal(pid, tab = 'profil') {
       <p>${ROLES[p.pos].label} · ${p.ageKnown === false ? 'âge inconnu' : p.age + ' ans'} · ${natFlag(p.nat)} ${esc(NATIONS.find(n => n[0] === p.nat)?.[1] || p.nat)} · Pied ${esc(p.foot.toLowerCase())}</p>
       <p>${club ? crest(club, 20) + ' ' + esc(club.name) : '<i>Agent libre</i>'} ${status(p)} ${formDots(p)}</p>
     </div>
-    <div class="pm-ovr">${known ? ovrBadge(ovr) : `<span class="ovr o2 fogo" title="Estimation">~${estOvr(G, p)}</span>`}<small>Potentiel</small>${known ? stars(p.pot) : '<span class="muted">?</span>'}</div>
+    <div class="pm-ovr">${known ? ovrBadge(ovr) : `<span class="ovr o2 fogo" title="Estimation">~${estOvr(G, p)}</span>`}<small>Potentiel</small>${potCell(p)}</div>
   </div>
   ${tabs}
   <div class="pm-body">${body}</div>
@@ -1300,7 +1300,7 @@ function vYouth(el) {
       <p class="hint">Le potentiel affiché est une estimation de ton formateur (plus il est bon, plus elle est précise). 💎 = pépite repérée. À 20 ans, un joueur non promu quitte l'académie.</p>
     </section>
     <section class="card"><h2>⭐ Jeunes de l'équipe première</h2>
-      ${young.length ? `<table class="tbl compact">${young.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 26)}</td><td class="nm">${esc(p.name)}</td><td>${p.pos}</td><td>${p.age}</td><td>${ovrBadge(playerOvr(p))}</td><td>${stars(p.pot)}</td><td>${p.stats.apps} MJ</td><td>${p.mentor ? '🧑‍🏫' : ''}${p.loan ? '🔁' : ''}</td></tr>`).join('')}</table>` : '<p class="muted">Aucun.</p>'}
+      ${young.length ? `<table class="tbl compact">${young.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 26)}</td><td class="nm">${esc(p.name)}</td><td>${p.pos}</td><td>${p.age}</td><td>${ovrBadge(playerOvr(p))}</td><td>${potCell(p)}</td><td>${p.stats.apps} MJ</td><td>${p.mentor ? '🧑‍🏫' : ''}${p.loan ? '🔁' : ''}</td></tr>`).join('')}</table>` : '<p class="muted">Aucun.</p>'}
       <p class="hint">Fais-les jouer, donne-leur un parrain (fiche joueur › Développement) ou prête-les pour accélérer leur progression.</p>
     </section>
   </div>`;

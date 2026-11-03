@@ -1,3 +1,17 @@
+# État du projet — v60 (3 novembre 2026)
+
+## Carrière du staff (js/carriere_staff.js)
+- Potentiel caché (1-5 ★) : affiché comme estimation (± 1 étoile au recrutement et la 1re saison, exact après 2 saisons au club ; l'estimation peut se tromper).
+- Sérieux au travail (caché la 1re saison : bourreau de travail, sérieux, correct, irrégulier) et accompagnement (niveau de l'adjoint ou de l'entraîneur principal).
+- Progression hebdomadaire avec part de hasard (tirage à part, sans décaler les matchs) × sérieux + accompagnement + entente + centre d'entraînement ; déclin après 60 ans. Barre pleine : +1 niveau, appliqué au moteur.
+- Fin de saison : le potentiel du staff peut monter ou baisser (sérieux, entente, hasard).
+- Salaire du marché par niveau (sous-payé / au prix / au-dessus) ; après une progression, un membre sous-payé demande une revalorisation (question).
+- Marchés staff et entraîneurs : au moins deux libres par poste (sans indemnité), filtre « Libres seulement », potentiel estimé.
+
+## Potentiel incertain des joueurs (js/potentiel.js)
+- Potentiel affiché en fourchette estimée par le staff (entraîneur technique + adjoint pour tes joueurs, plus précis avec l'ancienneté ; recruteur pour les autres), avec biais possible.
+- Fin de saison, 23 ans et moins : potentiel revu selon hasard, personnalité (sérieux), accompagnement (staff, centre, entente) et temps de jeu ; nouvelles pour les gros écarts.
+
 # État du projet — v59 (3 novembre 2026)
 
 ## Entente du staff (js/entente_staff.js)
