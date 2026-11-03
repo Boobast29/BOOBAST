@@ -6,8 +6,20 @@
 //  Joueur non observé : l'attribut est estimé (milieu de la fourchette affichée sur sa fiche) ou inconnu (« ? »)
 //  selon les préférences de la partie — la recherche ne révèle jamais la vraie valeur.
 // ============================================================
-let RA = { q: '', postes: [], ageMin: '', ageMax: '', tMin: '', tMax: '', nat: '', pays: '', lg: '', pied: '', contrat: '', valMax: '', salMax: '', libres: false, obs: '', attrs: [['', ''], ['', ''], ['', '']], col: '', tri: { k: 'age', d: 1 } };
+let RA = { q: '', postes: [], ageMin: '', ageMax: '', tMin: '', tMax: '', nat: '', pays: '', lg: '', pied: '', contrat: '', valMax: '', salMax: '', libres: false, obs: '', attrs: [['', '', '>=']], col: '', tri: { k: 'age', d: 1 } };
 const RA_ATTRS = typeof ATTR_DETAIL !== 'undefined' ? ATTR_DETAIL.map(([k, l]) => [k, l]) : [];
+// critères façon Football Manager : attributs par famille, note au poste, notes cachées (estimées)
+const RA_SPECIAUX = [['np', 'Note au poste (sur 20)'], ['nc_prof', 'Professionnalisme (caché)'], ['nc_pres', 'Pression (caché)'], ['nc_temp', 'Tempérament (caché)'], ['nc_amb', 'Ambition (caché)'], ['nc_fid', 'Fidélité (cachée)'], ['nc_fair', 'Fair-play (caché)'], ['nc_pol', 'Polémique (caché)']];
+RA_ATTRS.push(...RA_SPECIAUX);
+function valeurCritere(p, k, D) {
+  if (k === 'np') { const n = typeof notePoste === 'function' ? notePoste(p, p.pos, D) : 10; return knows(G, p) ? { v: n, txt: n.toFixed(1).replace('.', ','), exact: true } : { v: (estOvr(G, p) || 50) / 5, txt: '~' + Math.round((estOvr(G, p) || 50) / 5), exact: false }; }
+  if (k.startsWith('nc_')) {
+    if (typeof notesCachees !== 'function') return null;
+    const c = typeof connaissance === 'function' ? connaissance(G, p) : 100; if (c <= 0) return { v: null, txt: '?', exact: false };
+    const v = notesCachees(p)[k.slice(3)]; return { v, txt: `~${v}`, exact: false };
+  }
+  return attrEstime(p, k, D);
+}
 function attrEstime(p, k, D) {
   const v = D[k]; if (v == null) return null;
   if (typeof knows !== 'function' || knows(G, p)) return { v, txt: String(v), exact: true };
@@ -18,6 +30,7 @@ function attrEstime(p, k, D) {
 }
 function finContrat(p) { return G.season + (p.contract || 0); }
 function vRechercheAvancee(host) {
+  RA.attrs = (RA.attrs || []).map(a => [a[0] || '', a[1] ?? '', a[2] || '>=']); RA.mode ||= 'et';
   const attrsActifs = [...new Set([...RA.attrs.map(a => a[0]).filter(Boolean), RA.col].filter(Boolean))];
   const etiquette = k => RA_ATTRS.find(a => a[0] === k)?.[1] || k;
   let L = G.players.filter(p => p.club !== G.clubId && !p.loan && !p.academy && p.club !== undefined);
@@ -43,10 +56,12 @@ function vRechercheAvancee(host) {
   });
   const lignes = [];
   const filtresAttr = RA.attrs.filter(([k, m]) => k && m !== '');
+  const okCrit = (e, op, m) => e && e.v != null && (op === '<=' ? e.v <= +m : e.v >= +m);
   for (const p of L) {
     let D = null, est = {};
-    if (attrsActifs.length) { D = attributsDetail(p); for (const k of attrsActifs) est[k] = attrEstime(p, k, D); }
-    if (filtresAttr.some(([k, m]) => !est[k] || est[k].v == null || est[k].v < +m)) continue;
+    if (attrsActifs.length) { D = attributsDetail(p); for (const k of attrsActifs) est[k] = valeurCritere(p, k, D); }
+    if (filtresAttr.length && (RA.mode === 'ou' ? !filtresAttr.some(([k, m, op]) => okCrit(est[k], op, m)) : !filtresAttr.every(([k, m, op]) => okCrit(est[k], op, m)))) continue;
+    if (RA.perso && typeof personnaliteFM === 'function' && (connaissance(G, p) <= 0 || personnaliteFM(p)[0] !== RA.perso)) continue;
     lignes.push({ p, est });
   }
   const val = (r, k) => k === 'nom' ? r.p.name : k === 'pos' ? POS_ORDER.indexOf(r.p.pos) : k === 'age' ? r.p.age : k === 'val' ? r.p.value : k === 'sal' ? r.p.wage
@@ -55,7 +70,9 @@ function vRechercheAvancee(host) {
   lignes.sort((a, b) => { const x = val(a, tk), y = val(b, tk); return (x > y ? 1 : x < y ? -1 : 0) * td; });
   const nats = [...new Set(G.players.filter(p => p.club !== G.clubId).map(p => p.nat).filter(n => n && n !== 'UNK'))].sort();
   const pays = [...new Set(G.clubs.filter(c => c.id !== G.clubId).map(c => c.country).filter(Boolean))].sort();
-  const optA = sel => `<option value="">— Attribut —</option>${RA_ATTRS.map(([k, l]) => `<option value="${k}" ${sel === k ? 'selected' : ''}>${l}</option>`).join('')}`;
+  const FAM_RA = typeof FAMILLES !== 'undefined' ? FAMILLES : { tech: 'Technique', ment: 'Mental', phys: 'Physique', gb: 'Gardien' };
+  const optA = sel => `<option value="">— Critère —</option>${Object.entries(FAM_RA).map(([fm, lab]) => `<optgroup label="${lab}">${ATTR_DETAIL.filter(a => a[2] === fm).map(([k, l]) => `<option value="${k}" ${sel === k ? 'selected' : ''}>${l}</option>`).join('')}</optgroup>`).join('')}<optgroup label="Poste et caractère">${RA_SPECIAUX.map(([k, l]) => `<option value="${k}" ${sel === k ? 'selected' : ''}>${l}</option>`).join('')}</optgroup>`;
+  const PERSOS = ['Modèle de professionnalisme', 'Perfectionniste', 'Leader né', 'Leader', 'Résistant', 'Très loyal', 'Loyal', 'Très ambitieux', 'Ambitieux', 'Professionnel', 'Fair-play', 'Équilibré', 'Réservé', 'Sanguin', 'Effronté', 'Mercenaire', 'Déloyal', 'Friable', 'Indolent'];
   const th = (k, l) => `<th data-tri="${k}" class="ra-th ${tk === k ? 'on' : ''}">${l}${tk === k ? (td > 0 ? ' ▲' : ' ▼') : ''}</th>`;
   host.innerHTML = `<section class="ra">
     <div class="ra-filtres">
@@ -74,7 +91,10 @@ function vRechercheAvancee(host) {
       <label>Salaire max (k€/mois) <input id="raS" type="number" min="0" step="5" value="${esc(RA.salMax)}"></label>
       <label>Observés <select id="raObs"><option value="">Tous</option><option value="oui" ${RA.obs === 'oui' ? 'selected' : ''}>Observés seulement</option><option value="non" ${RA.obs === 'non' ? 'selected' : ''}>Non observés</option></select></label>
       <label class="chk ra-chk"><input type="checkbox" id="raLib" ${RA.libres ? 'checked' : ''}> Libres ou en vente</label>
-      <div class="ra-attrs"><span>Attributs minimums</span>${RA.attrs.map(([k, m], i) => `<div class="ra-a"><select data-ak="${i}">${optA(k)}</select><input data-am="${i}" type="number" min="1" max="20" placeholder="min" value="${esc(m)}"></div>`).join('')}
+      <label title="Seulement les joueurs déjà observés par ta cellule">Personnalité (observés) <select id="raPerso"><option value="">Toutes</option>${PERSOS.map(x => `<option ${RA.perso === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+      <div class="ra-attrs"><div class="ra-at"><span>Critères d'attributs</span><select id="raMode"><option value="et" ${RA.mode !== 'ou' ? 'selected' : ''}>Tous les critères</option><option value="ou" ${RA.mode === 'ou' ? 'selected' : ''}>Au moins un critère</option></select></div>
+        ${RA.attrs.map(([k, m, op], i) => `<div class="ra-a"><select data-ak="${i}">${optA(k)}</select><select data-ao="${i}"><option value=">=" ${op !== '<=' ? 'selected' : ''}>au moins</option><option value="<=" ${op === '<=' ? 'selected' : ''}>au plus</option></select><input data-am="${i}" type="number" min="1" max="20" step="1" placeholder="valeur" value="${esc(m)}"><button type="button" class="btn sm ghost" data-asup="${i}" aria-label="Retirer ce critère">✕</button></div>`).join('')}
+        <button type="button" class="btn sm" id="raPlus">+ Ajouter un critère</button>
         <div class="ra-a"><select id="raCol">${optA(RA.col).replace('— Attribut —', '+ Colonne d\'attribut')}</select></div></div>
       <div class="ra-act"><button class="btn primary" id="raGo">Rechercher</button><button class="btn ghost" id="raRaz">Tout effacer</button></div>
     </div>
@@ -89,13 +109,16 @@ function vRechercheAvancee(host) {
     RA.q = $('#raQ').value.trim(); RA.ageMin = $('#raAm').value; RA.ageMax = $('#raAM').value; RA.tMin = $('#raTm').value; RA.tMax = $('#raTM').value; RA.nat = $('#raNat').value; RA.pays = $('#raPays').value;
     RA.lg = $('#raLg')?.value || ''; RA.pied = $('#raPied').value; RA.contrat = $('#raCt').value; RA.valMax = $('#raV').value; RA.salMax = $('#raS').value;
     RA.obs = $('#raObs').value; RA.libres = $('#raLib').checked; RA.col = $('#raCol').value;
-    RA.attrs = RA.attrs.map((_, i) => [host.querySelector(`[data-ak="${i}"]`).value, host.querySelector(`[data-am="${i}"]`).value]);
+    RA.attrs = RA.attrs.map((_, i) => [host.querySelector(`[data-ak="${i}"]`).value, host.querySelector(`[data-am="${i}"]`).value, host.querySelector(`[data-ao="${i}"]`).value]);
+    RA.mode = $('#raMode').value; RA.perso = $('#raPerso').value;
   };
   const relancer = () => { lire(); vRechercheAvancee(host); };
   host.querySelector('#raGo').onclick = relancer;
+  host.querySelector('#raPlus').onclick = () => { lire(); RA.attrs.push(['', '', '>=']); vRechercheAvancee(host); };
+  host.querySelectorAll('[data-asup]').forEach(b => b.onclick = () => { lire(); RA.attrs.splice(+b.dataset.asup, 1); if (!RA.attrs.length) RA.attrs.push(['', '', '>=']); vRechercheAvancee(host); });
   host.querySelectorAll('.ra-filtres select, #raLib').forEach(s => s.addEventListener('change', relancer));
   host.querySelectorAll('.ra-filtres input:not([type=checkbox])').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') relancer(); }));
-  host.querySelector('#raRaz').onclick = () => { RA = { ...RA, q: '', postes: [], ageMin: '', ageMax: '', tMin: '', tMax: '', nat: '', pays: '', lg: '', pied: '', contrat: '', valMax: '', salMax: '', libres: false, obs: '', attrs: [['', ''], ['', ''], ['', '']], col: '' }; vRechercheAvancee(host); };
+  host.querySelector('#raRaz').onclick = () => { RA = { ...RA, q: '', postes: [], ageMin: '', ageMax: '', tMin: '', tMax: '', nat: '', pays: '', lg: '', pied: '', contrat: '', valMax: '', salMax: '', libres: false, obs: '', attrs: [['', '', '>=']], perso: '', mode: 'et', col: '' }; vRechercheAvancee(host); };
   host.querySelectorAll('[data-ps]').forEach(b => b.onclick = () => { lire(); const r = b.dataset.ps; RA.postes = RA.postes.includes(r) ? RA.postes.filter(x => x !== r) : [...RA.postes, r]; vRechercheAvancee(host); });
   host.querySelectorAll('[data-tri]').forEach(t => t.onclick = () => { lire(); const k = t.dataset.tri; RA.tri = { k, d: RA.tri.k === k ? -RA.tri.d : (['age', 'nom', 'pos', 'contrat', 'sal', 'val', 'club'].includes(k) ? 1 : -1) }; vRechercheAvancee(host); });
   host.querySelectorAll('tr[data-pid]').forEach(tr => tr.onclick = () => playerModal(+tr.dataset.pid));

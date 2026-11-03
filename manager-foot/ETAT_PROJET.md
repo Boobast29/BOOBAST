@@ -1,3 +1,10 @@
+# État du projet — v87 (3 novembre 2026)
+
+## Recherche par attributs façon Football Manager
+- Liste de critères illimitée : attribut (groupé par Technique / Mental / Physique / Gardien), « au moins » ou « au plus », valeur ; « + Ajouter un critère », ✕ pour retirer. Mode « Tous les critères » ou « Au moins un critère ». Testé : 3 critères → 99 joueurs (tous) / 3 076 (au moins un).
+- Critères supplémentaires : note au poste, notes cachées estimées (professionnalisme, pression, tempérament, ambition, fidélité, fair-play, polémique) ; filtre Personnalité (joueurs observés).
+- Listes longues avec recherche intégrée (Choices) : plus de majuscules ni de débordement.
+
 # État du projet — v86 (3 novembre 2026)
 
 ## Fiches façon Football Manager

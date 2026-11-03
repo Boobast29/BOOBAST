@@ -328,3 +328,16 @@
 .nc-g { display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 3px 10px; font-size: 12.5px; }
 .nc-g span { color: var(--txt-2, var(--txt)); }
 .nc-g b { font-variant-numeric: tabular-nums; text-align: right; }
+.ra-at { display: flex; align-items: center; gap: 8px; width: 100%; }
+.ra-at select { width: auto !important; }
+.ra-a { align-items: center; }
+.ra-a select[data-ao] { width: auto; min-width: 0; }
+.ra-a input { width: 74px; }
+.ra-filtres .choices { width: 100%; margin: 0; text-transform: none; letter-spacing: 0; font-size: var(--fs-s); }
+.ra-filtres .choices__inner { min-height: 34px; padding: 4px 8px !important; font-size: var(--fs-s); }
+.ra-filtres .choices__list--dropdown, .ra-filtres .choices__list[aria-expanded] { z-index: 20; }
+.ra-a .choices { width: 230px; }
+.ra-filtres > label, .ra-filtres > div { min-width: 0; }
+.ra-filtres > label .choices { max-width: 100%; overflow: visible; }
+.ra-filtres > label .choices__inner { width: 100%; box-sizing: border-box; }
+.ra-filtres > label .choices, .ra-filtres > label .choices__inner { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
