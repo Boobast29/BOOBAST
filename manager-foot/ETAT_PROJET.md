@@ -1,4 +1,14 @@
-# État du projet — v43 (3 novembre 2026)
+# État du projet — v44 (3 novembre 2026)
+
+## v44 — édition groupée, radar des progressions
+- **Édition groupée** (`js/edition_groupee.js`, idée de tozmoz/FMLibreEditor, GPL-3.0, sans code repris) dans l'éditeur.
+  - Cibles : le club affiché, une division ou toute la base, avec un filtre de poste et d'âge.
+  - Actions : qualité ± N, soins, levée des suspensions, moral, forme, contrat + 1 an.
+  - « Aperçu » montre l'avant/après ; « Annuler » rétablit exactement les valeurs (10 éditions gardées).
+- **Radar des progressions** (`js/progressions.js`, idée de FMSuperScout, MIT) : Statistiques > « Progressions ». Hausses et baisses
+  de note depuis le début de la saison ou sur environ 4 semaines, pour ton effectif et pour les joueurs connus du monde.
+  Deux photos compactes, environ 12 Ko.
+Tests : `tests/edition_groupee.js`, `tests/progressions.js` (lancés par `tests/run_eval.js`). Simulation longue sans erreur ; audit des écrans sans erreur.
 
 ## v43 — recommandations selon les besoins du club, cartes de chaleur
 - **Recommandés pour ton club** (`js/recommandation.js`, Mercato > Recherche sans filtre) : chaque secteur du onze reçoit un poids
