@@ -16,9 +16,9 @@ function dirLatestFixture(g = G) {
   }
   return null;
 }
-function dirLog(label, detail) {
+function dirLog(label, detail, key = null) {
   const d = dirState();
-  d.actions.unshift({ season: G.season, week: G.week, label, detail });
+  d.actions.unshift({ key, season: G.season, week: G.week, label, detail });
   d.actions = d.actions.slice(0, 35);
   news(G, `${label} — ${detail}`, 'info');
   save();
@@ -89,8 +89,8 @@ function dirCoachAction(kind) {
   const c = G.coach, hard = kind === 'pressure';
   c.relation = clamp(c.relation + (hard ? -8 : 6), 0, 100);
   c.respect = clamp((c.respect ?? 60) + (hard ? 2 : 3), 0, 100);
-  dirLog(hard ? 'Entretien exigeant' : 'Soutien à l’entraîneur', `${c.name} : relation ${hard ? '-8' : '+6'}, respect du vestiaire ${hard ? '+2' : '+3'}.`);
-  d.actions[0].key = key; show('direction');
+  dirLog(hard ? 'Entretien exigeant' : 'Soutien à l’entraîneur', `${c.name} : relation ${hard ? '-8' : '+6'}, respect du vestiaire ${hard ? '+2' : '+3'}.`, key);
+  show('direction');
 }
 function dirMatchAction(kind) {
   const m = dirLatestFixture(); if (!m || G.week - m.w > 2) return toast('Aucun match récent à traiter.', 'err');
