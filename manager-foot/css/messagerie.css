@@ -203,3 +203,7 @@
 .ac-et small { grid-column: 2; color: var(--mut); }
 .ac-et.ok b { color: var(--acc); } .ac-et.ko b { color: var(--red); } .ac-et.ig b { color: var(--mut); } .ac-et.run b { color: var(--warn); }
 .ac-journal { max-height: 200px; overflow: auto; padding: 10px; border-radius: var(--r-m); background: var(--surface-0); font-size: var(--fs-2xs); white-space: pre-wrap; }
+/* Fin de formation (js/centre_formation.js) */
+.cf-fin select { max-width: 170px; }
+.cf-fin small { display: block; margin-top: 3px; color: var(--mut); font-size: var(--fs-2xs); white-space: nowrap; }
+#main .card:has(.cf-fin) > div:has(> table) , #main .card:has(.cf-fin) .mt { overflow-x: auto; }

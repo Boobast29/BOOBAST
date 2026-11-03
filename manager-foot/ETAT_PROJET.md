@@ -1,3 +1,11 @@
+# État du projet — v77 (3 novembre 2026)
+
+## Fin de formation des U19 et responsable du centre de formation (js/centre_formation.js)
+- Nouveau membre du staff : « Responsable du centre de formation » (créé aussi dans les anciennes parties ; marché, entente et carrière comme les autres).
+- Six semaines avant la fin de saison : question « Fin de formation : N U19 à décider », avec son avis pour chaque U19 de 18 ans et plus (contrat pro, contrat réserve ou ne pas garder) et la raison (potentiel estimé, plus ou moins juste selon son niveau, comparé au niveau de l'équipe première).
+- Toi : suivre ses recommandations, décider joueur par joueur (Formation › U19, colonne « Fin de formation »), ou ne garder personne.
+- Fin de saison : contrat pro (équipe première, 3 ans) ou réserve (2 ans), salaires ajustés ; sans décision → non conservé (libre). Bilan dans la messagerie. Testé : 1 pro, 1 réserve, 3 non conservés.
+
 # État du projet — v76 (3 novembre 2026)
 
 ## Accueil refait (js/accueil.js)
