@@ -1,3 +1,11 @@
+# État du projet — v96 (3 novembre 2026)
+
+**Vitesse** (`js/vitesse.js`) — monde étendu (51 championnats) : **1,3 s → 0,65 s par semaine**.
+- `getClub` : index id → position, vérifié à chaque lecture.
+- `clubPower` (matchs rapides étrangers) : un seul passage sur les joueurs par semaine au lieu d'un par club ; clé de cache corrigée (saison incluse, plus de croissance de la sauvegarde).
+- `save` : sauvegardes demandées dans la même action regroupées en une seule écriture.
+- Mesure : `profil CPU` (Chrome DevTools Protocol) sur 6 semaines.
+
 # État du projet — v95 (3 novembre 2026)
 
 **Écran de match** (`js/match_direct.js`) :
