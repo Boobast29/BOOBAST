@@ -48,3 +48,12 @@ tmp = pathlib.Path(tempfile.mkdtemp()); faces = tmp / 'faces'; faces.mkdir()
 isf.RACINE = tmp
 assert isf.relier_images(m, visages=faces) == 1 and b['photo'] == 'fm_images/p1001.png' and (tmp / 'fm_images/p1001.png').exists()
 print('OK :', json.dumps(m['_bilan'], ensure_ascii=False), '| 769 =', isf.NATIONS_FM.get('769'), '| 765 =', isf.NATIONS_FM.get('765'))
+# fichiers .lnc (UTF-8 et UTF-16) : vrais noms des compétitions et des clubs
+lnc = tmp / 'lnc'; lnc.mkdir()
+(lnc / 'clubs.lnc').write_text('# commentaire\n"CLUB_LONG_NAME_CHANGE" 5001 "Paris Saint-Germain Football Club" ""\n"CLUB_SHORT_NAME_CHANGE" 5001 "Paris SG" ""\n', encoding='utf-8')
+(lnc / 'comps.lnc').write_bytes('"COMP_LONG_NAME_CHANGE" 77 "Ligue 1 McDonald\'s" ""\n"COMP_SHORT_NAME_CHANGE" 77 "Ligue 1" ""\n'.encode('utf-16'))
+comps, noms_clubs = isf.lire_lnc(lnc)
+assert comps == {77: "Ligue 1 McDonald's"} and noms_clubs[5001] == {'long': 'Paris Saint-Germain Football Club', 'court': 'Paris SG'}, (comps, noms_clubs)
+m2 = isf.construire(players, clubs, tables, nations, [77], None, 'BEL', datetime.date(2026, 8, 1), noms_clubs=noms_clubs)
+assert m2['clubs'][0]['name'] == 'Paris SG', m2['clubs'][0]['name']
+print('OK : fichiers .lnc (UTF-8 + UTF-16), vrais noms appliqués.')

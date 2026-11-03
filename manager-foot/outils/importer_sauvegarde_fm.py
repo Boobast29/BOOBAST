@@ -3,7 +3,7 @@
     pip install fmsave                                         # lecteur de sauvegardes FM (rhiever/fmsave, MIT)
     python outils/importer_sauvegarde_fm.py CARRIERE.fm --lister
     python outils/importer_sauvegarde_fm.py CARRIERE.fm --ligues 12,34,56 --noms "Ligue 1,Ligue 2,National" \\
-        [--pays FRA] [--visages DOSSIER_PACK] [--logos DOSSIER_PACK] [--sortie monde_fm.json]
+        [--pays FRA] [--visages DOSSIER_PACK] [--logos DOSSIER_PACK] [--noms-fm DOSSIER_LNC] [--sortie monde_fm.json]
 
 1. --lister affiche les championnats de la sauvegarde (identifiant, nombre de clubs, premiers du classement).
 2. --ligues choisit les championnats, dans l'ordre des divisions (le premier = division 1).
@@ -16,6 +16,9 @@ Conversion :
 - nationalité : identifiants de nation FM -> codes FIFA (outils/nations_fm.json, d'après FMSuperScout, MIT) ;
 - visages et logos : si tu indiques tes packs graphiques, les images sont reliées par l'identifiant unique FM et copiées
   dans manager-foot/fm_images (dossier non versionné).
+- vrais noms : --noms-fm lit des fichiers .lnc (ex. « Real Names Fix » de Passion4FM) pour nommer les compétitions dans --lister
+  et les divisions, et donner aux clubs leur vrai nom. Une base .fmf (chiffrée par SI) ne se lit pas directement : charge-la dans FM,
+  démarre une carrière, puis importe la sauvegarde.
 Rien n'est publié : les données de la sauvegarde viennent de la base de Football Manager et restent sur ton PC.
 """
 import argparse
@@ -134,7 +137,32 @@ def joueur(p, nations_db, pays, date_ref):
     return out
 
 
-def construire(players, clubs, tables, nations, ligues, noms, pays='FRA', date_ref=None):
+def lire_lnc(dossier):
+    """Fichiers .lnc de noms (ex. Passion4FM Real Names Fix, à télécharger soi-même) : vrais noms par identifiant FM.
+
+    Lignes du type  "CLUB_LONG_NAME_CHANGE" 61 "Klubi i Futbollit Tirana" ""  ou  "COMP_LONG_NAME_CHANGE" 8350942 "Abissnet Superiore" "".
+    Encodage UTF-8 ou UTF-16 (avec BOM). Renvoie ({id compétition: nom}, {id club: {'long':…, 'court':…}}).
+    """
+    import re
+    comps, clubs = {}, defaultdict(dict)
+    motif = re.compile(r'^"(CLUB|COMP)_(LONG|SHORT)_NAME_CHANGE"\s+(\d+)\s+"([^"]*)"')
+    for f in sorted(pathlib.Path(dossier).rglob('*.lnc')):
+        brut = f.read_bytes()
+        txt = brut.decode('utf-16') if brut[:2] in (b'\xff\xfe', b'\xfe\xff') else brut.decode('utf-8', errors='replace')
+        for ligne in txt.splitlines():
+            m = motif.match(ligne.strip())
+            if not m or not m.group(4).strip():
+                continue
+            genre, taille, ident, nom = m.group(1), m.group(2), int(m.group(3)), m.group(4).strip()
+            if genre == 'COMP':
+                if taille == 'LONG' or ident not in comps:
+                    comps[ident] = nom
+            else:
+                clubs[ident]['long' if taille == 'LONG' else 'court'] = nom
+    return comps, dict(clubs)
+
+
+def construire(players, clubs, tables, nations, ligues, noms, pays='FRA', date_ref=None, noms_clubs=None):
     """Monde au format d'import du jeu (voir exportDatabase dans js/app.js)."""
     date_ref = date_ref or datetime.date.today()
     nations_db = {n.nation_id: n.database_id for n in nations}
@@ -157,7 +185,9 @@ def construire(players, clubs, tables, nations, ligues, noms, pays='FRA', date_r
         effectif = sorted(par_club.get(uid, []), key=lambda p: -(getattr(getattr(p, 'ability', None), 'current', 0) or 0))[:30]
         js = [joueur(p, nations_db, pays, date_ref) for p in effectif]
         rep = getattr(c, 'reputation', None) if c else None
-        sortie.append({'name': (c.name if c else None) or f'Club {uid}', 'short': ((c.short_name if c else None) or '')[:4].upper() or None,
+        vrai = (noms_clubs or {}).get(getattr(c, 'unique_id', None) if c else None, {})
+        nom = vrai.get('court') or vrai.get('long') or (c.name if c else None) or f'Club {uid}'
+        sortie.append({'name': nom, 'short': ((c.short_name if c else None) or '')[:4].upper() or None,
                        'div': div, 'rep': max(30, min(95, round((rep or 5000) / 10000 * 60 + 35))) if rep is not None else 60,
                        'fmUid': (getattr(c, 'unique_id', None) if c else None), 'players': js})
     nats = Counter(j['nat'] for c in sortie for j in c['players'])
@@ -197,13 +227,17 @@ def main():
     ap.add_argument('--pays', default='FRA', help='nationalité par défaut si une nation est inconnue (code FIFA)')
     ap.add_argument('--visages')
     ap.add_argument('--logos')
+    ap.add_argument('--noms-fm', help='dossier de fichiers .lnc de vrais noms (ex. Real Names Fix de Passion4FM)')
     ap.add_argument('--sortie', default=str(RACINE / 'donnees_jeu' / 'monde_fm.json'))
     a = ap.parse_args()
     try:
         import fmsave
     except ImportError:
         raise SystemExit('Le module fmsave est nécessaire : pip install fmsave (Python 3.12 ou plus récent).')
-    with fmsave.open(a.sauvegarde) as s:
+    noms_comps, noms_clubs = lire_lnc(a.noms_fm) if a.noms_fm else ({}, {})
+    if a.noms_fm:
+        print(f'Vrais noms : {len(noms_comps)} compétitions, {len(noms_clubs)} clubs.')
+    with fmsave.open(a.sauvegarde, competition_names=noms_comps or None) as s:
         tables = list(s.league_tables())
         if a.lister:
             for t in sorted(tables, key=lambda t: -t.club_count):
@@ -214,7 +248,9 @@ def main():
             ap.error('--ligues est nécessaire (voir --lister)')
         ligues = [int(x) for x in a.ligues.split(',') if x.strip()]
         noms = [x.strip() for x in a.noms.split(',')] if a.noms else None
-        monde = construire(list(s.players()), list(s.clubs()), tables, list(s.nations()), ligues, noms, a.pays)
+        if not noms and noms_comps:  # noms des divisions tirés des vrais noms de compétitions
+            noms = [next((t.competition_name for t in tables if t.competition_id == lid and t.competition_name), f'Division {i + 1}') for i, lid in enumerate(ligues)]
+        monde = construire(list(s.players()), list(s.clubs()), tables, list(s.nations()), ligues, noms, a.pays, noms_clubs=noms_clubs)
     n = relier_images(monde, a.visages, a.logos)
     sortie = pathlib.Path(a.sortie)
     sortie.parent.mkdir(parents=True, exist_ok=True)

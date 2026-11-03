@@ -1,4 +1,13 @@
-# État du projet — v46 (3 novembre 2026)
+# État du projet — v47 (3 novembre 2026)
+
+## v47 — vrais noms FM (.lnc) dans l'import de sauvegarde
+- `outils/importer_sauvegarde_fm.py --noms-fm DOSSIER` lit les fichiers `.lnc` de vrais noms (par exemple le « Real Names Fix »
+  de Passion4FM, que tu télécharges toi-même), en UTF-8 ou UTF-16. Ils servent à trois choses : nommer les compétitions dans `--lister`
+  (fmsave ne connaît pas leurs noms), donner leur nom aux divisions, et rendre aux clubs leur vrai nom.
+  Essai sur le fichier fourni : 1 050 compétitions et 585 clubs reconnus. Rien de ce contenu n'est versionné.
+- Les bases `.fmf` (ex. « NextGen Wonderkids Database ») sont chiffrées par Sports Interactive : elles ne se lisent pas directement.
+  Il faut les charger dans FM, démarrer une carrière, puis importer la sauvegarde avec l'outil.
+Test : `outils/tests_sauvegarde_fm.py` (fichiers .lnc UTF-8 et UTF-16).
 
 ## v46 — avatars cohérents avec l'origine
 - `js/visages_regions.js` : la teinte de peau des avatars générés suit maintenant la grande région d'origine du joueur
