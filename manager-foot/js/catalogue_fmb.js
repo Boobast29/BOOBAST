@@ -4,6 +4,7 @@
   const e = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const lib = {players:'Joueurs', staff:'Staff et entraîneurs', clubs:'Clubs', competitions:'Compétitions'};
   const url = (action, type, id) => `/api/catalogue/${action}/${encodeURIComponent(type)}/${encodeURIComponent(id)}`;
+  let photosAvecUrl = new Set();
   async function api(path, signal) {
     const r = await fetch('/api/catalogue/' + path, {signal});
     const d = await r.json();
@@ -11,7 +12,10 @@
     return d;
   }
   function image(type, id, nom, dispo) {
-    return dispo ? `<img class="fmb-image" src="${url('image',type,id)}" alt="${e(nom)}" loading="lazy">` : `<span class="fmb-initiales" aria-hidden="true">${e(nom.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`;
+    const repli = `<span class="fmb-initiales" aria-hidden="true">${e(nom.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`;
+    const distant = type === 'players' && photosAvecUrl.has(String(id)) ? `https://media.footballmanagerblog.org/faces/${encodeURIComponent(id)}.webp` : '';
+    if (!dispo && !distant) return repli;
+    return `<img class="fmb-image" src="${e(dispo ? url('image',type,id) : distant)}" alt="${e(nom)}" loading="lazy" referrerpolicy="no-referrer" data-alt-src="${e(dispo ? distant : '')}" data-fb="${e(repli)}" onerror="if(this.dataset.altSrc){this.src=this.dataset.altSrc;this.dataset.altSrc='';}else this.outerHTML=this.dataset.fb">`;
   }
   async function ouvrir(hote) {
     const enPartie = !!document.querySelector('#main');
@@ -48,7 +52,6 @@
           }).join(''):''}
           ${x.memberships?.length ? `<h3>Affectations dans la source</h3><p>${x.memberships.slice(0,12).map(m=>e(m.squad_label_source||'Club')+' · UID club '+e(m.owner_club_fm_uid)).join('<br>')}</p><p class="fmb-mention">Une affectation source ne prouve pas un contrat actuel. Salaire, langues et disponibilité ne sont pas déduits.</p>`:''}
           ${sourceSure ? `<a class="btn" href="${e(source)}" target="_blank" rel="noopener noreferrer">Voir la source (Internet)</a>`:''}`;
-        target.querySelectorAll('img').forEach(img=>img.onerror=()=>img.replaceWith(document.createTextNode('Visuel indisponible')));
       } catch(err) {if(err.name!=='AbortError') target.textContent=err.message;}
     }
     async function liste() {
@@ -60,7 +63,6 @@
         $('#fmbCompte').textContent=`${total.toLocaleString('fr-FR')} résultats · ${lib[type]}`;
         $('#fmbListe').innerHTML=d.resultats.map(x=>`<button class="fmb-carte" data-id="${e(x.id)}">${image(x.type,x.id,x.nom,!!x.photo)}<span><strong>${e(x.nom)}</strong><small>${x.detail?'Compétences détaillées':'Fiche de référence'}</small></span><span aria-hidden="true">›</span></button>`).join('')||'<p>Aucune fiche ne correspond aux filtres.</p>';
         $('#fmbListe').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>fiche(type,b.dataset.id));
-        $('#fmbListe').querySelectorAll('img').forEach(img=>img.onerror=()=>img.style.visibility='hidden');
         $('#fmbPrec').disabled=page===0; $('#fmbSuiv').disabled=(page+1)*24>=total;
         $('#fmbPage').textContent=`${page+1} / ${Math.max(1,Math.ceil(total/24))}`;
       } catch(err) {if(err.name!=='AbortError') $('#fmbCompte').textContent=err.message;}
@@ -74,6 +76,7 @@
     $('#fmbPrec').onclick=()=>{if(page>0){page--;liste();}};
     $('#fmbSuiv').onclick=()=>{if((page+1)*24<total){page++;liste();}};
     try {
+      try { const r=await fetch('packs/portraits-locaux-fmb.json'); if(r.ok)photosAvecUrl=new Set((await r.json()).external.map(String)); } catch { photosAvecUrl=new Set(); }
       const s=await api('etat');
       $('#fmbEtat').innerHTML=`<div class="fmb-chiffres">${Object.entries(s.comptes).map(([k,n])=>`<div><b>${n.toLocaleString('fr-FR')}</b><span>${e(lib[k])}</span></div>`).join('')}</div><p class="fmb-mention">${s.profils_detailles_catalogue} profils détaillés dans ce périmètre · ${e(s.note)}</p>`;
       await liste();
