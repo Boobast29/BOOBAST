@@ -1,3 +1,10 @@
+# État du projet — v67 (3 novembre 2026)
+
+## Confort de jeu (js/confort.js)
+- Notifications : deux au plus à l'écran, sans doublon en rafale, en bas à gauche (elles ne couvrent plus les boutons de réponse de la messagerie ni les fiches).
+- Messagerie : nouvelles de faible importance (traits découverts, rumeurs, crises et tensions d'autres clubs, buteurs des autres clubs, succès) regroupées en un « Résumé de la semaine » (liste à puces). Mesure sur 18 semaines : 76 → ~55 messages.
+- Erreur 404 `/api/etat` au chargement : n'existe que sans le serveur du jeu (lancement par `Lancer_Manager_Foot.bat` : pas d'erreur). Rien à corriger.
+
 # État du projet — v66 (3 novembre 2026)
 
 ## Notes aux postes réalistes (js/attributs.js)
