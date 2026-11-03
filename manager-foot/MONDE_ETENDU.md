@@ -35,3 +35,19 @@ Le catalogue se parcourt par pages de 50 résultats. Dans une partie multi-pays 
 Le moteur historique qui regroupait toutes les divisions étrangères d’un pays est désactivé pour les carrières multi-pays, pour éviter deux simulations concurrentes. Le mercato permet de filtrer une compétition étrangère précise. Les nouvelles écritures de points de reprise JSON et gzip sont atomiques. L’importateur accepte les deux structures HTML FMInside observées, y compris les cellules `profile-stat-value`, et conserve le poste naturel lorsqu’il est indiqué.
 
 Contrôles : `node tests/monde_etendu_node.js`, `node tests/sources_joueurs_node.js`, `node tests/integration_fminside_node.js`, `python outils/auditer_couverture_fmi.py`. L’installation du navigateur de test a échoué dans l’environnement ; les contrôles portent sur les fonctions du moteur et la syntaxe des scripts, sans validation visuelle complète.
+
+Lot ciblé sur la base du jeu : 1 200 nouvelles fiches validées, toutes rattachées par UID aux effectifs connus, pour 343 clubs enrichis et les 18 compétitions couvertes. Totaux : 2 482 profils FMInside dans le répertoire, 2 218 joueurs avec attributs documentés dans les pays jouables. Le rapport de couverture contient le détail du ciblage ; aucun joueur extérieur n’a été ajouté lors de ce lot.
+
+Pour poursuivre uniquement sur les clubs du jeu :
+
+```sh
+python outils/enrichir_effectifs.py --limite 1200
+```
+
+Pour cibler tous les joueurs encore non documentés, réserves comprises :
+
+```sh
+python outils/enrichir_effectifs.py --tout
+```
+
+Sous Windows, `Completer_Attributs_Des_Clubs.bat` lance ce dernier mode avec Python et curl disponibles. Les fiches déjà récupérées sont réutilisées. Le téléchargement peut être long ; une relance reprend les cibles manquantes. Le script contrôle les identifiants et les valeurs, actualise les compteurs puis prépare les fichiers du jeu. Les profils indisponibles ou incomplets restent signalés, sans notes inventées. La publication en petites parties vérifiées facilite les compléments successifs ; l’ancien fichier gzip reste lisible.

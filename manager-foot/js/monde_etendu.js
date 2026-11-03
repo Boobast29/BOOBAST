@@ -13,7 +13,7 @@ async function lirePaysMonde(file) {
   if (!r.ok) throw Error('Base nationale indisponible');
   if (typeof DecompressionStream === 'undefined') throw Error('Cette base nécessite un navigateur prenant en charge gzip (Chrome, Edge ou Firefox récent).');
   const pays=await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).json();
-  catalogueFMInsideMonde ||= fetch('packs/fminside-fm26.json.gz').then(async response=>{if(!response.ok)throw Error('Attributs FMInside indisponibles');return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}).catch(err=>{catalogueFMInsideMonde=null;throw err;});
+  catalogueFMInsideMonde ||= chargerCatalogueFMInside().catch(err=>{catalogueFMInsideMonde=null;throw err;});
   enrichirPaysFMInside(pays,await catalogueFMInsideMonde);
   correctifsNomsMonde ||= fetch('packs/noms-reels-fmscout.json').then(r=>{if(!r.ok)throw Error('Correctifs de noms indisponibles');return r.json();}).catch(err=>{correctifsNomsMonde=null;throw err;});
   const noms=await correctifsNomsMonde;
@@ -105,7 +105,7 @@ async function ouvrirMondeEtendu() {
         const result=await lirePaysMonde(c.file);if(ticket!==request)return;pays=result;
         el('meGroupe').innerHTML=pays.competitions.filter(c=>c.tier===3).map(c=>`<option value="${esc(c.fmUid)}">${esc(c.name)}</option>`).join('');
         el('meBilan').textContent=`${c.players} joueurs, dont ${c.detailedPlayers} avec attributs détaillés ; ${c.staff} fiches de staff. ${pays.unresolvedReserveTeams?.length || 0} liens de réserve sans identifiant propre exclus des divisions pour éviter les doublons. Les autres attributs sont estimés pour permettre la simulation. Staff consultable comme référence ; fonctions d’encadrement non attribuées automatiquement.`;
-        el('meComps').innerHTML=pays.competitions.map(c=>`<p><b>D${c.tier} · ${esc(c.name)}</b> : ${c.clubs.length} clubs référencés</p>`).join('');el('meCreer').disabled=false;
+        el('meComps').innerHTML=pays.competitions.map(c=>`<p><b>D${c.tier} · ${esc(c.name)}</b> : ${c.clubs.length} clubs référencés · ${pays.clubs.filter(club=>c.clubs.includes(club.fmUid)).flatMap(club=>club.players).filter(p=>p.attributes && Object.keys(p.attributes).length>=30).length} profils avec attributs documentés</p>`).join('');el('meCreer').disabled=false;
       }catch(err){if(ticket===request)el('meBilan').textContent=err.message;}
     };
     el('mePays').onchange=charger;

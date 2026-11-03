@@ -4,15 +4,19 @@ Les valeurs proviennent de Football Manager, pas de contrats réels vérifiés.
 """
 import gzip, argparse, concurrent.futures, datetime, html, json, re, subprocess, time, tempfile
 from pathlib import Path
+from pack_fminside import lire_catalogue
 BASE = 'https://fminside.net'
 def texte(s):
     return ' '.join(html.unescape(re.sub('<[^>]+>', ' ', s)).split())
 COOKIE = None
 def lire(url, data=None):
-    cmd = ['curl', '-fsSL', '--connect-timeout', '10', '--max-time', '30']
+    cmd = ['curl', '-fsSL', '--connect-timeout', '10', '--max-time', '30', '--retry', '1', '--retry-delay', '2', '--retry-max-time', '45']
     if COOKIE: cmd += ['-b', COOKIE, '-c', COOKIE]
     if data: cmd += ['--data', data]
-    r = subprocess.run(cmd + [url], capture_output=True, check=True)
+    try:
+        r = subprocess.run(cmd + [url], capture_output=True, check=True)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f'Lecture échouée ({e.returncode}) : {e.stderr.decode(errors="replace").strip()}') from e
     return r.stdout.decode('utf-8')
 def fiche(url):
     s = lire(url)
@@ -21,7 +25,7 @@ def fiche(url):
     for row in re.findall(r'<tr\b[^>]*>.*?</tr>', s, re.S):
         label = re.search(r'data-player-stat-name="([^"]+)"', row)
         val = re.search(r'<td\b[^>]*class="(?:stat(?:\s[^"]*)?|profile-stat-value[^"]*)"[^>]*>\s*(\d+)\s*</td>', row)
-        if label and val:
+        if label and val and 1 <= int(val[1]) <= 99:
             attrs[html.unescape(label[1])] = int(val[1])
     if not nom or len(attrs) < 30:
         raise ValueError('Fiche absente ou attributs incomplets : ' + url)
@@ -60,8 +64,9 @@ def main():
     players, errors, urls = [], [], []
     dest = Path(a.sortie)
     compressed = dest.with_suffix('.json.gz')
-    if compressed.exists(): players = json.loads(gzip.decompress(compressed.read_bytes())).get('players', [])
-    elif dest.exists(): players = json.loads(dest.read_text(encoding='utf-8')).get('players', [])
+    if dest.name=='fminside-fm26.json' and (compressed.exists() or dest.exists() or dest.with_suffix('.manifest.json').exists()): players = lire_catalogue(dest.parent).get('players', [])
+    elif compressed.exists(): players = json.loads(gzip.decompress(compressed.read_bytes())).get('players', [])
+    elif dest.exists(): players = json.loads(dest.read_text()).get('players', [])
     known = {p['fmUid'] for p in players}
     if a.urls:
         urls = json.loads(Path(a.urls).read_text(encoding="utf-8"))
@@ -91,7 +96,7 @@ def main():
     for p in players:
         if p['fmUid'] in male_uids: p['sourceGender'] = 'male'
     # Les fiches publiques ne nécessitent pas la session de pagination.
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, min(5, a.workers))) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, min(8, a.workers))) as pool:
         futures = {pool.submit(fiche, u): u for u in urls if re.search(r'/([0-9]+)-[^/]+$', u)[1] not in known}
         for f in concurrent.futures.as_completed(futures):
             try:

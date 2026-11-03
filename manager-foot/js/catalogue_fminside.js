@@ -4,9 +4,7 @@ async function ouvrirFMInside() {
   h.innerHTML = '<div class="card"><h1>Joueurs FMInside · FM26</h1><button class="btn" id="fmiBack">Retour</button><p id="fmiStatus">Chargement…</p><input id="fmiSearch" type="search" placeholder="Nom, club ou poste" aria-label="Rechercher"><p id="fmiCount" role="status"></p><div id="fmiResults"></div><div class="row gap"><button class="btn" id="fmiPrev">Précédent</button><button class="btn" id="fmiNext">Suivant</button></div><div id="fmiDetail"></div></div>';
   document.querySelector('#fmiBack').onclick = startScreen;
   try {
-    const r = await fetch('packs/fminside-fm26.json.gz');
-    if (!r.ok) throw Error('Catalogue indisponible');
-    const data = await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).json(), players = data.players || [];
+    const data = await chargerCatalogueFMInside(), players = data.players || [];
     const status = document.querySelector('#fmiStatus');
     status.textContent = `${players.length} fiches détaillées disponibles. Données Football Manager, situation réelle actuelle non vérifiée. Salaires mensuels = hebdomadaires × 52 ÷ 12. Couverture partielle du site.`;
     const integrer = document.createElement('button');

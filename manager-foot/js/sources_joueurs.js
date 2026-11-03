@@ -41,8 +41,7 @@ function actualiserAttributsCarriere(world,catalogue){
 }
 async function proposerMiseAJourAttributs(){
   try{
-    const response=await fetch('packs/fminside-fm26.json.gz');if(!response.ok)throw Error('Fiches indisponibles');
-    const catalogue=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();
+    const catalogue=await chargerCatalogueFMInside();
     const update=actualiserAttributsCarriere(G,catalogue);
     if(!update.count)return toast('Les fiches disponibles de cette carrière sont déjà à jour.');
     confirmBox(`Actualiser les attributs initiaux de ${update.count} joueurs ? La progression, les statistiques, les transferts et les contrats de la carrière seront conservés.`,async()=>{

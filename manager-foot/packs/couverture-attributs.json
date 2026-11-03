@@ -1,44 +1,76 @@
 {
-  "auditedAt": "2026-11-03T18:08:55.101266+00:00",
-  "fmInsideProfiles": 1282,
+  "auditedAt": "2026-11-03T18:53:29.218282+00:00",
+  "fmInsideProfiles": 2482,
   "attributesPerProfile": {
-    "36": 1250,
-    "38": 32
+    "36": 2294,
+    "38": 188
   },
-  "uniqueUids": 1282,
-  "documentedPlayersInGame": 1018,
+  "uniqueUids": 2482,
+  "documentedPlayersInGame": 2218,
   "countries": [
     {
       "country": "England",
       "label": "Angleterre",
       "players": 4272,
-      "documentedPlayers": 350
+      "documentedPlayers": 551
     },
     {
       "country": "France",
       "label": "France",
       "players": 3485,
-      "documentedPlayers": 91
+      "documentedPlayers": 292
     },
     {
       "country": "Germany",
       "label": "Allemagne",
       "players": 2997,
-      "documentedPlayers": 142
+      "documentedPlayers": 343
     },
     {
       "country": "Italy",
       "label": "Italie",
       "players": 5038,
-      "documentedPlayers": 185
+      "documentedPlayers": 518
     },
     {
       "country": "Spain",
       "label": "Espagne",
       "players": 2797,
-      "documentedPlayers": 250
+      "documentedPlayers": 514
     }
   ],
   "collectionErrors": [],
-  "note": "Données du jeu FM26, situation réelle actuelle non vérifiée. Les profils hors effectifs connus ne sont pas affectés arbitrairement."
+  "note": "Données du jeu FM26, situation réelle actuelle non vérifiée. Les profils hors effectifs connus ne sont pas affectés arbitrairement.",
+  "targeting": {
+    "newProfilesInGame": 1200,
+    "allNewProfilesInGame": true,
+    "enrichedClubs": 343,
+    "countries": {
+      "France": 201,
+      "England": 201,
+      "Italy": 333,
+      "Germany": 201,
+      "Spain": 264
+    },
+    "competitions": {
+      "Ligue 1": 67,
+      "Premier League": 67,
+      "Serie A": 67,
+      "Bundesliga": 67,
+      "LaLiga": 66,
+      "Bundesliga 2": 67,
+      "Championship": 67,
+      "Ligue 2": 67,
+      "Spanish Second Division": 66,
+      "Serie B": 67,
+      "3. Liga": 67,
+      "Spanish Federation First Division B": 66,
+      "League One": 67,
+      "Spanish Federation First Division A": 66,
+      "Lega Pro Girone C": 66,
+      "Lega Pro Girone A": 67,
+      "National": 67,
+      "Lega Pro Girone B": 66
+    }
+  }
 }
