@@ -150,6 +150,7 @@ def main():
         ('Maillots réels', lambda: (lancer('importer_maillots.py'), 'maillots à jour')[1] if base_ok() else 'ignorée : base absente'),
         ('Wikidata (entraîneurs, photos et logos libres)', lambda: (lancer('enrichir_wikidata.py'), 'données à jour')[1] if base_ok() else 'ignorée : base absente'),
         ('openfootball (palmarès, championnats européens)', etape_openfootball),
+        ('Nationalités des joueurs du monde étendu', lambda: (lancer('nationalites_monde.py'), 'nationalités appariées (nom + âge)')[1]),
         ('Visages des joueurs sans photo', etape_visages),
     ]
     etat = {'debut': datetime.datetime.now().isoformat(timespec='seconds'), 'fini': False, 'etapes': []}

@@ -1,3 +1,9 @@
+# État du projet — v90 (3 novembre 2026)
+
+## Nationalités du monde étendu (outils/nationalites_monde.py)
+- Les packs FM26 n'ont pas de nationalité. À l'installation (étape de `Tout_Installer`), appariement prudent sur la base mondiale puis Transfermarkt : même nom normalisé, âge à ±1 an, correspondance unique (homonymes de nationalités différentes ignorés) → `packs/nationalites-monde.json`, lu au chargement du monde étendu ; sinon « — » (aucune nationalité devinée). Serveur : fichier autorisé dans `packs/`.
+- Test : `outils/tests_nationalites_monde.py` 4/4 (vrais joueurs du pack France, base synthétique). Résultat réel dépendant de ta base installée.
+
 # État du projet — v89 (3 novembre 2026)
 
 ## Relations avec les agences d'agents (js/agents_relation.js)

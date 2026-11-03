@@ -30,7 +30,7 @@ RES = None
 CATALOGUE = None
 STATIQUES_INTERDITS = ('donnees_jeu', 'outils', '.git', 'packs')
 # packs du jeu lus par le navigateur (monde étendu, FMInside, noms réels) : seuls ces fichiers de packs/ sont servis
-PACKS_PUBLICS = re.compile(r'^packs/(monde-[a-z-]+\.json(\.gz)?|fminside-fm26\.json\.gz|noms-reels-fmscout\.json)$')
+PACKS_PUBLICS = re.compile(r'^packs/(monde-[a-z-]+\.json(\.gz)?|fminside-fm26\.json\.gz|noms-reels-fmscout\.json|nationalites-monde\.json)$')
 
 
 def db():
