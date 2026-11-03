@@ -1,3 +1,11 @@
+# État du projet — v100 (3 novembre 2026)
+
+**Délégation des tâches** (`js/delegation.js`) — page Staff, carte « Délégation » (Moi / membre du staff, par tâche) :
+- Conférences de presse et causeries (adjoint) : réponses mesurées ; discours d'avant-match selon le rapport de force, de mi-temps selon le score.
+- Programme d'entraînement (adjoint) : repos si fatigue, tactique si cohésion basse, physique sans match.
+- Entretiens avec les joueurs (adjoint), prolongations et contrats du staff (directeur sportif : prolonge les joueurs utiles +2 ans, +10 %), jeunes (responsable du centre), mercato courant (cellule ; option : signer seule dans le budget), courrier courant (secrétariat, dont choix du sponsor).
+- Traitement en fin de semaine ; chaque décision déléguée est signalée dans la boîte (« X a traité … »). Jamais délégué : décisions personnelles (offre d'un autre club, fuite dans la presse) et la réunion de projet.
+
 # État du projet — v99 (3 novembre 2026)
 
 **Actions du manager** (`js/actions_manager.js`) :

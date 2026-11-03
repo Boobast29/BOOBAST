@@ -430,3 +430,12 @@
 .am-pop button { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 8px 10px; border: 0; border-radius: var(--r-s); background: none; color: var(--txt); font: inherit; cursor: pointer; }
 .am-pop button small { color: var(--mut); font-size: 11.5px; } .am-pop button:hover:not(:disabled) { background: var(--surface-2); } .am-pop button:disabled { opacity: .45; }
 .am-pop .hint { margin: 4px 8px; }
+
+/* Délégation (js/delegation.js) */
+.dl-card { margin-bottom: var(--esp-4, 16px); }
+.dl-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.dl-compte { font-size: 12px; color: var(--mut); }
+.dl-tbl tr.on td:first-child { box-shadow: inset 3px 0 0 var(--acc); }
+.dl-tbl select { width: 280px; max-width: 100%; }
+.dl-signe { display: flex; margin-top: 6px; font-size: 12px; }
+.dl-note { display: block; margin-top: 4px; font-size: 11px; color: var(--acc); }
