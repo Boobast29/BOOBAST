@@ -4,7 +4,7 @@
   const e = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const lib = {players:'Joueurs', staff:'Staff et entraîneurs', clubs:'Clubs', competitions:'Compétitions'};
   const url = (action, type, id) => `/api/catalogue/${action}/${encodeURIComponent(type)}/${encodeURIComponent(id)}`;
-  let photosAvecUrl = new Set();
+  let photosAvecUrl = new Set(), photosCommons = {};
   async function api(path, signal) {
     const r = await fetch('/api/catalogue/' + path, {signal});
     const d = await r.json();
@@ -13,7 +13,8 @@
   }
   function image(type, id, nom, dispo) {
     const repli = `<span class="fmb-initiales" aria-hidden="true">${e(nom.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`;
-    const distant = type === 'players' && photosAvecUrl.has(String(id)) ? `https://media.footballmanagerblog.org/faces/${encodeURIComponent(id)}.webp` : '';
+    const credit = type === 'players' && photosCommons[String(id)]?.name === nom ? photosCommons[String(id)] : null;
+    const distant = type === 'players' && photosAvecUrl.has(String(id)) ? `https://media.footballmanagerblog.org/faces/${encodeURIComponent(id)}.webp` : credit ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(credit.file.replaceAll(' ','_'))}?width=300` : '';
     if (!dispo && !distant) return repli;
     return `<img class="fmb-image" src="${e(dispo ? url('image',type,id) : distant)}" alt="${e(nom)}" loading="lazy" referrerpolicy="no-referrer" data-alt-src="${e(dispo ? distant : '')}" data-fb="${e(repli)}" onerror="if(this.dataset.altSrc){this.src=this.dataset.altSrc;this.dataset.altSrc='';}else this.outerHTML=this.dataset.fb">`;
   }
@@ -33,11 +34,13 @@
       try {
         const x = await api(`fiche/${encodeURIComponent(type)}/${encodeURIComponent(id)}`,detailAbort.signal);
         const d=x.detail, media=x.photo||x.logo, champs=x.observations?.[0]?.fields_source||{};
+        const credit=type==='players' && photosCommons[String(id)]?.name===x.name ? photosCommons[String(id)] : null;
         const source=x.profile_url||x.source_url;
         const sourceSure=typeof source==='string' && /^https:\/\//.test(source);
         const groupes = Object.entries(d?.attributes_1_99||{});
         target.innerHTML=`<div class="fmb-profil">${image(type,id,x.name,media?.available_offline)}<div><small>${e(lib[type])} · UID ${e(id)}</small><h2>${e(x.name)}</h2></div></div>
           <p class="fmb-mention">FM26 26.3.2 · ${e(d?.retrieved_on||'Collecte du pack : 03/11/2026')}. Situation réelle actuelle non vérifiée.</p>
+          ${credit ? `<p class="fmb-mention">Photo : <a href="https://commons.wikimedia.org/wiki/File:${encodeURIComponent(credit.file.replaceAll(' ','_'))}" target="_blank" rel="noopener noreferrer">${e(credit.author)} · ${e(credit.license)} · Wikimedia Commons</a>${credit.note ? ` · ${e(credit.note)}` : ''}</p>` : ''}
           ${d?.role_or_position_source||champs.position||champs.job ? `<p><b>Rôle source :</b> ${e(d?.role_or_position_source||champs.position||champs.job)}</p>` : ''}
           ${x.country ? `<p><b>Pays :</b> ${e(x.country)}</p>`:''}
           ${d?.date_of_birth ? `<p><b>Naissance :</b> ${e(d.date_of_birth)}</p>`:''}
@@ -77,6 +80,7 @@
     $('#fmbSuiv').onclick=()=>{if((page+1)*24<total){page++;liste();}};
     try {
       try { const r=await fetch('packs/portraits-locaux-fmb.json'); if(r.ok)photosAvecUrl=new Set((await r.json()).external.map(String)); } catch { photosAvecUrl=new Set(); }
+      try { const r=await fetch('packs/portraits-commons-verifies.json'); if(r.ok)photosCommons=(await r.json()).players; } catch { photosCommons={}; }
       const s=await api('etat');
       $('#fmbEtat').innerHTML=`<div class="fmb-chiffres">${Object.entries(s.comptes).map(([k,n])=>`<div><b>${n.toLocaleString('fr-FR')}</b><span>${e(lib[k])}</span></div>`).join('')}</div><p class="fmb-mention">${s.profils_detailles_catalogue} profils détaillés dans ce périmètre · ${e(s.note)}</p>`;
       await liste();
