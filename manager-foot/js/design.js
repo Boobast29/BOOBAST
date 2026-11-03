@@ -50,3 +50,46 @@ if (typeof toast === 'function') {
   const __toastD = toast;
   toast = function () { const r = __toastD.apply(this, arguments); const b = document.getElementById('toasts'); if (b && !b.getAttribute('role')) { b.setAttribute('role', 'region'); b.setAttribute('aria-label', 'Notifications'); b.setAttribute('aria-live', 'polite'); } return r; };
 }
+// ============================================================
+//  v48 — ergonomie à la manière des jeux de gestion de football
+//  - barre de section : le groupe du menu, ses écrans en sous-onglets, précédent / suivant, « Aller à… »
+//  - fiche joueur : bandeau aux couleurs du club du joueur
+// ============================================================
+let NAV_SUIV = [], NAV_INTERNE = false;
+if (typeof goBack === 'function') {
+  const __goBackD = goBack;
+  goBack = function () { const cur = VIEW; NAV_INTERNE = true; try { __goBackD.apply(this, arguments); } finally { NAV_INTERNE = false; } if (VIEW !== cur) NAV_SUIV.push(cur); };
+}
+function goForward() { const v = NAV_SUIV.pop(); if (!v) return; NAV_INTERNE = true; try { show(v); } finally { NAV_INTERNE = false; } }
+if (typeof show === 'function') {
+  const __showNav = show;
+  show = function (v) { if (!NAV_INTERNE && v !== VIEW) NAV_SUIV = []; return __showNav.apply(this, arguments); };
+}
+if (typeof filAriane === 'function') {
+  filAriane = function (v) {
+    const main = $('#main'); if (!main || !G) return;
+    $('#ariane')?.remove();
+    const grp = NAV_GROUPS.find(g => g[1].some(x => x[0] === v)); if (!grp) return;
+    const [nomG, items] = grp;
+    main.insertAdjacentHTML('afterbegin', `<div id="ariane" class="sect-bar">
+      <div class="sect-nav"><button class="btn sm" id="navPrec" title="Écran précédent (Alt+←)" aria-label="Écran précédent" ${VIEW_HIST.length ? '' : 'disabled'}>‹</button><button class="btn sm" id="navSuiv" title="Écran suivant (Alt+→)" aria-label="Écran suivant" ${NAV_SUIV.length ? '' : 'disabled'}>›</button></div>
+      <span class="sect-nom">${esc(nomG)}</span>
+      <nav class="sect-tabs" aria-label="${esc(nomG)}">${items.map(([k, , l]) => `<button data-sv="${k}" class="${k === v ? 'on' : ''}" ${k === v ? 'aria-current="page"' : ''}>${esc(l)}<i class="nb">${$(`#nav [data-nb="${k}"]`)?.textContent || ''}</i></button>`).join('')}</nav>
+      <span class="grow"></span><button class="btn sm ghost" onclick="ouvrirPalette()" title="Ctrl+K">⌕ Aller à…</button></div>`);
+    main.querySelectorAll('[data-sv]').forEach(b => b.onclick = () => show(b.dataset.sv));
+    $('#navPrec').onclick = () => goBack(); $('#navSuiv').onclick = () => goForward();
+  };
+}
+document.addEventListener('keydown', e => {
+  if (!e.altKey || !G || document.body.className !== 'game' || e.target.matches?.('input, textarea, select')) return;
+  if (e.key === 'ArrowLeft') { e.preventDefault(); goBack(); } else if (e.key === 'ArrowRight') { e.preventDefault(); goForward(); }
+});
+if (typeof playerModal === 'function') {
+  const __playerModalD = playerModal;
+  playerModal = function (pid) {
+    const r = __playerModalD.apply(this, arguments);
+    try { const p = getPlayer(G, pid), c = p?.club != null ? getClub(G, p.club) : null, h = $('#modal .pm-head');
+      if (h && c?.colors) { h.style.setProperty('--pc1', c.colors[0]); h.style.setProperty('--pc2', c.colors[1] || '#fff'); h.classList.add('pm-club'); } } catch { }
+    return r;
+  };
+}

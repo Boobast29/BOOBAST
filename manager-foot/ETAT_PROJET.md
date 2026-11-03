@@ -1,4 +1,14 @@
-# État du projet — v47 (3 novembre 2026)
+# État du projet — v48 (3 novembre 2026)
+
+## v48 — ergonomie à la manière des jeux de gestion (barre de section, panneaux, fiche joueur)
+- **Barre de section** en haut de chaque écran : nom du groupe, écrans du groupe en sous-onglets soulignés (avec leurs pastilles),
+  boutons ‹ › précédent / suivant (Alt+← / Alt+→) et « Aller à… ». Sur téléphone, les sous-onglets défilent. Le bouton ◀ de la barre
+  du haut, devenu redondant, est masqué.
+- **Panneaux** : barre de titre teintée aux couleurs du club ; onglets internes soulignés (fenêtres et cartes).
+- **Tableaux** : lignes zébrées, plus denses, survol aux couleurs du club, ligne de ton club mise en valeur.
+- **Fiche joueur** : bandeau aux couleurs du club du joueur, numéro aux couleurs du maillot.
+- Audit axe-core : un contraste du calendrier corrigé.
+Tests : `tests/navigation.js`. Audit des 27 écrans sans erreur ; simulation longue sans erreur.
 
 ## v47 — vrais noms FM (.lnc) dans l'import de sauvegarde
 - `outils/importer_sauvegarde_fm.py --noms-fm DOSSIER` lit les fichiers `.lnc` de vrais noms (par exemple le « Real Names Fix »

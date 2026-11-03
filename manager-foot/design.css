@@ -106,3 +106,45 @@ h1.logo-big { margin: 0; font-weight: inherit; }
 .reco { margin-bottom: 14px; } .reco h3 { margin-top: 0; }
 .ch-bloc { margin-top: 14px; } .ch-bloc h4 { margin: 0 0 6px; } .ch-carte { width: 100%; max-width: 520px; display: block; border-radius: 6px; margin-top: 6px; }
 .eg summary { cursor: pointer; list-style: revert; } .eg summary small { margin-left: 6px; }
+
+/* ============================================================
+   v48 — panneaux, barre de section, tableaux denses, fiche joueur
+   ============================================================ */
+/* barre de section : groupe + écrans du groupe en sous-onglets */
+#ariane.sect-bar { display: flex; align-items: center; gap: 10px; margin: -6px 0 14px; padding: 0 0 0 2px; border-bottom: 1px solid var(--line); min-height: 42px; flex-wrap: nowrap; overflow: hidden; }
+.sect-nav { display: flex; gap: 4px; flex: none; }
+.sect-nav .btn { min-width: 30px; min-height: 28px; padding: 0 8px; font-size: 17px; line-height: 1; }
+.sect-nom { flex: none; font-weight: 700; color: #c9d4e0; padding-right: 10px; border-right: 1px solid var(--line); }
+.sect-tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
+.sect-tabs::-webkit-scrollbar { display: none; }
+.sect-tabs button { position: relative; flex: none; background: none; border: 0; color: var(--mut); padding: 11px 12px 10px; cursor: pointer; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s, border-color .15s; }
+.sect-tabs button:hover { color: var(--txt); }
+.sect-tabs button.on { color: #fff; border-bottom-color: color-mix(in srgb, var(--club1) 80%, #fff); font-weight: 650; }
+.sect-tabs .nb:empty { display: none; }
+.sect-tabs .nb { margin-left: 6px; font-style: normal; font-size: 10.5px; padding: 1px 6px; border-radius: 10px; }
+@media (max-width: 760px) { .sect-nom, .sect-bar > .btn.ghost { display: none; } #ariane.sect-bar { margin-top: -4px; } }
+
+/* panneaux : barre de titre teintée aux couleurs du club */
+.card > h2:first-child { margin: -16px -16px 14px; padding: 11px 16px; font-size: 15px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--club1) 16%, #19222d), #19222d 55%);
+  border-bottom: 1px solid var(--line); border-radius: var(--rayon) var(--rayon) 0 0; }
+
+/* tableaux : lignes zébrées, plus denses, survol net */
+.tbl tbody tr:nth-child(even) { background: rgba(255, 255, 255, .02); }
+.tbl tbody tr:hover { background: color-mix(in srgb, var(--club1) 9%, transparent) !important; }
+.tbl td { padding-top: 6px; padding-bottom: 6px; }
+.tbl tr.me, .tbl tr.me:nth-child(even) { background: color-mix(in srgb, var(--club1) 16%, transparent); }
+
+/* fiche joueur : bandeau aux couleurs du club */
+.pm-head.pm-club { border-radius: 12px; padding: 14px 16px; margin: -4px 0 10px;
+  background: linear-gradient(110deg, color-mix(in srgb, var(--pc1) 48%, #121a24) 0%, color-mix(in srgb, var(--pc1) 14%, #121a24) 45%, #121a24 80%);
+  border-left: 4px solid var(--pc2); box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .05); }
+.pm-head.pm-club h2 { font-size: 22px; letter-spacing: -.01em; }
+.pm-head.pm-club .num { background: var(--pc1); color: var(--pc2); border: 1px solid color-mix(in srgb, var(--pc2) 40%, transparent); }
+
+/* onglets internes : soulignés plutôt qu'en pilules (lecture plus rapide) */
+.mbox .tabs, .card > .tabs { background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 0; gap: 0; }
+.mbox .tabs button, .card > .tabs button { border-radius: 0 !important; border-bottom: 2px solid transparent !important; margin-bottom: -1px; background: none !important; box-shadow: none !important; padding: 9px 12px; color: var(--mut); }
+.mbox .tabs button.on, .card > .tabs button.on { color: #fff; border-bottom-color: color-mix(in srgb, var(--club1) 80%, #fff) !important; font-weight: 650; }
+#top #btnBack { display: none; } /* remplacé par ‹ › dans la barre de section */
+.rL { color: #ff9aa1 !important; }
