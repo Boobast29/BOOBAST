@@ -246,7 +246,7 @@ aiTransfers = function (G) {
     const key = c.id + ':' + G.season, sq = clubPlayers(G, c.id);
     if (sq.length >= 28) continue;
     const byPos = {}; for (const r of Object.keys(ROLES)) byPos[r] = sq.filter(p => p.pos === r).map(p => aiPerceived(G, c, p)).sort((a, b) => b - a)[0] || 0;
-    const need = Object.keys(byPos).sort((a, b) => byPos[a] - byPos[b])[0];
+    const need = aiPriorityRole(sq, byPos);
     const env = (G.aiStart?.[key] ?? c.budget) * .4 - (G.aiSpend?.[key] || 0);
     // 1. formation : un jeune du club au poste, au potentiel suffisant → on attend sa progression
     const young = sq.find(p => p.pos === need && p.age <= 20 && p.pot >= byPos[need] + 6);

@@ -130,13 +130,19 @@ function buildRealWorld(scn) {
 function fictif(p) { p.fictional = true; p.regenId = 'fictif_' + p.id; p.value = calcValue(p); return p; }
 function realPlayer(sp, clubId, rep) {
   // profil réel sans évaluation : attributs ESTIMÉS selon le niveau du club (couche de jeu séparée, badge « E »)
-  const q = 8.6 + (rep - 50) / 40 * 5.2 - (sp.age != null && sp.age < 21 ? 1.5 : 0);
+  let q = 8.6 + (rep - 50) / 40 * 5.2 - (sp.age != null && sp.age < 21 ? 1.5 : 0);
+  // valeur marchande Transfermarkt connue : niveau estimé d'après la valeur (≈ 68 pour 1 M€, 77 pour 10 M€, 85 pour 100 M€ ; les jeunes valent surtout leur potentiel)
+  if (sp.estimated && sp.marketValue > 0) {
+    const o99 = clamp(68 + 8.5 * Math.log10(sp.marketValue / 1e6) - (sp.age != null && sp.age <= 21 ? 4 : 0) + (sp.age != null && sp.age >= 31 ? 2 : 0), 45, 90);
+    q = clamp(8.6 + ((o99 - 50) * 1.45 - 10) * .13, 4, 17);
+  }
   const p = genPlayer(sp.pos, sp.estimated ? q : 10, { club: clubId, age: sp.age ?? 25, nat: sp.nat || 'FRA', name: sp.name, photo: sp.photo, rep });
   if (sp.estimated) p.estimated = true;
   else for (const k in ATTRS) if (sp.attrs[k] != null) p.attrs[k] = sp.attrs[k];
-  p.srcId = sp.srcId; p.real = true; p.ageKnown = sp.ageKnown; p.dob = sp.dob; p.natLabel = sp.natLabel;
+  p.srcId = sp.srcId; p.real = true; if (sp.posRaw) p.posRaw = sp.posRaw; p.ageKnown = sp.ageKnown; p.dob = sp.dob; p.natLabel = sp.natLabel;
   if (sp.detail99) p.detail99 = sp.detail99;
   p.ovr99 = sp.ovr99; p.pot99 = sp.pot99; p.attrCoverage = sp.attrCoverage; p.weakFoot = sp.weakFoot; p.skillMoves = sp.skills;
+  if (typeof skillInit === 'function') skillInit(p, sp.detail99 || {});
   const o = playerOvr(p);
   if (sp.pot99 != null && sp.ovr99 != null) { p.pot = clamp(o + Math.max(0, sp.pot99 - sp.ovr99), o, 99); p.potKnown = true; }
   else { p.pot = clamp(o + (p.age <= 20 ? 6 : p.age <= 23 ? 3 : 0), o, 99); p.potKnown = false; p.potSim = true; }
@@ -181,7 +187,11 @@ function baseScreen() {
     <div id="bres" class="mt"></div>`, 'wide base');
   $('#bqual').value = BASEQ.qualite; $('#bpos').value = BASEQ.poste;
   let t = null;
-  const go = () => { clearTimeout(t); t = setTimeout(() => { BASEQ.page = 0; lire(); baseRun(); }, 220); };
+  const searchRoot = $('#bres');
+  const go = () => { clearTimeout(t); t = setTimeout(() => {
+    if (!searchRoot.isConnected || $('#bres') !== searchRoot) return;
+    BASEQ.page = 0; lire(); baseRun();
+  }, 220); };
   const lire = () => Object.assign(BASEQ, { q: $('#bq').value, qualite: $('#bqual').value, poste: $('#bpos').value, nat: $('#bnat').value.trim(), age_min: $('#bamin').value, age_max: $('#bamax').value, pot_connu: $('#bpot').checked ? '1' : '', photo: $('#bph').checked ? '1' : '', riche: $('#bri').checked ? '1' : '' });
   $$('#modal .base-f input, #modal .base-f select').forEach(i => { i.oninput = go; i.onchange = go; });
   $('#bq').focus();
@@ -193,6 +203,7 @@ async function baseRun() {
   box.innerHTML = '<p class="muted">Recherche…</p>';
   let r;
   try { r = await api('/api/recherche?' + qs); } catch (e) { box.innerHTML = `<p class="neg">${esc(e.message)}</p>`; return; }
+  if (!box.isConnected || $('#bres') !== box) return;
   const ED = editorMode();
   box.innerHTML = `<p class="hint">${r.total_plafonne ? 'Plus de 10 000' : r.total.toLocaleString('fr-FR')} fiche(s) · page ${r.page + 1} · ${r.ms} ms</p>
     <table class="tbl"><thead><tr><th></th><th>Nom</th><th>Né le</th><th>Nat.</th><th>Poste</th><th>Club (source)</th><th>Données</th><th>Niv./99</th><th>${ED ? 'Pot./99' : 'Potentiel'}</th></tr></thead><tbody>
@@ -350,3 +361,4 @@ function portraitManuel(typ, srcId, done) {
     catch (e) { toast(e.message, 'err'); }
   }, 'image/png,image/jpeg,image/gif,image/webp', false);
 }
+

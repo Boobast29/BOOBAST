@@ -167,6 +167,7 @@ if (typeof buildRealWorld === 'function') {
       if (sp.caps != null && !p.caps) p.caps = sp.caps;
       if (sp.transfersReal) p.transfersReal = sp.transfersReal;
       if (sp.seasonsReal) p.seasonsReal = sp.seasonsReal;
+      if (sp.valueHistReal) p.valueHistReal = sp.valueHistReal;
     }
     return W;
   };
@@ -177,6 +178,12 @@ playerModal = function (pid, tab = 'profil') {
   const p = getPlayer(G, pid); if (!p || tab !== 'profil') return;
   const morceaux = [];
   if (p.seasonsReal?.length) morceaux.push(`<h3>Saisons réelles</h3><table class="tbl compact"><tr><th>Saison</th><th>M</th><th>Min</th><th>Buts</th><th>Passes</th><th>🟨</th><th>🟥</th></tr>${p.seasonsReal.map(s => `<tr>${s.map(v => `<td>${esc(String(v ?? '—'))}</td>`).join('')}</tr>`).join('')}</table>`);
+  if (p.valueHistReal?.length > 1) { // courbe de la valeur marchande réelle (Transfermarkt)
+    const v = p.valueHistReal, max = Math.max(...v.map(x => x[1] || 0)) || 1, W = 320, H = 70;
+    const pts = v.map((x, i) => `${Math.round(i / (v.length - 1) * W)},${Math.round(H - (x[1] || 0) / max * (H - 8))}`).join(' ');
+    morceaux.push(`<h3>Valeur marchande réelle</h3><svg class="val-hist" viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution de la valeur marchande"><polyline points="${pts}" fill="none" stroke="var(--acc)" stroke-width="2"/></svg>
+      <small class="muted">${esc(v[0][0].slice(0, 7))} : ${money(v[0][1])} → ${esc(v[v.length - 1][0].slice(0, 7))} : ${money(v[v.length - 1][1])} · pic ${money(max)} (Transfermarkt)</small>`);
+  }
   if (p.transfersReal?.length) morceaux.push(`<h3>Transferts réels</h3><table class="tbl compact">${p.transfersReal.map(([d, de, vers, ind, val]) => `<tr><td>${esc((d || '').slice(0, 7))}</td><td>${esc(de || '?')} → ${esc(vers || '?')}</td><td>${ind ? money(ind) : ind === 0 ? 'libre' : '—'}</td><td class="muted">${val ? 'valeur ' + money(val) : ''}</td></tr>`).join('')}</table>`);
   const f = clubsFormateurs(G, p).map(x => getClub(G, x.id)?.name).filter(Boolean);
   if (f.length) morceaux.push(`<p class="hint">Clubs formateurs (mécanisme de solidarité FIFA) : ${f.map(esc).join(', ')}</p>`);

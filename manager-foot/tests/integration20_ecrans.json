@@ -1,0 +1,16 @@
+{
+ "pc": {
+  "lents": [],
+  "debordements": [],
+  "vides": [],
+  "erreurs": [],
+  "mesures": "inbox:72 mail:83 calendar:65 career:60 chronique:61 squad:115 plan:75 coach:73 meetings:68 dressing:67 medical:60 youth:63 transfers:181 cell:64 deals:61 staff:65 board:63 finances:73 club:65 fixtures:99 comps:85 regles:66 stats:68 analysis:86 editor:178 options:74 aide:60 studio:58 fiches:undefined"
+ },
+ "mob": {
+  "lents": [],
+  "debordements": [],
+  "vides": [],
+  "erreurs": [],
+  "mesures": "inbox:73 mail:87 calendar:63 career:59 chronique:67 squad:110 plan:68 coach:71 meetings:71 dressing:66 medical:64 youth:65 transfers:163 cell:63 deals:59 staff:65 board:64 finances:74 club:61 fixtures:93 comps:74 regles:62 stats:70 analysis:81 editor:119 options:63 aide:90 studio:58 fiches:undefined"
+ }
+}

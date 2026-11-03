@@ -1,0 +1,66 @@
+{
+  "review_date": "2026-11-02",
+  "scope": "Élargissement documentaire, sans copie de code ni changement de licence du jeu",
+  "repositories": [
+    {
+      "repo": "openfootmanager/openfootmanager",
+      "ref": "a4c69c392ddccb35814e75622d15dcdd7bec8404",
+      "license": "GPL-3.0 (LICENSE.md)",
+      "licensePath": "LICENSE.md",
+      "file": "src-tauri/crates/ofm_core/src/contract_wage_policy.rs",
+      "priority": 1,
+      "use": "Projection de renouvellement : retirer l’ancien salaire avant d’ajouter le nouveau ; traiter séparément prêt, achat et arrivée libre.",
+      "reviewed_blob_sha": "1acaf654a180396dbff811e839b11a258177dc04",
+      "status": "examined_not_copied",
+      "code_copied": false
+    },
+    {
+      "repo": "tstellar/bygfoot",
+      "ref": "ba8eefd386e5614eb6c3a506933f350794955d23",
+      "license": "GPL-2.0-or-later pour src/training.c",
+      "licensePath": "COPYING",
+      "file": "src/training.c",
+      "priority": 2,
+      "use": "Stages de préparation avec arbitrage entre entraînement, repos, âge, condition et récupération ; adapter les unités et plafonds avant usage.",
+      "reviewed_blob_sha": "278bce4ad0e8931b408c12574248a5af8e1a1df4",
+      "status": "examined_not_copied",
+      "code_copied": false
+    },
+    {
+      "repo": "minj/foxtrick",
+      "ref": "10158d18192fd0b9bd4046c6d7ef1d60985632b8",
+      "license": "GPL-3.0 (COPYING)",
+      "licensePath": "COPYING",
+      "file": "content/information-aggregation/youth-skills.js",
+      "priority": 3,
+      "use": "Séparer graphiquement niveau observé, estimation et potentiel connu chez les jeunes ; conserver les inconnus.",
+      "reviewed_blob_sha": "7bbd041d22b74ca7076d1ff3c873abbddd5ef91c",
+      "status": "examined_not_copied",
+      "code_copied": false
+    },
+    {
+      "repo": "ihofmann/open-websoccer",
+      "ref": "92e83066a508e48bd74d6d504de3247a9d53b72a",
+      "license": "LGPL-3.0-or-later pour SponsorsDataService.class.php",
+      "licensePath": "LICENSE",
+      "file": "websoccer/classes/services/SponsorsDataService.class.php",
+      "priority": 4,
+      "use": "Comparer sponsors par revenu fixe et bonus conditionnels, avec critères d’éligibilité liés au classement.",
+      "reviewed_blob_sha": "c67854f3d610163ddd8ec3fc8a8be494ff645bff",
+      "status": "examined_not_copied",
+      "code_copied": false
+    },
+    {
+      "repo": "Ryo-N7/soccer_ggplots",
+      "ref": "c41c144ec8a48fda9bcad79909fa419d6db48ead",
+      "license": "AGPL-3.0 (LICENSE)",
+      "licensePath": "LICENSE",
+      "file": "README.md",
+      "priority": 5,
+      "use": "Diagrammes d’âge et de temps de jeu pour repérer dépendance aux cadres, sous-utilisation et absence de succession.",
+      "reviewed_blob_sha": "6cad3ad5e2a50c68b408128949e4f3ad00d4f8fa",
+      "status": "examined_not_copied",
+      "code_copied": false
+    }
+  ]
+}

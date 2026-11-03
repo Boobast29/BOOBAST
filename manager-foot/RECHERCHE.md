@@ -133,9 +133,9 @@ accueil réécrit. Idées de jeu notées dans PLAN.md.
 
 ## Code copié depuis GitHub (v24)
 
-Règle suivie : on ne copie que du code dont la licence l'autorise (MIT, Apache-2.0…), en gardant l'avis de copyright.
+Règle actualisée : examiner les conditions de chaque licence, y compris GPL/LGPL/AGPL ; conserver les avis et satisfaire les obligations applicables à la reprise envisagée. Voir DEPOTS_COPYLEFT.md.
 Les dépôts **sans licence** (pitch-to-glory, league-manager-ui, football-logos…) restent « tous droits réservés » : idées seulement.
-Les dépôts **GPL** (openfootmanager, ohmyhattrick) imposeraient de passer tout le jeu sous GPL : non copiés.
+Les dépôts **GPL** ne sont plus exclus par principe. Leur code n’est pas copié dans ce lot ; avant une adaptation, vérifier le périmètre du travail combiné et les obligations applicables à sa distribution. Voir DEPOTS_COPYLEFT.md.
 
 | Dépôt | Licence | Copié | Où |
 |---|---|---|---|
@@ -253,3 +253,4 @@ Données (faits dérivés dans `js/donnees_ouvertes2.js`, générés par `outils
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.
 3. Calibrer tirs, passes et xG du moteur avec StatsBomb open-data (usage personnel).
 4. Vérifier les points « à vérifier » de l'écran Règlement (ordre des critères de départage en France, seuils financiers 2026/27).
+

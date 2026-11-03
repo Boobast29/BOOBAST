@@ -160,9 +160,9 @@ function requestObservation(G, pid, opts = {}) {
   if (G.cell.queue.some(q => q.pid === pid && (!opts.second))) return null;
   const prev = (G.reports || []).filter(r => r.pid === pid).map(r => r.by);
   const m = opts.scoutId ? member(G, opts.scoutId) : bestScoutFor(G, p, opts.second ? prev[prev.length - 1] : null);
-  if (!m) return null;
+  if (!m || m.role === 'analyste') return null;
   const z = zoneOf(G, p), delay = Math.ceil(1 + (20 - m.skills.observation) / 8 + load(G, m) * .5 + (z === homeZone(G) ? 0 : 1));
-  G.cell.queue.push({ pid, scoutId: m.id, due: G.week + delay, second: !!opts.second });
+  G.cell.queue.push({ pid, scoutId: m.id, due: G.week + delay, dueSeason: G.season, remaining: clamp(Math.round(opts.observations || 1), 1, 5), second: !!opts.second });
   return { m, delay };
 }
 scoutPlayer = function (pid) {
@@ -215,15 +215,16 @@ function cellWeekly(G) {
   const C = G.cell;
   // observations individuelles arrivées à échéance
   C.queue = C.queue.filter(q => {
-    if (G.week < q.due) return true;
+    if ((q.dueSeason ?? G.season) === G.season && G.week < q.due) return true;
     const p = getPlayer(G, q.pid), m = member(G, q.scoutId) || (p && bestScoutFor(G, p));
     if (!p || !m) return false;
     const cost = zoneCost(G, zoneOf(G, p));
-    if (monthSpent(G) + cost > C.budgetM) { q.due = G.week + 1; q.waiting = 'budget'; return true; }
+    if (monthSpent(G) + cost > C.budgetM) { q.due = G.week + 1; q.dueSeason = G.season; q.waiting = 'budget'; return true; }
     FLOW_LABEL = `Observation de ${p.name}`; flow(G, myClub(G), -cost, 'scouting'); FLOW_LABEL = null;
     C.spent[curMonthKey(G)] = monthSpent(G) + cost;
     const r = makeReport(G, m, p);
     news(G, `🔎 Rapport de ${m.name} sur ${p.name} (${p.pos}, ${p.age} ans) : niveau estimé ${r.lo}-${r.hi}, confiance ${r.conf} %.`, 'scout');
+    if ((q.remaining || 1) > 1) { q.remaining--; q.due = G.week + 3; q.dueSeason = G.season; delete q.waiting; return true; }
     return false;
   });
   // missions
@@ -413,13 +414,13 @@ function divergence(G, pid) {
 let CELL_TAB = 'dash', CELL_NEWPOS = '', CELL_CMP = 'DC';
 function vCell(el) {
   cellInit(G);
-  const C = G.cell, tabs = [['dash', 'Tableau de bord'], ['staff', 'Équipe'], ['missions', 'Missions'], ['reports', 'Rapports'], ['compare', 'Comparer'], ['market', 'Recruter du personnel'], ['eval', 'Évaluation']];
+  const C = G.cell, tabs = [['dash', 'Tableau de bord'], ['staff', 'Équipe'], ['missions', 'Missions'], ['reports', 'Rapports'], ['compare', 'Comparer'], ['similar', 'Profils similaires'], ['market', 'Recruter du personnel'], ['eval', 'Évaluation']];
   el.innerHTML = `<section class="card"><div class="row gap wrap"><h2 class="grow">🔎 Cellule de recrutement</h2><button class="btn primary" id="cMeet">Réunion de recrutement</button></div>
     <div class="tabs">${tabs.map(([k, l]) => `<button data-ct2="${k}" class="${CELL_TAB === k ? 'on' : ''}">${l}</button>`).join('')}</div></section><div id="cellBody" class="col"></div>`;
   el.querySelectorAll('[data-ct2]').forEach(b => b.onclick = () => { CELL_TAB = b.dataset.ct2; vCell(el); });
   $('#cMeet').onclick = () => cellMeeting(null);
   const box = $('#cellBody');
-  ({ dash: cellDash, staff: cellStaff, missions: cellMissions, reports: cellReports, compare: cellCompare, market: cellHire, eval: cellEval })[CELL_TAB](box, el);
+  ({ dash: cellDash, staff: cellStaff, missions: cellMissions, reports: cellReports, compare: cellCompare, similar: cellSimilar, market: cellHire, eval: cellEval })[CELL_TAB](box, el);
 }
 function cellDash(box) {
   const C = G.cell, act = C.missions.filter(m => m.status === 'active');
@@ -576,12 +577,13 @@ aiTransfers = function (G) {
     const spentKey = c.id + ':' + G.season;
     // enveloppe fixée au début de la saison (40 % de la trésorerie d'alors), sommes engagées déduites intégralement
     G.aiStart ||= {}; G.aiStart[spentKey] ??= Math.max(0, c.budget);
-    const authorized = G.aiStart[spentKey] * .4 - (G.aiSpend[spentKey] || 0);
+    const authorized = Math.min(G.aiStart[spentKey] * .4 - (G.aiSpend[spentKey] || 0), Math.max(0, c.budget - squad.reduce((s,p) => s + p.wage, 0) * 8));
     const wages = squad.reduce((s, p) => s + p.wage, 0), income = c.foreign ? wages * 1.05 : (weeklyMerch(G, c) + baseSponsor(G, c) + c.capacity * .75 * clubEco(G, c).ticket * .5 + leagueEcoByDiv(G, c.div || 1).tv / 38 / 20);
     const byPos = {};
     for (const r of Object.keys(ROLES)) byPos[r] = squad.filter(p => p.pos === r).map(p => aiPerceived(G, c, p)).sort((a, b) => b - a)[0] || 0;
-    const need = Object.keys(byPos).sort((a, b) => byPos[a] - byPos[b])[0];
-    const targets = G.players.filter(p => p.pos === need && !p.loan && !p.academy && p.club !== c.id && p.club !== G.clubId && aiPerceived(G, c, p) > byPos[need] && marketValue(p) <= authorized && playerOvr(p) < c.rep + 18
+    const need = aiPriorityRole(squad, byPos);
+    const requiredLevel = squad.filter(p => p.pos === need).length < (AI_ROLE_DEPTH[need] || 1) ? byPos[need] - 12 : byPos[need];
+    const targets = G.players.filter(p => p.pos === need && !p.loan && !p.academy && p.club !== c.id && p.club !== G.clubId && aiPerceived(G, c, p) > requiredLevel && (p.club == null ? 0 : marketValue(p)) <= authorized && playerOvr(p) < c.rep + 18
       && wages + Math.max(p.wage, demandWage(G, p, c)) <= income * .85);
     if (!targets.length) continue;
     const t = targets.sort((a, b) => aiPerceived(G, c, b) - aiPerceived(G, c, a))[Math.min(targets.length - 1, rint(0, 2))];
@@ -640,3 +642,4 @@ if (typeof coachMarket === 'function') { const __coachMarketC = coachMarket; coa
 // la cellule est créée avec la partie (déterministe, indépendant de l'interface)
 const __newGameC = newGame;
 newGame = function (...a) { const g = __newGameC(...a); const prev = G; G = g; try { migrateGestion(g); cellInit(g); } finally { G = prev; } return g; };
+

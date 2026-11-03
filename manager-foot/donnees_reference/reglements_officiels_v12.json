@@ -1,0 +1,1632 @@
+{
+  "schema_version": 2,
+  "season": "2026/2027",
+  "consulted_on": "2026-11-02",
+  "sources": {
+    "lfp": {
+      "url": "https://www.lfp.fr/assets/26_27_Reglement_Competitions_08_09_2026_45d0881157.pdf",
+      "authority": "LFP",
+      "season": "2026/2027",
+      "version": "08-09-2026",
+      "articles": [
+        "518",
+        "518 bis",
+        "518 ter",
+        "519",
+        "519 bis",
+        "519 ter"
+      ],
+      "consulted_on": "2026-11-02"
+    },
+    "pl": {
+      "url": "https://resources.premierleague.pulselive.com/premierleague/document/2026/10/22/24902579-d9e8-44b3-a9e4-777c7b3d7134/TM2040_PL-Handbook-and-Collateral-2026-27_Digital_21.10.pdf",
+      "authority": "Premier League",
+      "season": "2026/2027",
+      "version": "21-10-2026",
+      "articles": [
+        "C.1",
+        "C.4–C.7",
+        "C.14",
+        "C.17"
+      ],
+      "consulted_on": "2026-11-02"
+    },
+    "dfl": {
+      "authority": "DFL",
+      "url": "https://media.dfl.de/sites/2/2026/06/Spielordnung-SpOL-2026-06-11-Stand.pdf",
+      "version": "11-06-2026",
+      "articles": [
+        "§2",
+        "§3"
+      ],
+      "consulted_on": "2026-11-02"
+    },
+    "rfef": {
+      "url": "https://rfef.es/sites/default/files/pdf/circulares/1._Circular_84_-_CNL_Primera_y_Segunda_Division___Anexo.pdf?cb=6df81e55",
+      "authority": "RFEF",
+      "season": "2026/2027",
+      "version": "30-06-2026",
+      "articles": [
+        "6–10",
+        "13–17"
+      ],
+      "warning": "Couverture 2025/26, mais corps et approbation explicites 2026/27 : anomalie conservée.",
+      "consulted_on": "2026-11-02"
+    },
+    "fff3": {
+      "authority": "FFF",
+      "url": "https://media.fff.fr/uploads/documents/reglement-ligue-3-betclic-2026-2027.pdf",
+      "version": "2026/2027",
+      "articles": [
+        "4–8",
+        "annexes3/3bis"
+      ],
+      "consulted_on": "2026-11-02"
+    },
+    "efl": {
+      "authority": "EFL",
+      "url": "https://images.gc.eflservices.co.uk/286c5320-b8e7-11f1-988c-6f6985b66d42.pdf",
+      "version": "2026/27 v3.0",
+      "articles": [
+        "9",
+        "10"
+      ],
+      "consulted_on": "2026-11-02"
+    },
+    "eflplay": {
+      "authority": "EFL",
+      "url": "https://images.gc.eflservices.co.uk/659e3bb0-7b8d-11f1-b366-6527b2d4899f.pdf",
+      "version": "2026/27",
+      "articles": [
+        "2.1–2.6"
+      ],
+      "consulted_on": "2026-11-02"
+    },
+    "dfb": {
+      "authority": "DFB",
+      "url": "https://assets.dfb.de/uploads/000/336/416/original_Heft_04_Spielordnung_Schiedsrichterordnung_20260701.pdf?1784280450=",
+      "version": "01-07-2026",
+      "articles": [
+        "§43",
+        "§46",
+        "§55–55b"
+      ],
+      "consulted_on": "2026-11-02"
+    },
+    "rfef3": {
+      "authority": "RFEF",
+      "url": "https://rfef.es/sites/default/files/pdf/circulares/2._Circular_85_-_CNL_Primera_Federacion___Anexo.pdf?cb=be5f965d",
+      "version": "30-06-2026, circulaire85",
+      "articles": [
+        "7–12"
+      ],
+      "warning": "Couverture2025/26 mais corps explicitement2026/27 ; tableau des appariements vérifié visuellement.",
+      "consulted_on": "2026-11-02"
+    },
+    "noif": {
+      "authority": "FIGC",
+      "url": "https://files.figc.it/view/acePublic/alias/contentid/1qzg5l96u12qfpnd689/0/tit3_noif_art_da47a70_------------aggiornato-al_CU209A_del_06-05-2026.pdf",
+      "version": "CU209/A06-05-2026, index officiel courant consulté",
+      "articles": [
+        "49",
+        "51"
+      ],
+      "consulted_on": "2026-11-02"
+    },
+    "itaA": {
+      "authority": "FIGC / LND",
+      "url": "https://comunicati.lnd.it/storage/comunicati/2025/2026/LND/1779902400_C_U__n__244_A_FIGC_-_deroga_art__51_NOIF_alla_Lega_Calcio_Serie_A__s_s__2026_2027_.pdf",
+      "version": "CU244/A27-05-2026",
+      "articles": [
+        "i–iv"
+      ],
+      "consulted_on": "2026-11-02"
+    },
+    "itaB": {
+      "authority": "FIGC / CR Umbria",
+      "url": "https://www.figc-cru.com/comunicati_files/22da65e71ddceb11ec474377d13e4867.pdf",
+      "version": "CU25/A28-07-2026",
+      "articles": [
+        "classifica finale",
+        "playoff",
+        "playout"
+      ],
+      "consulted_on": "2026-11-02"
+    }
+  },
+  "competitions": [
+    {
+      "competition_id": "league_v9_france_1",
+      "status": "sporting_structure_verified",
+      "season_scope": "2026/2027",
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 18,
+        "rounds": 34,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": [
+        "overall_goal_difference",
+        "head_to_head_points_when_both_matches_played",
+        "head_to_head_goal_difference_when_both_matches_played",
+        "overall_goals_for",
+        "wins",
+        "away_wins",
+        "discipline_points_ascending_yellow_1_red_3",
+        "drawing_lots"
+      ],
+      "promotion": null,
+      "relegation": {
+        "direct_positions": [
+          17,
+          18
+        ],
+        "playoff_position": 16
+      },
+      "playoffs": {
+        "kind": "interdivision_two_legs",
+        "opponent": "winner_ligue2_playoffs",
+        "first_leg_host": "lower_division",
+        "away_goals": false,
+        "aggregate_tie": "extra_time_2x15_then_penalties"
+      },
+      "notes": null,
+      "automatic_simulation_enabled": false,
+      "unverified_domains": [
+        "inscriptions et quotas",
+        "suspensions",
+        "licences administratives et recours",
+        "qualification UEFA",
+        "cas exceptionnels et championnat interrompu"
+      ],
+      "source_ids": [
+        "lfp"
+      ],
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_france_2",
+      "status": "sporting_structure_verified",
+      "season_scope": "2026/2027",
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 18,
+        "rounds": 34,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": [
+        "overall_goal_difference",
+        "head_to_head_points_when_both_matches_played",
+        "head_to_head_goal_difference_when_both_matches_played",
+        "overall_goals_for",
+        "wins",
+        "away_wins",
+        "discipline_points_ascending_yellow_1_red_3",
+        "drawing_lots"
+      ],
+      "promotion": {
+        "direct_positions": [
+          1,
+          2
+        ],
+        "playoff_positions": [
+          3,
+          4,
+          5
+        ]
+      },
+      "relegation": {
+        "direct_positions": [
+          17,
+          18
+        ],
+        "playoff_position": 16
+      },
+      "playoffs": {
+        "accession": [
+          {
+            "host_rank": 4,
+            "visitor_rank": 5,
+            "legs": 1,
+            "tie_after_90": "penalties_without_extra_time"
+          },
+          {
+            "host_rank": 3,
+            "visitor": "previous_winner",
+            "legs": 1,
+            "tie_after_90": "penalties_without_extra_time"
+          },
+          {
+            "opponent": "ligue1_rank16",
+            "legs": 2,
+            "first_leg_host": "ligue2",
+            "away_goals": false,
+            "aggregate_tie": "extra_time_2x15_then_penalties"
+          }
+        ],
+        "relegation": {
+          "opponent": "winner_ligue3_accession_playoff",
+          "legs": 2,
+          "first_leg_host": "ligue3",
+          "away_goals": false,
+          "aggregate_tie": "extra_time_2x15_then_penalties"
+        }
+      },
+      "notes": "Ligue 3 : deux premiers promus selon art519bis ; mécanisme de sélection de son barragiste à vérifier auprès FFF.",
+      "automatic_simulation_enabled": false,
+      "unverified_domains": [
+        "inscriptions et quotas",
+        "suspensions",
+        "licences administratives et recours",
+        "qualification UEFA",
+        "cas exceptionnels et championnat interrompu"
+      ],
+      "source_ids": [
+        "lfp"
+      ],
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_england_1",
+      "status": "sporting_structure_verified",
+      "season_scope": "2026/2027",
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 20,
+        "rounds": 38,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": [
+        "overall_goal_difference",
+        "overall_goals_for",
+        "shared_position_unless_title_relegation_or_qualification",
+        "if_stakes_head_to_head_points",
+        "if_stakes_head_to_head_away_goals",
+        "if_two_remain_neutral_playoff_board_sets_format"
+      ],
+      "promotion": null,
+      "relegation": {
+        "direct_positions": [
+          18,
+          19,
+          20
+        ]
+      },
+      "playoffs": null,
+      "notes": null,
+      "automatic_simulation_enabled": false,
+      "unverified_domains": [
+        "inscriptions et quotas",
+        "suspensions",
+        "licences administratives et recours",
+        "qualification UEFA",
+        "cas exceptionnels et championnat interrompu"
+      ],
+      "source_ids": [
+        "pl"
+      ],
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_germany_1",
+      "status": "sporting_structure_verified",
+      "season_scope": "2026/2027",
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 18,
+        "rounds": 34,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": [
+        "overall_goal_difference",
+        "overall_goals_for",
+        "head_to_head_aggregate_result",
+        "head_to_head_away_goals",
+        "overall_away_goals",
+        "neutral_decider"
+      ],
+      "promotion": null,
+      "relegation": {
+        "direct_positions": [
+          17,
+          18
+        ],
+        "playoff_position": 16
+      },
+      "playoffs": {
+        "opponent": "bundesliga2_rank3",
+        "legs": 2,
+        "second_leg_host": "fewer_rest_days_before_first_leg_then_draw"
+      },
+      "notes": "Version11-06-2026 vérifiée ; H2H après les deux confrontations ; match décisif en fin de saison seulement.",
+      "automatic_simulation_enabled": false,
+      "unverified_domains": [
+        "inscriptions et quotas",
+        "suspensions",
+        "licences administratives et recours",
+        "qualification UEFA",
+        "cas exceptionnels et championnat interrompu"
+      ],
+      "source_ids": [
+        "dfl"
+      ],
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_germany_2",
+      "status": "sporting_structure_verified",
+      "season_scope": "2026/2027",
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 18,
+        "rounds": 34,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": [
+        "overall_goal_difference",
+        "overall_goals_for",
+        "head_to_head_aggregate_result",
+        "head_to_head_away_goals",
+        "overall_away_goals",
+        "neutral_decider"
+      ],
+      "promotion": {
+        "direct_positions": [
+          1,
+          2
+        ],
+        "playoff_position": 3
+      },
+      "relegation": {
+        "direct_positions": [
+          17,
+          18
+        ],
+        "playoff_position": 16
+      },
+      "playoffs": {
+        "legs": 2,
+        "relegation_opponent": "liga3_rank3",
+        "second_leg_host": "fewer_rest_days_before_first_leg_then_draw"
+      },
+      "notes": "Version11-06-2026 vérifiée ; H2H après les deux confrontations ; match décisif en fin de saison seulement.",
+      "automatic_simulation_enabled": false,
+      "unverified_domains": [
+        "inscriptions et quotas",
+        "suspensions",
+        "licences administratives et recours",
+        "qualification UEFA",
+        "cas exceptionnels et championnat interrompu"
+      ],
+      "source_ids": [
+        "dfl"
+      ],
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_spain_1",
+      "status": "sporting_structure_verified",
+      "season_scope": "2026/2027",
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 20,
+        "rounds": 38,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": {
+        "two_clubs": [
+          "head_to_head_goal_difference",
+          "overall_goal_difference",
+          "overall_goals_for",
+          "fair_play",
+          "neutral_decider"
+        ],
+        "three_or_more": [
+          "mini_league_points",
+          "mini_league_goal_difference",
+          "overall_goal_difference",
+          "overall_goals_for",
+          "fair_play",
+          "neutral_decider"
+        ],
+        "partial_resolution": "Reconstituer le sous-groupe restant selon articles10/17 ; ne pas utiliser un simple tri par paires."
+      },
+      "promotion": null,
+      "relegation": {
+        "direct_positions": [
+          18,
+          19,
+          20
+        ]
+      },
+      "playoffs": null,
+      "notes": null,
+      "automatic_simulation_enabled": false,
+      "unverified_domains": [
+        "inscriptions et quotas",
+        "suspensions",
+        "licences administratives et recours",
+        "qualification UEFA",
+        "cas exceptionnels et championnat interrompu"
+      ],
+      "source_ids": [
+        "rfef"
+      ],
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_spain_2",
+      "status": "sporting_structure_verified",
+      "season_scope": "2026/2027",
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 22,
+        "rounds": 42,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": {
+        "two_clubs": [
+          "head_to_head_goal_difference",
+          "overall_goal_difference",
+          "overall_goals_for",
+          "fair_play",
+          "neutral_decider"
+        ],
+        "three_or_more": [
+          "mini_league_points",
+          "mini_league_goal_difference",
+          "overall_goal_difference",
+          "overall_goals_for",
+          "fair_play",
+          "neutral_decider"
+        ],
+        "partial_resolution": "Reconstituer le sous-groupe restant selon articles10/17 ; ne pas utiliser un simple tri par paires."
+      },
+      "promotion": {
+        "direct_positions": [
+          1,
+          2
+        ],
+        "playoff_positions": [
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "relegation": {
+        "direct_positions": [
+          19,
+          20,
+          21,
+          22
+        ]
+      },
+      "playoffs": {
+        "semi_finals": [
+          [
+            3,
+            6
+          ],
+          [
+            4,
+            5
+          ]
+        ],
+        "legs": 2,
+        "first_leg_host": "worse_regular_season_rank",
+        "aggregate_tie": "extra_time_then_better_regular_season_rank_advances",
+        "penalties": false
+      },
+      "notes": "Équipes réserves/filiales : pas dans la division du parent ; promotion/playoff à remplacer par prochain club éligible. La liste doit être filtrée avant de former les affiches.",
+      "automatic_simulation_enabled": false,
+      "unverified_domains": [
+        "inscriptions et quotas",
+        "suspensions",
+        "licences administratives et recours",
+        "qualification UEFA",
+        "cas exceptionnels et championnat interrompu"
+      ],
+      "source_ids": [
+        "rfef"
+      ],
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_france_3",
+      "source_ids": [
+        "fff3"
+      ],
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 18,
+        "rounds": 34,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": [
+        "overall_goal_difference",
+        "head_to_head_points",
+        "head_to_head_goal_difference",
+        "overall_goals_for",
+        "wins",
+        "away_wins",
+        "carton_bleu_penalties_ascending",
+        "drawing_lots"
+      ],
+      "promotion": {
+        "direct_positions": [
+          1,
+          2
+        ],
+        "playoff_positions": [
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "relegation": {
+        "direct_positions": [
+          16,
+          17,
+          18
+        ],
+        "destination": "N1"
+      },
+      "playoffs": {
+        "semi_finals": [
+          [
+            3,
+            6
+          ],
+          [
+            4,
+            5
+          ]
+        ],
+        "legs": 1,
+        "final_legs": 1,
+        "host": "better_regular_rank",
+        "tie": "penalties_without_extra_time",
+        "winner_faces": "ligue2_rank16_two_legs",
+        "vacancy": "bye_no_rank7_replacement"
+      },
+      "season_scope": "2026/2027",
+      "automatic_simulation_enabled": false,
+      "status": "sporting_structure_verified",
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_england_2",
+      "source_ids": [
+        "efl",
+        "eflplay"
+      ],
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 24,
+        "rounds": 46,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": [
+        "overall_goal_difference",
+        "overall_goals_for",
+        "head_to_head_points",
+        "head_to_head_goal_difference",
+        "head_to_head_goals_for",
+        "wins",
+        "overall_away_goals",
+        "discipline_penalty_points_after42matches",
+        "fewest_12point_reds",
+        "league_arranged_decider"
+      ],
+      "promotion": {
+        "direct_positions": [
+          1,
+          2
+        ],
+        "playoff_positions": [
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      },
+      "relegation": {
+        "direct_positions": [
+          22,
+          23,
+          24
+        ]
+      },
+      "playoffs": {
+        "semi_legs": 2,
+        "semi_second_host": "better_rank_unless_board_reversal",
+        "final_legs": 1,
+        "final_tie": "extra_time_then_penalties",
+        "semi_aggregate_tie": "pending_explicit_current_clause",
+        "quarter_finals": [
+          [
+            5,
+            8
+          ],
+          [
+            6,
+            7
+          ]
+        ],
+        "quarter_legs": 1,
+        "quarter_host": "better_rank",
+        "quarter_tie": "extra_time_then_penalties",
+        "semi_finals": "rank3_vs_worst_remaining_rank4_vs_other"
+      },
+      "season_scope": "2026/2027",
+      "automatic_simulation_enabled": false,
+      "status": "sporting_structure_verified",
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_england_3",
+      "source_ids": [
+        "efl",
+        "eflplay"
+      ],
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 24,
+        "rounds": 46,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": [
+        "overall_goal_difference",
+        "overall_goals_for",
+        "head_to_head_points",
+        "head_to_head_goal_difference",
+        "head_to_head_goals_for",
+        "wins",
+        "overall_away_goals",
+        "discipline_penalty_points_after42matches",
+        "fewest_12point_reds",
+        "league_arranged_decider"
+      ],
+      "promotion": {
+        "direct_positions": [
+          1,
+          2
+        ],
+        "playoff_positions": [
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "relegation": {
+        "direct_positions": [
+          21,
+          22,
+          23,
+          24
+        ]
+      },
+      "playoffs": {
+        "semi_legs": 2,
+        "semi_second_host": "better_rank_unless_board_reversal",
+        "final_legs": 1,
+        "final_tie": "extra_time_then_penalties",
+        "semi_aggregate_tie": "pending_explicit_current_clause",
+        "semi_finals": [
+          [
+            3,
+            6
+          ],
+          [
+            4,
+            5
+          ]
+        ]
+      },
+      "season_scope": "2026/2027",
+      "automatic_simulation_enabled": false,
+      "status": "sporting_structure_verified",
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_germany_3",
+      "source_ids": [
+        "dfb",
+        "dfl"
+      ],
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 20,
+        "rounds": 38,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": [
+        "overall_goal_difference",
+        "overall_goals_for",
+        "head_to_head_aggregate_result",
+        "head_to_head_away_goals",
+        "overall_away_goals",
+        "neutral_decider"
+      ],
+      "promotion": {
+        "direct_positions": [
+          1,
+          2
+        ],
+        "playoff_position": 3,
+        "eligibility": "no_reserve_of_licensed_club; next_eligible_DFB55"
+      },
+      "relegation": {
+        "direct_positions": [
+          17,
+          18,
+          19,
+          20
+        ],
+        "destination": "regional_league_by_association",
+        "administrative_adjustment": "DFB55a"
+      },
+      "playoffs": {
+        "legs": 2,
+        "opponent": "bundesliga2_rank16",
+        "second_leg_host": "fewer_rest_days_before_first_leg_then_draw",
+        "tie": "UEFA_knockout_reference_DFL3"
+      },
+      "season_scope": "2026/2027",
+      "automatic_simulation_enabled": false,
+      "status": "sporting_structure_verified",
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_spain_3_1",
+      "source_ids": [
+        "rfef3"
+      ],
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 20,
+        "rounds": 38,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": {
+        "two_clubs": [
+          "head_to_head_goal_difference",
+          "overall_goal_difference",
+          "overall_goals_for",
+          "fair_play",
+          "neutral_decider"
+        ],
+        "three_or_more": [
+          "mini_league_points",
+          "mini_league_goal_difference",
+          "overall_goal_difference",
+          "overall_goals_for",
+          "fair_play"
+        ],
+        "note": "Appliquer art12 aux groupes encore liés ; aucun tri par paires inventé."
+      },
+      "promotion": {
+        "direct_positions": [
+          1
+        ],
+        "playoff_positions": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "eligible_only": true
+      },
+      "relegation": {
+        "direct_positions": [
+          16,
+          17,
+          18,
+          19,
+          20
+        ]
+      },
+      "playoffs": {
+        "shared": "primera_federacion",
+        "semi_finals": [
+          [
+            "G1_2",
+            "G2_5"
+          ],
+          [
+            "G2_2",
+            "G1_5"
+          ],
+          [
+            "G2_3",
+            "G1_4"
+          ],
+          [
+            "G1_3",
+            "G2_4"
+          ]
+        ],
+        "finals": [
+          [
+            "winner_semi1",
+            "winner_semi3"
+          ],
+          [
+            "winner_semi2",
+            "winner_semi4"
+          ]
+        ],
+        "legs": 2,
+        "first_host": "worse_regular_rank",
+        "tie": "extra_time_then_better_regular_rank",
+        "penalties": false,
+        "promotion_winners": 2,
+        "reserve_eligibility": "article11_parent_category_filter_before_draw"
+      },
+      "season_scope": "2026/2027",
+      "automatic_simulation_enabled": false,
+      "status": "sporting_structure_verified",
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_spain_3_2",
+      "source_ids": [
+        "rfef3"
+      ],
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 20,
+        "rounds": 38,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": {
+        "two_clubs": [
+          "head_to_head_goal_difference",
+          "overall_goal_difference",
+          "overall_goals_for",
+          "fair_play",
+          "neutral_decider"
+        ],
+        "three_or_more": [
+          "mini_league_points",
+          "mini_league_goal_difference",
+          "overall_goal_difference",
+          "overall_goals_for",
+          "fair_play"
+        ],
+        "note": "Appliquer art12 aux groupes encore liés ; aucun tri par paires inventé."
+      },
+      "promotion": {
+        "direct_positions": [
+          1
+        ],
+        "playoff_positions": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "eligible_only": true
+      },
+      "relegation": {
+        "direct_positions": [
+          16,
+          17,
+          18,
+          19,
+          20
+        ]
+      },
+      "playoffs": {
+        "shared": "primera_federacion",
+        "semi_finals": [
+          [
+            "G1_2",
+            "G2_5"
+          ],
+          [
+            "G2_2",
+            "G1_5"
+          ],
+          [
+            "G2_3",
+            "G1_4"
+          ],
+          [
+            "G1_3",
+            "G2_4"
+          ]
+        ],
+        "finals": [
+          [
+            "winner_semi1",
+            "winner_semi3"
+          ],
+          [
+            "winner_semi2",
+            "winner_semi4"
+          ]
+        ],
+        "legs": 2,
+        "first_host": "worse_regular_rank",
+        "tie": "extra_time_then_better_regular_rank",
+        "penalties": false,
+        "promotion_winners": 2,
+        "reserve_eligibility": "article11_parent_category_filter_before_draw"
+      },
+      "season_scope": "2026/2027",
+      "automatic_simulation_enabled": false,
+      "status": "sporting_structure_verified",
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_italy_1",
+      "source_ids": [
+        "noif",
+        "itaA"
+      ],
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 20,
+        "rounds": 38,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": [
+        "head_to_head_points",
+        "head_to_head_goal_difference",
+        "overall_goal_difference",
+        "overall_goals_for",
+        "drawing_lots"
+      ],
+      "promotion": null,
+      "relegation": {
+        "direct_positions": [
+          18,
+          19,
+          20
+        ]
+      },
+      "playoffs": {
+        "title_points_tie": {
+          "legs": 1,
+          "host": "better_mini_table",
+          "tie": "penalties_no_extra_time"
+        },
+        "survival_points_tie": {
+          "ranks": [
+            17,
+            18
+          ],
+          "legs": 2,
+          "second_host": "better_mini_table",
+          "tie": "penalties_no_extra_time"
+        },
+        "multi_tie": "mini_table_select_relevant2",
+        "uefa_finalist_exception": "no_playoff_use_mini_table"
+      },
+      "season_scope": "2026/2027",
+      "automatic_simulation_enabled": false,
+      "status": "sporting_structure_verified",
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_italy_2",
+      "source_ids": [
+        "noif",
+        "itaB"
+      ],
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 20,
+        "rounds": 38,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": [
+        "head_to_head_points",
+        "head_to_head_goal_difference",
+        "overall_goal_difference",
+        "overall_goals_for",
+        "drawing_lots"
+      ],
+      "promotion": {
+        "direct_positions": [
+          1,
+          2
+        ],
+        "rank3_direct_if_gap_to4_gt": 14,
+        "otherwise_playoff_positions": [
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      },
+      "relegation": {
+        "direct_positions": [
+          18,
+          19,
+          20
+        ],
+        "rank17_direct_if_gap_from16_gt": 4,
+        "otherwise_playout_positions": [
+          16,
+          17
+        ]
+      },
+      "playoffs": {
+        "preliminary": [
+          [
+            5,
+            8
+          ],
+          [
+            6,
+            7
+          ]
+        ],
+        "preliminary_legs": 1,
+        "host": "better_rank",
+        "preliminary_tie": "extra_time_then_better_rank_no_penalties",
+        "semis": [
+          "rank3_vs_winner6_7",
+          "rank4_vs_winner5_8"
+        ],
+        "semi_legs": 2,
+        "semi_tie": "points_then_goal_difference_then_better_rank_no_extra_time",
+        "final_legs": 2,
+        "final_tie": "points_then_goal_difference_then_better_rank; if_same_regular_points_extra_time_penalties",
+        "playout_legs": 2,
+        "playout_first_host": "rank17",
+        "playout_tie": "same_as_final"
+      },
+      "season_scope": "2026/2027",
+      "automatic_simulation_enabled": false,
+      "status": "sporting_structure_verified",
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_italy_3_A",
+      "source_ids": [
+        "noif"
+      ],
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 20,
+        "rounds": 38,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": [
+        "head_to_head_points",
+        "head_to_head_goal_difference",
+        "overall_goal_difference",
+        "overall_goals_for",
+        "overall_goals_against_ascending",
+        "wins",
+        "losses_ascending",
+        "away_wins",
+        "home_losses_ascending"
+      ],
+      "promotion": {
+        "direct_positions": [
+          1
+        ],
+        "shared_national_playoff_winners": 1
+      },
+      "relegation": {
+        "direct_positions": [
+          20
+        ],
+        "playout_pairs": [
+          [
+            16,
+            19
+          ],
+          [
+            17,
+            18
+          ]
+        ],
+        "skip_pair_if_points_gap_gt": 8
+      },
+      "playoffs": {
+        "shared": "serieC_national",
+        "group_round1": {
+          "pairs": [
+            [
+              5,
+              10
+            ],
+            [
+              6,
+              9
+            ],
+            [
+              7,
+              8
+            ]
+          ],
+          "legs": 1,
+          "host": "better_rank",
+          "tie": "better_rank_after90"
+        },
+        "group_round2": {
+          "entrants": "rank4_plus3winners",
+          "pairs": "best_vs_worst_then_others",
+          "legs": 1,
+          "tie": "better_rank_after90"
+        },
+        "national_round1": {
+          "entrants": "6group_winners_3thirds_cupslot",
+          "seeds": "3thirds_cupslot_best_group_winner",
+          "legs": 2,
+          "second_host": "seed",
+          "tie": "points_then_goal_difference_then_seed"
+        },
+        "national_round2": {
+          "entrants": "5winners_3runnersup",
+          "seeds": "3runnersup_best_round1_winner",
+          "legs": 2,
+          "second_host": "seed",
+          "tie": "points_then_goal_difference_then_seed"
+        },
+        "final_four": {
+          "semi_legs": 2,
+          "final_legs": 2,
+          "tie": "points_then_goal_difference_then_extra_time_penalties"
+        },
+        "cross_group_seeding": [
+          "rank",
+          "points",
+          "wins",
+          "goals_for",
+          "draw"
+        ],
+        "cup_slot": "eligible_winner_else_finalist_else_rank4_winner_group; group_rank11_added_if_slot_in4_10",
+        "playout_tie": "points_then_goal_difference_then_better_rank",
+        "source_note": "Art49X contient répétition H2H : normalisée sans inventer un nouveau critère."
+      },
+      "season_scope": "2026/2027",
+      "automatic_simulation_enabled": false,
+      "status": "sporting_structure_verified",
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_italy_3_B",
+      "source_ids": [
+        "noif"
+      ],
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 20,
+        "rounds": 38,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": [
+        "head_to_head_points",
+        "head_to_head_goal_difference",
+        "overall_goal_difference",
+        "overall_goals_for",
+        "overall_goals_against_ascending",
+        "wins",
+        "losses_ascending",
+        "away_wins",
+        "home_losses_ascending"
+      ],
+      "promotion": {
+        "direct_positions": [
+          1
+        ],
+        "shared_national_playoff_winners": 1
+      },
+      "relegation": {
+        "direct_positions": [
+          20
+        ],
+        "playout_pairs": [
+          [
+            16,
+            19
+          ],
+          [
+            17,
+            18
+          ]
+        ],
+        "skip_pair_if_points_gap_gt": 8
+      },
+      "playoffs": {
+        "shared": "serieC_national",
+        "group_round1": {
+          "pairs": [
+            [
+              5,
+              10
+            ],
+            [
+              6,
+              9
+            ],
+            [
+              7,
+              8
+            ]
+          ],
+          "legs": 1,
+          "host": "better_rank",
+          "tie": "better_rank_after90"
+        },
+        "group_round2": {
+          "entrants": "rank4_plus3winners",
+          "pairs": "best_vs_worst_then_others",
+          "legs": 1,
+          "tie": "better_rank_after90"
+        },
+        "national_round1": {
+          "entrants": "6group_winners_3thirds_cupslot",
+          "seeds": "3thirds_cupslot_best_group_winner",
+          "legs": 2,
+          "second_host": "seed",
+          "tie": "points_then_goal_difference_then_seed"
+        },
+        "national_round2": {
+          "entrants": "5winners_3runnersup",
+          "seeds": "3runnersup_best_round1_winner",
+          "legs": 2,
+          "second_host": "seed",
+          "tie": "points_then_goal_difference_then_seed"
+        },
+        "final_four": {
+          "semi_legs": 2,
+          "final_legs": 2,
+          "tie": "points_then_goal_difference_then_extra_time_penalties"
+        },
+        "cross_group_seeding": [
+          "rank",
+          "points",
+          "wins",
+          "goals_for",
+          "draw"
+        ],
+        "cup_slot": "eligible_winner_else_finalist_else_rank4_winner_group; group_rank11_added_if_slot_in4_10",
+        "playout_tie": "points_then_goal_difference_then_better_rank",
+        "source_note": "Art49X contient répétition H2H : normalisée sans inventer un nouveau critère."
+      },
+      "season_scope": "2026/2027",
+      "automatic_simulation_enabled": false,
+      "status": "sporting_structure_verified",
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    },
+    {
+      "competition_id": "league_v9_italy_3_C",
+      "source_ids": [
+        "noif"
+      ],
+      "format": {
+        "kind": "double_round_robin",
+        "teams": 20,
+        "rounds": 38,
+        "points": {
+          "win": 3,
+          "draw": 1,
+          "loss": 0
+        }
+      },
+      "tiebreakers": [
+        "head_to_head_points",
+        "head_to_head_goal_difference",
+        "overall_goal_difference",
+        "overall_goals_for",
+        "overall_goals_against_ascending",
+        "wins",
+        "losses_ascending",
+        "away_wins",
+        "home_losses_ascending"
+      ],
+      "promotion": {
+        "direct_positions": [
+          1
+        ],
+        "shared_national_playoff_winners": 1
+      },
+      "relegation": {
+        "direct_positions": [
+          20
+        ],
+        "playout_pairs": [
+          [
+            16,
+            19
+          ],
+          [
+            17,
+            18
+          ]
+        ],
+        "skip_pair_if_points_gap_gt": 8
+      },
+      "playoffs": {
+        "shared": "serieC_national",
+        "group_round1": {
+          "pairs": [
+            [
+              5,
+              10
+            ],
+            [
+              6,
+              9
+            ],
+            [
+              7,
+              8
+            ]
+          ],
+          "legs": 1,
+          "host": "better_rank",
+          "tie": "better_rank_after90"
+        },
+        "group_round2": {
+          "entrants": "rank4_plus3winners",
+          "pairs": "best_vs_worst_then_others",
+          "legs": 1,
+          "tie": "better_rank_after90"
+        },
+        "national_round1": {
+          "entrants": "6group_winners_3thirds_cupslot",
+          "seeds": "3thirds_cupslot_best_group_winner",
+          "legs": 2,
+          "second_host": "seed",
+          "tie": "points_then_goal_difference_then_seed"
+        },
+        "national_round2": {
+          "entrants": "5winners_3runnersup",
+          "seeds": "3runnersup_best_round1_winner",
+          "legs": 2,
+          "second_host": "seed",
+          "tie": "points_then_goal_difference_then_seed"
+        },
+        "final_four": {
+          "semi_legs": 2,
+          "final_legs": 2,
+          "tie": "points_then_goal_difference_then_extra_time_penalties"
+        },
+        "cross_group_seeding": [
+          "rank",
+          "points",
+          "wins",
+          "goals_for",
+          "draw"
+        ],
+        "cup_slot": "eligible_winner_else_finalist_else_rank4_winner_group; group_rank11_added_if_slot_in4_10",
+        "playout_tie": "points_then_goal_difference_then_better_rank",
+        "source_note": "Art49X contient répétition H2H : normalisée sans inventer un nouveau critère."
+      },
+      "season_scope": "2026/2027",
+      "automatic_simulation_enabled": false,
+      "status": "sporting_structure_verified",
+      "validation_scope": [
+        "format",
+        "points",
+        "promotion_relegation_structure",
+        "encoded_tiebreakers"
+      ],
+      "exhaustive_regulations_verified": false,
+      "engine_implemented_by_this_pack": false
+    }
+  ],
+  "scope": "5 pays,3 premiers niveaux,18 groupes",
+  "pending_fields": [
+    {
+      "competition_id": "league_v9_england_2",
+      "field": "semi_aggregate_tie",
+      "reason": "§2.4 du PDF courant décrit les deux manches mais pas explicitement le départage ; ne pas importer silencieusement la clause ancienne."
+    },
+    {
+      "competition_id": "league_v9_england_3",
+      "field": "semi_aggregate_tie",
+      "reason": "§2.4 du PDF courant décrit les deux manches mais pas explicitement le départage ; ne pas importer silencieusement la clause ancienne."
+    }
+  ],
+  "unverified_domains": [
+    "quotas et inscriptions exhaustifs",
+    "discipline complète",
+    "finances et licences",
+    "recours",
+    "qualifications UEFA"
+  ],
+  "activation": "Référentiel documentaire ; ne change pas les règles exécutées par une sauvegarde."
+}

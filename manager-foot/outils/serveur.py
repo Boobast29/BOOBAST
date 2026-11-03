@@ -273,6 +273,9 @@ class Handler(BaseHTTPRequestHandler):
                 f = CATALOGUE.photo(parts[2], parts[3])
                 return self.envoyer(200, f[0], f[1], 'max-age=86400') if f else self.envoyer(404, {'erreur': 'Image inconnue'})
             return self.envoyer(404, {'erreur': 'Route catalogue inconnue'})
+        if parts == ['reglements-officiels']:
+            path = RACINE_JEU / 'donnees_reference' / 'reglements_officiels_v12.json'
+            return self.envoyer(200, json.loads(path.read_text(encoding='utf-8')))
         if RES is None:
             return self.envoyer(503, {'erreur': 'Base mondiale non installée. Le catalogue FMB reste disponible.'})
         if parts == ['etat']:
@@ -379,3 +382,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

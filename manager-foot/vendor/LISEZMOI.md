@@ -57,3 +57,7 @@ le jeu reste jouable sans (recherche simple, sons d'origine).
 - rhiever/fmsave (MIT) : bibliothèque installée par l'utilisateur (`pip install fmsave`), non incluse.
 - `world-cup-2026-prediction-model/LICENSE` : Hicruben/world-cup-2026-prediction-model (MIT). Fonctions Dixon-Coles dans `js/previsions.js`.
 - vickyfriss/football-league-predictions (MIT) : méthode Monte-Carlo de fin de saison, réécrite dans `js/previsions.js`.
+
+## 20 intégrations supplémentaires : Studio du club
+
+Voir [la liste des fonctions, versions et licences](../INTEGRATIONS_20.md). Les fichiers exécutables locaux sont dans `integration20/`, accompagnés du manifeste, des licences originales et des sources MPL. Les adaptateurs FullCalendar ne sont pas comptés comme des dépôts distincts.

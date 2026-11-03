@@ -84,7 +84,50 @@ function attributsDetail(p) {
 function notePoste(p, poste = p.pos, D = attributsDetail(p)) {
   const w = POIDS_POSTE[poste] || POIDS_POSTE.MC;
   let s = 0, t = 0; for (const [k, x] of Object.entries(w)) { s += (D[k] ?? 10) * x; t += x; }
-  return s / t; // sur 20
+  return horsSpecialite(p, poste, s / t); // sur 20
+}
+// Poste hors de sa spécialité : un gardien n'a pas le métier d'un joueur de champ (et inversement) → note divisée par
+// deux, plafonnée à 35/100 ; entre joueurs de champ, la note baisse avec la distance entre les postes (un attaquant en
+// défense centrale perd environ 40 %, un latéral en défense centrale environ 10 %). Un poste appris à l'entraînement
+// (familiarité) réduit l'écart.
+const LIGNE_POSTE_N = { DC: 1, DG: 1.2, DD: 1.2, MDC: 1.6, MC: 2, MOC: 2.5, AG: 2.8, AD: 2.8, BU: 3 };
+// Exceptions : postes secondaires réels (données source : « DC, MDC »…), joueurs polyvalents (environ 6 %, stables
+// par joueur, pénalité divisée par deux) et postes appris à l'entraînement (familiarité au-dessus du niveau de départ).
+const CODES_POSTE = { GK: 'GB', G: 'GB', GB: 'GB', CB: 'DC', DC: 'DC', LB: 'DG', LWB: 'DG', DG: 'DG', RB: 'DD', RWB: 'DD', DD: 'DD', CDM: 'MDC', DM: 'MDC', MDC: 'MDC',
+  CM: 'MC', MC: 'MC', CAM: 'MOC', AM: 'MOC', MOC: 'MOC', LM: 'AG', LW: 'AG', AG: 'AG', MG: 'AG', RM: 'AD', RW: 'AD', AD: 'AD', MD: 'AD', ST: 'BU', CF: 'BU', BU: 'BU', ATT: 'BU', AC: 'BU' };
+function postesSecondaires(p) {
+  if (p._ps) return p._ps;
+  const brut = String(p.posRaw || p.postesReels || '').toUpperCase().split(/[^A-Z]+/).map(x => CODES_POSTE[x]).filter(Boolean);
+  return p._ps = [...new Set(brut)].filter(x => x !== p.pos);
+}
+const estPolyvalent = p => p.polyvalent ?? (typeof hashTrait === 'function' && (hashTrait(`poly|${p.srcId || p.id}|${p.name}`) % 100) < 6);
+function facteurPoste(p, poste) {
+  if (p.pos === poste) return 1;
+  if (postesSecondaires(p).includes(poste)) return .96; // poste secondaire réel
+  if ((p.pos === 'GB') !== (poste === 'GB')) return .5;
+  const d = Math.abs((LIGNE_POSTE_N[p.pos] ?? 2) - (LIGNE_POSTE_N[poste] ?? 2));
+  const compat = (COMPAT[p.pos] || []).includes(poste);
+  let f = compat ? .93 : clamp(1 - .2 * d, .58, .9);
+  if (estPolyvalent(p)) f = 1 - (1 - f) / 2;
+  const appris = p.posFam?.[poste], depart = compat ? 65 : 30;
+  if (appris != null && appris > depart && typeof famFromValue === 'function') f = Math.max(f, famFromValue(appris));
+  return f;
+}
+function horsSpecialite(p, poste, n20) {
+  if (p.pos === poste) return n20;
+  if ((p.pos === 'GB') !== (poste === 'GB') && !postesSecondaires(p).includes(poste)) return Math.min(n20 * .5, 7);
+  return n20 * facteurPoste(p, poste);
+}
+// le moteur de match suit la même logique (avant : 0,78 pour tout poste non voisin, attaquant en défense compris)
+if (typeof familiarity === 'function') {
+  const __familiarityPF = familiarity;
+  familiarity = function (p, role) {
+    const f = __familiarityPF(p, role);
+    if (p.pos === role) return f;
+    if (postesSecondaires(p).includes(role)) return Math.max(f, .96);
+    if ((p.pos === 'GB') !== (role === 'GB')) return f;
+    return (COMPAT[p.pos] || []).includes(role) && !estPolyvalent(p) ? f : Math.max(facteurPoste(p, role), (COMPAT[p.pos] || []).includes(role) ? f : 0);
+  };
 }
 const noteSur100 = n20 => Math.round(n20 * 5);
 function meilleursPostes(p, D = attributsDetail(p)) { return Object.keys(POIDS_POSTE).map(r => [r, notePoste(p, r, D)]).sort((a, b) => b[1] - a[1]).slice(0, 3); }
@@ -126,17 +169,17 @@ function statsDetaillees(p) {
 // ---------- affichage (fiche joueur) ----------
 const POSTES_PLURIEL = { GB: 'gardiens', DC: 'défenseurs centraux', DG: 'latéraux gauches', DD: 'latéraux droits', MDC: 'milieux défensifs', MC: 'milieux centraux', MOC: 'milieux offensifs', AG: 'ailiers gauches', AD: 'ailiers droits', BU: 'buteurs' };
 const posteAuPluriel = pos => POSTES_PLURIEL[pos] || (ROLES[pos]?.label || pos).toLowerCase() + 's';
-const couleurAttr = v => v >= 16 ? 'a-top' : v >= 13 ? 'a-bon' : v >= 9 ? 'a-moy' : v >= 6 ? 'a-faible' : 'a-tres';
+let couleurAttr = v => v >= 16 ? 'a-top' : v >= 13 ? 'a-bon' : v >= 9 ? 'a-moy' : v >= 6 ? 'a-faible' : 'a-tres';
 function blocAttributs(p) {
   const D = attributsDetail(p), n20 = notePoste(p, p.pos, D), connu = typeof knows !== 'function' || knows(G, p);
   const flou = v => connu ? v : `${Math.max(1, v - 2)}-${Math.min(20, v + 2)}`;
   const fams = ['tech', 'ment', 'phys', ...(p.pos === 'GB' ? ['gb'] : [])];
   const bp = meilleursPostes(p, D).map(([r, n]) => `${r} ${noteSur100(n)}`).join(' · ');
   return `<section class="attr36"><div class="a36-tete"><div class="a36-note" style="--n:${n20 / 20}"><b>${connu ? noteSur100(n20) : '?'}</b><small>/100</small></div>
-      <div><b>Note de poste (${esc(ROLES[p.pos]?.label || p.pos)})</b><small>moyenne pondérée de ${Object.keys(POIDS_POSTE[p.pos] || {}).length} attributs clés · ${connu ? n20.toFixed(1).replace('.', ',') : '?'} sur 20</small><small>Meilleurs postes : ${connu ? bp : 'à découvrir'}</small></div></div>
+      <div><b>Note de poste (${esc(ROLES[p.pos]?.label || p.pos)})</b><small>moyenne pondérée de ${Object.keys(POIDS_POSTE[p.pos] || {}).length} attributs clés · ${connu ? n20.toFixed(1).replace('.', ',') : '?'} sur 20</small><small>Meilleurs postes : ${connu ? bp : 'à découvrir'}${connu && estPolyvalent(p) ? ' · <b class="pos">polyvalent</b>' : ''}${connu && postesSecondaires(p).length ? ` · postes secondaires : ${postesSecondaires(p).join(', ')}` : ''}</small></div></div>
     <div class="a36-grille">${fams.map(fm => `<div class="a36-fam"><h4>${FAMILLES[fm]}</h4>${ATTR_DETAIL.filter(a => a[2] === fm).map(([k, l]) => {
       const v = D[k], cle = (POIDS_POSTE[p.pos] || {})[k];
-      return `<div class="a36-l ${cle ? 'cle' : ''}" data-tip="${esc(l)}${connu ? ` : ${v}/20, mieux que ${percentile(p, k)} % des ${esc(posteAuPluriel(p.pos))}` : ''}${cle ? ` · compte pour ${Math.round(cle * 100)} % de la note de poste` : ''}"><span>${esc(l)}</span><b class="${connu ? couleurAttr(v) : 'a-flou'}">${flou(v)}</b></div>`;
+      return `<div class="a36-l ${cle ? 'cle' : ''}" data-k="${k}" data-tip="${esc(l)}${connu ? ` : ${v}/20, mieux que ${percentile(p, k)} % des ${esc(posteAuPluriel(p.pos))}` : ''}${cle ? ` · compte pour ${Math.round(cle * 100)} % de la note de poste` : ''}"><span>${esc(l)}</span><b class="${connu ? couleurAttr(v) : 'a-flou'}">${flou(v)}</b></div>`;
     }).join('')}</div>`).join('')}</div>
     <p class="hint">${p.detail99 ? 'Attributs issus des sous-notes réelles du pack (sur 99, ramenées sur 20), plus la progression en jeu.' : 'Attributs dérivés des 9 qualités du moteur de match, avec un profil propre au joueur.'} En gras : attributs clés du poste.${connu ? '' : ' Envoie ta cellule de recrutement pour connaître les valeurs exactes.'}</p></section>`;
 }

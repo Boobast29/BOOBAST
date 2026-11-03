@@ -28,12 +28,22 @@ function forcesEtrangeres(G, L) {
   for (const id of L.clubs) { try { F[id] = forceEquipe(G, makeSide(G, id, tactiqueSansHasard(G, id, id))); } catch { F[id] = 60; } }
   return F;
 }
+// Calibrage par pays d'après les résultats réels (PALMARES_REEL : football.json + openfootball/europe, saisons complètes) :
+// buts par match et avantage du terrain propres à chaque championnat (Norvège plus prolifique, Grèce plus fermée…).
+function calibragePays(pays) {
+  const L = (typeof PALMARES_REEL !== 'undefined' && PALMARES_REEL[pays]?.[1] || []).filter(s => s.fini || s.j >= 150).slice(-6); // saisons complètes ou assez fournies (formats à play-offs)
+  if (!L.length) return { buts: 1, dom: 1 };
+  const bm = L.reduce((a, s) => a + s.bm, 0) / L.length, dom = L.reduce((a, s) => a + s.dom, 0) / L.length;
+  return { buts: clamp(bm / 2.75, .82, 1.2), dom: clamp(1 + (dom - .45) * .9, .9, 1.12), bm, domR: dom };
+}
 function jouerJourneeEtrangere(G, pays, L) {
   if (L.joue >= L.fixtures.length) return;
   if (!L._F || L.joue % 6 === 0) Object.defineProperty(L, '_F', { value: forcesEtrangeres(G, L), writable: true, configurable: true, enumerable: false });
   const rng = mulberry32((G.season * 97 + L.joue) * 7919 + [...pays].reduce((s, ch) => s * 31 + ch.charCodeAt(0), 7));
+  const cal = calibragePays(pays);
   for (const f of L.fixtures[L.joue]) {
-    const [l, m] = butsAttendus((L._F[f.h] ?? 60) - (L._F[f.a] ?? 60));
+    let [l, m] = butsAttendus((L._F[f.h] ?? 60) - (L._F[f.a] ?? 60));
+    l *= cal.buts * cal.dom; m *= cal.buts / cal.dom;
     f.res = [poissonSample(l, rng), poissonSample(m, rng)];
   }
   L.joue++;
@@ -78,7 +88,9 @@ function blocLigueEtrangere(G, pays) {
   if (!L) return '';
   const t = tableOf(L.clubs, L.fixtures), prec = (G.etrPalmares?.[pays] || []).slice(-1)[0];
   const derniere = L.joue ? L.fixtures[L.joue - 1] : null;
+  const reels = (typeof PALMARES_REEL !== 'undefined' && PALMARES_REEL[pays]?.[1] || []).filter(s => s.fini).slice(-4).reverse(), cal = calibragePays(pays);
   return `<div class="etr-ligue"><p class="hint">Journée ${L.joue} sur ${L.fixtures.length}${prec ? ` · champion ${prec.s}/${String(prec.s + 1).slice(2)} : <b>${esc(getClub(G, prec.c)?.name || '?')}</b>` : ''}</p>
+    ${reels.length ? `<p class="hint">Champions réels : ${reels.map(s => `${esc(s.s)} <b>${esc(s.c)}</b>`).join(' · ')}${cal.bm ? ` · calibrage réel : ${cal.bm.toFixed(2).replace('.', ',')} buts par match, ${Math.round(cal.domR * 100)} % de victoires à domicile` : ''}</p>` : ''}
     <div class="tbl-wrap"><table class="tbl compact standings"><thead><tr><th>#</th><th>Club</th><th>J</th><th>G</th><th>N</th><th>P</th><th>Diff</th><th>Pts</th><th>Forme</th></tr></thead><tbody>
     ${t.map((r, i) => { const c = getClub(G, r.id); return `<tr class="click" data-mc="${c.id}"><td>${i + 1}</td><td class="nm">${crest(c, 18)} ${esc(c.name)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td><b>${r.pts}</b></td><td class="form">${r.form.slice(-5).map(x => `<i class="f${x}">${x}</i>`).join('')}</td></tr>`; }).join('')}</tbody></table></div>
     ${derniere ? `<details class="mt"><summary>Derniers résultats</summary><div class="etr-res">${derniere.map(f => `<span>${esc(getClub(G, f.h)?.short || '?')} <b>${f.res[0]}-${f.res[1]}</b> ${esc(getClub(G, f.a)?.short || '?')}</span>`).join('')}</div></details>` : ''}</div>`;

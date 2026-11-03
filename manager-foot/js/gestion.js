@@ -595,7 +595,8 @@ renewModal = function (pid) {
     <div class="row gap mt"><div class="grow"></div><button class="btn primary" id="ok">Proposer</button></div><p id="resp" class="hint"></p>`);
   $('#ok').onclick = () => {
     const m = +$('#wg').value, y = +$('#yrs').value, sb = +$('#sb').value || 0, cl = +$('#cl').value || 0;
-    if (wageBill(G) - p.wage + weekly(m) > G.board.wageCap) { $('#resp').innerHTML = `❌ Le président refuse : plafond salarial (${wageM(G.board.wageCap)}) dépassé.`; return; }
+    if (!Number.isFinite(m) || m <= 0 || !Number.isInteger(y) || y < 1 || y > 5 || !Number.isFinite(sb) || sb < 0 || !Number.isFinite(cl) || cl < 0) { $('#resp').textContent = 'Montants invalides.'; return; }
+    if ((typeof renewalProjection === 'function' ? !renewalProjection(G, p, { wageM: m, years: y, bonus: sb, clause: cl }).allowed : wageBill(G) - p.wage + weekly(m) > G.board.wageCap)) { $('#resp').innerHTML = `❌ Le président refuse : plafond salarial (${wageM(G.board.wageCap)}) dépassé.`; return; }
     if (sb > myClub(G).budget) { $('#resp').innerHTML = '❌ Trésorerie insuffisante pour la prime.'; return; }
     const val = m * 12 * y + sb - (cl && cl < p.value ? m * 3 : 0), ask = askM * 12 * y * (Math.abs(y - yrsW) > 1 ? 1.08 : 1) + askM * 2;
     if (val >= ask * .94) {
@@ -731,7 +732,7 @@ function groupDynamicsWeekly(G) {
   if (cap && cap.club === G.clubId) myClub(G).coh = clamp((myClub(G).coh ?? 60) + (cap.morale - 60) / 60, 0, 100);
   // intégration des recrues : plus rapide si un groupe de même langue existe
   for (const p of ft) if ((p.integ ?? 100) < 100) {
-    const mates = ft.filter(x => x !== p && langOf(x) === langOf(p)).length;
+    const mates = ft.filter(x => x !== p && (typeof sharedLanguage === 'function' ? sharedLanguage(x, p) : langOf(x) === langOf(p))).length;
     p.integ = clamp(p.integ + 8 + Math.min(3, mates) * 3 + (p.pers === 'Discret' ? -3 : 0), 0, 100);
     if (p.integ < 50) p.morale = clamp(p.morale - .8, 5, 100);
     if (p.integ >= 100) news(G, `🤝 ${p.name} est désormais bien intégré au groupe.`, 'info');
@@ -985,3 +986,4 @@ endSeason = function (G) {
 // Chaque message reçoit un identifiant (lien direct depuis le tableau de bord)
 const __news = news;
 news = function (G, text, type = 'info', worldOnly = false) { __news(G, text, type, worldOnly); if (G.inbox[0]) G.inbox[0].id ||= 'm' + (G.decSeq = (G.decSeq || 1) + 1); };
+

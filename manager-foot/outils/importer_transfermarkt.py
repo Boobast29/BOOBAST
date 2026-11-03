@@ -5,7 +5,7 @@
 
 Source : https://github.com/dcaribou/transfermarkt-datasets (licence CC0 1.0). Couverture : premières divisions
 (Premier League, Ligue 1, Bundesliga, LaLiga, Serie A…) et joueurs passés par ces championnats.
-Tables créées : tm_clubs, tm_joueurs, tm_transferts, tm_saisons (statistiques par saison) ; liens club -> club Transfermarkt (vote des joueurs de l'effectif).
+Tables créées : tm_clubs, tm_joueurs, tm_transferts, tm_saisons (statistiques par saison), tm_valeurs (historique des valeurs) ; liens club -> club Transfermarkt (vote des joueurs de l'effectif).
 Les fiches d'origine ne sont pas modifiées ; le scénario lit ces tables en complément.
 """
 import argparse
@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import commun  # noqa: E402
 
 URL = 'https://pub-e682421888d945d684bcae8890b0ec20.r2.dev/data/{}.csv.gz'
-FICHIERS = ('clubs', 'players', 'transfers', 'appearances')
+FICHIERS = ('clubs', 'players', 'transfers', 'appearances', 'player_valuations')
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS tm_clubs(tm TEXT PRIMARY KEY, nom TEXT, championnat TEXT, entraineur TEXT, stade TEXT, places INTEGER,
   valeur_totale INTEGER, effectif INTEGER, age_moyen REAL, etrangers INTEGER, url TEXT);
@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS tm_transferts(joueur_tm TEXT, date TEXT, saison TEXT,
 CREATE INDEX IF NOT EXISTS tmt_j ON tm_transferts(joueur_tm);
 CREATE TABLE IF NOT EXISTS tm_saisons(joueur_tm TEXT, saison TEXT, matchs INTEGER, minutes INTEGER, buts INTEGER, passes INTEGER,
   jaunes INTEGER, rouges INTEGER, PRIMARY KEY(joueur_tm, saison));
+CREATE TABLE IF NOT EXISTS tm_valeurs(joueur_tm TEXT, date TEXT, valeur INTEGER, club_tm TEXT, PRIMARY KEY(joueur_tm, date));
 CREATE TABLE IF NOT EXISTS liens(type TEXT, id TEXT, qid TEXT, reep_id TEXT, methode TEXT, confiance REAL, PRIMARY KEY(type, id));
 CREATE TABLE IF NOT EXISTS liens_tm(type TEXT, id TEXT, tm TEXT, methode TEXT, confiance REAL, PRIMARY KEY(type, id));
 """
@@ -112,6 +113,12 @@ def importer(con, dossier, verbeux=True):
                 a[3] += entier(r.get('assists')) or 0; a[4] += entier(r.get('yellow_cards')) or 0; a[5] += entier(r.get('red_cards')) or 0
             con.execute('DELETE FROM tm_saisons')
             con.executemany('INSERT OR REPLACE INTO tm_saisons VALUES (?,?,?,?,?,?,?,?)', [(k[0], k[1], *v) for k, v in agg.items()]); st['saisons_joueurs'] = len(agg)
+        f = ouvrir(dossier, 'player_valuations')
+        if f:  # historique de la valeur marchande (courbe sur la fiche joueur)
+            con.execute('DELETE FROM tm_valeurs')
+            rows = [(r['player_id'], (r.get('date') or '')[:10], entier(r.get('market_value_in_eur')), r.get('current_club_id') or None)
+                    for r in csv.DictReader(f) if r.get('date')]
+            con.executemany('INSERT OR REPLACE INTO tm_valeurs VALUES (?,?,?,?)', rows); st['valeurs'] = len(rows)
     st.update(lier(con))
     if verbeux:
         print(f'transfermarkt-datasets : {st} ({time.perf_counter() - t0:.1f} s)', flush=True)

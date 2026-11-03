@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "Interface, navigation v23 et RNG inchangé",
+    "Sources officielles accessibles",
+    "Recherche, filtres et joueurs",
+    "Minutes couvertes /90 et CSV",
+    "Carte des tirs : géométrie et événements conservés",
+    "1440,1024,768 et390px sans débordement global"
+  ],
+  "errors": []
+}

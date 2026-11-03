@@ -1,4 +1,166 @@
-# État du projet — v54 (3 novembre 2026)
+# État du projet — v70 (3 novembre 2026)
+
+## Visages du pack NewGAN (outils/visages_newgan.py, Visages_NewGAN.bat)
+- Lib-LOCALE/NewGAN-Manager-26 examiné : application Tauri/Svelte saine (aucun code suspect), en pause (FM26 n'exporte plus les identifiants), licence GPL-3 → aucune ligne reprise, idée seulement.
+- Outil maison : attribue un portrait du pack NewGAN (visages générés par IA, à télécharger soi-même) à chaque joueur sans image. Dossier choisi d'après la nationalité, avec la diversité réelle des pays (France, Angleterre, Belgique, Pays-Bas, Brésil… : une part de visages d'un autre groupe, stable par joueur) — mieux que NewGAN, qui donne un visage d'Europe centrale à tous les Français. Chaque portrait utilisé une fois, nationalités non reconnues signalées, vraie photo prioritaire, « Visage généré par IA » sur la fiche, `--essai`, `--pays`, `--retirer`.
+- Test : `outils/tests_visages_newgan.py` (faux pack) : 8/8.
+
+# État du projet — v69 (3 novembre 2026)
+
+## openfootball/europe (CC0)
+- `outils/openfootball_europe.py` (format Football.TXT) → `js/palmares_europe.js` (21 Ko) : palmarès réel recalculé pour 35 pays de plus (Norvège, Suède, Danemark, Pologne, Suisse, Croatie, Serbie, Ukraine, Roumanie, Hongrie…) et les divisions 2 (Pays-Bas, Portugal, Suisse, Tchéquie…), fusionné dans PALMARES_REEL sans remplacer football.json.
+- Championnats étrangers simulés : calibrés par pays sur les résultats réels (buts par match, avantage du terrain, 6 dernières saisons) ; classement : derniers champions réels et chiffres du calibrage.
+- Revu sans intégration : academic-initiative/skillsbuild (exercices IBM Bob, sans licence ; données internationales déjà intégrées depuis martj42, CC0).
+
+# État du projet — v68 (3 novembre 2026)
+
+## Fiche joueur et retraites annoncées (js/fiche_evolution.js)
+- Fiche (profil) : courbe du niveau saison par saison + aujourd'hui, avis du staff (progresse bien / doucement, au sommet, stagne, en recul, décline avec l'âge, plafond atteint).
+- Apprentissage d'un poste (profil et onglet Développement) : jauge de familiarité, note au poste aujourd'hui → une fois maîtrisé.
+- Retraites annoncées à la mi-saison (mercato d'hiver) : les joueurs concernés arrêtent en fin de saison ; tes joueurs te préviennent (« pense à préparer sa succession »), mention sur la fiche. Retraite sans annonce : plus rare (×0,45). Test : 170 annonces dans le monde, toutes effectives.
+
+# État du projet — v67 (3 novembre 2026)
+
+## Confort de jeu (js/confort.js)
+- Notifications : deux au plus à l'écran, sans doublon en rafale, en bas à gauche (elles ne couvrent plus les boutons de réponse de la messagerie ni les fiches).
+- Messagerie : nouvelles de faible importance (traits découverts, rumeurs, crises et tensions d'autres clubs, buteurs des autres clubs, succès) regroupées en un « Résumé de la semaine » (liste à puces). Mesure sur 18 semaines : 76 → ~55 messages.
+- Erreur 404 `/api/etat` au chargement : n'existe que sans le serveur du jeu (lancement par `Lancer_Manager_Foot.bat` : pas d'erreur). Rien à corriger.
+
+# État du projet — v66 (3 novembre 2026)
+
+## Notes aux postes réalistes (js/attributs.js)
+- Avant : un gardien pouvait afficher 66 en milieu, un attaquant 60 en défense (qualités de champ générées à un niveau moyen, aucune pénalité dans la note détaillée ; moteur : 0,78 pour tout poste non voisin).
+- Gardien ↔ joueur de champ : note divisée par deux, plafonnée à 35/100. Entre joueurs de champ : pénalité selon la distance entre les postes (latéral → défense centrale ≈ −10 %, milieu → défense centrale ≈ −20 %, attaquant → défense centrale ≈ −40 %). Même logique dans le moteur (familiarité).
+- Exceptions : postes secondaires réels des données source (`posRaw` : « ST, CB »…) comptés comme maîtrisés ; joueurs polyvalents (≈ 5 %, stables, pénalité divisée par deux, signalés « polyvalent ») ; postes appris à l'entraînement.
+- Exemple : gardien 82 au poste, 25 à 33 ailleurs ; attaquant 72 au poste, 40 en défense centrale (44 s'il est polyvalent, 61 si la défense centrale est un de ses postes réels).
+- Vérifié : hasard intact, 2 saisons sans erreur, audit des écrans propre, réalisme ligue 1 conservé (champion 90 pts, 25 % de nuls).
+
+# État du projet — v65 (3 novembre 2026)
+
+## Visages des joueurs sans photo
+- `js/visages_generes.js` : plus de pastille à initiales ; chaque joueur réel sans photo reçoit un visage dessiné stable (identité, sans hasard du jeu), cohérent avec sa nationalité (teinte par région) et son âge (calvitie, cheveux gris), signalé « Visage généré (pas de photo) » sur la fiche.
+- `outils/generer_visages_ia.py` + `Generer_Visages_IA.bat` : vrais portraits générés par IA pour les joueurs sans aucune image, avec Stable Diffusion sur ton PC (AUTOMATIC1111 / Forge, option --api) ou DeepInfra (payant, FLUX schnell, clé). Personnes fictives : la consigne ne contient jamais le nom du joueur (âge, nationalité, tenue seulement). Enregistrés comme images ajoutées + table `images_ia` ; fiche : « Visage généré par IA ». Une vraie photo reste prioritaire. `--essai`, `--pays`, `--max`, `--retirer`.
+- Test : `outils/tests_visages_ia.py` (générateur simulé, API AUTOMATIC1111) : 7/7. Non exécuté contre un vrai générateur dans cet environnement.
+
+# État du projet — v64 (3 novembre 2026)
+
+## Fins de carrière, retraites du staff, reconversions (js/retraites.js)
+- Joueurs : en plus des retraites du moteur (34 ans et plus), fin de carrière plus tôt pour un joueur de 31 ans et plus sans temps de jeu, au niveau trop bas pour son club ou gravement blessé ; annonce pour tes joueurs.
+- Reconversion des retraités (mental, leader, professionnel, sélections, expérience) : entraîneur principal, adjoint, entraîneur technique, formateur, kiné ou recruteur. Certains rejoignent le staff de leur ancien club (nouvelle), les autres un vivier : on les retrouve libres, sans indemnité, sur les marchés du staff et des entraîneurs (« Ancien joueur de… »). Un de tes joueurs qui raccroche peut demander à rester au club (question : l'engager ou non).
+- Staff : retraite entre 64 et 70 ans (intérim jusqu'au recrutement), entraîneur principal entre 66 et 72 ans en mode directeur sportif ; plus de candidats de 66 ans et plus sur les marchés.
+- Monde : +122 à +156 joueurs en deux saisons au lieu de +269.
+
+# État du projet — v63 (3 novembre 2026)
+
+## Effectifs actuels Transfermarkt (transfermarkt-datasets, CC0)
+- `outils/importer_transfermarkt.py` : + `player_valuations` → table `tm_valeurs` (historique de la valeur marchande).
+- `outils/enrichissements.py` : `mouvements_tm` (joueur noté dont le club actuel Transfermarkt diffère : transfert récent vers un club du monde, ou départ hors du monde), `effectif_tm` (joueurs de l'effectif actuel absents de la base), `poste_tm` (postes Transfermarkt → postes du jeu), historique des valeurs dans `infos_joueur`.
+- `outils/scenario.py` : effectifs construits d'après Transfermarkt (arrivées, départs, joueurs manquants jusqu'à 28 par club, avec valeur, contrat, pied, agent, sélections, saisons et transferts réels).
+- `js/monde.js` : niveau des joueurs estimés calculé d'après la valeur marchande (≈ 68 pour 1 M€, 77 pour 10 M€, 85 pour 100 M€, ajusté selon l'âge).
+- Fiche joueur : courbe de la valeur marchande réelle.
+- Test : `outils/tests_transfermarkt_effectifs.py` (format réel des fichiers, valeurs d'exemple) : 7/7.
+- Limites : le stockage du jeu de données (R2, Kaggle) et transfermarkt.com sont bloqués depuis cet environnement : import à lancer sur ton PC (`Enrichir_Base.bat`). Collecte du jeu de données en pause depuis juillet 2026 (données antérieures disponibles). Photos Transfermarkt non utilisées (droits des photographes) ; pas d'aspiration directe du site (conditions d'utilisation).
+
+# État du projet — v62 (3 novembre 2026)
+
+## Réalisme des matchs (js/realisme_match.js)
+- Mesure avant (ligue 1, une saison) : champion 101 pts, dernier 17, 21 % de nuls, 12 % d'écarts de 4+ buts, corrélation réputation/classement 0,90 — trop prévisible (écart de niveau 82 → 58 entre le meilleur et le moins bon onze).
+- Forme du jour par équipe (±, tirée du match, sans rnd), qualités légèrement resserrées, petit contre gros (−14 % / +14 % de conversion des occasions par tranche de 10 points d'écart de niveau), gestion du score (mène de 2+ : gère ; mené après 60' : pousse).
+- Après (2 graines) : ligue 1 champion 81-95 pts, dernier 15-23, 25-29 % de nuls, 5 % d'écarts de 4+, corrélation 0,74-0,82, 2,6 buts/match. Réglages : REALISME_MATCH.
+
+## Difficulté (js/difficulte.js, Options)
+- Découverte · Normal (d'origine) · Exigeant · Réaliste. Agit sur la patience du président, les recettes du club, les exigences salariales, la précision des estimations de potentiel. Le moteur de match ne triche jamais.
+
+## Corrections
+- Réponses aux questions du staff (tension, revalorisation) sans interface affichée (simulation, vacances) : plus d'erreur de rafraîchissement.
+
+# État du projet — v61 (3 novembre 2026)
+
+## Évolution de tout le monde selon l'environnement (js/evolution.js)
+- Environnement de progression de chaque club (-1 à +1) : ton club → entraîneur technique, adjoint, entraîneur principal, centre d'entraînement, entente du staff, cohésion ; autres clubs → réputation, qualité d'encadrement propre au club (change toutes les 3 saisons), cohésion.
+- Fin de saison, tous les joueurs du monde : jeunes accélérés ou freinés par l'environnement ; potentiel revu (hasard, sérieux, temps de jeu, environnement) jusqu'à 28 ans ; âge de déclin propre à chacun (29-34 ans, retardé par un bon environnement), deuxième souffle pour les plus tardifs.
+- Historique du niveau saison par saison (p.evo) ; bilan d'intersaison de ton effectif (progrès / stables / en recul) dans la messagerie.
+- Écran Staff : « Environnement de progression » du club.
+- Vérifié : hasard des matchs intact, niveau moyen du monde stable sur 2 saisons (60,4 → 60,9).
+
+# État du projet — v60 (3 novembre 2026)
+
+## Carrière du staff (js/carriere_staff.js)
+- Potentiel caché (1-5 ★) : affiché comme estimation (± 1 étoile au recrutement et la 1re saison, exact après 2 saisons au club ; l'estimation peut se tromper).
+- Sérieux au travail (caché la 1re saison : bourreau de travail, sérieux, correct, irrégulier) et accompagnement (niveau de l'adjoint ou de l'entraîneur principal).
+- Progression hebdomadaire avec part de hasard (tirage à part, sans décaler les matchs) × sérieux + accompagnement + entente + centre d'entraînement ; déclin après 60 ans. Barre pleine : +1 niveau, appliqué au moteur.
+- Fin de saison : le potentiel du staff peut monter ou baisser (sérieux, entente, hasard).
+- Salaire du marché par niveau (sous-payé / au prix / au-dessus) ; après une progression, un membre sous-payé demande une revalorisation (question).
+- Marchés staff et entraîneurs : au moins deux libres par poste (sans indemnité), filtre « Libres seulement », potentiel estimé.
+
+## Potentiel incertain des joueurs (js/potentiel.js)
+- Potentiel affiché en fourchette estimée par le staff (entraîneur technique + adjoint pour tes joueurs, plus précis avec l'ancienneté ; recruteur pour les autres), avec biais possible.
+- Fin de saison, 23 ans et moins : potentiel revu selon hasard, personnalité (sérieux), accompagnement (staff, centre, entente) et temps de jeu ; nouvelles pour les gros écarts.
+
+# État du projet — v59 (3 novembre 2026)
+
+## Entente du staff (js/entente_staff.js)
+- Chaque membre (adjoint, entraîneur technique, kiné, recruteur, formateur, + entraîneur principal en mode directeur sportif) a une philosophie (formation, résultats immédiats, données, discipline, jeu offensif) et un caractère (diplomate, exigeant, charismatique, discret, ombrageux), tirés de son nom (stables, sans toucher au hasard du jeu).
+- Entente par binôme (0-100) : compatibilité de base, puis chaque semaine retour vers la base, +victoires, −défaites, + ancienneté commune. Relation de chaque membre avec toi.
+- Effet réel chaque semaine de championnat : cohésion du staff → récupération (±1,6 pt) et moral (±0,45 pt) des joueurs.
+- Conflit (binôme sous 28) → question « Tension dans le staff » dans la messagerie : réunion de conciliation, donner raison à l'un, laisser faire.
+- Écran Staff : carte « Entente du staff » (jauge, membres, binômes du plus tendu au plus soudé) ; candidats avec profil et « entente prévue ».
+
+# État du projet — v58 (3 novembre 2026)
+
+## Messagerie refaite (js/messagerie.js, css/messagerie.css)
+- Trois colonnes : dossiers (À traiter, Boîte de réception, Non lus · Par thème : Direction, Équipe, Mercato, Presse · Archives : Autres clubs, Réponses données) · liste · lecture. Sous 1180 px les dossiers passent en bandeau, sous 760 px tout s'empile.
+- Liste groupée par journée, expéditeur + date, objet entier (plus coupé au « : »), aperçu sur une ligne, point de couleur = thème, recherche (joueur, club, expéditeur).
+- Questions : étiquette « Question », bandeau « Calendrier en pause », fiche du joueur concerné, réponses en cartes numérotées (action en gras, conséquence dessous, réponse principale en vert, réponse risquée en rouge). Une fois traitée : « Ta réponse » avec le libellé choisi (plus de clés internes « accept », « auto »…).
+- Skills utilisés : interface-design (hiérarchie, couches, tokens), design:ux-copy (libellés, états vides).
+
+# État du projet — v57 (3 novembre 2026)
+
+## v57 — toutes les branches fusionnées (Studio du club, projet sportif, pack FMInside)
+- **`codex/studio-club-20-integrations`** : Studio du club (bureau déplaçable, dossiers et projets, planning, liens du vestiaire,
+  échéances, recadrage de logo ou de photo), avec 20 bibliothèques locales et leurs licences (`vendor/integration20`).
+  4 conflits résolus. `studio-club.css` réécrivait aussi les tableaux, les boutons et le focus : seules ses règles propres
+  (`.s20-*`, GridStack, FullCalendar, Cropper) sont chargées (`css/studio_club.css`). Les pluriels du Studio sont accordés.
+- **`Manager-foot` / `codex/football-monde-integration-v16`** : documentation du pack FMInside (`packs/fminside-…manifest.json`) ;
+  projet sportif (`js/projet_sportif.js`) : profondeur d'effectif des clubs IA, journal de progression, suivi de recrutement.
+- Le catalogue FMB est conservé, à ta demande.
+Vérifications : 6 onglets du Studio sans erreur ; test du projet sportif ✓ ; simulation longue sans erreur ; audit des écrans sans erreur.
+
+## v56 — note de poste selon le rôle, le devoir et les consignes ; couleurs des notes
+- `js/notes_roles.js` : chaque rôle de poste (consignes individuelles de la tactique : Stoppeur, Défenseur relanceur, Renard des surfaces,
+  Pivot, Faux 9, Attaquant de pressing…), chaque devoir (Défense, Soutien, Attaque) et chaque consigne d'équipe (pressing, tempo, passes,
+  largeur, ligne défensive) déplace le poids des attributs détaillés.
+  - Fiche joueur : choix du poste, du rôle et du devoir, avec ou sans « Consignes de mon équipe ». Le réglage de ta tactique est repris
+    par défaut si le joueur est titulaire.
+  - La note de poste, l'écart avec le poste de base et les attributs clés (surlignés, avec leur poids en %) se recalculent en direct.
+    Exemple : un buteur noté 73 en Pivot, 71 en Renard, 69 en Attaquant de pressing.
+- **Couleurs des notes** : 7 paliers, du rouge (1-4) au cyan (19-20), en passant par orange, jaune, vert clair, vert et turquoise.
+- Affichage et aide à la décision : le moteur de match lit toujours ses propres combinaisons d'attributs (js/moteur37.js).
+- FMTools (gilgiltsu, sans licence) : idée notée d'enrichir les personnalités (attributs cachés estimés), non reprise.
+Test : `tests/notes_roles.js`. Simulation longue sans erreur ; audit des écrans sans erreur.
+
+## v55 — intégration du travail fait en parallèle (ChatGPT / Codex) et harmonisation
+- **Branche principale `Manager-foot`** (déjà fusionnée) : catalogue Football Monde FMB hors ligne (`js/catalogue_fmb.js`,
+  `outils/catalogue_fmb.py`, `packs/`), servi par `outils/serveur.py`. 20 528 joueurs, 12 324 membres de staff, 355 clubs,
+  18 compétitions, 316 photos. Vérifié : recherche, fiche détaillée avec photo, accès depuis l'accueil et Outils → Catalogue FMB.
+- **Branche `codex/club-interface-data-reference`** (partait de la v24), fusionnée avec 4 conflits résolus :
+  - modules : 41 compétences et langues (`competences.js`), parcours de progression (`parcours-progression.js`, d'après Pitchside Manager, MIT),
+    remplaçants sur profils observés (`profils-similaires.js`, d'après ScoutEngine / ml-distance, MIT), projection de prolongation et correction
+    de la masse salariale des prêts (`prolongations.js`), studio de statistiques (`studio.js`), marquages du terrain (`pitch-markings.js`, Roboflow, MIT),
+    règlements officiels servis en `/api/reglements-officiels` ;
+  - `scenario.py` : sous-notes sur 99 filtrées (1-99, booléens exclus).
+- **Harmonisation** (`js/harmonisation.js`) :
+  - une seule valeur par attribut : les 41 compétences lisent les 37 attributs détaillés du moteur quand une correspondance existe ;
+  - le panneau devient « Analyse du profil » (points forts, axes de travail, langues, évolution) ; sa grille par familles, en double, est masquée ;
+  - fiche joueur réparée : le parcours de progression et l'analyse s'insèrent dans la fenêtre, et non plus à côté ;
+  - remplaçants : l'outil fondé sur les rapports de supervision sert pour tes joueurs, la recherche simple pour les autres ;
+  - prolongation : la table de négociation (v54) affiche la projection de masse salariale (`#renewalProjection`) ;
+  - `studio.css` réécrivait toute l'interface v24 (barre du haut, menu, boutons, fenêtres) : seules ses règles `.st-*` sont gardées
+    (`css/studio_stats.css`) ;
+  - défaut trouvé par le test de Codex : lire un profil initialisait les traits du joueur ; le calcul se fait désormais sur une copie.
+- Tests de Codex : parcours ✓ ; compétences ✓ jusqu'au clic sur la grille masquée ; remplaçants bloqués par la visite guidée (absente en v24) ;
+  prolongations : test de l'ancienne fenêtre, remplacée par la table de négociation.
+Vérifications : simulation longue sans erreur ; audit des 28 écrans sans erreur ; tests de négociation et de catalogue passés.
 
 ## v54 — négociations détaillées (transferts, contrats des recrues, prolongations)
 - `js/negociation.js` : une **table de négociation** dans les trois fenêtres. Chaque ligne montre la demande, ta proposition,

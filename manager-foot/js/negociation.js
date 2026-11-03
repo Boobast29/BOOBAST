@@ -182,14 +182,15 @@ if (typeof renewModal === 'function') {
     p.renewPatience ??= 3;
     const t = { wageM: askM, yrs: dm.yrs, status: p.status || dm.status, signOn: dm.signOn, agentFee: dm.agentFee, clause: p.clause || 0, goalBonus: p.deal?.goalBonus || 0, assistBonus: p.deal?.assistBonus || 0,
       appBonus: p.deal?.appBonus || 0, csBonus: p.deal?.csBonus || 0, objBonus: p.deal?.objBonus || 0, raise: 0, loyalty: 0, relegPct: 0, option: false };
-    const opts = { renouvellement: true };
+    const opts = { renouvellement: true, majCout: x => { const b = $('#renewalProjection'); if (b && typeof renewalProjection === 'function' && typeof renewalProjectionHTML === 'function') b.innerHTML = renewalProjectionHTML(renewalProjection(G, p, { wageM: x.wageM, years: x.yrs, bonus: x.signOn, clause: x.clause || 0 })); } };
     modal(`<h2>Prolonger ${esc(p.name)}</h2>
       <p>Contrat actuel : ${contractEnd(p, true)} · ${wageM(p.wage)} · ${esc(p.pers || '')} · moral ${Math.round(p.morale)}</p>
       <div id="negoBilan">${panneauContrat(p, t, dm, opts)}</div>
       <div id="negoTable" class="tbl-wrap">${lignesContrat(p, t, dm, opts)}</div>
+      <div id="renewalProjection" class="mt"></div>
       <p class="hint">Patience de l'agent : ${'●'.repeat(p.renewPatience)}${'○'.repeat(Math.max(0, 3 - p.renewPatience))}. Un joueur en fin de contrat peut partir libre le 30 juin.</p>
       <div class="row gap mt wrap"><div class="grow"></div><button class="btn" id="negoTout">Reprendre toutes ses demandes</button><button class="btn primary" id="ok">Proposer la prolongation</button></div><p id="resp" class="hint"></p>`, 'wide');
-    brancherContrat(p, t, dm, opts);
+    brancherContrat(p, t, dm, opts); opts.majCout(t);
     $('#ok').onclick = () => {
       Object.assign(t, lireContrat(t));
       const v = verdictContrat(p, t, dm, opts);

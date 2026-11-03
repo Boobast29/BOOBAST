@@ -121,6 +121,20 @@ def image_manuelle(con, typ, ident):
     return str(ident) in _MANUELS[typ]
 
 
+_IA = {}
+
+
+def visage_ia(con, ident):
+    """Portrait généré par IA (outils/generer_visages_ia.py) : le jeu l'indique sur la fiche."""
+    k = id(con)
+    if k not in _IA:
+        try:
+            _IA[k] = {r[0] for r in con.execute('SELECT id FROM images_ia')}
+        except Exception:
+            _IA[k] = set()
+    return str(ident) in _IA[k]
+
+
 def joueur_jeu(row, con):
     fiche = unpack(con.execute('SELECT fiche FROM fiches WHERE id=?', (row['id'],)).fetchone()[0])
     cap = fiche.get('capacites') or {}
@@ -131,13 +145,13 @@ def joueur_jeu(row, con):
         'age': age, 'ageKnown': age is not None, 'dob': row['naissance'],
         'pos': row['poste'], 'posRaw': row['poste_brut'], 'height': row['taille'],
         'attrs': attrs, 'attrCoverage': round(couv, 2),
-        # sous-notes réelles sur 99 (pack Football_Monde) : servent aux 37 attributs détaillés du jeu (js/attributs.js)
-        'detail99': {k: v for k, v in (cap.get('attributs_detail_sur_99') or {}).items() if isinstance(v, (int, float))} or None,
+        # sous-notes réelles sur 99 (pack Football_Monde) : servent aux 37 attributs détaillés (js/attributs.js) et aux 41 compétences (js/competences.js)
+        'detail99': {k: v for k, v in (cap.get('attributs_detail_sur_99') or {}).items() if isinstance(v, (int, float)) and not isinstance(v, bool) and 1 <= v <= 99} or None,
         'ovr99': row['niveau99'], 'pot99': row['pot99'],
         'foot': None,
         'weakFoot': cap.get('pied_faible_sur_5'), 'skills': cap.get('gestes_techniques_sur_5'),
         'photo': f'/img/joueur/{row["id"]}' if (row['photo_local'] or row['photo_url'] or image_manuelle(con, 'joueur', row['id'])) else None,
-        'real': True, 'quality': row['qualite'],
+        'real': True, 'quality': row['qualite'], 'photoIA': visage_ia(con, row['id']) or None,
         **enrichissements.infos_joueur(con, row['tm_id']),
     }
 
@@ -154,7 +168,14 @@ def construire(con, pays):
     def charger_club(cid, nom_insc, comp, div, foreign):
         c = con.execute('SELECT * FROM clubs WHERE id=?', (cid,)).fetchone()
         nom = (c['nom'] if c else None) or nom_insc
-        rows = con.execute("SELECT * FROM joueurs WHERE club_id=? AND qualite='rated_snapshot'", (cid,)).fetchall()
+        # effectif actuel : transferts récents et départs d'après Transfermarkt (transfermarkt-datasets)
+        vers, partis = enrichissements.mouvements_tm(con)
+        arrivants = [j for j, c2 in vers.items() if c2 == cid]
+        rows = [r for r in con.execute("SELECT * FROM joueurs WHERE club_id=? AND qualite='rated_snapshot'", (cid,)).fetchall()
+                if r['id'] not in partis and r['id'] not in vers]
+        for i in range(0, len(arrivants), 500):
+            part = arrivants[i:i + 500]
+            rows += con.execute(f"SELECT * FROM joueurs WHERE qualite='rated_snapshot' AND id IN ({','.join('?' * len(part))})", part).fetchall()
         effectif = []
         for r in rows:
             if r['id'] in vu_joueurs or not r['poste']:
@@ -184,6 +205,22 @@ def construire(con, pays):
                                  'dob': r['naissance'], 'pos': r['poste'], 'posRaw': r['poste_brut'], 'height': r['taille'], 'attrs': None, 'attrCoverage': 0,
                                  'ovr99': None, 'pot99': None, 'estimated': True, 'quality': r['qualite'], 'real': True, 'clubSrc': cid,
                                  'photo': f'/img/joueur/{r["id"]}' if (r['photo_local'] or r['photo_url']) else None})
+        # Complément Transfermarkt : joueurs de l'effectif actuel absents de la base (niveau estimé par la valeur marchande)
+        deja_tm = {j['srcId'][3:] for j in effectif if str(j['srcId']).startswith('tm:')}
+        for t in enrichissements.effectif_tm(con, cid, deja_tm):
+            if len(effectif) >= 28:
+                break
+            k = 'tm:' + t['tm']
+            if k in vu_joueurs:
+                continue
+            vu_joueurs.add(k)
+            age = age_au(t['naissance'])
+            effectif.append({'srcId': k, 'name': t['nom'], 'nat': code_nat(t['nat']), 'natLabel': t['nat'], 'age': age, 'ageKnown': age is not None,
+                             'dob': t['naissance'], 'pos': enrichissements.poste_tm(t['poste'], t['sous_poste']), 'posRaw': t['sous_poste'], 'height': t['taille'],
+                             'attrs': None, 'attrCoverage': 0, 'ovr99': None, 'pot99': None, 'estimated': True, 'quality': 'transfermarkt', 'real': True,
+                             'clubSrc': cid, 'photo': None, 'source': 'Transfermarkt', 'marketValue': t['valeur'], 'contractEnd': t['fin_contrat'],
+                             'foot': t['pied'], 'agent': t['agent'], 'caps': t['selections'], 'heightTm': t['taille'],
+                             **{k2: v for k2, v in enrichissements.infos_joueur(con, t['tm']).items() if k2 in ('transfersReal', 'seasonsReal', 'valueHistReal')}})
         # Complément Wikidata (effectif actuel déclaré sur Wikidata) pour les clubs sans assez de joueurs notés
         if len(effectif) < 22:
             for w in enrichissements.effectif_wikidata(con, cid, [j['srcId'] for j in effectif]):
@@ -252,3 +289,4 @@ def construire(con, pays):
                    "Contrats, salaires et budgets sont des valeurs de simulation ; stades, entraîneurs, valeurs marchandes et fins de contrat "
                    "réels quand les imports complémentaires (reep, transfermarkt-datasets, Wikidata) ont été faits."),
     }
+

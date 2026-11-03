@@ -1,0 +1,55 @@
+/* Studio du club : règles propres (.s20-*, GridStack, FullCalendar, Cropper…) extraites de studio-club.css.
+   Ses règles globales (tableaux, boutons, focus…) ne sont pas chargées : la charte est dans tokens.css / design.css. */
+:root{--s20-surface:#172638;--s20-border:#3d566f;--s20-muted:#b6c8dc;--s20-green:#8bdfb8}
+.s20-open{font-size:11px!important;padding:8px 10px!important}
+.s20-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;background:linear-gradient(120deg,#1b3b36,#172638 70%)}
+.s20-heading h1{font-size:30px;font-weight:750;letter-spacing:-.04em;margin:7px 0}
+.s20-heading small{font-size:10px;color:#a4dfc6;font-weight:700;letter-spacing:.13em}
+.s20-heading p{color:var(--s20-muted);margin:5px 0}
+.s20-tabs{flex-wrap:wrap}
+.s20-tabs button{padding:10px 15px}
+.s20-grid{min-height:440px}
+.s20-grid .grid-stack-item-content{background:#162b3c;border:1px solid #476179;border-radius:12px;overflow:auto}
+.s20-widget-title{display:flex;align-items:center;justify-content:space-between;margin:0;padding:15px 18px;border-bottom:1px solid #385168;font-size:12px;text-transform:none;letter-spacing:0;color:#dce9f4;cursor:grab}
+.s20-widget-title span{font-size:21px;color:#9db7cb}
+.s20-widget-body{padding:20px}
+.s20-big{font-size:clamp(26px,3vw,38px);font-weight:750;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.s20-widget-body p{color:var(--s20-muted)}
+.s20-note-list{display:grid;gap:14px;margin-top:16px}
+.s20-note{padding:18px;border:1px solid #3b5369;border-radius:10px;background:#152638}
+.s20-note h3{margin:0;letter-spacing:0;font-size:14px;text-transform:none;color:#eaf2fa}
+.s20-note p{white-space:normal;overflow-wrap:anywhere;line-height:1.7}
+.s20-grip{color:#b7cddd;font-size:24px;cursor:grab}
+.s20-full{display:flex;width:100%;margin-bottom:16px}
+.s20-full textarea{width:100%;font:inherit;padding:12px;background:#0b1825;border:1px solid #49647d;border-radius:8px;color:var(--txt);resize:vertical}
+#s20Search{width:min(650px,100%);margin-top:12px;min-height:42px}
+.s20-network{height:480px;border:1px solid #405b74;background:#101d2c;border-radius:12px}
+.s20-num{text-align:right!important;font-variant-numeric:tabular-nums}
+.s20-number{padding:22px;margin:15px 0;border:1px solid #44667a;border-radius:12px;background:#18333a}
+.s20-number small{display:block;color:#b9d3dd;font-size:11px;text-transform:uppercase}
+.s20-number strong{display:block;font-size:32px;margin-top:8px;font-weight:730;letter-spacing:-.035em}
+.s20-crop{max-height:480px;min-height:180px;overflow:hidden;border:1px solid #435c76;border-radius:12px;margin-top:18px;background:#0d1723}
+.s20-crop img{display:block;max-width:100%;max-height:480px;margin:auto}
+.s20-crop img:not([src]){display:none}
+.s20-mail{display:flex!important;align-items:stretch;min-height:480px}
+.s20-mail>.mail-list,.s20-mail>.mail-read{min-width:0;overflow:auto}
+.s20-mail>.gutter{background:#344d62;cursor:col-resize;border-radius:4px;margin:0 4px;flex-shrink:0}
+.s20-editor-history{margin-bottom:16px;padding:12px 16px;border:1px solid #476177;border-radius:10px;background:#142738}
+.s20-zoom-frame{overflow:hidden}
+.s20-zoom-actions{padding:10px 0}
+.s20-zoom-frame svg.shotmap{touch-action:none}
+#nav .os-content{display:flex;flex-direction:column;gap:3px}
+.os-theme-light{--os-handle-bg:#708ca4;--os-handle-bg-hover:#9ab3c7;--os-handle-bg-active:#bad7e8}
+.fc{--fc-border-color:#3d556b;--fc-page-bg-color:transparent;--fc-neutral-bg-color:#253b50;--fc-neutral-text-color:#c4d3e0;--fc-today-bg-color:#356a5940;--fc-list-event-hover-bg-color:#274c53;--fc-event-bg-color:#356556;--fc-event-border-color:#5d9b83;--fc-event-text-color:#fff;--fc-button-bg-color:#274259;--fc-button-border-color:#4c6a82;--fc-button-hover-bg-color:#34576f;--fc-button-active-bg-color:#3e6b67;font-size:13px}
+.fc .fc-toolbar-title{font-size:19px;letter-spacing:-.02em}
+.fc .fc-daygrid-day-number{color:#d4e4f4}
+.fc .fc-button{border-radius:7px}
+.fc .fc-col-header-cell{padding:10px 0}
+.fc .fc-daygrid-event{white-space:normal;padding:2px 4px}
+.s20-grid .ui-resizable-handle{filter:brightness(1.8)}
+#s20ProjectForm{margin:16px 0}
+#s20ProjectForm label{color:#c6d6e7}
+#s20ProjectForm input,#s20ProjectForm textarea{font:inherit;background:#0b1928;color:#edf4ff;border:1px solid #4b6580;border-radius:7px;padding:8px;max-width:100%}
+#s20ProjectForm .btn{margin:4px}
+@media(max-width:1100px){#top .s20-open{max-width:120px;white-space:normal}#main .s20-heading{align-items:flex-start}.s20-heading h1{font-size:26px}.s20-grid{min-height:500px}}
+@media(max-width:900px){.s20-heading{flex-direction:column}.s20-heading h1{font-size:25px}.s20-heading>.btn{width:100%}.s20-network{height:380px}.s20-note{padding:14px}.s20-note .row{flex-wrap:wrap}.s20-note h3{flex-basis:calc(100% - 38px)}.s20-tabs{gap:4px}.s20-tabs button{padding:9px 10px;font-size:12px}#s20Body{padding:16px}.s20-mail{display:grid!important}.fc .fc-toolbar{gap:9px;flex-wrap:wrap}.fc .fc-toolbar-title{font-size:17px}.fc .fc-daygrid-day-frame{min-height:65px}.fc{font-size:11px}.s20-crop{min-height:150px}.s20-number strong{font-size:26px}.s20-widget-body{padding:14px}.s20-widget-title{padding:12px}.s20-big{font-size:25px}}
