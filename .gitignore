@@ -1,1 +1,6 @@
 graphify-out/
+
+# Données générées et dépendances locales
+manager-foot/donnees_jeu/
+**/node_modules/
+**/__pycache__/

@@ -1,0 +1,37 @@
+{
+  "version": 15,
+  "sha256": "47704dc7d0ce4101b46738854f6cc602fee12f370029e1f952b1003fdcc3a10d",
+  "bytes": 5562406,
+  "parts": [
+    {
+      "file": "football-monde-fmb-v15.zip.001",
+      "bytes": 1048576,
+      "sha256": "fbcdea6e552bf05c537e7c03c726d921d6d468a72e2731339002d5b18a90d3f1"
+    },
+    {
+      "file": "football-monde-fmb-v15.zip.002",
+      "bytes": 1048576,
+      "sha256": "4555ac68929fd4c4d135c5da591cf6b74452e9e956b50e5af05083ddfe3c4452"
+    },
+    {
+      "file": "football-monde-fmb-v15.zip.003",
+      "bytes": 1048576,
+      "sha256": "71835077fe472c8da24bf113bcd4c6c8ff6904e4b127f3b0245dd8c38c0be28f"
+    },
+    {
+      "file": "football-monde-fmb-v15.zip.004",
+      "bytes": 1048576,
+      "sha256": "16bb79194b108f429cff3475cc0422028857dd025dff46a59ffd1fef8968533a"
+    },
+    {
+      "file": "football-monde-fmb-v15.zip.005",
+      "bytes": 1048576,
+      "sha256": "b17e1265f0f45836d37d7e6d7ddb58e54dc750ebabbe7fc3984f549d3db0ed35"
+    },
+    {
+      "file": "football-monde-fmb-v15.zip.006",
+      "bytes": 319526,
+      "sha256": "ae6d77773289f88f6a7ecd2e0313589b8f50158c7a4876525244c0e01367899b"
+    }
+  ]
+}
