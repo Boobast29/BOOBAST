@@ -34,6 +34,10 @@ async function lirePaysMonde(file) {
       const credit=commons[uid],fichier=encodeURIComponent(credit.file.replaceAll(' ','_'));
       p.photo=`https://commons.wikimedia.org/wiki/Special:FilePath/${fichier}?width=300`;
       p.photoCredit={author:credit.author,license:credit.license,page:`https://commons.wikimedia.org/wiki/File:${fichier}`,note:credit.note||''};
+    }else if(/^\d+$/.test(uid)){
+      // Adresse candidate : même schéma que les portraits FMB connus. Une erreur affiche les initiales.
+      p.photo=`https://media.footballmanagerblog.org/faces/${encodeURIComponent(uid)}.webp`;
+      p.photoCandidate=true;
     }
   }
   return pays;
@@ -75,6 +79,7 @@ function construireCarriereMonde(pays, groupeD3) {
       appliquerBiographieTransfermarkt(p,info.source);
       if(info.source.photoFallbackUrl)p.photoFallbackUrl=info.source.photoFallbackUrl;
       if(info.source.photoCredit)p.photoCredit=info.source.photoCredit;
+      if(info.source.photoCandidate)p.photoCandidate=true;
       p.sourceProfile={url:info.source.sourceUrl,database:info.source.sourceDatabase,squad:info.source.squad,contract:info.source.contractEndText};
       if(Number.isFinite(info.source.wageWeekly))p.wage=info.source.wageWeekly;
       if(Number.isFinite(info.source.value))p.value=info.source.value;
