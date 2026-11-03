@@ -9,6 +9,18 @@ async function ouvrirFMInside() {
     const data = await r.json(), players = data.players || [];
     const status = document.querySelector('#fmiStatus');
     status.textContent = `${players.length} fiches détaillées disponibles. Données Football Manager, situation réelle actuelle non vérifiée. Salaires mensuels = hebdomadaires × 52 ÷ 12. Couverture partielle du site.`;
+    const integrer = document.createElement('button');
+    integrer.className = 'btn primary'; integrer.textContent = 'Intégrer aux nouvelles carrières';
+    status.after(integrer);
+    integrer.onclick = async () => {
+      integrer.disabled = true;
+      try {
+        const {monde, bilan} = preparerFusionFMInside(DB, data);
+        await Store.set(DB_KEY, monde); DB = monde;
+        status.textContent = `${bilan.ajoutes} joueurs ajoutés, ${bilan.actualises} actualisés, ${bilan.ignores} sans correspondance exploitable, ${bilan.ambigus} correspondances ambiguës. Base des nouvelles carrières enregistrée.`;
+      } catch (err) { status.textContent = err.message; }
+      finally { integrer.disabled = false; }
+    };
     const render = () => {
       const q = document.querySelector('#fmiSearch').value.toLocaleLowerCase();
       const found = players.filter(p => `${p.name} ${p.club} ${p.positions}`.toLocaleLowerCase().includes(q));

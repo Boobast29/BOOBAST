@@ -36,7 +36,7 @@ def fiche(url):
     wage = montant('Wages')
     p = {'name': texte(nom[1]), 'club': info('Club'), 'age': int(info('Age')), 'positions': info('Positions'),
          'attributes': attrs, 'fmUid': re.search(r'/([0-9]+)-[^/]+$', url)[1],
-         'sourceUrl': url, 'sourceDatabase': info('Database version'), 'birthDateText': info('Date of birth'),
+         'sourceUrl': url, 'sourceGender': 'male', 'sourceDatabase': info('Database version'), 'birthDateText': info('Date of birth'),
          'foot': info('Footedness'), 'contractEndText': info('Contract end'), 'wageWeekly': wage,
          'wageMonthly': round(wage * 52 / 12, 2) if wage is not None else None,
          'value': montant('Sell value'), 'releaseClause': montant('Release clause')}
@@ -48,6 +48,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--index', default=BASE + '/players')
     ap.add_argument('--sortie', required=True)
+    ap.add_argument('--workers', type=int, default=5)
     ap.add_argument('--pages', type=int, default=1, help='0 : toutes les pages ; reprise des fiches déjà présentes')
     a = ap.parse_args()
     global COOKIE
@@ -59,7 +60,7 @@ def main():
     known = {p['fmUid'] for p in players}
     try:
         lire(a.index)
-        lire(BASE + '/resources/inc/ajax/update_filter.php', 'database_version=7&gender=-1')
+        lire(BASE + '/resources/inc/ajax/update_filter.php', 'page=players&database_version=7&gender=1')
         endpoint = BASE + '/beheer/modules/players/resources/inc/frontend/generate-player-table.php?ajax_request=1'
         page = 0
         seen = set()
@@ -75,8 +76,11 @@ def main():
             time.sleep(.5)
     finally:
         Path(COOKIE).unlink(missing_ok=True); COOKIE = None
+    male_uids = {re.search(r'/([0-9]+)-[^/]+$', u)[1] for u in urls}
+    for p in players:
+        if p['fmUid'] in male_uids: p['sourceGender'] = 'male'
     # Les fiches publiques ne nécessitent pas la session de pagination.
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, min(5, a.workers))) as pool:
         futures = {pool.submit(fiche, u): u for u in urls if re.search(r'/([0-9]+)-[^/]+$', u)[1] not in known}
         for f in concurrent.futures.as_completed(futures):
             try:

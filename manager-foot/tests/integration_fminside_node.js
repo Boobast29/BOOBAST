@@ -1,0 +1,16 @@
+const fs = require('fs'), vm = require('vm'), assert = require('assert');
+const context = {NEXT_PID:1, convertirJoueur:s=>({pos:'BU',foot:'Droit',attrs:{fin:18},detail20:{finition:18}}),genPlayer:(pos,q,o)=>({id:context.NEXT_PID++,pos,...o,attrs:{fin:10},stats:{apps:0}}),playerOvr:()=>80,calcValue:()=>1000};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync(__dirname+'/../js/integration_fminside.js','utf8'),context);
+const source={fmUid:'123',name:'Joueur A',club:'PSG',sourceGender:'male',age:25,potential:90,wageWeekly:1200,value:123456,sourceUrl:'https://fminside.net/players/test',sourceDatabase:'26.2.0'};
+const base={clubs:[{id:1,name:'Paris Saint-Germain',rep:90}],players:[{id:99,name:'Autre joueur',club:1,attrs:{fin:10}}]};
+const original=JSON.stringify(base);
+let r=context.preparerFusionFMInside(base,{players:[source,source]});
+assert.equal(JSON.stringify(base),original,'La préparation doit préserver la base originale');
+assert.equal(r.bilan.ajoutes,1); assert.equal(r.monde.players[1].id,100);
+assert.equal(r.monde.players[1].wage,1200,'Le moteur attend le montant hebdomadaire');
+assert.equal(r.monde.players[1].club,1);assert.equal(r.monde.players[1].nat,'UNK','Ne pas inventer une nationalité');
+r=context.preparerFusionFMInside(r.monde,{players:[source]});assert.equal(r.bilan.ajoutes,0);assert.equal(r.monde.players.length,2);
+r=context.preparerFusionFMInside(base,{players:[{...source,club:'Club inconnu'}]});assert.equal(r.bilan.ajoutes,0);
+r=context.preparerFusionFMInside({...base,players:[{id:1,name:'Joueur A',club:1},{id:2,name:'Joueur A',club:1}]},{players:[source]});assert.equal(r.bilan.ambigus,1);assert.equal(r.bilan.actualises,0);
+console.log('Fusion validée : doublons, UID, clubs, homonymes, salaires et préservation de la base.');
