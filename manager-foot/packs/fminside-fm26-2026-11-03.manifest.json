@@ -1,0 +1,70 @@
+{
+  "source": "Archive fournie par utilisateur : fminside_fm26_live_2026-11-03_13-18-31.zip",
+  "archive_sha256": "ad7cb7820b1d3d60186687665289c5af1ad90f46c9e221e762529ca32c790a11",
+  "status": "blocked_binary_format",
+  "imported_records": 0,
+  "contains_images": false,
+  "note": "Fichiers FMF binaires : aucun joueur, attribut, transfert ou montant extrait. Les thèmes sont déduits uniquement des noms des fichiers. Ce manifeste n’est pas une base jouable.",
+  "files": [
+    {
+      "name": "01_remove_loans_2026-11-03.fmf",
+      "bytes": 1248784,
+      "sha256": "32f6756d7d15f70eda9ec25d166e5d61cee91ec68d1ddcc9c9eb034bf2cea115"
+    },
+    {
+      "name": "02_injuries_2026-11-03.fmf",
+      "bytes": 853011,
+      "sha256": "b9766bcb7b337b8b50328d7be38d4c7f086e42d6378e1cbf34dfc68bf2c35f72"
+    },
+    {
+      "name": "03_club_finances_2026-11-03.fmf",
+      "bytes": 108690,
+      "sha256": "76c3458f98908ae959350f2957b10279e65195e035887b2541663b9fb444107a"
+    },
+    {
+      "name": "04_transfers_2026-11-03.fmf",
+      "bytes": 10596050,
+      "sha256": "45e8ba79b7dd23e054bb78ec7834e1bfbd044224abcfe0c3db659795a3eddc9e"
+    },
+    {
+      "name": "05_promotions_relegations_2025-2026.fmf",
+      "bytes": 25502,
+      "sha256": "4280a8390f1aa665492a7bf56c4ee576dec0d61fcecc4d7756d03d63618df2f7"
+    },
+    {
+      "name": "06_brazilian_kit_colours.fmf",
+      "bytes": 23322,
+      "sha256": "0381ee0f9d387da20786e211968e0f530f1922f1fd4b7d94ccd3d4804c5c5d7f"
+    },
+    {
+      "name": "07_real_club_competition_names.fmf",
+      "bytes": 3062277,
+      "sha256": "67439b4208d2c0c8ef674980c8f85e0d16c886b9c472d737f664bf0f0d77b10f"
+    },
+    {
+      "name": "08_real_agents.fmf",
+      "bytes": 810992,
+      "sha256": "b28f0f365725093764293bed10f2983e8baabdcdd9e9147b23ba1f5e6e71a3fb"
+    },
+    {
+      "name": "09_real_media.fmf",
+      "bytes": 1073566,
+      "sha256": "a73245d2d13fae6ad6a17fdc2d3540d225772c62fab3668c0c4a7036ae6229ee"
+    },
+    {
+      "name": "10_facilities.fmf",
+      "bytes": 16015,
+      "sha256": "d3da1715286ec1cd9ed1abd397450f37797f8699343aed0ee996ea06087ea829"
+    }
+  ],
+  "integration": {
+    "existing_converter": "outils/importer_sauvegarde_fm.py",
+    "required_input": "Sauvegarde .fm compatible avec fmsave après activation de ces mises à jour dans Football Manager. Compatibilité réelle à vérifier sur la sauvegarde.",
+    "commands": [
+      "python outils/importer_sauvegarde_fm.py CARRIERE.fm --lister",
+      "python outils/importer_sauvegarde_fm.py CARRIERE.fm --ligues ID1,ID2,ID3 --noms \"Division 1,Division 2,Division 3\" --sortie donnees_jeu/monde_fm.json"
+    ],
+    "game_action": "Accueil > Importer (JSON) > monde_fm.json",
+    "limitations": "Le convertisseur actuel ne transfère pas automatiquement les agents, médias, blessures, finances et installations de ces mises à jour. Les photos et logos nécessitent des packs graphiques distincts."
+  }
+}
