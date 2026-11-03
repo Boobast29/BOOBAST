@@ -12,7 +12,7 @@ function attrEstime(p, k, D) {
   const v = D[k]; if (v == null) return null;
   if (typeof knows !== 'function' || knows(G, p)) return { v, txt: String(v), exact: true };
   if (G.prefs && G.prefs.fourchette === false) return { v: null, txt: '?', exact: false };
-  const e = Math.max(1, 4 - Math.floor((G?.staff?.scout || 2) / 2)), h = typeof hashTrait === 'function' ? hashTrait(`fourch|${p.id}|${k}`) : 0;
+  const e = typeof largeurFourchette === 'function' ? largeurFourchette(p) : Math.max(1, 4 - Math.floor((G?.staff?.scout || 2) / 2)), h = typeof hashTrait === 'function' ? hashTrait(`fourch|${p.id}|${k}`) : 0;
   const dec = (h % (2 * e + 1)) - e, lo = clamp(v + dec - e, 1, 20), hi = clamp(v + dec + e, 1, 20);
   return { v: (lo + hi) / 2, txt: `${lo}-${hi}`, exact: false };
 }

@@ -293,3 +293,29 @@
 .rm h4 small { text-transform: none; letter-spacing: 0; margin-left: 8px; }
 .rm-n { display: inline-block; min-width: 34px; padding: 1px 6px; border-radius: var(--r-xs, 4px); text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
 .rm-top { background: var(--acc); color: #05261a; } .rm-bon { background: color-mix(in srgb, var(--acc) 50%, transparent); } .rm-moy { background: var(--surface-4); } .rm-bas { background: color-mix(in srgb, var(--red) 60%, transparent); color: #fff; }
+
+/* Fiche : bandeau, terrain des postes, rôles, connaissance (js/fiche_plus.js) */
+.fp { display: grid; gap: 10px; }
+.fp-haut { display: grid; grid-template-columns: 132px 1fr; gap: 12px; align-items: center; }
+.tp { width: 132px; height: 138px; }
+.tp-herbe { fill: color-mix(in srgb, var(--acc) 12%, var(--surface-2)); stroke: rgba(255,255,255,.18); }
+.tp line, .tp > circle, .tp > rect:not(.tp-herbe) { fill: none; stroke: rgba(255,255,255,.18); stroke-width: .8; }
+.tp g circle { stroke: rgba(0,0,0,.35); stroke-width: .6; }
+.tp g text { font-size: 4.2px; font-weight: 700; fill: #06120c; pointer-events: none; }
+.tp-nat circle { fill: var(--acc); } .tp-bon circle { fill: color-mix(in srgb, var(--acc) 55%, #fff); } .tp-ok circle { fill: var(--yel); }
+.tp-non circle { fill: rgba(255,255,255,.12); } .tp-non text { fill: rgba(255,255,255,.35); }
+.fp-faits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; }
+.fp-faits small, .fp-roles small, .fp-conn small { display: block; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); }
+.fp-faits b { font-size: 13px; font-variant-numeric: tabular-nums; }
+.fp-roles { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.fp-roles small { width: 100%; }
+.fp-roles span { padding: 3px 8px; border-radius: var(--r-pill); background: var(--surface-2); font-size: 12px; }
+.fp-roles span.top { background: color-mix(in srgb, var(--acc) 22%, var(--surface-2)); font-weight: 600; }
+.fp-roles i { font-style: normal; color: var(--mut); margin-left: 3px; font-variant-numeric: tabular-nums; }
+.fp-conn { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; }
+.fp-conn small { grid-column: 1 / -1; }
+.fp-barre { height: 6px; border-radius: 3px; background: var(--surface-1); overflow: hidden; }
+.fp-barre i { display: block; height: 100%; background: var(--blue); }
+.fp-aide { grid-column: 1 / -1; font-size: 11.5px; color: var(--mut); }
+.fp-conn .btn { grid-column: 1 / -1; justify-self: start; }
+.nr-w:empty { display: none; }

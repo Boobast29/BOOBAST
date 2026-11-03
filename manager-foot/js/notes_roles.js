@@ -91,7 +91,8 @@ function brancherNoteContexte(p) {
       const k = l.dataset.k, x = w[k] || 0, cle = x >= seuil && x > 0;
       l.classList.toggle('cle', cle);
       let badge = l.querySelector('.nr-w'); if (!badge) { badge = document.createElement('i'); badge.className = 'nr-w'; l.querySelector('span').after(badge); }
-      badge.textContent = cle ? Math.round(x * 100) + ' %' : '';
+      badge.textContent = ''; // poids retirés de l'affichage (incompris) : attributs clés en gras, détail au survol
+      l.title = cle ? `Attribut clé pour ce rôle (compte pour ${Math.round(x * 100)} % de la note au poste)` : '';
     });
   };
   sec.querySelectorAll('.nr-ctrl select, .nr-ctrl input').forEach(e => e.onchange = maj);

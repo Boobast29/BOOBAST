@@ -177,7 +177,7 @@ function blocAttributs(p) {
   const flou = (v, k = '') => {
     if (connu) return v;
     if (G?.prefs && G.prefs.fourchette === false) return '?';
-    const e = Math.max(1, 4 - Math.floor((G?.staff?.scout || 2) / 2)), h = typeof hashTrait === 'function' ? hashTrait(`fourch|${p.id}|${k}`) : 0;
+    const e = typeof largeurFourchette === 'function' ? largeurFourchette(p) : Math.max(1, 4 - Math.floor((G?.staff?.scout || 2) / 2)), h = typeof hashTrait === 'function' ? hashTrait(`fourch|${p.id}|${k}`) : 0;
     const dec = (h % (2 * e + 1)) - e, lo = clamp(v + dec - e, 1, 20), hi = clamp(v + dec + e, 1, 20);
     return `${lo}-${hi}`;
   };

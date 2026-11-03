@@ -1,3 +1,14 @@
+# État du projet — v83 (3 novembre 2026)
+
+## Fiche joueur affinée par le scouting (js/fiche_plus.js)
+- Connaissance du joueur (0-100 %) d'après les rapports de ta cellule (nombre, précision, ancienneté) : les fourchettes se resserrent rapport après rapport (testé : 0 % ±4 → 53 % ±2 → 70 % ±1 → exact). Bouton « Le faire superviser ».
+- Bandeau : mini-terrain des postes (naturel, bon, possible, hors poste), âge, taille, pied, valeur, salaire, contrat.
+- Meilleurs rôles calculés sur les attributs : regista, faux 9, renard des surfaces, pivot, ailier intérieur, stoppeur… (note du rôle cachée si joueur mal connu ou note masquée).
+- Pourcentages retirés des attributs (incompris) : attributs clés en gras, poids au survol.
+
+## Effectifs de jeunes réalistes
+- À la création : réserve 20, U19 20, U17 18 par club (les moins prometteurs retirés) — avant jusqu'à 40 U19 et 40 U17. Ex. Lorient : 24 / 20 / 20 + 10 U17.
+
 # État du projet — v82 (3 novembre 2026)
 
 ## Rapport après chaque match (js/rapport_match.js)
