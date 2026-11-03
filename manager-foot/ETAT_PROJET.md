@@ -1,3 +1,10 @@
+# État du projet — v71 (3 novembre 2026)
+
+## Fusion de la branche Manager-foot
+- Ajouts de la branche : monde étendu (5 pays FM26, 355 clubs, 18 compétitions, 18 589 joueurs : `packs/monde-*.json.gz`), catalogue FMInside, carrière multinationale, noms réels FMScout. Conflit `index.html` résolu en gardant les deux listes de scripts ; `tests/longue.html` et `sw.js` complétés.
+- Correction : `outils/serveur.py` refusait tout le dossier `packs/` (403), alors que le monde étendu y lit ses fichiers. Seuls les packs du jeu sont désormais servis (`monde-*.json[.gz]`, `fminside-fm26.json.gz`, `noms-reels-fmscout.json`) ; le reste de `packs/` reste interdit.
+- Vérifié : tests de la branche (fusion FMInside, carrière multi-pays) OK, jeu lancé par `serveur.py` sans erreur.
+
 # État du projet — v70 (3 novembre 2026)
 
 ## Visages du pack NewGAN (outils/visages_newgan.py, Visages_NewGAN.bat)

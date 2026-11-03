@@ -9,6 +9,7 @@ Le jeu reste utilisable sans ce serveur en ouvrant index.html (mode fictif seule
 import argparse
 import datetime
 import json
+import re
 import mimetypes
 import os
 import sys
@@ -28,6 +29,8 @@ FM = None
 RES = None
 CATALOGUE = None
 STATIQUES_INTERDITS = ('donnees_jeu', 'outils', '.git', 'packs')
+# packs du jeu lus par le navigateur (monde étendu, FMInside, noms réels) : seuls ces fichiers de packs/ sont servis
+PACKS_PUBLICS = re.compile(r'^packs/(monde-[a-z-]+\.json(\.gz)?|fminside-fm26\.json\.gz|noms-reels-fmscout\.json)$')
 
 
 def db():
@@ -347,7 +350,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def statique(self, path):
         rel = urllib.parse.unquote(path).lstrip('/') or 'index.html'
-        if rel.split('/')[0] in STATIQUES_INTERDITS:
+        if rel.split('/')[0] in STATIQUES_INTERDITS and not PACKS_PUBLICS.match(rel):
             return self.envoyer(403, {'erreur': 'interdit'})
         f = images.chemin_sur(RACINE_JEU, rel)
         if not f:

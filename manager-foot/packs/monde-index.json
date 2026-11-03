@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "source": "Pack FMB v15 + fiches FMInside FM26",
+  "countries": [
+    {
+      "key": "England",
+      "label": "Angleterre",
+      "file": "monde-england.json.gz",
+      "clubs": 68,
+      "competitions": 3,
+      "players": 4272,
+      "staff": 2967,
+      "detailedPlayers": 204,
+      "sha256": "23e3091c964e09a8962bcef486c8bcf4af744d3a91779a116e44f411d2a03daf"
+    },
+    {
+      "key": "France",
+      "label": "France",
+      "file": "monde-france.json.gz",
+      "clubs": 53,
+      "competitions": 3,
+      "players": 3485,
+      "staff": 1512,
+      "detailedPlayers": 38,
+      "sha256": "77d0a80646c32c7eeafa7f13b117937f5d4ff4656541e9c792591bf36b59a2e7"
+    },
+    {
+      "key": "Germany",
+      "label": "Allemagne",
+      "file": "monde-germany.json.gz",
+      "clubs": 56,
+      "competitions": 3,
+      "players": 2997,
+      "staff": 1920,
+      "detailedPlayers": 70,
+      "sha256": "bf3fd6d54fd1d2223d1f1347ae52ff23c3609dabe3f8893bd4516763c11d7407"
+    },
+    {
+      "key": "Italy",
+      "label": "Italie",
+      "file": "monde-italy.json.gz",
+      "clubs": 96,
+      "competitions": 5,
+      "players": 5038,
+      "staff": 4135,
+      "detailedPlayers": 106,
+      "sha256": "963d7ab6c8b7b87c010654f79f768f9569361bb34e5334da05bf29fe7641213c"
+    },
+    {
+      "key": "Spain",
+      "label": "Espagne",
+      "file": "monde-spain.json.gz",
+      "clubs": 82,
+      "competitions": 4,
+      "players": 2797,
+      "staff": 1790,
+      "detailedPlayers": 118,
+      "sha256": "41514e49ff0ee0f74a701f45cf554613afc6d2807a178d70cd651cd03ab40c9c"
+    }
+  ],
+  "ambiguousMembershipsExcluded": 0,
+  "notice": "Affectations selon instantané FM26, non vérifiées en temps réel. Les notes manquantes sont estimées pour la simulation et signalées. Budgets et stades inconnus utilisent les valeurs du moteur.",
+  "totals": {
+    "clubs": 355,
+    "competitions": 18,
+    "players": 18589,
+    "staff": 12324,
+    "detailedPlayers": 536
+  },
+  "attributesOverlay": "fminside-fm26.json.gz"
+}
