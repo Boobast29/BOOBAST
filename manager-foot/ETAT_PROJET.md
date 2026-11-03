@@ -1,4 +1,18 @@
-# État du projet — v52 (3 novembre 2026)
+# État du projet — v53 (3 novembre 2026)
+
+## v53 — import d'un fichier JSON complet (attributs sur 36 points ou toute autre échelle, staff)
+- `js/import_json_complet.js`, branché sur « Importer (JSON) » de l'écran d'accueil et de l'éditeur.
+  - **Échelle** : champ `echelle` (ou `scale`), sinon détectée par la valeur maximale (20, 36, 99 ou 100). Sur 36 : 32 → 18/20.
+  - **Attributs** : noms français ou anglais (Football Manager, FIFA/EA), rangés à plat ou par familles (technique, mental, physique, gardien).
+    Ils sont reliés aux 37 attributs détaillés du jeu ; les 9 qualités du moteur en sont recalculées. Les attributs non reconnus sont signalés
+    à l'import.
+  - **Joueurs** : rangés dans leur club (`clubs[].joueurs`) ou en liste avec un champ `club` ; nom, âge ou date de naissance, nationalité, poste
+    (codes français ou anglais), pied, contrat, numéro, photo, potentiel.
+  - **Staff** : `staff[]` avec `role` (adjoint, entraîneur technique, kiné, recruteur, formateur…), `club` et `niveau` 1-5 (ou attributs sur l'échelle).
+    Il est appliqué quand tu prends ce club.
+  - Le format interne et l'ancien format simple restent acceptés.
+- La correspondance sera ajustée au fichier réel dès qu'il sera fourni.
+Test : `tests/import_json_complet.js` (fichier fictif sur 36 points). Simulation longue sans erreur.
 
 ## v52 — système de design formalisé et textes d'interface (skills design-system et ux-copy)
 - **Jetons** (`tokens.css`, chargé en premier) : surfaces, traits, texte, couleurs sémantiques, échelle typographique de 9 tailles,

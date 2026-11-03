@@ -124,6 +124,7 @@ function importDatabase(raw) {
     if (pp.foot) p.foot = pp.foot;
     if (pp.detail99 && typeof pp.detail99 === 'object') p.detail99 = pp.detail99; // sous-notes détaillées (sur 99), ex. import d'une sauvegarde FM
     if (pp.fmUid) p.fmUid = pp.fmUid;
+    if (pp.detail20 && typeof pp.detail20 === 'object') p.detail20 = pp.detail20; // attributs détaillés sur 20 (import JSON complet)
     p.wage = pp.wage || calcWage(p);
     p.attrs0 = { ...p.attrs };
     p.value = calcValue(p);
