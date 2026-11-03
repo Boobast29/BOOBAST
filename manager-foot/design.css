@@ -194,3 +194,13 @@ tr[data-w] td[colspan] { white-space: normal; }
 /* fiche joueur : analyse du profil (js/harmonisation.js) — la grille par familles double celle des 37 attributs */
 .skill41-analyse > .grid2 ~ .grid2, .skill41-analyse > .grid2 ~ .grid2 + .hint { display: none; }
 .skill41 { margin-top: var(--esp-3); }
+
+/* notes des attributs : 7 paliers de couleur (js/notes_roles.js) */
+.a36-l b.n1 { background: #5c1a22; color: #ffb3bb; } .a36-l b.n2 { background: #6a3a14; color: #ffc98f; }
+.a36-l b.n3 { background: #5c5418; color: #fff0a0; } .a36-l b.n4 { background: #3d5a1c; color: #d9f7a8; }
+.a36-l b.n5 { background: #1f6a3d; color: #c4ffd9; } .a36-l b.n6 { background: #0f7a63; color: #d2fff4; }
+.a36-l b.n7 { background: #0d8fa8; color: #ffffff; box-shadow: 0 0 0 1px #6fe3f5 inset; }
+.a36-l.cle { background: color-mix(in srgb, var(--club1) 12%, transparent); box-shadow: inset 3px 0 0 color-mix(in srgb, var(--club1) 70%, #fff); }
+.a36-l .nr-w { font-style: normal; font-size: var(--fs-3xs); color: var(--mut); margin-left: auto; margin-right: 8px; font-variant-numeric: tabular-nums; }
+.nr-ctrl { display: flex; flex-wrap: wrap; gap: var(--esp-2) var(--esp-3); align-items: flex-end; margin: 0 0 var(--esp-3); padding: var(--esp-2) var(--esp-3); border: 1px solid var(--line); border-radius: var(--r-m); background: var(--surface-2); }
+.nr-ctrl label { margin: 0; } .nr-ctrl select { min-width: 150px; } .nr-ctrl small { flex-basis: 100%; }

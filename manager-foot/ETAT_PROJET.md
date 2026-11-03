@@ -1,4 +1,17 @@
-# État du projet — v55 (3 novembre 2026)
+# État du projet — v56 (3 novembre 2026)
+
+## v56 — note de poste selon le rôle, le devoir et les consignes ; couleurs des notes
+- `js/notes_roles.js` : chaque rôle de poste (consignes individuelles de la tactique : Stoppeur, Défenseur relanceur, Renard des surfaces,
+  Pivot, Faux 9, Attaquant de pressing…), chaque devoir (Défense, Soutien, Attaque) et chaque consigne d'équipe (pressing, tempo, passes,
+  largeur, ligne défensive) déplace le poids des attributs détaillés.
+  - Fiche joueur : choix du poste, du rôle et du devoir, avec ou sans « Consignes de mon équipe ». Le réglage de ta tactique est repris
+    par défaut si le joueur est titulaire.
+  - La note de poste, l'écart avec le poste de base et les attributs clés (surlignés, avec leur poids en %) se recalculent en direct.
+    Exemple : un buteur noté 73 en Pivot, 71 en Renard, 69 en Attaquant de pressing.
+- **Couleurs des notes** : 7 paliers, du rouge (1-4) au cyan (19-20), en passant par orange, jaune, vert clair, vert et turquoise.
+- Affichage et aide à la décision : le moteur de match lit toujours ses propres combinaisons d'attributs (js/moteur37.js).
+- FMTools (gilgiltsu, sans licence) : idée notée d'enrichir les personnalités (attributs cachés estimés), non reprise.
+Test : `tests/notes_roles.js`. Simulation longue sans erreur ; audit des écrans sans erreur.
 
 ## v55 — intégration du travail fait en parallèle (ChatGPT / Codex) et harmonisation
 - **Branche principale `Manager-foot`** (déjà fusionnée) : catalogue Football Monde FMB hors ligne (`js/catalogue_fmb.js`,
