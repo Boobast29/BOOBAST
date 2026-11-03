@@ -1,4 +1,22 @@
-# État du projet — v40 (3 novembre 2026)
+# État du projet — v41 (3 novembre 2026)
+
+## v41 — sauvegarde Football Manager, packs graphiques mieux reconnus, profils similaires
+- **Sauvegarde FM → monde jouable** (`outils/importer_sauvegarde_fm.py`, sur ton PC, avec `pip install fmsave`, rhiever/fmsave, MIT).
+  `--lister` affiche les championnats de la sauvegarde ; `--ligues` choisit les divisions. On obtient un fichier JSON à importer
+  depuis l'écran d'accueil. Les 52 attributs FM donnent les 9 qualités et les sous-notes détaillées ; le reste est converti aussi :
+  poste, pied fort, personnalité, contrat, potentiel (écart PA − CA). Avec `--visages` ou `--logos`, les images des packs sont
+  reliées par l'identifiant FM (dossier `fm_images`, non versionné). Test : `outils/tests_sauvegarde_fm.py`.
+- **Nations FM** : `outils/nations_fm.json` relie 220 identifiants de nation FM aux codes FIFA, d'après mavarobli/FMSuperScout (MIT,
+  `outils/nations_fm.py`).
+- **Packs graphiques** (idées de FMMLoader-26, GPL : aucun code repris) : le type se lit dans le `config.xml` (portrait de personne,
+  logo d'équipe, maillot d'équipe). Les logos de compétitions et de nations ne sont plus pris pour des logos de club quand le numéro
+  coïncide, et le maillot domicile est préféré.
+- **Profils similaires** (`js/remplacants.js`, idée de fm-ai-assistent, sans licence : aucun code repris) : depuis la fiche d'un joueur,
+  « Trouver des profils similaires » liste les joueurs du même poste les plus proches sur les attributs clés. Le brouillard du recrutement
+  est respecté, et un bouton « Suivre » ajoute un joueur à la liste de suivi.
+- Écarté : tahaselimsalman243-glitch/sport-connect-hub. Sa page est un script chiffré qui réécrit tout le document, technique des faux
+  dépôts qui distribuent des logiciels malveillants. Rien n'a été exécuté.
+Vérifications : simulation longue sans erreur ; audit des 27 écrans sans erreur ; tests des outils Python passés.
 
 ## v40 — finance des transferts : comptabilité et montages financiers (`js/finance_transferts.js`)
 - **Amortissement** : chaque indemnité, commission d'agent comprise, est étalée de façon linéaire sur la durée du contrat

@@ -26,7 +26,14 @@ liste.write_text('<table><tr><th>UID</th><th>Nom</th><th>Date de naissance</th><
                  '<tr><td>111</td><td>Jean Dupont</td><td>01/01/1995</td></tr>'
                  '<tr><td>333</td><td>Sans Image</td><td>01/01/2000</td></tr>'
                  '<tr><td>999</td><td>Inconnu Total</td><td></td></tr></table>', encoding='utf-8')
-logos = tmp / 'logos'; logos.mkdir(); (logos / '583.png').write_bytes(PNG)
+logos = tmp / 'logos'; (logos / 'clubs').mkdir(parents=True); (logos / 'clubs' / '583.png').write_bytes(PNG)
+(logos / 'competitions').mkdir(); (logos / 'competitions' / '583.png').write_bytes(b'GIF89a' + b'\0' * 64)  # même numéro qu'un club : ignoré
+kits = tmp / 'kits'; kits.mkdir()
+for nom in ('psg_away', 'psg_home'):
+    (kits / f'{nom}.png').write_bytes(PNG if nom == 'psg_home' else b'GIF89a' + b'\0' * 64)
+(kits / 'config.xml').write_text('<record><list id="maps"><record from="psg_away" to="graphics/pictures/team/583/kits/away"/><record from="psg_home" to="graphics/pictures/team/583/kits/home"/></list></record>')
+assert importer_pack_fm.fichiers_pack(logos, 'club')['583'].parent.name == 'clubs', 'logo de compétition pris pour un club'
+assert importer_pack_fm.fichiers_pack(kits, 'maillot')['583'].name == 'psg_home.png', 'maillot domicile non préféré'
 liste_c = tmp / 'clubs.txt'
 liste_c.write_text('| UID | Club | Pays |\n| 583 | Paris Saint-Germain | France |\n', encoding='utf-8')
 sys.argv = ['x', '--pack', str(faces), '--liste', str(liste), '--type', 'joueurs']; importer_pack_fm.main()

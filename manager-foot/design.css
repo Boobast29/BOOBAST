@@ -102,3 +102,4 @@ h1.logo-big { margin: 0; font-weight: inherit; }
 .compta-kpis em { display: block; font-style: normal; font-size: var(--t-xs); color: var(--mut); }
 .compta .creance { padding: 6px 0; border-bottom: 1px solid var(--line); }
 .warn { color: var(--yel); }
+.sim { margin: 10px 0; } .sim-tbl td { white-space: nowrap; }

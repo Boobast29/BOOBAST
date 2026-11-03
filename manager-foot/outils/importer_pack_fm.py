@@ -66,21 +66,43 @@ def lire_liste(path):
     return out
 
 
-def fichiers_pack(dossier):
+# chemins FM des images selon le type (config.xml) : visage d'une personne, logo d'une équipe, maillot d'une équipe.
+# Les logos de compétitions et de nations portent leurs propres numéros, qui peuvent coïncider avec ceux des clubs :
+# ils sont exclus.
+CIBLES = {'joueur': r'pictures/person/(\d+)/portrait', 'club': r'pictures/team/(\d+)/logo', 'maillot': r'pictures/team/(\d+)/kits?/([a-z]+)'}
+EXCLUS = re.compile(r'(^|[\\/])(comps?|competitions?|nations?|countries|continents?)([\\/]|$)', re.I)
+PREF_MAILLOT = ['home', 'domicile', 'away', 'third']
+
+
+def fichiers_pack(dossier, typ='joueur'):
     """UID -> fichier image, d'après config.xml (attributs from/to) ou, à défaut, le nom de fichier numérique."""
     dossier = pathlib.Path(dossier)
-    par_uid = {}
-    imgs = {p.stem: p for p in dossier.rglob('*') if p.suffix.lower() in EXT}
+    par_uid, rang = {}, {}
+    imgs = {}
+    for p in dossier.rglob('*'):
+        if p.suffix.lower() in EXT and not EXCLUS.search(str(p.relative_to(dossier).parent)):
+            imgs.setdefault(p.stem, p)
+    motif = re.compile(CIBLES[typ], re.I)
     for cfg in dossier.rglob('config.xml'):
         for frm, to in re.findall(r'<record\s+from="([^"]+)"\s+to="([^"]+)"', cfg.read_text(encoding='utf-8', errors='ignore')):
-            m = re.search(r'/(\d+)(/|$)', to)
-            img = next((p for p in cfg.parent.glob(frm + '.*') if p.suffix.lower() in EXT), None) or imgs.get(frm)
-            if m and img:
-                par_uid.setdefault(m.group(1), img)
-    for stem, p in imgs.items():
-        if stem.isdigit():
-            par_uid.setdefault(stem, p)
+            m = motif.search(to)
+            if not m:
+                continue
+            img = next((p for p in cfg.parent.glob(glob_echappe(frm) + '.*') if p.suffix.lower() in EXT), None) or imgs.get(frm)
+            if not img:
+                continue
+            r = PREF_MAILLOT.index(m.group(2).lower()) if typ == 'maillot' and m.group(2).lower() in PREF_MAILLOT else 9 if typ == 'maillot' else 0
+            if m.group(1) not in par_uid or r < rang[m.group(1)]:
+                par_uid[m.group(1)], rang[m.group(1)] = img, r
+    if typ != 'maillot':  # sans config.xml : fichiers nommés par l'UID (les maillots ont toujours un config.xml)
+        for stem, p in imgs.items():
+            if stem.isdigit():
+                par_uid.setdefault(stem, p)
     return par_uid
+
+
+def glob_echappe(s):
+    return re.sub(r'([\[\]*?])', r'[\1]', s)
 
 
 def main():
@@ -106,7 +128,7 @@ def main():
         ap.error('--pack et --liste sont nécessaires')
     t = a.type or ('maillots' if re.search(r'kit|maillot', a.pack, re.I) else 'logos' if re.search(r'logo|badge|club', a.pack, re.I) else 'joueurs')
     typ = TYPES[t]
-    pack, liste = fichiers_pack(a.pack), lire_liste(a.liste)
+    pack, liste = fichiers_pack(a.pack, typ), lire_liste(a.liste)
     print(f'Pack : {len(pack)} image(s) ; liste FM : {len(liste)} ligne(s) ; type : {t}')
     if typ == 'joueur':
         idx = defaultdict(list)

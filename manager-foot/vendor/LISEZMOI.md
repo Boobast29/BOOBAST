@@ -53,3 +53,5 @@ le jeu reste jouable sans (recherche simple, sons d'origine).
 - jokecamp/FootballData (MIT, Joe Kampschmidt) : faits dérivés dans `js/cotes_reelles.js` et `js/stades_gps.js`.
 - `open-football/LICENSE` : ZOXEXIVO/open-football (Apache-2.0). Noms et textes d'adaptation dans `js/open_football.js`.
 - openfootball/football.json (CC0) : palmarès dans `js/palmares_reel.js`.
+- `fmsuperscout/LICENSE` : mavarobli/FMSuperScout (MIT). Table des nations FM dans `outils/nations_fm.json`.
+- rhiever/fmsave (MIT) : bibliothèque installée par l'utilisateur (`pip install fmsave`), non incluse.
