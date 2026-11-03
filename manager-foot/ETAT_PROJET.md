@@ -1,3 +1,9 @@
+# État du projet — v92 (3 novembre 2026)
+
+## Trésorerie et bas de tableau (js/equilibre_saison.js)
+- Trésorerie : alerte de rappel dès que le compte est réellement négatif (au plus toutes les 8 semaines ; vendre, emprunter, réduire les coûts, assumer), en plus de l'alerte de projection annuelle ; le président perd patience si le trou dépasse 5 % du budget de départ. NB : les tests longs utilisent un gestionnaire automatique passif (refuse toutes les offres, réduit les coûts) — d'où des trésoreries négatives en 2e saison dans ces simulations.
+- Bas de tableau : au mercato d'hiver, les 3 derniers de chaque championnat empruntent jusqu'à 2 joueurs (réservistes ou remplaçants de clubs plus forts, meilleurs que leur moyenne). Ligue 1 : dernier 20-23 pts (avant 15-17), corrélation niveau/classement 0,67-0,85.
+
 # État du projet — v91 (3 novembre 2026)
 
 ## Rapports de recrutement et discussions (js/rapports_discussions.js)
