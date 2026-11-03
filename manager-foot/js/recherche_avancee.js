@@ -6,7 +6,7 @@
 //  Joueur non observé : l'attribut est estimé (milieu de la fourchette affichée sur sa fiche) ou inconnu (« ? »)
 //  selon les préférences de la partie — la recherche ne révèle jamais la vraie valeur.
 // ============================================================
-let RA = { q: '', postes: [], ageMin: '', ageMax: '', nat: '', pays: '', lg: '', pied: '', contrat: '', valMax: '', salMax: '', libres: false, obs: '', attrs: [['', ''], ['', ''], ['', '']], col: '', tri: { k: 'age', d: 1 } };
+let RA = { q: '', postes: [], ageMin: '', ageMax: '', tMin: '', tMax: '', nat: '', pays: '', lg: '', pied: '', contrat: '', valMax: '', salMax: '', libres: false, obs: '', attrs: [['', ''], ['', ''], ['', '']], col: '', tri: { k: 'age', d: 1 } };
 const RA_ATTRS = typeof ATTR_DETAIL !== 'undefined' ? ATTR_DETAIL.map(([k, l]) => [k, l]) : [];
 function attrEstime(p, k, D) {
   const v = D[k]; if (v == null) return null;
@@ -27,6 +27,8 @@ function vRechercheAvancee(host) {
     if (RA.postes.length && !RA.postes.includes(p.pos)) return false;
     if (RA.ageMin && p.age < +RA.ageMin) return false;
     if (RA.ageMax && p.age > +RA.ageMax) return false;
+    if (RA.tMin && typeof tailleDe === 'function' && tailleDe(p) < +RA.tMin) return false;
+    if (RA.tMax && typeof tailleDe === 'function' && tailleDe(p) > +RA.tMax) return false;
     if (RA.nat && p.nat !== RA.nat) return false;
     if (RA.pays && (p.club == null ? 'LIBRE' : getClub(G, p.club)?.country || '?') !== RA.pays) return false;
     if (RA.lg && typeof ligueDe === 'function' && ligueDe(G, p) !== RA.lg) return false;
@@ -48,7 +50,7 @@ function vRechercheAvancee(host) {
     lignes.push({ p, est });
   }
   const val = (r, k) => k === 'nom' ? r.p.name : k === 'pos' ? POS_ORDER.indexOf(r.p.pos) : k === 'age' ? r.p.age : k === 'val' ? r.p.value : k === 'sal' ? r.p.wage
-    : k === 'contrat' ? (r.p.club == null ? 0 : finContrat(r.p)) : k === 'club' ? (getClub(G, r.p.club)?.name || '') : k === 'note' ? estOvr(G, r.p) : (r.est[k]?.v ?? -1);
+    : k === 'contrat' ? (r.p.club == null ? 0 : finContrat(r.p)) : k === 'club' ? (getClub(G, r.p.club)?.name || '') : k === 'taille' ? (typeof tailleDe === 'function' ? tailleDe(r.p) : 0) : k === 'note' ? estOvr(G, r.p) : (r.est[k]?.v ?? -1);
   const { k: tk, d: td } = RA.tri;
   lignes.sort((a, b) => { const x = val(a, tk), y = val(b, tk); return (x > y ? 1 : x < y ? -1 : 0) * td; });
   const nats = [...new Set(G.players.filter(p => p.club !== G.clubId).map(p => p.nat).filter(n => n && n !== 'UNK'))].sort();
@@ -61,6 +63,8 @@ function vRechercheAvancee(host) {
       <div class="ra-l2"><span>Postes</span><div class="ra-postes">${Object.keys(ROLES).map(r => `<button type="button" data-ps="${r}" class="${RA.postes.includes(r) ? 'on' : ''}" title="${esc(ROLES[r].label)}">${r}</button>`).join('')}</div></div>
       <label>Âge min <input id="raAm" type="number" min="15" max="45" value="${esc(RA.ageMin)}"></label>
       <label>Âge max <input id="raAM" type="number" min="15" max="45" value="${esc(RA.ageMax)}"></label>
+      <label>Taille min (cm) <input id="raTm" type="number" min="150" max="210" value="${esc(RA.tMin || '')}"></label>
+      <label>Taille max (cm) <input id="raTM" type="number" min="150" max="210" value="${esc(RA.tMax || '')}"></label>
       <label>Nationalité <select id="raNat"><option value="">Toutes</option>${nats.map(n => `<option ${RA.nat === n ? 'selected' : ''} value="${n}">${esc(typeof natName === 'function' ? natName(n) : n)}</option>`).join('')}</select></label>
       <label>Pays du club <select id="raPays"><option value="">Tous</option><option value="LIBRE" ${RA.pays === 'LIBRE' ? 'selected' : ''}>Sans club</option>${pays.map(n => `<option ${RA.pays === n ? 'selected' : ''} value="${n}">${esc(typeof nomPays === 'function' ? nomPays(n) : n)}</option>`).join('')}</select></label>
       ${typeof selectLigues === 'function' ? `<label>Championnat ${selectLigues(G, RA.lg).replace('id="flg"', 'id="raLg"')}</label>` : ''}
@@ -75,14 +79,14 @@ function vRechercheAvancee(host) {
       <div class="ra-act"><button class="btn primary" id="raGo">Rechercher</button><button class="btn ghost" id="raRaz">Tout effacer</button></div>
     </div>
     <p class="hint">${lignes.length} joueur${lignes.length > 1 ? 's' : ''}${lignes.length > 200 ? ' (200 affichés)' : ''} · clic sur un en-tête pour trier. Joueur non observé : attribut estimé (fourchette) ou « ? ».</p>
-    <div class="tbl-wrap"><table class="tbl ra-res"><thead><tr><th></th>${th('nom', 'Joueur')}${th('pos', 'Poste')}${th('age', 'Âge')}<th>Nat.</th>${th('club', 'Club')}${attrsActifs.map(k => th(k, etiquette(k))).join('')}${th('note', 'Note')}${th('val', 'Valeur')}${th('sal', 'Salaire')}${th('contrat', 'Contrat')}</tr></thead>
+    <div class="tbl-wrap"><table class="tbl ra-res"><thead><tr><th></th>${th('nom', 'Joueur')}${th('pos', 'Poste')}${th('age', 'Âge')}${th('taille', 'Taille')}<th>Nat.</th>${th('club', 'Club')}${attrsActifs.map(k => th(k, etiquette(k))).join('')}${th('note', 'Note')}${th('val', 'Valeur')}${th('sal', 'Salaire')}${th('contrat', 'Contrat')}</tr></thead>
     <tbody>${lignes.slice(0, 200).map(({ p, est }) => { const c = p.club != null ? getClub(G, p.club) : null;
-      return `<tr data-pid="${p.id}" class="click"><td>${avatar(p, 26)}</td><td class="nm">${esc(p.name)}${p.listed ? ' <small class="warn">en vente</small>' : ''}</td><td>${p.pos}</td><td>${p.age}</td><td>${natFlag(p.nat)}</td>
+      return `<tr data-pid="${p.id}" class="click"><td>${avatar(p, 26)}</td><td class="nm">${esc(p.name)}${p.listed ? ' <small class="warn">en vente</small>' : ''}</td><td>${p.pos}</td><td>${p.age}</td><td>${typeof tailleDe === 'function' ? tailleDe(p) : ''}</td><td>${natFlag(p.nat)}</td>
         <td>${c ? `${crest(c, 16)} ${esc(c.short || c.name)}` : '<small class="muted">libre</small>'}</td>
         ${attrsActifs.map(k => { const e = est[k]; return `<td class="ra-av ${e?.exact ? (typeof couleurAttr === 'function' ? couleurAttr(e.v) : '') : 'ra-est'}">${e ? e.txt : '—'}</td>`; }).join('')}
         <td>${ovrCell(p)}</td><td>${money(p.value)}</td><td>${wageM(p.wage)}</td><td>${c ? 'juin ' + finContrat(p) : '—'}</td></tr>`; }).join('')}</tbody></table></div></section>`;
   const lire = () => {
-    RA.q = $('#raQ').value.trim(); RA.ageMin = $('#raAm').value; RA.ageMax = $('#raAM').value; RA.nat = $('#raNat').value; RA.pays = $('#raPays').value;
+    RA.q = $('#raQ').value.trim(); RA.ageMin = $('#raAm').value; RA.ageMax = $('#raAM').value; RA.tMin = $('#raTm').value; RA.tMax = $('#raTM').value; RA.nat = $('#raNat').value; RA.pays = $('#raPays').value;
     RA.lg = $('#raLg')?.value || ''; RA.pied = $('#raPied').value; RA.contrat = $('#raCt').value; RA.valMax = $('#raV').value; RA.salMax = $('#raS').value;
     RA.obs = $('#raObs').value; RA.libres = $('#raLib').checked; RA.col = $('#raCol').value;
     RA.attrs = RA.attrs.map((_, i) => [host.querySelector(`[data-ak="${i}"]`).value, host.querySelector(`[data-am="${i}"]`).value]);
@@ -91,7 +95,7 @@ function vRechercheAvancee(host) {
   host.querySelector('#raGo').onclick = relancer;
   host.querySelectorAll('.ra-filtres select, #raLib').forEach(s => s.addEventListener('change', relancer));
   host.querySelectorAll('.ra-filtres input:not([type=checkbox])').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') relancer(); }));
-  host.querySelector('#raRaz').onclick = () => { RA = { ...RA, q: '', postes: [], ageMin: '', ageMax: '', nat: '', pays: '', lg: '', pied: '', contrat: '', valMax: '', salMax: '', libres: false, obs: '', attrs: [['', ''], ['', ''], ['', '']], col: '' }; vRechercheAvancee(host); };
+  host.querySelector('#raRaz').onclick = () => { RA = { ...RA, q: '', postes: [], ageMin: '', ageMax: '', tMin: '', tMax: '', nat: '', pays: '', lg: '', pied: '', contrat: '', valMax: '', salMax: '', libres: false, obs: '', attrs: [['', ''], ['', ''], ['', '']], col: '' }; vRechercheAvancee(host); };
   host.querySelectorAll('[data-ps]').forEach(b => b.onclick = () => { lire(); const r = b.dataset.ps; RA.postes = RA.postes.includes(r) ? RA.postes.filter(x => x !== r) : [...RA.postes, r]; vRechercheAvancee(host); });
   host.querySelectorAll('[data-tri]').forEach(t => t.onclick = () => { lire(); const k = t.dataset.tri; RA.tri = { k, d: RA.tri.k === k ? -RA.tri.d : (['age', 'nom', 'pos', 'contrat', 'sal', 'val', 'club'].includes(k) ? 1 : -1) }; vRechercheAvancee(host); });
   host.querySelectorAll('tr[data-pid]').forEach(tr => tr.onclick = () => playerModal(+tr.dataset.pid));

@@ -1,3 +1,10 @@
+# État du projet — v84 (3 novembre 2026)
+
+## Demandes de profil de l'entraîneur (js/demandes_profil.js)
+- À chaque mercato, l'entraîneur (mode directeur sportif) ou l'adjoint (mode entraîneur) demande un profil pour le poste le plus faible : un rôle (renard des surfaces, faux 9, pivot, regista, ailier intérieur, latéral inversé, stoppeur…) et une ou deux caractéristiques (grand / petit, rapide / puissant, jeune / expérimenté, gaucher). Demande toujours réalisable (au moins 5 joueurs conformes dans le monde).
+- Réponses : accepter, accepter et ouvrir la recherche réglée sur ce profil (postes, taille, âge, pied, attribut minimum), refuser. Recrue conforme : relation en hausse ; mercato fermé sans elle : relation en baisse.
+- Recherche avancée : + taille min et max, colonne Taille (taille réelle si connue, sinon estimée selon le poste). Rôle « Meneur reculé » renommé « Regista ».
+
 # État du projet — v83 (3 novembre 2026)
 
 ## Fiche joueur affinée par le scouting (js/fiche_plus.js)

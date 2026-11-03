@@ -41,7 +41,7 @@ function terrainPostes(p) {
 }
 function bandeauFiche(p) {
   const c = connaissance(G, p), mine = p.club === G.clubId;
-  const taille = p.height || p.heightTm;
+  const taille = p.height || p.heightTm || (typeof tailleDe === 'function' ? tailleDe(p) : null);
   const roles = meilleursRoles(p);
   const sansNote = G.prefs?.noteMasquee;
   return `<section class="fp" data-bloc="fp"><div class="fp-haut">${terrainPostes(p)}<div class="fp-faits">
