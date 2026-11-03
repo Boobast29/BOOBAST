@@ -1,3 +1,14 @@
+# État du projet — v76 (3 novembre 2026)
+
+## Accueil refait (js/accueil.js)
+- Bug corrigé : la carte d'une sauvegarde portait la classe `.slot`, aussi celle des postes du terrain de la tactique (position absolue, 84 px) → à la reprise d'une partie, carte écrasée et sortie de sa colonne.
+- Nouvelle organisation : « Continuer » (dernière partie en grand, un bouton) · « Nouvelle partie » en trois cartes (Monde étendu recommandé, Monde réel importé, Monde fictif) · Mes parties · monde fictif détaillé · Outils. Le monde étendu est enfin accessible depuis l'accueil.
+
+## Tout installer en une commande (outils/tout_installer.py, Tout_Installer.bat, tout_installer.sh)
+- Enchaîne : pack Football_Monde (s'il est trouvé : dossier du jeu, Téléchargements, Bureau), reep, Transfermarkt, ClubElo, maillots, Wikidata (photos, logos, entraîneurs), openfootball (palmarès, championnats européens ; ZIP GitHub ou git clone), visages (pack NewGAN trouvé ou Stable Diffusion local). Une étape en échec n'arrête pas les autres ; bilan et journal (`donnees_jeu/journal_installation.txt`) ; lance le jeu à la fin.
+- Dans le jeu : Accueil → Outils → « Tout installer / mettre à jour » (serveur local : `POST/GET /api/installation`, suivi des étapes en direct).
+- Essai ici : openfootball OK (git clone), Transfermarkt et ClubElo bloqués par le réseau de cet environnement (signalés dans le bilan).
+
 # État du projet — v75 (3 novembre 2026)
 
 ## Championnats européens ajoutés au monde étendu (js/ligues_completes.js, js/ligues_europe_clubs.js)

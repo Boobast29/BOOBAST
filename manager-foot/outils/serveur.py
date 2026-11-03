@@ -19,7 +19,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from commun import BASE, RACINE_JEU, connexion, lire_config, normaliser, trouver_football_monde, unpack  # noqa: E402
+from commun import BASE, DOSSIER_JEU_DONNEES, RACINE_JEU, connexion, lire_config, normaliser, trouver_football_monde, unpack  # noqa: E402
 import images  # noqa: E402
 import scenario  # noqa: E402
 from catalogue_fmb import Catalogue  # noqa: E402
@@ -236,6 +236,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(corps)
 
     def do_GET(self):
+        if urllib.parse.urlparse(self.path).path.rstrip('/') == '/api/installation':
+            return self.envoyer(200, etat_installation())
         u = urllib.parse.urlparse(self.path)
         p = {k: v[-1] for k, v in urllib.parse.parse_qs(u.query).items()}
         parts = [urllib.parse.unquote(x) for x in u.path.split('/') if x]
@@ -309,6 +311,8 @@ class Handler(BaseHTTPRequestHandler):
         return self.envoyer(404, {'erreur': 'route inconnue'})
 
     def do_POST(self):
+        if urllib.parse.urlparse(self.path).path.rstrip('/') == '/api/installation':
+            return self.envoyer(200, lancer_installation())
         if RES is None:
             return self.envoyer(503, {'erreur': 'Base mondiale non installée'})
         u = urllib.parse.urlparse(self.path)
@@ -359,6 +363,36 @@ class Handler(BaseHTTPRequestHandler):
         if ctype.startswith('text/') or ctype in ('application/javascript',):
             ctype += '; charset=utf-8'
         self.envoyer(200, f.read_bytes(), ctype)
+
+
+# ---------- installation complète depuis le jeu (outils/tout_installer.py, sans relancer le serveur) ----------
+INSTALLATION = {'proc': None}
+
+
+def lancer_installation():
+    p = INSTALLATION['proc']
+    if p and p.poll() is None:
+        return {'ok': True, 'deja': True}
+    import subprocess
+    INSTALLATION['proc'] = subprocess.Popen([sys.executable, str(RACINE_JEU / 'outils' / 'tout_installer.py'), '--sans-lancer'], cwd=str(RACINE_JEU),
+                                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return {'ok': True}
+
+
+def etat_installation():
+    d = DOSSIER_JEU_DONNEES
+    try:
+        etat = json.loads((d / 'etat_installation.json').read_text(encoding='utf-8'))
+    except Exception:
+        etat = {}
+    try:
+        journal = (d / 'journal_installation.txt').read_text(encoding='utf-8').splitlines()[-40:]
+    except Exception:
+        journal = []
+    p = INSTALLATION['proc']
+    etat['en_cours'] = bool(p and p.poll() is None)
+    etat['journal'] = journal
+    return etat
 
 
 def main():
