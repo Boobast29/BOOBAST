@@ -18,7 +18,7 @@ function calendrierAllerRetour(ids) {
 }
 function initLiguesEtrangeres(G) {
   const parPays = {};
-  for (const c of G.clubs) if (c.foreign) (parPays[c.country || '?'] ||= []).push(c.id);
+  for (const c of G.clubs) if (c.foreign && !c.worldCountry) (parPays[c.country || '?'] ||= []).push(c.id); // les pays du monde étendu ont leur propre simulation (js/monde_multinational.js)
   const ligues = {};
   for (const [k, ids] of Object.entries(parPays)) if (ids.length >= 4) ligues[k] = { clubs: ids, fixtures: calendrierAllerRetour(ids), joue: 0 };
   G.etr = { season: G.season, ligues };

@@ -1,3 +1,12 @@
+# État du projet — v75 (3 novembre 2026)
+
+## Championnats européens ajoutés au monde étendu (js/ligues_completes.js, js/ligues_europe_clubs.js)
+- `outils/ligues_europe_clubs.py` : clubs réels de 50 premières divisions (openfootball football.json + europe, CC0, dernière saison connue, ordre du classement).
+- Monde étendu (5 pays FM26, sans club étranger avant) : + 27 championnats de niveau suffisant (Portugal, Pays-Bas, Belgique, Turquie, Russie, Écosse, Autriche, Grèce, Tchéquie, Croatie, Suisse, Danemark, Ukraine, Norvège, Serbie, Pologne, Suède, Roumanie, Hongrie, Chypre, Bulgarie, Azerbaïdjan, Slovaquie, Slovénie, Biélorussie, Géorgie, Bosnie) = 384 vrais clubs. Effectifs générés par le jeu (18 à 20 joueurs, niveau selon le championnat et le rang), recrutables. Simulés chaque semaine avec le calibrage réel de chaque pays ; saison complète testée (champions : Qarabağ, Ludogorets, Dinamo Zagreb…).
+- `js/ligues_etrangeres.js` : les 4 autres pays du monde étendu ne sont plus simulés deux fois (ils ont leur propre simulation).
+- Vitesse : niveau et valeur des joueurs mémorisés pendant le recrutement de l'IA. Monde étendu : ~2,1 s par semaine simulée avec ces ligues (1,1 s sans).
+- Limites : joueurs de ces championnats générés (les sources libres ne donnent pas les effectifs) ; petits championnats (Gibraltar, Saint-Marin, Andorre…) non ajoutés pour la vitesse.
+
 # État du projet — v74 (3 novembre 2026)
 
 ## Équipe première, réserve, U19 (js/equipes_club.js)
