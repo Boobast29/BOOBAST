@@ -5,10 +5,11 @@ Usage : python outils/cibler_effectifs_fminside.py --limite 1200 --sortie packs/
 import argparse, collections, gzip, json, re
 from pathlib import Path
 from pack_fminside import lire_catalogue
+from pack_fmblog import lire_fmblog
 PACKS=Path(__file__).resolve().parent.parent/'packs'
 
 def selectionner(limite=1200, inclure_reserves=False):
-    known={str(p['fmUid']) for p in lire_catalogue(PACKS)['players']}
+    known={str(p['fmUid']) for p in lire_catalogue(PACKS)['players']+lire_fmblog(PACKS)['players']}
     queues=[];metadata={}
     for file in sorted(PACKS.glob('monde-*.json.gz')):
         world=json.loads(gzip.decompress(file.read_bytes()));clubs={str(c['fmUid']):c for c in world['clubs']}

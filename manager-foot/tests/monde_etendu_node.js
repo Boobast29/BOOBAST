@@ -28,7 +28,13 @@ for(const country of index.countries){
 const countries=index.countries.map(c=>JSON.parse(zlib.gunzipSync(fs.readFileSync(`${root}/packs/${c.file}`))));
 const mf=JSON.parse(fs.readFileSync(`${root}/packs/fminside-fm26.manifest.json`));
 const realCatalogue=JSON.parse(zlib.gunzipSync(Buffer.concat(mf.parts.map(p=>fs.readFileSync(`${root}/packs/${p.file}`)))));
+const fmbManifest=JSON.parse(fs.readFileSync(`${root}/packs/fmblog-fm26.manifest.json`));
+const fmb=JSON.parse(zlib.gunzipSync(Buffer.concat(fmbManifest.parts.map(p=>fs.readFileSync(`${root}/packs/${p.file}`)))));
+const existing=new Set(realCatalogue.players.map(p=>p.fmUid));realCatalogue.players.push(...fmb.players.filter(p=>!existing.has(p.fmUid)));
+for(const c of countries)ctx.enrichirPaysFMInside(c,realCatalogue);
 const all=ctx.construireMondeComplet(countries,realCatalogue);
+for(const source of fmb.players){const p=all.players.find(p=>p.fmUid===source.fmUid);assert(p);assert.equal(p.sourceProfile.database,'FM26 FMB 26.3.2');assert.equal(p.dataQuality,'documented_attributes');assert(p.fmbProfile);}
+
 assert.equal(all.players.filter(p=>p.club==null && p.sourceProfile?.freeAgentSnapshot).length,index.freeAgentsDocumented || 0);
 assert.equal(all.players.filter(p=>p.club==null).length,index.freeAgentsDocumented || 0);
 assert.equal(all.clubs.length,355);assert.equal(all.sourceCoverage.countries.length,5);

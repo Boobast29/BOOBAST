@@ -1,44 +1,48 @@
 {
-  "auditedAt": "2026-11-03T19:43:06.216893+00:00",
+  "auditedAt": "2026-11-03T20:07:00.837383+00:00",
   "fmInsideProfiles": 2631,
+  "fmBlogProfiles": 200,
+  "documentedProfiles": 2831,
   "attributesPerProfile": {
-    "36": 2433,
+    "36": 2620,
+    "37": 11,
+    "35": 2,
     "38": 198
   },
   "documentedFreeAgents": 149,
   "freeAgentSourceVersion": "FM26 26.2.0",
-  "uniqueUids": 2631,
-  "documentedPlayersInGame": 2218,
+  "uniqueUids": 2831,
+  "documentedPlayersInGame": 2418,
   "countries": [
     {
       "country": "England",
       "label": "Angleterre",
       "players": 4272,
-      "documentedPlayers": 551
+      "documentedPlayers": 587
     },
     {
       "country": "France",
       "label": "France",
       "players": 3485,
-      "documentedPlayers": 292
+      "documentedPlayers": 327
     },
     {
       "country": "Germany",
       "label": "Allemagne",
       "players": 2997,
-      "documentedPlayers": 343
+      "documentedPlayers": 377
     },
     {
       "country": "Italy",
       "label": "Italie",
       "players": 5038,
-      "documentedPlayers": 518
+      "documentedPlayers": 573
     },
     {
       "country": "Spain",
       "label": "Espagne",
       "players": 2797,
-      "documentedPlayers": 514
+      "documentedPlayers": 554
     }
   ],
   "collectionErrors": [],

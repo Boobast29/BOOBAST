@@ -29,7 +29,7 @@ const SYN_ATTR = (() => {
   add('leadership', 'leadership', 'meneur', 'charisme'); add('volume', 'work rate', 'workrate', 'volume de jeu', 'activite');
   add('collectif', 'teamwork', 'jeu collectif', 'esprit d equipe'); add('acceleration', 'acceleration');
   add('vitesse', 'pace', 'sprint speed', 'vitesse de pointe', 'vitesse'); add('agilite', 'agility', 'agilite');
-  add('equilibre', 'balance', 'equilibre'); add('detente', 'jumping reach', 'jumping', 'detente', 'detente verticale');
+  add('equilibre', 'balance', 'equilibre'); add('detente', 'jumping reach', 'aerial reach', 'jumping', 'detente', 'detente verticale');
   add('puissance', 'strength', 'force', 'puissance'); add('endurance', 'stamina', 'endurance', 'natural fitness', 'condition physique naturelle');
   add('resistance', 'resistance aux chocs', 'robustesse', 'injury resistance');
   add('reflexes', 'reflexes', 'gk reflexes'); add('plongeon', 'diving', 'one on ones', 'un contre un', 'plongeon', 'gk diving');

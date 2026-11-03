@@ -13,10 +13,15 @@
     const text=document.createElement('p');text.textContent=labels[kind]+(source?.database?' · '+source.database:'');info.append(text);
     if(source?.freeAgentSnapshot && p.club==null){const note=document.createElement('small');note.textContent='Libre dans la base source FM26. Exigences salariales estimées pour la négociation.';info.append(note);}
     if(kind==='documented_attributes'){
-      const note=document.createElement('small');note.textContent='Instantané partiel de la base source. Les autres notes restent calculées par le jeu ; les attributs évoluent avec la progression de cette carrière.';info.append(note);
+      const note=document.createElement('small');note.textContent=(source?.database?.includes('FMB')?'Scores FMB indépendants sur 99, adaptés à la simulation. ':'')+'Instantané partiel de la base source. Les autres notes restent calculées par le jeu ; les attributs évoluent avec la progression de cette carrière.';info.append(note);
     }
     if(source?.url && /^https:\/\//.test(source.url)){
       const link=document.createElement('a');link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';link.className='btn';link.textContent='Voir la fiche source';info.append(link);
+    }
+    if(p.fmbProfile?.indicators){
+      const details=document.createElement('details'),title=document.createElement('summary');title.textContent='Indicateurs composites FMB sur 99';details.append(title);
+      const note=document.createElement('small');note.textContent='Scores de comparaison calculés par FMB, distincts des qualités cachées brutes de Football Manager.';details.append(note);
+      for(const [label,value] of Object.entries(p.fmbProfile.indicators)){const row=document.createElement('p');row.textContent=label+' : '+value+'/99';details.append(row);}info.append(details);
     }
     if(p.transfermarkt){
       const tm=p.transfermarkt,details=document.createElement('p');
@@ -38,14 +43,14 @@ function actualiserAttributsCarriere(world,catalogue){
   const players=world.players.map(p=>{
     const source=p.fmUid && byUid.get(String(p.fmUid));
     if(!source || !source.attributes || Object.keys(source.attributes).length<30)return p;
-    if(JSON.stringify(p.transfermarkt)===JSON.stringify(source.transfermarkt) && JSON.stringify(p.transfermarktStatus)===JSON.stringify(source.transfermarktStatus) && p.dataQuality==='documented_attributes' && p.sourceProfile?.url===source.sourceUrl && p.sourceProfile?.database===source.sourceDatabase)return p;
+    if(JSON.stringify(p.transfermarkt)===JSON.stringify(source.transfermarkt ?? p.transfermarkt) && JSON.stringify(p.transfermarktStatus)===JSON.stringify(source.transfermarktStatus ?? p.transfermarktStatus) && p.dataQuality==='documented_attributes' && p.sourceProfile?.url===source.sourceUrl && p.sourceProfile?.database===source.sourceDatabase)return p;
     const cv=convertirJoueur(source,99),attrs={...p.attrs},base={...p.attrs0};
     for(const [key,value] of Object.entries(cv.attrs || {})){
       const delta=(p.attrs[key] || 0)-(p.attrs0?.[key] ?? p.attrs[key] ?? 0);
       base[key]=value;attrs[key]=Math.max(1,Math.min(20,value+delta));
     }
     count++;
-    return {...p,transfermarkt:source.transfermarkt,transfermarktStatus:source.transfermarktStatus,attrs,attrs0:base,detail20:cv.detail20,dataQuality:'documented_attributes',
+    return {...p,fmbProfile:source.sourceModel?{model:source.sourceModel,indicators:{...source.fmbIndicators}}:p.fmbProfile,transfermarkt:source.transfermarkt ?? p.transfermarkt,transfermarktStatus:source.transfermarktStatus ?? p.transfermarktStatus,attrs,attrs0:base,detail20:cv.detail20,dataQuality:'documented_attributes',
       sourceProfile:{...p.sourceProfile,url:source.sourceUrl,database:source.sourceDatabase,updatedAt:catalogue.retrievedAt}};
   });
   const result={...world,players};delete result.pmap;delete result._pow;

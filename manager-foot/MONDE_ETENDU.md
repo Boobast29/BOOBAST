@@ -77,3 +77,38 @@ Les carrières existantes peuvent charger les biographies avec « Actualiser les
 attributs documentés » ; aucun joueur déjà présent n'est supprimé ou libéré.
 Reproduction : `python outils/enrichir_fiches_transfermarkt.py DOSSIER_CSV_GZ`,
 puis `python outils/auditer_couverture_fmi.py`.
+
+### Complément FMB en ligne
+Le catalogue charge désormais `fmblog-fm26.manifest.json` en complément de
+FMInside. Chaque partie compressée est vérifiée (taille et SHA-256), puis les
+fiches sont fusionnées par UID ; FMInside garde la priorité lorsqu'un UID existe
+dans les deux catalogues. Les versions restent distinctes : FMInside 26.2.0 et
+FMB FM26 26.3.2. Aucun calcul de moyenne entre versions.
+
+Les attributs FMB sont des scores indépendants calculés sur 99, adaptés à
+l'échelle de simulation par le convertisseur existant, et non les notes brutes
+originales de Football Manager. Les treize indicateurs composites FMB sont
+conservés séparément et affichés comme tels dans la fiche. Source et modèle sont
+visibles dans « Joueurs documentés ». Les salaires FMB affichés en livres et
+abrégés restent du texte source ; ils ne remplacent pas les salaires en euros du
+jeu. Aucun contrat réel actuel n'est déduit de ces fiches.
+
+La collecte cible les joueurs sans attributs détaillés des effectifs existants,
+priorité aux premières équipes, répartis entre les cinq pays et les 18 ligues.
+Chaque URL canonique doit confirmer l'UID FM26 attendu ; une fiche doit présenter
+au moins 30 attributs publics entre 1 et 99. L'audit vérifie que chaque UID
+correspond au club cible déjà présent dans le jeu. Les compteurs du lot figurent
+dans `packs/couverture-attributs.json` (`fmBlogProfiles`, `documentedProfiles`).
+
+Pour ajouter un lot : `Completer_Attributs_FMBlog.bat`, ou
+`python outils/importer_fmblog.py --limite 1000 --workers 4`, puis
+`python outils/auditer_couverture_fmi.py`. La reprise relit le manifeste compressé
+versionné, sans nécessiter le JSON de travail. Les échecs restent dans le journal
+du complément et ne créent pas de faux profils. Les biographies et indicateurs
+peuvent être ajoutés aux carrières existantes par la mise à jour documentaire,
+sans effacer progression, statistiques, contrats ou transferts de la partie.
+
+Autres sources examinées : Footyshoe (instantané de carrière daté du 7 juillet
+2025) et SquadCompass (26.2.0, même date de carrière). Leurs contrats ne sont pas
+utilisés comme preuve d'un statut réel actuel. FMPlayer répondait 503 lors de
+l'essai ; aucune donnée de ce site n'a été ajoutée.

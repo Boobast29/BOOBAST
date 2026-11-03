@@ -4,15 +4,17 @@ Ne modifie ni les effectifs ni les fichiers des pays ; le complément est appliq
 import argparse, collections, datetime, gzip, json
 from pathlib import Path
 from pack_fminside import lire_catalogue
+from pack_fmblog import lire_fmblog
 PACKS=Path(__file__).resolve().parent.parent/'packs'
 def audit(baseline=None):
     data=lire_catalogue(PACKS)
-    players=data['players'];uids=[str(p['fmUid']) for p in players]
+    fmb=lire_fmblog(PACKS);merged={str(p['fmUid']):p for p in fmb['players']};merged.update({str(p['fmUid']):p for p in data['players']})
+    players=list(merged.values());uids=[str(p['fmUid']) for p in players]
     if len(uids)!=len(set(uids)):raise ValueError('Doublon UID dans le complément')
     for p in players:
         if len(p.get('attributes',{}))<30 or not all(isinstance(v,(int,float)) and 1<=v<=99 for v in p['attributes'].values()):
             raise ValueError('Attributs incomplets ou hors échelle : '+p['name'])
-        if p['sourceDatabase']!='26.2.0':raise ValueError('Mélange de versions FMInside')
+        if p['sourceDatabase'] not in ('26.2.0','FM26 FMB 26.3.2'):raise ValueError('Mélange de versions FMInside')
     known=set(uids);index=json.loads((PACKS/'monde-index.json').read_text(encoding='utf-8'))
     countries=[];owners={}
     for country in index['countries']:
@@ -24,11 +26,13 @@ def audit(baseline=None):
         documented=sum(bool(p.get('attributes')) or str(p['fmUid']) in known for p in ps)
         country['detailedPlayers']=documented
         countries.append({'country':country['key'],'label':country['label'],'players':len(ps),'documentedPlayers':documented})
+    for p in fmb['players']:
+        if str(p['fmUid']) not in owners or owners[str(p['fmUid'])]['clubUid']!=p['targetClubUid']:raise ValueError('Cible FMB hors effectifs du jeu : '+p['name'])
     libres=[p for p in players if (p.get('freeAgentSnapshot') is True or p.get('transfermarktStatus',{}).get('status')=='free') and p.get('transfermarktStatus',{}).get('status') not in ('retired','contracted') and str(p['fmUid']) not in owners]
     index['freeAgentsDocumented']=len(libres)
     index['totals']['detailedPlayers']=sum(c['documentedPlayers'] for c in countries)
-    index['fmInsideProfiles']=len(players);index['attributesOverlay']='fminside-fm26.json.gz'
-    report={'auditedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'fmInsideProfiles':len(players),
+    index['fmInsideProfiles']=len(data['players']);index['fmBlogProfiles']=len(fmb['players']);index['documentedProfiles']=len(players);index['attributesOverlay']='fminside-fm26.json.gz'
+    report={'auditedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'fmInsideProfiles':len(data['players']),'fmBlogProfiles':len(fmb['players']),'documentedProfiles':len(players),
             'attributesPerProfile':dict(collections.Counter(len(p['attributes']) for p in players)),
             'documentedFreeAgents':len(libres),'freeAgentSourceVersion':'FM26 26.2.0',
             'uniqueUids':len(known),'documentedPlayersInGame':index['totals']['detailedPlayers'],

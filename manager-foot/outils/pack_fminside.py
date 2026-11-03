@@ -35,6 +35,7 @@ def publier(root=PACKS):
         name=f'fminside-{version}.{i:03d}.part';content=raw[offset:offset+60000];(root/name).write_bytes(content)
         parts.append({'file':name,'bytes':len(content),'sha256':hashlib.sha256(content).hexdigest()})
     manifest={'version':1,'profiles':len(data['players']),'sourceVersion':'FM26 26.2.0','retrievedAt':data.get('retrievedAt'),'parts':parts}
+    if (root/'fmblog-fm26.manifest.json').exists():manifest['supplement']='fmblog-fm26.manifest.json'
     (root/'fminside-fm26.manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n', encoding='utf-8')
     print(json.dumps({'profiles':manifest['profiles'],'parts':len(parts),'bytes':len(raw)}));return manifest
 if __name__=='__main__':

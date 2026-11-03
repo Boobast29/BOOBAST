@@ -1,5 +1,6 @@
 /* Les données Transfermarkt restent historiques, séparées des statistiques de carrière. */
 function appliquerBiographieTransfermarkt(player,source){
+  if(source.sourceModel)player.fmbProfile={model:source.sourceModel,indicators:{...source.fmbIndicators}};
   if(source.transfermarkt)player.transfermarkt=JSON.parse(JSON.stringify(source.transfermarkt));
   if(source.transfermarktStatus)player.transfermarktStatus={...source.transfermarktStatus};
   return player;

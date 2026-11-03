@@ -74,5 +74,6 @@
       "bytes": 27577,
       "sha256": "eba33fe06f214765335c5e1a45e9317f3a50f625ff94f68eff8b2c1bdfe392fd"
     }
-  ]
+  ],
+  "supplement": "fmblog-fm26.manifest.json"
 }
