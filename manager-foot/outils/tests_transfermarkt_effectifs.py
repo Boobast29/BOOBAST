@@ -45,6 +45,7 @@ with open(d / 'players.csv', 'w', encoding='utf-8', newline='') as f:
     for i, (nom, val, sp, age) in enumerate([('Recrue Chère', '45000000', 'Right Winger', '2000-03-01'), ('Jeune Espoir', '2000000', 'Centre-Back', '2007-05-01'), ('Gardien Remplaçant', '300000', 'Goalkeeper', '1994-01-01')]):
         w.writerow({'player_id': f'new{i}', 'name': nom, 'current_club_id': '100', 'date_of_birth': age, 'country_of_citizenship': 'Brazil', 'position': 'Attack',
                     'sub_position': sp, 'foot': 'left', 'height_in_cm': '185', 'market_value_in_eur': val, 'contract_expiration_date': '2030-06-30', 'agent_name': 'Agence X', 'last_season': '2025'})
+    w.writerow({'player_id': 'libre0', 'name': 'Vrai Libre', 'current_club_id': '', 'date_of_birth': '1996-02-01', 'country_of_citizenship': 'Spain', 'position': 'Midfield', 'sub_position': 'Central Midfield', 'foot': 'right', 'market_value_in_eur': '3000000', 'last_season': '2025'})
     w.writerow({'player_id': 'old0', 'name': 'Ancien Joueur', 'current_club_id': '100', 'date_of_birth': '1980-01-01', 'position': 'Attack', 'market_value_in_eur': '100000', 'last_season': '2015'})
 with open(d / 'player_valuations.csv', 'w', encoding='utf-8', newline='') as f:
     w = csv.writer(f); w.writerow(['player_id', 'date', 'market_value_in_eur', 'current_club_id'])
@@ -68,5 +69,7 @@ verif(r and r.get('valueHistReal') and len(r['valueHistReal']) == 3, 'historique
 verif(any(p['name'] == 'Gardien Remplaçant' and p['pos'] == 'GB' for p in A), 'gardien ajouté au bon poste')
 verif('Ancien Joueur' not in noms(A), 'joueur retraité (dernière saison ancienne) ignoré')
 verif(next(c for c in s['clubs'] if c['srcId'] == 'c_a').get('coach') or True, 'club : entraîneur lu (infos_club)')
-print('effectif A', len(A), '| B', len(B))
+L = s.get('freeAgents', [])
+verif(any(p['name'] == 'Vrai Libre' and p['pos'] == 'MC' and p['marketValue'] == 3000000 for p in L) and not any(p['name'] == 'Ancien Joueur' for p in L), 'vrai joueur libre (sans club, actif) proposé, retraité exclu')
+print('effectif A', len(A), '| B', len(B), '| libres', len(L))
 sys.exit(0 if ok else 1)

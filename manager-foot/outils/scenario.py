@@ -278,10 +278,21 @@ def construire(con, pays):
         for ins in con.execute('SELECT * FROM inscriptions WHERE competition_id=? ORDER BY nom', (comp['id'],)):
             charger_club(ins['club_id'], ins['nom'], comp, 0, True)
 
+    # vrais joueurs libres (Transfermarkt : sans club, actifs récemment), à recruter sans indemnité
+    libres = []
+    for t in enrichissements.joueurs_libres_tm(con):
+        age = age_au(t['naissance'])
+        if age is None or not 17 <= age <= 35:
+            continue
+        libres.append({'srcId': 'tm:' + t['tm'], 'name': t['nom'], 'nat': code_nat(t['nat']), 'natLabel': t['nat'], 'age': age, 'ageKnown': True, 'dob': t['naissance'],
+                       'pos': enrichissements.poste_tm(t['poste'], t['sous_poste']), 'posRaw': t['sous_poste'], 'height': t['taille'], 'attrs': None, 'attrCoverage': 0,
+                       'ovr99': None, 'pot99': None, 'estimated': True, 'quality': 'transfermarkt', 'real': True, 'clubSrc': None, 'photo': None, 'source': 'Transfermarkt',
+                       'marketValue': t['valeur'], 'foot': t['pied'], 'agent': t['agent'], 'caps': t['selections'], 'heightTm': t['taille'], 'libreReel': True,
+                       **{k2: v for k2, v in enrichissements.infos_joueur(con, t['tm']).items() if k2 in ('transfersReal', 'seasonsReal', 'valueHistReal')}})
     meta = {k: v for k, v in con.execute("SELECT cle, valeur FROM meta WHERE cle IN ('dates_sources','import_termine')")}
     return {
         'kind': 'monde_reel', 'country': PAYS[pays], 'countryLabel': NOM_PAYS_FR.get(pays, pays), 'countrySrc': pays,
-        'season': '2026/2027', 'divisions': divs, 'clubs': clubs, 'players': joueurs,
+        'season': '2026/2027', 'divisions': divs, 'clubs': clubs, 'players': joueurs, 'freeAgents': libres,
         'incomplete': incomplets, 'conversion': {'version': VERSION_CONVERSION, 'poids': CONVERSION},
         'sources': json.loads(meta.get('dates_sources', '{}')), 'imported': meta.get('import_termine'),
         'notice': ("Effectifs : joueurs notés du snapshot EA FC27 du 12/09/2026, non vérifiés comme effectifs officiels actuels. "

@@ -217,6 +217,23 @@ def mouvements_tm(con):
     return _MV[k]
 
 
+def joueurs_libres_tm(con, maxi=400):
+    """Vrais joueurs libres : sans club actuel chez Transfermarkt, actifs récemment, 17 à 35 ans, absents de la base notée."""
+    if not a_table(con, 'tm_joueurs'):
+        return []
+    recente = _saison_recente(con)
+    connus = {r[0] for r in con.execute('SELECT tm_id FROM joueurs WHERE tm_id IS NOT NULL')}
+    out = []
+    for r in con.execute("SELECT * FROM tm_joueurs WHERE (club_tm IS NULL OR club_tm = '') AND coalesce(derniere_saison, 0) >= ? "
+                         "AND coalesce(valeur, 0) > 0 ORDER BY valeur DESC LIMIT ?", (recente, maxi * 2)):
+        if r['tm'] in connus:
+            continue
+        out.append(dict(r))
+        if len(out) >= maxi:
+            break
+    return out
+
+
 def effectif_tm(con, cid, deja_tm):
     """Joueurs de l'effectif actuel Transfermarkt du club absents de la base (niveau estimé dans le jeu par la valeur marchande)."""
     tm_de, _ = _liens_tm(con)

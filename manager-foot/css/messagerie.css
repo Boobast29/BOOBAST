@@ -341,3 +341,4 @@
 .ra-filtres > label .choices { max-width: 100%; overflow: visible; }
 .ra-filtres > label .choices__inner { width: 100%; box-sizing: border-box; }
 .ra-filtres > label .choices, .ra-filtres > label .choices__inner { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
+.ra-raccourcis { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; font-size: var(--fs-s); } .ra-raccourcis > span { font-size: var(--fs-2xs); letter-spacing: .08em; text-transform: uppercase; color: var(--mut); }

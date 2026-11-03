@@ -1,3 +1,12 @@
+# État du projet — v88 (3 novembre 2026)
+
+## Catalogue des vrais joueurs libres
+- `outils/enrichissements.py` (`joueurs_libres_tm`) + `outils/scenario.py` (`freeAgents`) : joueurs sans club chez Transfermarkt, actifs récemment, 17-35 ans, absents de la base notée (jusqu'à 400, les plus valorisés d'abord) ; niveau estimé par la valeur marchande, valeur, pied, agent, saisons et transferts réels.
+- Monde réel : ajoutés sans club, recrutables sans indemnité (étiquette « libre réel »).
+- Mercato › Recherche : raccourcis « Tous les libres (N) » et « Vrais joueurs libres (N) ».
+- Le catalogue FM26 (FMB) ne contient que des joueurs sous contrat : pas de joueurs libres dans le monde étendu (source indisponible).
+- Test : `outils/tests_transfermarkt_effectifs.py` 8/8 (joueur libre actif proposé) ; ajout au monde vérifié dans le navigateur.
+
 # État du projet — v87 (3 novembre 2026)
 
 ## Recherche par attributs façon Football Manager

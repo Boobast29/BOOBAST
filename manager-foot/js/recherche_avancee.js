@@ -50,6 +50,7 @@ function vRechercheAvancee(host) {
     if (RA.valMax && p.value > +RA.valMax * 1e6) return false;
     if (RA.salMax && monthly(p.wage) > +RA.salMax * 1e3) return false;
     if (RA.libres && !(p.club == null || p.listed)) return false;
+    if (RA.reels && !p.libreReel) return false;
     if (RA.obs === 'oui' && !knows(G, p)) return false;
     if (RA.obs === 'non' && knows(G, p)) return false;
     return true;
@@ -74,7 +75,9 @@ function vRechercheAvancee(host) {
   const optA = sel => `<option value="">— Critère —</option>${Object.entries(FAM_RA).map(([fm, lab]) => `<optgroup label="${lab}">${ATTR_DETAIL.filter(a => a[2] === fm).map(([k, l]) => `<option value="${k}" ${sel === k ? 'selected' : ''}>${l}</option>`).join('')}</optgroup>`).join('')}<optgroup label="Poste et caractère">${RA_SPECIAUX.map(([k, l]) => `<option value="${k}" ${sel === k ? 'selected' : ''}>${l}</option>`).join('')}</optgroup>`;
   const PERSOS = ['Modèle de professionnalisme', 'Perfectionniste', 'Leader né', 'Leader', 'Résistant', 'Très loyal', 'Loyal', 'Très ambitieux', 'Ambitieux', 'Professionnel', 'Fair-play', 'Équilibré', 'Réservé', 'Sanguin', 'Effronté', 'Mercenaire', 'Déloyal', 'Friable', 'Indolent'];
   const th = (k, l) => `<th data-tri="${k}" class="ra-th ${tk === k ? 'on' : ''}">${l}${tk === k ? (td > 0 ? ' ▲' : ' ▼') : ''}</th>`;
+  const nLibres = G.players.filter(p => p.club == null && !p.retired).length, nReels = G.players.filter(p => p.libreReel && p.club == null).length;
   host.innerHTML = `<section class="ra">
+    <div class="ra-raccourcis"><span>Catalogue des joueurs libres</span><button class="btn sm ${RA.pays === 'LIBRE' && !RA.reels ? 'primary' : ''}" id="raTousLibres">Tous les libres (${nLibres})</button>${nReels ? `<button class="btn sm ${RA.reels ? 'primary' : ''}" id="raReels">Vrais joueurs libres (${nReels})</button>` : '<small class="muted">Vrais joueurs libres : monde réel avec les données Transfermarkt (Tout_Installer).</small>'}</div>
     <div class="ra-filtres">
       <label class="ra-l2">Nom <input id="raQ" value="${esc(RA.q)}" placeholder="Nom du joueur"></label>
       <div class="ra-l2"><span>Postes</span><div class="ra-postes">${Object.keys(ROLES).map(r => `<button type="button" data-ps="${r}" class="${RA.postes.includes(r) ? 'on' : ''}" title="${esc(ROLES[r].label)}">${r}</button>`).join('')}</div></div>
@@ -101,7 +104,7 @@ function vRechercheAvancee(host) {
     <p class="hint">${lignes.length} joueur${lignes.length > 1 ? 's' : ''}${lignes.length > 200 ? ' (200 affichés)' : ''} · clic sur un en-tête pour trier. Joueur non observé : attribut estimé (fourchette) ou « ? ».</p>
     <div class="tbl-wrap"><table class="tbl ra-res"><thead><tr><th></th>${th('nom', 'Joueur')}${th('pos', 'Poste')}${th('age', 'Âge')}${th('taille', 'Taille')}<th>Nat.</th>${th('club', 'Club')}${attrsActifs.map(k => th(k, etiquette(k))).join('')}${th('note', 'Note')}${th('val', 'Valeur')}${th('sal', 'Salaire')}${th('contrat', 'Contrat')}</tr></thead>
     <tbody>${lignes.slice(0, 200).map(({ p, est }) => { const c = p.club != null ? getClub(G, p.club) : null;
-      return `<tr data-pid="${p.id}" class="click"><td>${avatar(p, 26)}</td><td class="nm">${esc(p.name)}${p.listed ? ' <small class="warn">en vente</small>' : ''}</td><td>${p.pos}</td><td>${p.age}</td><td>${typeof tailleDe === 'function' ? tailleDe(p) : ''}</td><td>${natFlag(p.nat)}</td>
+      return `<tr data-pid="${p.id}" class="click"><td>${avatar(p, 26)}</td><td class="nm">${esc(p.name)}${p.listed ? ' <small class="warn">en vente</small>' : ''}${p.libreReel ? ' <small class="pos">libre réel</small>' : ''}</td><td>${p.pos}</td><td>${p.age}</td><td>${typeof tailleDe === 'function' ? tailleDe(p) : ''}</td><td>${natFlag(p.nat)}</td>
         <td>${c ? `${crest(c, 16)} ${esc(c.short || c.name)}` : '<small class="muted">libre</small>'}</td>
         ${attrsActifs.map(k => { const e = est[k]; return `<td class="ra-av ${e?.exact ? (typeof couleurAttr === 'function' ? couleurAttr(e.v) : '') : 'ra-est'}">${e ? e.txt : '—'}</td>`; }).join('')}
         <td>${ovrCell(p)}</td><td>${money(p.value)}</td><td>${wageM(p.wage)}</td><td>${c ? 'juin ' + finContrat(p) : '—'}</td></tr>`; }).join('')}</tbody></table></div></section>`;
@@ -114,11 +117,13 @@ function vRechercheAvancee(host) {
   };
   const relancer = () => { lire(); vRechercheAvancee(host); };
   host.querySelector('#raGo').onclick = relancer;
+  host.querySelector('#raTousLibres').onclick = () => { lire(); RA.pays = 'LIBRE'; RA.reels = false; vRechercheAvancee(host); };
+  host.querySelector('#raReels')?.addEventListener('click', () => { lire(); RA.pays = 'LIBRE'; RA.reels = !RA.reels; vRechercheAvancee(host); });
   host.querySelector('#raPlus').onclick = () => { lire(); RA.attrs.push(['', '', '>=']); vRechercheAvancee(host); };
   host.querySelectorAll('[data-asup]').forEach(b => b.onclick = () => { lire(); RA.attrs.splice(+b.dataset.asup, 1); if (!RA.attrs.length) RA.attrs.push(['', '', '>=']); vRechercheAvancee(host); });
   host.querySelectorAll('.ra-filtres select, #raLib').forEach(s => s.addEventListener('change', relancer));
   host.querySelectorAll('.ra-filtres input:not([type=checkbox])').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') relancer(); }));
-  host.querySelector('#raRaz').onclick = () => { RA = { ...RA, q: '', postes: [], ageMin: '', ageMax: '', tMin: '', tMax: '', nat: '', pays: '', lg: '', pied: '', contrat: '', valMax: '', salMax: '', libres: false, obs: '', attrs: [['', '', '>=']], perso: '', mode: 'et', col: '' }; vRechercheAvancee(host); };
+  host.querySelector('#raRaz').onclick = () => { RA = { ...RA, q: '', postes: [], ageMin: '', ageMax: '', tMin: '', tMax: '', nat: '', pays: '', lg: '', pied: '', contrat: '', valMax: '', salMax: '', libres: false, obs: '', attrs: [['', '', '>=']], perso: '', mode: 'et', reels: false, col: '' }; vRechercheAvancee(host); };
   host.querySelectorAll('[data-ps]').forEach(b => b.onclick = () => { lire(); const r = b.dataset.ps; RA.postes = RA.postes.includes(r) ? RA.postes.filter(x => x !== r) : [...RA.postes, r]; vRechercheAvancee(host); });
   host.querySelectorAll('[data-tri]').forEach(t => t.onclick = () => { lire(); const k = t.dataset.tri; RA.tri = { k, d: RA.tri.k === k ? -RA.tri.d : (['age', 'nom', 'pos', 'contrat', 'sal', 'val', 'club'].includes(k) ? 1 : -1) }; vRechercheAvancee(host); });
   host.querySelectorAll('tr[data-pid]').forEach(tr => tr.onclick = () => playerModal(+tr.dataset.pid));

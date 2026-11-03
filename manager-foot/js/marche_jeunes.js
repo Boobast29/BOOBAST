@@ -107,3 +107,27 @@ window.addEventListener('load', () => {
     if (!$('#top')) return; if (VIEW === 'mail' && !$('#modal')) show('mail'); else renderTop();
   };
 });
+
+// ============================================================
+//  Vrais joueurs libres (monde réel importé, Transfermarkt : sans club, actifs récemment)
+//  Ajoutés sans club à la création du monde, recrutables sans indemnité ; raccourci dans Mercato › Recherche.
+// ============================================================
+window.addEventListener('load', () => {
+  if (typeof buildRealWorld !== 'function' || typeof realPlayer !== 'function') return;
+  const __buildRealWorldLR = buildRealWorld;
+  buildRealWorld = function (scn) {
+    const W = __buildRealWorldLR.apply(this, arguments);
+    try {
+      for (const sp of scn.freeAgents || []) {
+        const p = realPlayer(sp, null, 60);
+        p.club = null; p.contract = 0; p.libreReel = true; p.estimated = true;
+        if (sp.marketValue) p.marketValueReal = sp.marketValue;
+        if (sp.foot && { right: 1, left: 1, both: 1 }[sp.foot]) p.foot = { right: 'Droit', left: 'Gauche', both: 'Les deux' }[sp.foot];
+        if (sp.agent) p.agentReal = sp.agent;
+        for (const k of ['transfersReal', 'seasonsReal', 'valueHistReal']) if (sp[k]) p[k] = sp[k];
+        W.players.push(p);
+      }
+    } catch (e) { console.error(e); }
+    return W;
+  };
+});
