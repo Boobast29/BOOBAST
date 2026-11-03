@@ -255,3 +255,25 @@
 .pmf-menu { display: grid; gap: 4px; margin: 6px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-m); background: var(--surface-2); font-size: 12.5px; }
 .pmf-menu b { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--mut); }
 @media (max-width: 900px) { .pmf-g { grid-template-columns: 1fr; } }
+
+/* Recherche avancée (js/recherche_avancee.js) */
+.ra-filtres { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 12px; padding: 14px; border-radius: var(--r-l); background: var(--surface-3); align-items: end; }
+.ra-filtres label, .ra-l2 { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-2xs); color: var(--mut); text-transform: uppercase; letter-spacing: .05em; }
+.ra-filtres input, .ra-filtres select { text-transform: none; letter-spacing: 0; font-size: var(--fs-s); }
+.ra-l2 { grid-column: span 2; }
+.ra-postes { display: flex; flex-wrap: wrap; gap: 4px; }
+.ra-postes button { padding: 4px 8px; border: 1px solid var(--line); border-radius: var(--r-s); background: var(--surface-2); color: var(--txt-2, var(--txt)); font: inherit; font-size: var(--fs-xs); cursor: pointer; }
+.ra-postes button.on { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 18%, var(--surface-2)); color: var(--txt); font-weight: 600; }
+.ra-chk { flex-direction: row !important; align-items: center; text-transform: none !important; font-size: var(--fs-s) !important; color: var(--txt) !important; }
+.ra-attrs { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: var(--fs-2xs); color: var(--mut); text-transform: uppercase; letter-spacing: .05em; }
+.ra-a { display: flex; gap: 4px; }
+.ra-a input { width: 64px; }
+.ra-act { grid-column: 1 / -1; display: flex; gap: 8px; }
+.ra-th { cursor: pointer; user-select: none; white-space: nowrap; }
+.ra-th:hover, .ra-th.on { color: var(--acc); }
+.ra-res td { padding: 6px 8px; font-size: var(--fs-s); }
+.ra-av { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ra-est { color: var(--mut); font-weight: 500; }
+.ra-attrs select, .ra-attrs input { text-transform: none; letter-spacing: 0; }
+.ra-filtres select, .ra-filtres input { width: 100%; min-width: 0; }
+.ra-a select { width: auto; min-width: 180px; }

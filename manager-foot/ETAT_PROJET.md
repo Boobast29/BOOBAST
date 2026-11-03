@@ -1,3 +1,11 @@
+# État du projet — v81 (3 novembre 2026)
+
+## Recherche de joueurs avancée (js/recherche_avancee.js, Mercato › Recherche)
+- Filtres : nom, postes (plusieurs à la fois), âge min et max, nationalité, pays du club (ou sans club), championnat, pied, fin de contrat, valeur max, salaire max, libres ou en vente, observés ou non, jusqu'à 3 attributs avec un minimum (ex. Tacle ≥ 12).
+- Colonnes : chaque attribut filtré + une colonne d'attribut libre ; tri par clic sur n'importe quel en-tête (âge, valeur, salaire, contrat, club, attribut…).
+- Joueur non observé : attribut estimé (milieu de la fourchette affichée sur sa fiche) ou « ? » selon les préférences — la recherche ne révèle jamais la vraie valeur.
+- Rendu : ~140 ms sur tous les joueurs du monde fictif ; 200 résultats affichés.
+
 # État du projet — v80 (3 novembre 2026)
 
 ## Fiche joueur compacte et personnalisable (js/fiche_joueur.js)
