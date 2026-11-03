@@ -277,3 +277,19 @@
 .ra-attrs select, .ra-attrs input { text-transform: none; letter-spacing: 0; }
 .ra-filtres select, .ra-filtres input { width: 100%; min-width: 0; }
 .ra-a select { width: auto; min-width: 180px; }
+
+/* Rapport de match (js/rapport_match.js) */
+.rm { display: grid; gap: 12px; max-width: 620px; }
+.rm-score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; padding: 12px; border-radius: var(--r-l); background: var(--surface-3); font-weight: 600; }
+.rm-score span:first-child { text-align: right; }
+.rm-score b { font-size: var(--fs-2xl); font-variant-numeric: tabular-nums; }
+.rm-buts { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: var(--fs-s); }
+.rm-buts li.a { text-align: right; }
+.rm-buts small { color: var(--mut); }
+.rm-stats { width: 100%; border-collapse: collapse; font-size: var(--fs-s); font-variant-numeric: tabular-nums; }
+.rm-stats th { color: var(--mut); font-weight: 500; text-align: center; padding: 3px 8px; }
+.rm-stats td { width: 30%; text-align: center; font-weight: 600; }
+.rm h4 { margin: 4px 0 0; font-size: var(--fs-2xs); letter-spacing: .08em; text-transform: uppercase; color: var(--mut); }
+.rm h4 small { text-transform: none; letter-spacing: 0; margin-left: 8px; }
+.rm-n { display: inline-block; min-width: 34px; padding: 1px 6px; border-radius: var(--r-xs, 4px); text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.rm-top { background: var(--acc); color: #05261a; } .rm-bon { background: color-mix(in srgb, var(--acc) 50%, transparent); } .rm-moy { background: var(--surface-4); } .rm-bas { background: color-mix(in srgb, var(--red) 60%, transparent); color: #fff; }

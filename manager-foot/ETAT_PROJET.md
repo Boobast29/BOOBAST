@@ -1,3 +1,8 @@
+# État du projet — v82 (3 novembre 2026)
+
+## Rapport après chaque match (js/rapport_match.js)
+- Message « Rapport de match » après chaque match de ton club : score, buteurs et passeurs (domicile à gauche, extérieur à droite), possession, tirs, tirs cadrés, xG, corners, fautes, notes de tes joueurs (minutes, buts, passes décisives, couleur selon la note ; clic → fiche), homme du match. Toujours envoyé, hors limite de messages.
+
 # État du projet — v81 (3 novembre 2026)
 
 ## Recherche de joueurs avancée (js/recherche_avancee.js, Mercato › Recherche)
