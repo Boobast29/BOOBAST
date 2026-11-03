@@ -21,7 +21,7 @@ def depuis_football_json(src):
     for d in sorted(pathlib.Path(src).iterdir(), key=lambda x: x.name):
         if not re.match(r'^\d{4}(-\d\d)?$', d.name):
             continue
-        for f in d.glob('*.1.json'):
+        for f in [*d.glob('*.1.json'), *d.glob('mls.json')]:
             code = PAYS_FJ.get(f.name.split('.')[0])
             if not code:
                 continue

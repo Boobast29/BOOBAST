@@ -1,3 +1,12 @@
+# État du projet — v78 (3 novembre 2026)
+
+## Les 40 meilleurs championnats du monde et plus (monde étendu)
+- Classement de niveau type Opta (réputation du meilleur club par championnat) : on garde tout ce qui est au-dessus d'une D1 moyenne d'Europe de l'Est. Les D2 et D3 des 5 grands pays (déjà dans le monde étendu : Championship, League One, 2. Bundesliga, 3. Liga, Serie B et C, Ligue 2, National, LaLiga 2, Primera Federación) passent ainsi devant les petites D1 (Estonie, Lituanie…).
+- Total : 51 championnats — 18 compétitions FM26 (5 pays, D1 à D3) + 23 européens (Portugal, Pays-Bas, Belgique, Turquie, Russie, Écosse, Autriche, Grèce, Tchéquie, Croatie, Suisse, Danemark, Ukraine, Norvège, Serbie, Pologne, Suède, Roumanie, Hongrie, Chypre, Bulgarie, Azerbaïdjan, Slovaquie) + 10 hors d'Europe (Brésil, Argentine, Mexique, MLS, Japon, Colombie, Chine, Égypte, Maroc, Australie). 892 clubs, ~28 500 joueurs.
+- Sources : openfootball football.json (Amériques, Asie, Afrique ajoutées à `outils/palmares_reel.py` et `outils/ligues_europe_clubs.py`) + europe (CC0) ; palmarès réels et calibrage aussi pour ces pays.
+- Vitesse : `weeklyFinances` calculait la masse salariale en reparcourant tous les joueurs pour chaque club (892 × 28 000) → un seul passage. Semaine simulée : 2,6 s → 1,6 s (monde étendu sans ces ligues : 1,2 s) ; gain valable dans tous les modes.
+- Saison complète testée (champions : Slavia Prague, FC Copenhague, Hajduk Split, Ludogorets…).
+
 # État du projet — v77 (3 novembre 2026)
 
 ## Fin de formation des U19 et responsable du centre de formation (js/centre_formation.js)

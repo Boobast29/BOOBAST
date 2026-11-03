@@ -12,7 +12,8 @@ import re
 import sys
 from collections import defaultdict
 
-PAYS = {'fr': 'FRA', 'en': 'ENG', 'de': 'GER', 'es': 'ESP', 'it': 'ITA', 'nl': 'NED', 'pt': 'POR', 'be': 'BEL', 'sco': 'SCO', 'tr': 'TUR', 'at': 'AUT', 'gr': 'GRE'}
+PAYS = {'fr': 'FRA', 'en': 'ENG', 'de': 'GER', 'es': 'ESP', 'it': 'ITA', 'nl': 'NED', 'pt': 'POR', 'be': 'BEL', 'sco': 'SCO', 'tr': 'TUR', 'at': 'AUT', 'gr': 'GRE',
+        'br': 'BRA', 'ar': 'ARG', 'mx': 'MEX', 'mls': 'USA', 'co': 'COL', 'jp': 'JPN', 'cn': 'CHN', 'au': 'AUS', 'eg': 'EGY', 'ma': 'MAR', 'dz': 'ALG'}
 
 
 def classement(matches):
@@ -50,7 +51,7 @@ def main(src):
         if not re.match(r'^\d{4}(-\d\d)?$', d.name):
             continue
         for f in sorted(d.glob('*.json')):
-            m = re.match(r'^([a-z]+)\.(\d)\.json$', f.name)
+            m = re.match(r'^([a-z]+)\.(\d)\.json$', f.name) or re.match(r'^(mls)()\.json$', f.name)
             if not m or m.group(1) not in PAYS:
                 continue
             data = json.load(open(f, encoding='utf-8'))
@@ -60,7 +61,7 @@ def main(src):
             k = len(rk)
             complet = n >= k * (k - 1) and all(v[1] == 2 * (k - 1) for _, v in rk)
             (c, vc), (r2, v2) = rk[0], rk[1]
-            out[PAYS[m.group(1)]][int(m.group(2))].append({
+            out[PAYS[m.group(1)]][int(m.group(2) or 1)].append({
                 's': d.name, 'nom': re.sub(r'\s*\d{4}(/\d\d)?$', '', data.get('name', '')), 'c': c, 'pc': vc[0], 'd': r2, 'pd': v2[0],
                 'bm': round(buts / n, 2), 'dom': round(dom / n, 3), 'j': n, 'eq': k, 'fini': complet, 'der': rk[-1][0]})
     js = ('// Généré par outils/palmares_reel.py — classements recalculés depuis openfootball/football.json (CC0).\n'
