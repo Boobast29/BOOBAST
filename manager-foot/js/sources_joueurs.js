@@ -18,6 +18,13 @@
     if(source?.url && /^https:\/\//.test(source.url)){
       const link=document.createElement('a');link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';link.className='btn';link.textContent='Voir la fiche source';info.append(link);
     }
+    if(p.photoCredit?.page?.startsWith('https://commons.wikimedia.org/wiki/File:')){
+      const credit=document.createElement('p'),link=document.createElement('a');
+      link.href=p.photoCredit.page;link.target='_blank';link.rel='noopener noreferrer';
+      link.textContent=`Photo : ${p.photoCredit.author} · ${p.photoCredit.license} · Wikimedia Commons`;
+      credit.append(link);info.append(credit);
+      if(p.photoCredit.note){const note=document.createElement('small');note.textContent=p.photoCredit.note;info.append(note);}
+    }
     if(p.fmbProfile?.indicators){
       const details=document.createElement('details'),title=document.createElement('summary');title.textContent='Indicateurs composites FMB sur 99';details.append(title);
       const note=document.createElement('small');note.textContent='Scores de comparaison calculés par FMB, distincts des qualités cachées brutes de Football Manager.';details.append(note);
