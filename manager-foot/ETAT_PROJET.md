@@ -1,4 +1,18 @@
-# État du projet — v36 (3 novembre 2026)
+# État du projet — v37 (3 novembre 2026)
+
+## v37 — palmarès réel, adaptation des recrues, noms de 70 pays
+- **Palmarès réel** (`js/palmares_reel.js`, `outils/palmares_reel.py`) : classements recalculés depuis openfootball/football.json (CC0)
+  pour 12 pays, jusqu'à 4 divisions, de 2010-11 à 2026-27 (en cours). Ils s'affichent sous les règlements de chaque pays :
+  champion, dauphin, buts par match, part des victoires à domicile et clubs les plus titrés.
+  Vérification : Ligue 1 2023-24 PSG 76 pts, Premier League 2023-24 Man City 91, Serie A 2023-24 Inter 94.
+- **Adaptation des recrues** : de temps en temps, une nouvelle raconte l'adaptation d'un joueur qui n'est pas encore intégré
+  (mal du pays, langue, famille, parrain…). Les textes français viennent d'open-football (Apache-2.0) et le choix suit le niveau d'intégration ;
+  il est fait par empreinte, sans tirage aléatoire, donc l'avenir de la partie ne change pas.
+- **Noms générés** : réservoirs de prénoms et de noms d'open-football pour 70 pays (Arménie, Estonie, Kenya…), en plus des noms existants.
+- Non intégrés : openfootmanager (GPL-3.0), HattrickOrganizer (LGPL-3.0), football-manager-ODD (code consultable, sans licence libre) :
+  simples idées. Les 85 000 joueurs d'open-football ne sont pas repris non plus : leurs attributs reprennent le format de Football Manager
+  et leur provenance n'est pas claire.
+Vérifications : simulation longue sans erreur ; audit des 27 écrans sans erreur.
 
 ## v36 — menace attendue (xT), cotes 1N2, déplacements
 - **xT** (`js/xthreat.js`) : portage JavaScript de `socceraction/xthreat.py` (ML-KULeuven, MIT). La grille 16 × 12 (`js/xt_grille.js`)

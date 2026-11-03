@@ -239,6 +239,15 @@ Données (faits dérivés dans `js/donnees_ouvertes2.js`, générés par `outils
 | hugomathien/football-data-collection | aucune | idées seulement (base européenne Kaggle) |
 | abdullahtarek/football_analysis | aucune | idées seulement (vitesse, distance, possession par vidéo) |
 
+## Lot v37 — cinq dépôts proposés
+| Dépôt | Licence | Usage |
+|---|---|---|
+| openfootball/football.json | CC0 | palmarès réel recalculé 2010-2027 (12 pays) |
+| ZOXEXIVO/open-football | Apache-2.0 | textes FR d'adaptation, réservoirs de noms (70 pays) ; joueurs non repris (provenance) |
+| openfootmanager/openfootmanager | GPL-3.0 | idées seulement |
+| ho-dev/HattrickOrganizer | LGPL-3.0 | idées seulement (prédiction de match par notes de secteurs) |
+| Kasnm1/football-manager-ODD | code consultable, pas de licence libre | idées seulement |
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.
