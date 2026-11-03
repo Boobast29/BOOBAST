@@ -28,7 +28,15 @@ function poissonSample(lambda, rng) {
   do { k++; p *= rng(); } while (p > L);
   return k - 1;
 }
-function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+// mulberry32 : celui de js/data.js (même algorithme), instance séparée du hasard de la partie
+// tactique d'un club pour une estimation de force, en lecture seule : aiTactics tire des nombres ET modifie le club
+// (style créé au premier appel, effectif complété), ce qui changerait la suite de la partie. Ici : meilleur onze
+// automatique dans la formation habituelle du club, sans aucune écriture ni tirage.
+function tactiqueSansHasard(G, id) {
+  const c = getClub(G, id), f = c?.style && FORMATIONS[c.style.formation] ? c.style.formation : Object.keys(FORMATIONS)[0];
+  const t = autoLineup(G, id, f);
+  return { formation: f, lineup: t.lineup, bench: t.bench, inst: {}, mentality: 0, takers: {}, styles: c?.style?.styles };
+}
 
 // buts attendus des deux équipes à partir de l'écart de force (même logistique que les cotes, js/avant_match.js)
 function butsAttendus(dForce, neutre = false) {
@@ -49,7 +57,7 @@ if (typeof blocAvantMatch === 'function') {
   blocAvantMatch = function (G, f) {
     const h = __blocAvantMatchPV.apply(this, arguments);
     try {
-      const sH = makeSide(G, f.h, f.h === G.clubId ? G.tactics : aiTactics(G, f.h, f.a)), sA = makeSide(G, f.a, f.a === G.clubId ? G.tactics : aiTactics(G, f.a, f.h));
+      const sH = makeSide(G, f.h, f.h === G.clubId ? G.tactics : tactiqueSansHasard(G, f.h, f.a)), sA = makeSide(G, f.a, f.a === G.clubId ? G.tactics : tactiqueSansHasard(G, f.a, f.h));
       const S = scoresProbables(forceEquipe(G, sH) - forceEquipe(G, sA), !!f.neutral);
       return h + `<p class="center hint">Scores les plus probables : ${S.top.map(([a, b, p]) => `<b>${a}-${b}</b> (${Math.round(p * 100)} %)`).join(' · ')} · buts attendus ${S.l.toFixed(1).replace('.', ',')} – ${S.m.toFixed(1).replace('.', ',')}</p>`;
     } catch { return h; }
@@ -61,7 +69,7 @@ function forcesClubs(G, ids) {
   const k = `${G.season}|${G.week}|${ids.length}`;
   if (G._forcesK === k && G._forces) return G._forces;
   const F = {};
-  for (const id of ids) { try { F[id] = forceEquipe(G, makeSide(G, id, id === G.clubId ? G.tactics : aiTactics(G, id, id))); } catch { F[id] = 60; } }
+  for (const id of ids) { try { F[id] = forceEquipe(G, makeSide(G, id, id === G.clubId ? G.tactics : tactiqueSansHasard(G, id, id))); } catch { F[id] = 60; } }
   Object.defineProperty(G, '_forces', { value: F, writable: true, configurable: true, enumerable: false });
   Object.defineProperty(G, '_forcesK', { value: k, writable: true, configurable: true, enumerable: false });
   return F;

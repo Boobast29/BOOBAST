@@ -151,3 +151,4 @@ h1.logo-big { margin: 0; font-weight: inherit; }
 .confirm-deal { margin: 10px 0; padding: 12px; border: 1px solid color-mix(in srgb, var(--acc) 45%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--acc) 7%, transparent); }
 .monde-pays { margin-top: 14px; } .monde-pays tr.click { cursor: pointer; }
 .monde-pays { display: block !important; grid-template-columns: none !important; }
+.etr-ligue { margin-bottom: 10px; } .etr-res { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 6px; font-size: 13px; } .monde-pays details summary { cursor: pointer; color: var(--mut); margin: 8px 0 4px; }

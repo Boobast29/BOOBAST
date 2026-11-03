@@ -44,7 +44,8 @@ function deplacementKm(G, f) { const a = stadeGPS(getClub(G, f.a)), h = stadeGPS
 
 function blocAvantMatch(G, f) {
   try {
-    const sH = makeSide(G, f.h, f.h === G.clubId ? G.tactics : aiTactics(G, f.h, f.a)), sA = makeSide(G, f.a, f.a === G.clubId ? G.tactics : aiTactics(G, f.a, f.h));
+    const tac = id => typeof tactiqueSansHasard === 'function' ? tactiqueSansHasard(G, id) : aiTactics(G, id, id); // lecture seule
+    const sH = makeSide(G, f.h, f.h === G.clubId ? G.tactics : tac(f.h, f.a)), sA = makeSide(G, f.a, f.a === G.clubId ? G.tactics : tac(f.a, f.h));
     const p = probas1N2(forceEquipe(G, sH) - forceEquipe(G, sA), !!f.neutral), c = cotes1N2(p);
     const km = deplacementKm(G, f), fr = x => x.toFixed(2).replace('.', ',');
     const lab = [getClub(G, f.h).name, 'Nul', getClub(G, f.a).name];

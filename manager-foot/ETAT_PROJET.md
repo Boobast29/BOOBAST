@@ -1,4 +1,17 @@
-# État du projet — v49 (3 novembre 2026)
+# État du projet — v50 (3 novembre 2026)
+
+## v50 — championnats étrangers simulés ; hasard de la partie protégé
+- **Championnats étrangers** (`js/ligues_etrangeres.js`) : chacun des 16 pays étrangers d'au moins 4 clubs a son championnat aller-retour
+  (18 journées pour 10 clubs). Les journées sont jouées au rythme de ton championnat. Scores : modèle de Poisson corrigé de Dixon-Coles avec
+  la force des effectifs (2,6 buts par match). À la fin de la saison : champion, trophée, palmarès et une nouvelle dans le fil du monde.
+  Classements > 🌍 Monde montre pour chaque pays le classement, la journée, le champion précédent et les derniers résultats ; la liste des
+  effectifs reste dépliable. Environ 19 Ko dans la sauvegarde.
+- **Correctif** : `aiTactics` tire des nombres aléatoires *et* modifie le club (style créé au premier appel, effectif complété). Les cotes et
+  les scores probables de l'avant-match (depuis la v36) et les prévisions l'appelaient : ouvrir l'avant-match changeait donc un peu la suite de
+  la partie. Ces calculs utilisent maintenant une estimation en lecture seule (`tactiqueSansHasard` : meilleur onze automatique dans la
+  formation habituelle du club). Test `tests/hasard_intact.js` : saison identique avec ou sans championnats étrangers, avant-match et prévisions.
+- Doublon de `mulberry32` retiré (même algorithme que `js/data.js`).
+Tests : `tests/ligues_etrangeres.js`, `tests/hasard_intact.js`. Simulation longue sans erreur ; audit des 27 écrans sans erreur.
 
 ## v49 — confirmation des transferts, recherche dans le monde entier, onglet Monde
 - **Confirmation finale** (`js/mercato_monde.js`) : après une visite médicale réussie, le transfert passe à l'étape « signature à confirmer ».
