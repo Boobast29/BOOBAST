@@ -413,13 +413,13 @@ function divergence(G, pid) {
 let CELL_TAB = 'dash', CELL_NEWPOS = '', CELL_CMP = 'DC';
 function vCell(el) {
   cellInit(G);
-  const C = G.cell, tabs = [['dash', 'Tableau de bord'], ['staff', 'Équipe'], ['missions', 'Missions'], ['reports', 'Rapports'], ['compare', 'Comparer'], ['market', 'Recruter du personnel'], ['eval', 'Évaluation']];
+  const C = G.cell, tabs = [['dash', 'Tableau de bord'], ['staff', 'Équipe'], ['missions', 'Missions'], ['reports', 'Rapports'], ['compare', 'Comparer'], ['similar', 'Profils similaires'], ['market', 'Recruter du personnel'], ['eval', 'Évaluation']];
   el.innerHTML = `<section class="card"><div class="row gap wrap"><h2 class="grow">🔎 Cellule de recrutement</h2><button class="btn primary" id="cMeet">Réunion de recrutement</button></div>
     <div class="tabs">${tabs.map(([k, l]) => `<button data-ct2="${k}" class="${CELL_TAB === k ? 'on' : ''}">${l}</button>`).join('')}</div></section><div id="cellBody" class="col"></div>`;
   el.querySelectorAll('[data-ct2]').forEach(b => b.onclick = () => { CELL_TAB = b.dataset.ct2; vCell(el); });
   $('#cMeet').onclick = () => cellMeeting(null);
   const box = $('#cellBody');
-  ({ dash: cellDash, staff: cellStaff, missions: cellMissions, reports: cellReports, compare: cellCompare, market: cellHire, eval: cellEval })[CELL_TAB](box, el);
+  ({ dash: cellDash, staff: cellStaff, missions: cellMissions, reports: cellReports, compare: cellCompare, similar: cellSimilar, market: cellHire, eval: cellEval })[CELL_TAB](box, el);
 }
 function cellDash(box) {
   const C = G.cell, act = C.missions.filter(m => m.status === 'active');
@@ -640,3 +640,4 @@ if (typeof coachMarket === 'function') { const __coachMarketC = coachMarket; coa
 // la cellule est créée avec la partie (déterministe, indépendant de l'interface)
 const __newGameC = newGame;
 newGame = function (...a) { const g = __newGameC(...a); const prev = G; G = g; try { migrateGestion(g); cellInit(g); } finally { G = prev; } return g; };
+

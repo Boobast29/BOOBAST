@@ -1,4 +1,27 @@
-# État du projet — v54 (3 novembre 2026)
+# État du projet — v55 (3 novembre 2026)
+
+## v55 — intégration du travail fait en parallèle (ChatGPT / Codex) et harmonisation
+- **Branche principale `Manager-foot`** (déjà fusionnée) : catalogue Football Monde FMB hors ligne (`js/catalogue_fmb.js`,
+  `outils/catalogue_fmb.py`, `packs/`), servi par `outils/serveur.py`. 20 528 joueurs, 12 324 membres de staff, 355 clubs,
+  18 compétitions, 316 photos. Vérifié : recherche, fiche détaillée avec photo, accès depuis l'accueil et Outils → Catalogue FMB.
+- **Branche `codex/club-interface-data-reference`** (partait de la v24), fusionnée avec 4 conflits résolus :
+  - modules : 41 compétences et langues (`competences.js`), parcours de progression (`parcours-progression.js`, d'après Pitchside Manager, MIT),
+    remplaçants sur profils observés (`profils-similaires.js`, d'après ScoutEngine / ml-distance, MIT), projection de prolongation et correction
+    de la masse salariale des prêts (`prolongations.js`), studio de statistiques (`studio.js`), marquages du terrain (`pitch-markings.js`, Roboflow, MIT),
+    règlements officiels servis en `/api/reglements-officiels` ;
+  - `scenario.py` : sous-notes sur 99 filtrées (1-99, booléens exclus).
+- **Harmonisation** (`js/harmonisation.js`) :
+  - une seule valeur par attribut : les 41 compétences lisent les 37 attributs détaillés du moteur quand une correspondance existe ;
+  - le panneau devient « Analyse du profil » (points forts, axes de travail, langues, évolution) ; sa grille par familles, en double, est masquée ;
+  - fiche joueur réparée : le parcours de progression et l'analyse s'insèrent dans la fenêtre, et non plus à côté ;
+  - remplaçants : l'outil fondé sur les rapports de supervision sert pour tes joueurs, la recherche simple pour les autres ;
+  - prolongation : la table de négociation (v54) affiche la projection de masse salariale (`#renewalProjection`) ;
+  - `studio.css` réécrivait toute l'interface v24 (barre du haut, menu, boutons, fenêtres) : seules ses règles `.st-*` sont gardées
+    (`css/studio_stats.css`) ;
+  - défaut trouvé par le test de Codex : lire un profil initialisait les traits du joueur ; le calcul se fait désormais sur une copie.
+- Tests de Codex : parcours ✓ ; compétences ✓ jusqu'au clic sur la grille masquée ; remplaçants bloqués par la visite guidée (absente en v24) ;
+  prolongations : test de l'ancienne fenêtre, remplacée par la table de négociation.
+Vérifications : simulation longue sans erreur ; audit des 28 écrans sans erreur ; tests de négociation et de catalogue passés.
 
 ## v54 — négociations détaillées (transferts, contrats des recrues, prolongations)
 - `js/negociation.js` : une **table de négociation** dans les trois fenêtres. Chaque ligne montre la demande, ta proposition,

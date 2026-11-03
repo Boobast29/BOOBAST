@@ -1,0 +1,21 @@
+{
+  "checks": [
+    "Cosinus identique / orthogonal",
+    "Vecteurs plats et données invalides traités",
+    "Profil identique en tête",
+    "Coût : indemnité + 36 salaires mensuels",
+    "Le classement ne lit pas le potentiel ou les capacités cachées actuelles",
+    "Calcul sans mutation et RNG inchangé",
+    "Compétence inconnue : candidat exclu, pas de zéro imputé",
+    "Rapport trop ancien exclu",
+    "Ancien rapport sans détails : pas de reconstruction rétroactive",
+    "Filtre budgétaire exclut une indemnité hors enveloppe",
+    "Classement conservé après sauvegarde/rechargement",
+    "Un nouveau rapport mémorise 41 estimations et leur erreur",
+    "Recherche accessible depuis la fiche du joueur de référence",
+    "Candidat ajouté aux cibles depuis le nouvel écran",
+    "Fiche candidat accessible",
+    "Écran à 390 px sans débordement global"
+  ],
+  "errors": []
+}

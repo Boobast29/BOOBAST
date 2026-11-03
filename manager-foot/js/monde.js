@@ -137,6 +137,7 @@ function realPlayer(sp, clubId, rep) {
   p.srcId = sp.srcId; p.real = true; p.ageKnown = sp.ageKnown; p.dob = sp.dob; p.natLabel = sp.natLabel;
   if (sp.detail99) p.detail99 = sp.detail99;
   p.ovr99 = sp.ovr99; p.pot99 = sp.pot99; p.attrCoverage = sp.attrCoverage; p.weakFoot = sp.weakFoot; p.skillMoves = sp.skills;
+  if (typeof skillInit === 'function') skillInit(p, sp.detail99 || {});
   const o = playerOvr(p);
   if (sp.pot99 != null && sp.ovr99 != null) { p.pot = clamp(o + Math.max(0, sp.pot99 - sp.ovr99), o, 99); p.potKnown = true; }
   else { p.pot = clamp(o + (p.age <= 20 ? 6 : p.age <= 23 ? 3 : 0), o, 99); p.potKnown = false; p.potSim = true; }
@@ -181,7 +182,11 @@ function baseScreen() {
     <div id="bres" class="mt"></div>`, 'wide base');
   $('#bqual').value = BASEQ.qualite; $('#bpos').value = BASEQ.poste;
   let t = null;
-  const go = () => { clearTimeout(t); t = setTimeout(() => { BASEQ.page = 0; lire(); baseRun(); }, 220); };
+  const searchRoot = $('#bres');
+  const go = () => { clearTimeout(t); t = setTimeout(() => {
+    if (!searchRoot.isConnected || $('#bres') !== searchRoot) return;
+    BASEQ.page = 0; lire(); baseRun();
+  }, 220); };
   const lire = () => Object.assign(BASEQ, { q: $('#bq').value, qualite: $('#bqual').value, poste: $('#bpos').value, nat: $('#bnat').value.trim(), age_min: $('#bamin').value, age_max: $('#bamax').value, pot_connu: $('#bpot').checked ? '1' : '', photo: $('#bph').checked ? '1' : '', riche: $('#bri').checked ? '1' : '' });
   $$('#modal .base-f input, #modal .base-f select').forEach(i => { i.oninput = go; i.onchange = go; });
   $('#bq').focus();
@@ -193,6 +198,7 @@ async function baseRun() {
   box.innerHTML = '<p class="muted">Recherche…</p>';
   let r;
   try { r = await api('/api/recherche?' + qs); } catch (e) { box.innerHTML = `<p class="neg">${esc(e.message)}</p>`; return; }
+  if (!box.isConnected || $('#bres') !== box) return;
   const ED = editorMode();
   box.innerHTML = `<p class="hint">${r.total_plafonne ? 'Plus de 10 000' : r.total.toLocaleString('fr-FR')} fiche(s) · page ${r.page + 1} · ${r.ms} ms</p>
     <table class="tbl"><thead><tr><th></th><th>Nom</th><th>Né le</th><th>Nat.</th><th>Poste</th><th>Club (source)</th><th>Données</th><th>Niv./99</th><th>${ED ? 'Pot./99' : 'Potentiel'}</th></tr></thead><tbody>
@@ -350,3 +356,4 @@ function portraitManuel(typ, srcId, done) {
     catch (e) { toast(e.message, 'err'); }
   }, 'image/png,image/jpeg,image/gif,image/webp', false);
 }
+

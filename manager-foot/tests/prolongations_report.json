@@ -1,0 +1,18 @@
+{
+  "checks": [
+    "Masse salariale : joueurs du club, prêts entrants et part des prêts sortants",
+    "Salaire inchangé : aucun double comptage",
+    "Joueur prêté ailleurs : projection sur la part payée par le club",
+    "Le club emprunteur ne prolonge pas le contrat du propriétaire",
+    "Salaires réservés pris en compte dans le plafond",
+    "Montants négatifs et durée fractionnaire refusés",
+    "Prime supérieure à la trésorerie refusée",
+    "Projection sans mutation et RNG inchangé",
+    "Offre invalide bloquée sans envoi à l’agent",
+    "Dépassement avec engagements bloqué sans consommer la patience",
+    "Signature réelle : salaire remplacé et prime débitée une fois",
+    "Accès depuis Finances et préparation du contrat",
+    "Affichage à 390 px sans débordement global"
+  ],
+  "errors": []
+}

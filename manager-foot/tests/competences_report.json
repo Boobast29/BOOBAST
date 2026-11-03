@@ -1,0 +1,30 @@
+{
+  "checks": [
+    "41 compétences / 36 hors gardien",
+    "Poids normalisés GB",
+    "Poids normalisés DC",
+    "Poids normalisés DG",
+    "Poids normalisés DD",
+    "Poids normalisés MDC",
+    "Poids normalisés MC",
+    "Poids normalisés MOC",
+    "Poids normalisés AG",
+    "Poids normalisés AD",
+    "Poids normalisés BU",
+    "Le jeu aérien distingue deux profils aux mêmes neuf attributs",
+    "Langues réelles absentes : inconnues et neutres",
+    "La progression de famille actualise les détails",
+    "Sources manquantes non transformées en zéro",
+    "Aucun match : effet de forme neutre",
+    "Forme temporaire distincte du talent",
+    "Lecture du profil sans mutation ni tirage aléatoire",
+    "Cours de langue facturé une fois par semaine",
+    "Apprentissage enregistré même pour un joueur intégré",
+    "Arrêt des cours à maîtrise courante sans débit",
+    "Un seul point historique par période",
+    "Note stable après sérialisation/rechargement",
+    "Le joueur non observé conserve son brouillard",
+    "Fiche compétences à 390 px sans débordement global"
+  ],
+  "errors": []
+}

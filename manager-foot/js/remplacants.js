@@ -30,7 +30,7 @@ if (typeof playerModal === 'function') {
   playerModal = function (pid, tab = 'profil') {
     const r = __playerModalRS.apply(this, arguments);
     const p = getPlayer(G, pid);
-    if (p && tab === 'profil' && $('#modal .attr36')) {
+    if (p && tab === 'profil' && $('#modal .attr36') && !(typeof profileSimilarity === 'function' && p.club === G.clubId)) { // pour tes joueurs : profils-similaires.js (rapports de supervision)
       $('#modal .attr36').insertAdjacentHTML('afterend', `<section class="sim"><button class="btn" id="simGo">🔍 Trouver des profils similaires</button><div id="simRes"></div></section>`);
       $('#simGo').onclick = () => {
         $('#simRes').innerHTML = blocSimilaires(G, p); $('#simGo').remove();

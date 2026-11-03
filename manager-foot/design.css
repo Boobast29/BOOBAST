@@ -191,3 +191,6 @@ tr[data-w] td[colspan] { white-space: normal; }
 .nego-bilan b { font-size: var(--fs-l); }
 .nego-jauge .sat { width: 100%; height: 10px; }
 @media (max-width: 760px) { .nego-bilan { grid-template-columns: 1fr; } .tbl.nego input[type=number] { width: 100px; } }
+/* fiche joueur : analyse du profil (js/harmonisation.js) — la grille par familles double celle des 37 attributs */
+.skill41-analyse > .grid2 ~ .grid2, .skill41-analyse > .grid2 ~ .grid2 + .hint { display: none; }
+.skill41 { margin-top: var(--esp-3); }
