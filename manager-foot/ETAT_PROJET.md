@@ -1,3 +1,11 @@
+# État du projet — v58 (3 novembre 2026)
+
+## Messagerie refaite (js/messagerie.js, css/messagerie.css)
+- Trois colonnes : dossiers (À traiter, Boîte de réception, Non lus · Par thème : Direction, Équipe, Mercato, Presse · Archives : Autres clubs, Réponses données) · liste · lecture. Sous 1180 px les dossiers passent en bandeau, sous 760 px tout s'empile.
+- Liste groupée par journée, expéditeur + date, objet entier (plus coupé au « : »), aperçu sur une ligne, point de couleur = thème, recherche (joueur, club, expéditeur).
+- Questions : étiquette « Question », bandeau « Calendrier en pause », fiche du joueur concerné, réponses en cartes numérotées (action en gras, conséquence dessous, réponse principale en vert, réponse risquée en rouge). Une fois traitée : « Ta réponse » avec le libellé choisi (plus de clés internes « accept », « auto »…).
+- Skills utilisés : interface-design (hiérarchie, couches, tokens), design:ux-copy (libellés, états vides).
+
 # État du projet — v57 (3 novembre 2026)
 
 ## v57 — toutes les branches fusionnées (Studio du club, projet sportif, pack FMInside)
