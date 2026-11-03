@@ -1,3 +1,10 @@
+# État du projet — v98 (3 novembre 2026)
+
+**Comparaison de plusieurs joueurs** (`js/comparaison.js`) :
+- Bouton « Comparer » sur chaque fiche (tous les joueurs) ; sélection de 2 à 4 joueurs, barre en bas d'écran (retrait d'un clic), mémorisée dans la partie.
+- Fenêtre : radar des 9 qualités (légende par nom), profil (âge, poste et postes secondaires, club, niveau, potentiel estimé, valeur, salaire, contrat), saison (matchs, buts, passes, note), tous les attributs détaillés par famille (gardien seulement si un gardien est comparé). Meilleur de chaque ligne en vert. Joueurs mal connus : fourchettes du recruteur et niveau « ≈ ».
+- Accès aussi depuis la page Analyse.
+
 # État du projet — v97 (3 novembre 2026)
 
 **Tests réparés** (4 tests périmés par les refontes d'interface) :
