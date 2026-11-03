@@ -1,3 +1,11 @@
+# État du projet — v99 (3 novembre 2026)
+
+**Actions du manager** (`js/actions_manager.js`) :
+- Fiche d'un joueur de l'effectif, menu « Actions » : coup de pression en privé, le féliciter ou le critiquer dans la presse, amende. Réaction selon son caractère (pression, tempérament) ; critique d'un joueur influent répercutée sur ses proches ; une action par joueur toutes les 3 semaines.
+- Page Réunions, carte « Actions du manager » : sortie dans la presse (une par semaine : défendre le groupe, viser l'adversaire du prochain match, critiquer l'arbitrage avec risque d'amende de la commission de discipline, réclamer des renforts au président) ; entraîneur en mode directeur sportif (soutien public ou pression) ; commission de la ligue (appel d'une suspension après un carton rouge dans les 2 semaines : réduction, confirmation ou aggravation ; réclamation sur l'arbitrage du dernier match).
+- Fin de match en direct : « Entrer dans le vestiaire » (féliciter, rester calme, coup de gueule, ne rien dire), réaction joueur par joueur selon le score et le caractère.
+- Tout est consigné dans le journal des réunions. Tirages à part.
+
 # État du projet — v98 (3 novembre 2026)
 
 **Comparaison de plusieurs joueurs** (`js/comparaison.js`) :

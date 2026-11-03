@@ -416,3 +416,17 @@
 .cmp-sep th { padding-top: 12px; font-size: var(--fs-2xs); letter-spacing: .08em; text-transform: uppercase; color: var(--mut); text-align: left; }
 .cmp-best { color: var(--acc); font-weight: 600; background: color-mix(in srgb, var(--acc) 10%, transparent); }
 @media (max-width: 700px) { .cmp-haut { grid-template-columns: 1fr; } #cmpBar { left: 16px; right: 16px; } }
+
+/* Actions du manager (js/actions_manager.js) */
+.am-card h3 small { text-transform: none; letter-spacing: 0; margin-left: 6px; }
+.am-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-bottom: 6px; }
+.am-act { display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 10px 12px; border-radius: var(--r-m); border: 1px solid var(--line); background: var(--surface-2); color: var(--txt); font: inherit; cursor: pointer; }
+.am-act small { color: var(--mut); font-size: 11.5px; line-height: 1.35; }
+.am-act:hover:not(:disabled) { border-color: var(--acc); }
+.am-act:disabled { opacity: .45; cursor: not-allowed; }
+.am-vest { margin-top: 12px; } .am-res { margin: 6px 0 0; font-weight: 600; color: var(--acc); }
+.am-menu { position: relative; display: inline-block; } .am-menu > summary { list-style: none; cursor: pointer; } .am-menu > summary::-webkit-details-marker { display: none; }
+.am-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 5; width: 280px; max-width: 80vw; display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: var(--r-m); background: var(--surface-4); border: 1px solid var(--line-strong, var(--line)); box-shadow: var(--elev-3, 0 8px 24px rgba(0,0,0,.45)); }
+.am-pop button { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 8px 10px; border: 0; border-radius: var(--r-s); background: none; color: var(--txt); font: inherit; cursor: pointer; }
+.am-pop button small { color: var(--mut); font-size: 11.5px; } .am-pop button:hover:not(:disabled) { background: var(--surface-2); } .am-pop button:disabled { opacity: .45; }
+.am-pop .hint { margin: 4px 8px; }
