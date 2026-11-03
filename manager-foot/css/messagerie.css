@@ -395,3 +395,4 @@
 .md-ch + .md-ch { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft, var(--line)); }
 .md-ch p { margin: 0 0 4px; font-size: 12.5px; } .md-ch .md-v { margin-left: 6px; }
 .md-cmp td, .md-cmp th { font-variant-numeric: tabular-nums; }
+.mx > .gutter { background: var(--line); cursor: col-resize; } .mx > .gutter:hover { background: var(--acc); }

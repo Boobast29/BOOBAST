@@ -36,6 +36,8 @@ function organiserFiche() {
   // bouton « Personnaliser » dans l'en-tête
   const tete = box.querySelector('.pm-head');
   tete?.insertAdjacentHTML('beforeend', '<button class="btn sm ghost pmf-perso" id="pmfPerso" title="Choisir les blocs affichés">Personnaliser</button>');
+  // « Chercher un remplaçant de ce profil » (js/profils-similaires.js) : toujours visible, même si le bloc Analyse est masqué
+  const sim = box.querySelector('#simFromPlayer'); if (sim && tete) { sim.classList.add('sm', 'ghost'); tete.querySelector('#pmfPerso')?.before(sim); }
   box.querySelector('#pmfPerso')?.addEventListener('click', e => {
     e.stopPropagation();
     let menu = box.querySelector('.pmf-menu'); if (menu) return menu.remove();

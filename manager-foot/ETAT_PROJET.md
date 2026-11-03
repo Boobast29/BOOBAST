@@ -1,3 +1,14 @@
+# État du projet — v97 (3 novembre 2026)
+
+**Tests réparés** (4 tests périmés par les refontes d'interface) :
+- `tools/test-competences-browser.js`, `tools/test-profils-similaires.js` : activent le bloc « Analyse » de la fiche (masqué par défaut).
+- `tools/test-prolongations.js` : réécrit pour la fenêtre de négociation actuelle (`#nW`, `#nS`, `#nA`).
+- `tools/integration20/test.cjs` : messagerie trois colonnes, liste et lecture redimensionnables (Split.js).
+**Corrections trouvées par ces tests** :
+- Prolongation : les salaires réservés (transferts à la visite médicale) comptent dans le plafond ; une offre bloquée par le club (président, trésorerie, montants invalides) n'est plus envoyée à l'agent et ne coûte plus de patience (transferts aussi).
+- Infobulle cachée ramenée à l'origine (elle élargissait la page sur mobile après un redimensionnement).
+- Bouton « Chercher un remplaçant de ce profil » toujours visible dans l'en-tête de la fiche.
+
 # État du projet — v96 (3 novembre 2026)
 
 **Vitesse** (`js/vitesse.js`) — monde étendu (51 championnats) : **1,3 s → 0,65 s par semaine**.
