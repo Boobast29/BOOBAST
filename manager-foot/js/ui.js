@@ -41,7 +41,7 @@ function avatar(p, size = 40, W = world()) {
   const real = p.fmUid || p.srcId || p.real;
   if (p.photo) {
     const fb = (real ? initialsSVG(p, size) : faceSVG(p, size, shirt)).replace(/"/g, '&quot;');
-    return `<span class="ph" style="width:${size}px;height:${size}px"><img src="${esc(p.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.outerHTML=this.dataset.fb" data-fb="${fb}"></span>`;
+    return `<span class="ph" style="width:${size}px;height:${size}px"><img src="${esc(p.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.altSrc){this.src=this.dataset.altSrc;this.dataset.altSrc='';}else this.parentNode.outerHTML=this.dataset.fb" data-alt-src="${esc(p.photoFallbackUrl || '')}" data-fb="${fb}"></span>`;
   }
   return real ? initialsSVG(p, size) : faceSVG(p, size, shirt);
 }
