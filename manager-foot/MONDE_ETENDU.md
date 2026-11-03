@@ -59,3 +59,21 @@ Dans une carrière existante, **Tous les pays → Actualiser les attributs docum
 Collecte dédiée : `python outils/enrichir_effectifs.py --libres-seulement --pages-libres 3` ; mettre `0` pour toutes les pages. `Completer_Joueurs_Libres.bat` lance ce mode complet sous Windows. `--libres` ajoute un lot de joueurs libres à la collecte habituelle des effectifs. Les pages sont filtrées sur le statut explicite « Free Agent » et la source FM26.
 
 La mise à jour d’une carrière écrit dans son emplacement de sauvegarde actif et conserve une copie avant modification. Les anciens profils homonymes sans UID empêchent un ajout ambigu de joueur libre, sans modification de leur contrat.
+
+### Enrichissement Transfermarkt, 3 novembre 2026
+1 942 profils rapprochés par nom normalisé et date de naissance exacte et unique.
+Export CC0 `dcaribou/transfermarkt-datasets`, arrêté au 6 juillet 2026 :
+biographie, taille, nationalité, agent, valeurs historiques, statistiques par saison
+(compétitions couvertes seulement, jusqu'au 28 juin), dix derniers transferts passés.
+Les retours de prêt annoncés après la date de l'export sont exclus.
+Ces champs restent distincts des statistiques et valeurs de simulation.
+Rui Patrício et Rafinha sont exclus des nouvelles recrues libres (retraités),
+Sergio Ramos est éligible selon sa fiche Transfermarkt sans club depuis janvier 2026.
+Toby Alderweireld est également marqué retraité. Ces quatre statuts proviennent
+des profils publics indexés : fraîcheur du cache inconnue. Le site direct impose
+une vérification humaine ; la liste entière n'a donc pas été vérifiée en direct.
+Les autres libres conservent le statut d'instantané FM26 non vérifié actuellement.
+Les carrières existantes peuvent charger les biographies avec « Actualiser les
+attributs documentés » ; aucun joueur déjà présent n'est supprimé ou libéré.
+Reproduction : `python outils/enrichir_fiches_transfermarkt.py DOSSIER_CSV_GZ`,
+puis `python outils/auditer_couverture_fmi.py`.

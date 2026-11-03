@@ -18,6 +18,17 @@
     if(source?.url && /^https:\/\//.test(source.url)){
       const link=document.createElement('a');link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';link.className='btn';link.textContent='Voir la fiche source';info.append(link);
     }
+    if(p.transfermarkt){
+      const tm=p.transfermarkt,details=document.createElement('p');
+      details.textContent=[tm.birthDate?'Naissance : '+tm.birthDate:null,tm.nationality,tm.heightCm?tm.heightCm+' cm':null,tm.foot?'Pied : '+tm.foot:null,tm.agent?'Agent : '+tm.agent:null].filter(Boolean).join(' · ');info.append(details);
+      const history=document.createElement('details'),title=document.createElement('summary');title.textContent='Historique Transfermarkt · export au '+tm.snapshotAsOf;history.append(title);
+      const note=document.createElement('p');note.textContent='Compétitions couvertes uniquement. Ces données historiques ne déterminent pas le contrat, la valeur ou les statistiques de cette carrière.';history.append(note);
+      for(const [season,stats] of Object.entries(tm.appearancesBySeason || {}).sort().reverse()){
+        const row=document.createElement('p');row.textContent=`${season} : ${stats.matches} matchs · ${stats.minutes} minutes · ${stats.goals} buts · ${stats.assists} passes décisives`;history.append(row);
+      }
+      for(const move of tm.transfers || []){const row=document.createElement('p');row.textContent=`${move.date} : ${move.from} → ${move.to}`;history.append(row);}
+      const link=document.createElement('a');link.href=tm.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Fiche Transfermarkt';history.append(link);info.append(history);
+    }
     box.append(info);return result;
   };
 })();
@@ -27,14 +38,14 @@ function actualiserAttributsCarriere(world,catalogue){
   const players=world.players.map(p=>{
     const source=p.fmUid && byUid.get(String(p.fmUid));
     if(!source || !source.attributes || Object.keys(source.attributes).length<30)return p;
-    if(p.dataQuality==='documented_attributes' && p.sourceProfile?.url===source.sourceUrl && p.sourceProfile?.database===source.sourceDatabase)return p;
+    if(JSON.stringify(p.transfermarkt)===JSON.stringify(source.transfermarkt) && JSON.stringify(p.transfermarktStatus)===JSON.stringify(source.transfermarktStatus) && p.dataQuality==='documented_attributes' && p.sourceProfile?.url===source.sourceUrl && p.sourceProfile?.database===source.sourceDatabase)return p;
     const cv=convertirJoueur(source,99),attrs={...p.attrs},base={...p.attrs0};
     for(const [key,value] of Object.entries(cv.attrs || {})){
       const delta=(p.attrs[key] || 0)-(p.attrs0?.[key] ?? p.attrs[key] ?? 0);
       base[key]=value;attrs[key]=Math.max(1,Math.min(20,value+delta));
     }
     count++;
-    return {...p,attrs,attrs0:base,detail20:cv.detail20,dataQuality:'documented_attributes',
+    return {...p,transfermarkt:source.transfermarkt,transfermarktStatus:source.transfermarktStatus,attrs,attrs0:base,detail20:cv.detail20,dataQuality:'documented_attributes',
       sourceProfile:{...p.sourceProfile,url:source.sourceUrl,database:source.sourceDatabase,updatedAt:catalogue.retrievedAt}};
   });
   const result={...world,players};delete result.pmap;delete result._pow;

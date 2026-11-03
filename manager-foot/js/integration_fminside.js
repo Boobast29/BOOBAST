@@ -1,3 +1,13 @@
+/* Les données Transfermarkt restent historiques, séparées des statistiques de carrière. */
+function appliquerBiographieTransfermarkt(player,source){
+  if(source.transfermarkt)player.transfermarkt=JSON.parse(JSON.stringify(source.transfermarkt));
+  if(source.transfermarktStatus)player.transfermarktStatus={...source.transfermarktStatus};
+  return player;
+}
+function estLibreDocumente(source){
+  const status=source.transfermarktStatus?.status;
+  return status!=='retired' && status!=='contracted' && (source.freeAgentSnapshot===true || status==='free');
+}
 /* Fusion dans la base des nouvelles carrières, par UID et club reconnu. */
 function preparerFusionFMInside(base, catalogue) {
   const monde = JSON.parse(JSON.stringify(base));
@@ -17,7 +27,7 @@ function preparerFusionFMInside(base, catalogue) {
     // Un homonyme sans UID n'est rapproché que dans le club source reconnu.
     const candidats = parUid.length ? parUid : clubs.length === 1 ? monde.players.filter(p => !p.fmUid && p.club === clubs[0].id && normal(p.name) === normal(source.name)) : [];
     if (candidats.length > 1 || (!candidats.length && clubs.length > 1)) { bilan.ambigus++; continue; }
-    if (!candidats.length && source.freeAgentSnapshot===true)continue;
+    if (!candidats.length && (source.freeAgentSnapshot===true || source.transfermarktStatus))continue;
     if (!candidats.length && (clubs.length !== 1 || source.sourceGender !== 'male')) { bilan.ignores++; continue; }
     const converti = convertirJoueur(source, 99);
     let p = candidats[0];
@@ -25,7 +35,7 @@ function preparerFusionFMInside(base, catalogue) {
       p = genPlayer(converti.pos, 10, {name:source.name, age:source.age, nat:'UNK', club:clubs[0].id, rep:clubs[0].rep});
       monde.players.push(p); bilan.ajoutes++;
     } else bilan.actualises++;
-    p.fmUid = uid;
+    p.fmUid = uid; appliquerBiographieTransfermarkt(p,source);
     p.attrs = {...p.attrs, ...converti.attrs}; p.attrs0 = {...p.attrs};
     p.detail20 = converti.detail20;
     p.pos = converti.pos; p.foot = converti.foot;
@@ -47,7 +57,7 @@ function ajouterJoueursLibresDocumentes(world,catalogue){
   let next=Math.max(0,...players.map(p=>+p.id||0))+1,ajoutes=0;
   for(const source of catalogue.players || []){
     const uid=String(source.fmUid || '');
-    if(!uid || known.has(uid) || source.freeAgentSnapshot!==true || source.sourceGender!=='male' || Object.keys(source.attributes || {}).length<30)continue;
+    if(!uid || known.has(uid) || !estLibreDocumente(source) || source.sourceGender!=='male' || Object.keys(source.attributes || {}).length<30)continue;
     if(players.some(p=>!p.fmUid && p.dataQuality!=='generated_filler' && nom(p.name)===nom(source.name)))continue;
     const cv=convertirJoueur(source,99);
     NEXT_PID=Math.max(NEXT_PID,next);
@@ -57,7 +67,7 @@ function ajouterJoueursLibresDocumentes(world,catalogue){
     if(Number.isFinite(source.potential))p.pot=Math.max(playerOvr(p),source.potential);
     p.wage=calcWage(p);p.wageEstimate=true;p.dataQuality='documented_attributes';
     p.sourceProfile={url:source.sourceUrl,database:source.sourceDatabase,freeAgentSnapshot:true,freeAgentCheckedAt:source.freeAgentSnapshotCheckedAt};
-    players.push(p);known.add(uid);ajoutes++;
+    appliquerBiographieTransfermarkt(p,source);players.push(p);known.add(uid);ajoutes++;
   }
   NEXT_PID=Math.max(NEXT_PID,next);
   const monde={...world,players};delete monde.pmap;delete monde._pow;

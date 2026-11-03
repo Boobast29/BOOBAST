@@ -6,6 +6,7 @@ const app=fs.readFileSync(`${root}/js/app.js`,'utf8');
 vm.runInContext(app.slice(app.indexOf('function importDatabase(raw)'),app.indexOf('function exportDatabase')),ctx);
 vm.runInContext(fs.readFileSync(`${root}/js/import_json_complet.js`,'utf8'),ctx);
 vm.runInContext(fs.readFileSync(`${root}/js/monde_etendu.js`,'utf8'),ctx);
+vm.runInContext(fs.readFileSync(`${root}/js/integration_fminside.js`,'utf8'),ctx);
 const index=JSON.parse(fs.readFileSync(`${root}/packs/monde-index.json`));
 for(const country of index.countries){
  const data=JSON.parse(zlib.gunzipSync(fs.readFileSync(`${root}/packs/${country.file}`)));
@@ -25,7 +26,6 @@ for(const country of index.countries){
 
 // Tous les pays d'une même carrière : calendrier, sauvegarde et promotions.
 const countries=index.countries.map(c=>JSON.parse(zlib.gunzipSync(fs.readFileSync(`${root}/packs/${c.file}`))));
-vm.runInContext(fs.readFileSync(`${root}/js/integration_fminside.js`,'utf8'),ctx);
 const mf=JSON.parse(fs.readFileSync(`${root}/packs/fminside-fm26.manifest.json`));
 const realCatalogue=JSON.parse(zlib.gunzipSync(Buffer.concat(mf.parts.map(p=>fs.readFileSync(`${root}/packs/${p.file}`)))));
 const all=ctx.construireMondeComplet(countries,realCatalogue);

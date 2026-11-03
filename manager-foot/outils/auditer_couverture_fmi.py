@@ -24,7 +24,7 @@ def audit(baseline=None):
         documented=sum(bool(p.get('attributes')) or str(p['fmUid']) in known for p in ps)
         country['detailedPlayers']=documented
         countries.append({'country':country['key'],'label':country['label'],'players':len(ps),'documentedPlayers':documented})
-    libres=[p for p in players if p.get('freeAgentSnapshot') is True and str(p['fmUid']) not in owners]
+    libres=[p for p in players if (p.get('freeAgentSnapshot') is True or p.get('transfermarktStatus',{}).get('status')=='free') and p.get('transfermarktStatus',{}).get('status') not in ('retired','contracted') and str(p['fmUid']) not in owners]
     index['freeAgentsDocumented']=len(libres)
     index['totals']['detailedPlayers']=sum(c['documentedPlayers'] for c in countries)
     index['fmInsideProfiles']=len(players);index['attributesOverlay']='fminside-fm26.json.gz'

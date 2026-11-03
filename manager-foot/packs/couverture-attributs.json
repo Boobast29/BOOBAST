@@ -1,11 +1,11 @@
 {
-  "auditedAt": "2026-11-03T19:19:36.853799+00:00",
+  "auditedAt": "2026-11-03T19:43:06.216893+00:00",
   "fmInsideProfiles": 2631,
   "attributesPerProfile": {
     "36": 2433,
     "38": 198
   },
-  "documentedFreeAgents": 150,
+  "documentedFreeAgents": 149,
   "freeAgentSourceVersion": "FM26 26.2.0",
   "uniqueUids": 2631,
   "documentedPlayersInGame": 2218,

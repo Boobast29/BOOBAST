@@ -6,7 +6,7 @@ async function ouvrirFMInside() {
   try {
     const data = await chargerCatalogueFMInside(), players = data.players || [];
     const status = document.querySelector('#fmiStatus');
-    status.textContent = `${players.length} fiches détaillées disponibles. Données Football Manager, situation réelle actuelle non vérifiée. Salaires mensuels = hebdomadaires × 52 ÷ 12. Couverture partielle du site. ${players.filter(p=>p.freeAgentSnapshot).length} profils libres dans la source FM26.`;
+    status.textContent = `${players.length} fiches détaillées disponibles. Données Football Manager, situation réelle actuelle non vérifiée. Salaires mensuels = hebdomadaires × 52 ÷ 12. Couverture partielle du site. ${players.filter(estLibreDocumente).length} profils libres proposés après recoupement des sources.`;
     const integrer = document.createElement('button');
     integrer.className = 'btn primary'; integrer.textContent = 'Intégrer aux nouvelles carrières';
     status.after(integrer);
@@ -27,7 +27,7 @@ async function ouvrirFMInside() {
       page=Math.min(page,Math.max(0,Math.ceil(found.length/pageSize)-1));
       document.querySelector('#fmiCount').textContent=`${found.length} résultats · page ${page+1}/${Math.max(1,Math.ceil(found.length/pageSize))}`;
       document.querySelector('#fmiPrev').disabled=page===0;document.querySelector('#fmiNext').disabled=(page+1)*pageSize>=found.length;
-      target.innerHTML = found.slice(page*pageSize,(page+1)*pageSize).map(p => `<button class="btn" data-uid="${esc(p.fmUid)}">${esc(p.name)} · ${esc(p.freeAgentSnapshot?'Libre (source FM26)':p.club || 'Club inconnu')} · ${esc(p.positions || '')}</button>`).join('') || '<p>Aucun résultat.</p>';
+      target.innerHTML = found.slice(page*pageSize,(page+1)*pageSize).map(p => `<button class="btn" data-uid="${esc(p.fmUid)}">${esc(p.name)} · ${esc(p.transfermarktStatus?.status==='retired'?'Retraité (Transfermarkt)':estLibreDocumente(p)?'Libre (instantané source)':p.club || 'Club inconnu')} · ${esc(p.positions || '')}</button>`).join('') || '<p>Aucun résultat.</p>';
       target.querySelectorAll('[data-uid]').forEach(b => b.onclick = () => {
         const p = players.find(p => p.fmUid === b.dataset.uid);
         document.querySelector('#fmiDetail').innerHTML = `<h2>${esc(p.name)}</h2><p>Base ${esc(p.sourceDatabase)} · ${esc(p.age)} ans · ${esc(p.foot || '')}</p><p>Contrat source : ${esc(p.contractEndText || 'Inconnu')} · Salaire mensuel source : ${p.wageMonthly == null ? 'Inconnu' : money(p.wageMonthly)}</p><p>Niveau : ${esc(p.rating ?? 'Inconnu')} · Potentiel : ${esc(p.potential ?? 'Inconnu')}</p><table><thead><tr><th>Attribut FMInside</th><th>Note / 99</th></tr></thead><tbody>${Object.entries(p.attributes).map(([k,v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</tbody></table><a href="${esc(p.sourceUrl)}" target="_blank" rel="noopener noreferrer">Fiche source FMInside</a>`;
