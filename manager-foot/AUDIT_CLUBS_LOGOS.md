@@ -15,6 +15,8 @@ Les **355 clubs ont un nom non vide et distinct**, un identifiant distinct et un
 
 Ce contrôle est **structurel** : il ne confirme pas que les 355 URL sont encore accessibles, que chaque image représente le bon club, ni que les divisions et effectifs de l'instantané FM26 correspondent à la saison 2026/27. Les clubs promus et relégués doivent être rapprochés des listes officielles de chaque championnat avant d'annoncer une base à jour. Les droits de réutilisation des images ne sont pas établis par cet audit.
 
+**Écart confirmé sur les divisions :** le pack place encore Burnley, West Ham et Wolverhampton en Premier League et Coventry, Hull et Ipswich en deuxième division. La [Premier League officielle](https://www.premierleague.com/en/news/4365156) indique l'inverse pour 2026/27. La [liste officielle de LaLiga](https://www.laliga.com/en-US/laliga-easports/clubs) inclut également Málaga, Racing et Deportivo, alors que le pack conserve Girona, Mallorca et Oviedo en première division. Les noms de clubs existent bien dans la base, mais les affectations des divisions sont celles de l'instantané source et doivent être actualisées séparément.
+
 Relancer le contrôle après un changement de pack :
 
 ```bash
