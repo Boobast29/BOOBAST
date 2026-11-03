@@ -88,8 +88,9 @@ function applyRoleNav() {
       ['Effectif', [['squad', '👥', 'Effectif'], ['coach', '🧢', 'Entraîneur'], ['meetings', '🗣', 'Réunions'], ['dressing', '🤝', 'Vestiaire'], ['medical', '🏥', 'Infirmerie'], ['youth', '🌱', 'Formation']]],
       ['Recrutement', [['transfers', '💱', 'Mercato'], ['deals', '📝', 'Négociations'], ['staff', '🧑‍💼', 'Staff']]],
       ['Club', [['finances', '💶', 'Finances'], ['club', '🏟', 'Club'], ['fixtures', '🗓', 'Résultats'], ['comps', '🏆', 'Classements'], ['stats', '📊', 'Statistiques'], ['analysis', '📈', 'Analyse']]],
+      ['Direction', [['direction', '◆', 'Décisions & délégation'], ['compare', '⇄', 'Comparer les joueurs']]],
       ['Outils', [['base', '🔎', 'Base mondiale'], ['editor', '✏', 'Éditeur'], ['options', '⚙', 'Options']]]);
-  } else __navGroupsCoach.forEach(g => NAV_GROUPS.push([g[0], g[1].slice()]));
+  } else { __navGroupsCoach.forEach(g => NAV_GROUPS.push([g[0], g[1].slice()])); NAV_GROUPS.push(['Direction', [['direction', '◆', 'Décisions & délégation'], ['compare', '⇄', 'Comparer les joueurs']]]); }
   NAV_FLAT.length = 0; NAV_FLAT.push(...NAV_GROUPS.flatMap(g => g[1]));
 }
 const __enterGame2 = enterGame;
