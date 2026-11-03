@@ -38,7 +38,7 @@ function clubOf(id, W = world()) { return W.clubs.find(c => c.id === id); }
 function avatar(p, size = 40, W = world()) {
   const club = p.club != null ? clubOf(p.club, W) : null;
   const shirt = club ? club.colors : ['#555', '#999'];
-  const real = p.srcId || p.real;
+  const real = p.fmUid || p.srcId || p.real;
   if (p.photo) {
     const fb = (real ? initialsSVG(p, size) : faceSVG(p, size, shirt)).replace(/"/g, '&quot;');
     return `<span class="ph" style="width:${size}px;height:${size}px"><img src="${esc(p.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.outerHTML=this.dataset.fb" data-fb="${fb}"></span>`;
