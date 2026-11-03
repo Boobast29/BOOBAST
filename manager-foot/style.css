@@ -763,3 +763,4 @@ table.triable th[aria-sort=descending]::after { content: " ▼"; font-size: 9px;
 .c1n2 b { display: block; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
 .c1n2 small { display: block; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .c1n2 i { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--accent, #3fb27f); }
+.reel-club .kit-img { width: 56px; height: auto; margin-left: auto; flex: none; }

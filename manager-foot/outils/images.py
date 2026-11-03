@@ -80,6 +80,8 @@ class Ressources:
         """Renvoie (chemin_local, url) connus pour la ressource."""
         if typ == 'wd':  # personne Wikidata (entraîneur, joueur d'effectif) : fichier Wikimedia Commons
             return (None, enrichissements.image_wd(con, ident))
+        if typ == 'maillot':  # maillots : uniquement ajoutés à la main ou par un pack local
+            return (None, None)
         if typ == 'joueur':
             r = con.execute('SELECT photo_local, photo_url FROM joueurs WHERE id=?', (ident,)).fetchone()
         else:

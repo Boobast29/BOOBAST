@@ -108,6 +108,19 @@ def court(nom):
     return (base[:3] or 'CLB')
 
 
+_MANUELS = {}
+
+
+def image_manuelle(con, typ, ident):
+    """Image ajoutée à la main ou par un pack local (outils/importer_pack_fm.py) : table images, statut « manuel »."""
+    if typ not in _MANUELS:
+        try:
+            _MANUELS[typ] = {r[0] for r in con.execute("SELECT id FROM images WHERE type=? AND statut='manuel'", (typ,))}
+        except Exception:
+            _MANUELS[typ] = set()
+    return str(ident) in _MANUELS[typ]
+
+
 def joueur_jeu(row, con):
     fiche = unpack(con.execute('SELECT fiche FROM fiches WHERE id=?', (row['id'],)).fetchone()[0])
     cap = fiche.get('capacites') or {}
@@ -123,7 +136,7 @@ def joueur_jeu(row, con):
         'ovr99': row['niveau99'], 'pot99': row['pot99'],
         'foot': None,
         'weakFoot': cap.get('pied_faible_sur_5'), 'skills': cap.get('gestes_techniques_sur_5'),
-        'photo': f'/img/joueur/{row["id"]}' if (row['photo_local'] or row['photo_url']) else None,
+        'photo': f'/img/joueur/{row["id"]}' if (row['photo_local'] or row['photo_url'] or image_manuelle(con, 'joueur', row['id'])) else None,
         'real': True, 'quality': row['qualite'],
         **enrichissements.infos_joueur(con, row['tm_id']),
     }
@@ -195,7 +208,8 @@ def construire(con, pays):
             'srcId': cid, 'name': nom, 'short': court(nom), 'colors': couleurs(cid), 'rep': rep,
             'div': div, 'foreign': foreign, 'country': PAYS.get(comp['pays'], comp['pays'][:3].upper()), 'countryLabel': comp['pays'],
             'tier': tier, 'compSrc': comp['id'], 'compName': comp['nom'], 'group': comp['groupe'],
-            'logo': f'/img/club/{cid}' if c and (c['logo_local'] or c['logo_url']) else None,
+            'logo': f'/img/club/{cid}' if (c and (c['logo_local'] or c['logo_url'])) or image_manuelle(con, 'club', cid) else None,
+            'kitImg': f'/img/maillot/{cid}' if image_manuelle(con, 'maillot', cid) else None,
             'realPlayers': sum(1 for j in effectif if not j.get('estimated')), 'estimatedPlayers': sum(1 for j in effectif if j.get('estimated')), 'linkProposed': lien, 'otherProfiles': hist, 'identityStatus': c['statut_identite'] if c else 'inconnu',
             'stadium': None, 'capacity': None,
         }

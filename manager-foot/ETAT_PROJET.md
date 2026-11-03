@@ -1,4 +1,16 @@
-# État du projet — v37 (3 novembre 2026)
+# État du projet — v38 (3 novembre 2026)
+
+## v38 — import local des packs graphiques Football Manager (visages, logos, maillots)
+- `outils/importer_pack_fm.py` (+ `Importer_Pack_FM.bat`) : importe sur ton PC un pack déjà téléchargé (FMEurope, sortitoutsi…).
+  Les images de ces packs sont nommées par UID Football Manager, souvent via un `config.xml`. On retrouve le joueur ou le club
+  grâce à une liste exportée depuis FM (colonnes UID + Nom, et date de naissance pour départager les homonymes ; format page web ou texte).
+  Les images vont dans `donnees_jeu/cache_images` comme ajouts manuels, prioritaires sur les téléchargements. Option `--essai` pour
+  vérifier avant d'importer, `--retirer` pour tout enlever.
+- Les maillots ont un nouveau type d'image (`/img/maillot/…`), affiché sur la fiche du club en mode vrais clubs.
+- Rien de ces packs n'est versionné ni publié : leurs logos et photos appartiennent à leurs ayants droit. fmeurope.net est aussi
+  inaccessible depuis l'environnement de développement. Les « vrais noms » de FMEurope corrigent les noms sous licence dans Football Manager ;
+  le jeu utilise déjà les vrais noms des clubs et des compétitions en mode réel.
+Test : `python outils/tests_pack_fm.py` (mini-base et mini-pack synthétiques).
 
 ## v37 — palmarès réel, adaptation des recrues, noms de 70 pays
 - **Palmarès réel** (`js/palmares_reel.js`, `outils/palmares_reel.py`) : classements recalculés depuis openfootball/football.json (CC0)
