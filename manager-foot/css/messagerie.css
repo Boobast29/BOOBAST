@@ -355,3 +355,28 @@
 .rr-g small, .rr-comp small { display: block; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); margin-bottom: 3px; }
 .rr-g span { display: inline-block; margin: 0 4px 4px 0; padding: 2px 7px; border-radius: var(--r-pill); background: var(--surface-2); font-size: 12px; }
 .rr-comp { margin: 6px 0 0; font-size: 12.5px; }
+
+/* Entraînement : planning, charge, risque (js/entrainement_plus.js) */
+.ep-plan { margin-bottom: var(--esp-4, 16px); }
+.ep-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.ep-charge { display: flex; align-items: baseline; gap: 4px; } .ep-charge small { font-size: var(--fs-2xs); color: var(--mut); text-transform: uppercase; letter-spacing: .08em; }
+.ep-charge b { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.ep-charge b.ok { color: var(--acc); } .ep-charge b.warn { color: var(--yel); } .ep-charge b.bad { color: #ff9aa2; }
+.ep-jours { list-style: none; margin: 10px 0 8px; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.ep-jours li { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: var(--r-s); background: var(--surface-2); text-align: center; min-width: 0; }
+.ep-jours li small { font-size: var(--fs-2xs); color: var(--mut); text-transform: uppercase; letter-spacing: .08em; }
+.ep-jours li em { font-style: normal; font-size: 11px; line-height: 1.25; color: var(--txt-2); overflow-wrap: anywhere; }
+.ep-bar { display: flex; align-items: flex-end; width: 14px; height: 48px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.ep-bar i { display: block; width: 100%; background: var(--acc); border-radius: 3px 3px 0 0; }
+.ep-jours li.m { background: color-mix(in srgb, var(--acc) 14%, var(--surface-2)); } .ep-jours li.m em { color: var(--txt); font-weight: 600; } .ep-jours li.m .ep-bar i { background: var(--yel); }
+.ep-jours li.z em { color: var(--mut); }
+.ep-lect { margin: 0; padding: 6px 10px; border-left: 3px solid var(--acc); background: var(--surface-2); border-radius: var(--r-s); font-size: 12.5px; }
+.ep-lect.warn { border-color: var(--yel); } .ep-lect.bad { border-color: var(--red); }
+.ep-risk { padding: 1px 7px; border-radius: var(--r-pill); font-size: 11px; font-weight: 600; background: var(--surface-3); }
+.ep-risk.ok { color: var(--mut); } .ep-risk.warn { background: color-mix(in srgb, var(--yel) 20%, transparent); color: var(--yel); } .ep-risk.bad { background: color-mix(in srgb, var(--red) 22%, transparent); color: #ff9aa2; }
+.ep-men { font: inherit; font-size: 11px; padding: 2px 8px; border-radius: var(--r-pill); border: 1px solid var(--line); background: transparent; color: var(--mut); cursor: pointer; }
+.ep-men.on { border-color: var(--blue); color: var(--blue); background: color-mix(in srgb, var(--blue) 14%, transparent); }
+.ep-effet { margin-top: var(--esp-4, 16px); }
+.ep-gains { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; } .ep-gains span { padding: 3px 9px; border-radius: var(--r-pill); background: var(--surface-2); font-size: 12px; } .ep-gains b { color: var(--acc); }
+@media (max-width: 640px) { .ep-jours { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.ep-ds { margin-top: var(--esp-4, 16px); } .ep-ds .ep-plan, .ep-ds .ep-effet { margin: 0; }

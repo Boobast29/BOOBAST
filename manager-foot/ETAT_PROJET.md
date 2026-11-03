@@ -1,3 +1,14 @@
+# État du projet — v94 (3 novembre 2026)
+
+**Entraînement plus visible** (`js/entrainement_plus.js`) :
+- Planning de la semaine : 7 jours, séance du jour selon le programme, barre de charge par jour, jour de match mis en avant.
+- Charge de la semaine (0-100) et sa lecture (récupération, progression, risque).
+- Risque de blessure à l'entraînement par joueur (même formule que le moteur : charge, condition, fragilité, âge, rechute, staff médical) : faible / modéré / élevé.
+- Joueur ménagé : risque ×0,4, +6 de condition, mais pas de progression par les séances.
+- Effet des séances : attributs gagnés sur les 6 dernières semaines, joueurs les plus susceptibles de progresser.
+- Directeur sportif : planning et effets visibles sur la page Entraîneur (séances décidées par lui).
+- Aucun tirage ajouté (partie identique tant qu'aucun joueur n'est ménagé).
+
 # État du projet — v93 (3 novembre 2026)
 
 ## Staff des autres clubs et vivier d'entraîneurs (js/staff_ia.js)
