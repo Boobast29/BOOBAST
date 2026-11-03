@@ -1,3 +1,11 @@
+# État du projet — v95 (3 novembre 2026)
+
+**Écran de match** (`js/match_direct.js`) :
+- Causerie de mi-temps / avant prolongations : écran « Réactions du vestiaire » avec l'effet chiffré sur l'équipe (% d'intensité jusqu'à la fin) et la réaction de chaque joueur (motivé, réceptif, indifférent, nerveux, agacé) selon son caractère (pression, tempérament).
+- Discours d'avant-match : deux réactions marquantes dans le fil du match.
+- Changements en direct (remplacement, dispositif, mentalité, consignes, marquage) datés ; 5 minutes après, comparaison même durée avant / après (xG pour-contre, tirs, possession) et verdict « Ça marche / Sans effet net / Ça ne marche pas ».
+- Photo des stats à chaque minute (même en vitesse instantanée). Aucun tirage ajouté au match.
+
 # État du projet — v94 (3 novembre 2026)
 
 **Entraînement plus visible** (`js/entrainement_plus.js`) :
