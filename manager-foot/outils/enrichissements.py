@@ -90,6 +90,10 @@ def infos_joueur(con, tm_id):
         t = con.execute('SELECT date, de_nom, vers_nom, indemnite, valeur FROM tm_transferts WHERE joueur_tm=? ORDER BY date DESC LIMIT 6', (str(tm_id),)).fetchall()
         if t:
             out['transfersReal'] = [[x['date'], x['de_nom'], x['vers_nom'], x['indemnite'], x['valeur']] for x in t]
+    if a_table(con, 'tm_valeurs'):  # historique de la valeur marchande (10 derniers relevés)
+        t = con.execute('SELECT date, valeur FROM tm_valeurs WHERE joueur_tm=? AND valeur IS NOT NULL ORDER BY date DESC LIMIT 10', (str(tm_id),)).fetchall()
+        if t:
+            out['valueHistReal'] = [[x['date'], x['valeur']] for x in reversed(t)]
     if a_table(con, 'tm_saisons'):  # 3 dernières saisons réelles (compétitions couvertes par transfermarkt-datasets)
         t = con.execute('SELECT * FROM tm_saisons WHERE joueur_tm=? ORDER BY saison DESC LIMIT 3', (str(tm_id),)).fetchall()
         if t:
@@ -162,3 +166,64 @@ def maillot(con, cid):
         out['away'] = json.loads(ext['couleurs'])
     out = {k: v for k, v in out.items() if v}
     return out if any(k in out for k in ('home', 'away', 'manufacturer', 'sponsor')) else None
+
+
+# ---------- effectifs actuels Transfermarkt ----------
+_MV = {}
+POSTES_TM = {'Goalkeeper': 'GB', 'Centre-Back': 'DC', 'Left-Back': 'DG', 'Right-Back': 'DD', 'Defensive Midfield': 'MDC', 'Central Midfield': 'MC',
+             'Attacking Midfield': 'MOC', 'Left Midfield': 'MC', 'Right Midfield': 'MC', 'Left Winger': 'AG', 'Right Winger': 'AD',
+             'Second Striker': 'BU', 'Centre-Forward': 'BU'}
+POSTES_TM_LARGES = {'Goalkeeper': 'GB', 'Defender': 'DC', 'Midfield': 'MC', 'Attack': 'BU'}
+
+
+def poste_tm(poste, sous_poste):
+    return POSTES_TM.get(sous_poste or '') or POSTES_TM_LARGES.get(poste or '') or 'MC'
+
+
+def _liens_tm(con):
+    if not (a_table(con, 'liens_tm') and a_table(con, 'tm_joueurs')):
+        return {}, {}
+    tm_de = {r['id']: r['tm'] for r in con.execute("SELECT id, tm FROM liens_tm WHERE type='club'")}
+    inverse = {}
+    for cid, tm in tm_de.items():
+        inverse.setdefault(tm, []).append(cid)
+    return tm_de, {tm: v[0] for tm, v in inverse.items() if len(v) == 1}  # club Transfermarkt ambigu : ignoré
+
+
+def _saison_recente(con):
+    r = _un(con, 'SELECT max(derniere_saison) FROM tm_joueurs', ())
+    return (r[0] or 0) - 1 if r else 0
+
+
+def mouvements_tm(con):
+    """Joueurs notés dont le club actuel Transfermarkt diffère du club de la base.
+    Retourne ({joueur_id: club_id d'arrivée}, {joueur_id parti hors du monde couvert})."""
+    k = id(con)
+    if k in _MV:
+        return _MV[k]
+    tm_de, inverse = _liens_tm(con)
+    vers, partis = {}, set()
+    if tm_de:
+        recente = _saison_recente(con)
+        for r in con.execute('SELECT j.id, j.club_id, t.club_tm, t.derniere_saison FROM joueurs j JOIN tm_joueurs t ON t.tm = j.tm_id '
+                             'WHERE j.club_id IS NOT NULL AND t.club_tm IS NOT NULL'):
+            if (r['derniere_saison'] or 0) < recente or tm_de.get(r['club_id']) == r['club_tm']:
+                continue
+            if r['club_tm'] in inverse:
+                vers[r['id']] = inverse[r['club_tm']]
+            elif r['club_id'] in tm_de:  # son ancien club est bien couvert : il l'a quitté pour un club hors du monde
+                partis.add(r['id'])
+    _MV[k] = (vers, partis)
+    return _MV[k]
+
+
+def effectif_tm(con, cid, deja_tm):
+    """Joueurs de l'effectif actuel Transfermarkt du club absents de la base (niveau estimé dans le jeu par la valeur marchande)."""
+    tm_de, _ = _liens_tm(con)
+    tm = tm_de.get(cid)
+    if not tm:
+        return []
+    connus = {r[0] for r in con.execute('SELECT tm_id FROM joueurs WHERE tm_id IS NOT NULL')}
+    recente = _saison_recente(con)
+    return [dict(r) for r in con.execute('SELECT * FROM tm_joueurs WHERE club_tm=? AND coalesce(derniere_saison, 0) >= ? ORDER BY valeur DESC', (tm, recente))
+            if r['tm'] not in connus and r['tm'] not in deja_tm]

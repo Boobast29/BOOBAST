@@ -130,7 +130,12 @@ function buildRealWorld(scn) {
 function fictif(p) { p.fictional = true; p.regenId = 'fictif_' + p.id; p.value = calcValue(p); return p; }
 function realPlayer(sp, clubId, rep) {
   // profil réel sans évaluation : attributs ESTIMÉS selon le niveau du club (couche de jeu séparée, badge « E »)
-  const q = 8.6 + (rep - 50) / 40 * 5.2 - (sp.age != null && sp.age < 21 ? 1.5 : 0);
+  let q = 8.6 + (rep - 50) / 40 * 5.2 - (sp.age != null && sp.age < 21 ? 1.5 : 0);
+  // valeur marchande Transfermarkt connue : niveau estimé d'après la valeur (≈ 68 pour 1 M€, 77 pour 10 M€, 85 pour 100 M€ ; les jeunes valent surtout leur potentiel)
+  if (sp.estimated && sp.marketValue > 0) {
+    const o99 = clamp(68 + 8.5 * Math.log10(sp.marketValue / 1e6) - (sp.age != null && sp.age <= 21 ? 4 : 0) + (sp.age != null && sp.age >= 31 ? 2 : 0), 45, 90);
+    q = clamp(8.6 + ((o99 - 50) * 1.45 - 10) * .13, 4, 17);
+  }
   const p = genPlayer(sp.pos, sp.estimated ? q : 10, { club: clubId, age: sp.age ?? 25, nat: sp.nat || 'FRA', name: sp.name, photo: sp.photo, rep });
   if (sp.estimated) p.estimated = true;
   else for (const k in ATTRS) if (sp.attrs[k] != null) p.attrs[k] = sp.attrs[k];

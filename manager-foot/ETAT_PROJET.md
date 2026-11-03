@@ -1,3 +1,14 @@
+# État du projet — v63 (3 novembre 2026)
+
+## Effectifs actuels Transfermarkt (transfermarkt-datasets, CC0)
+- `outils/importer_transfermarkt.py` : + `player_valuations` → table `tm_valeurs` (historique de la valeur marchande).
+- `outils/enrichissements.py` : `mouvements_tm` (joueur noté dont le club actuel Transfermarkt diffère : transfert récent vers un club du monde, ou départ hors du monde), `effectif_tm` (joueurs de l'effectif actuel absents de la base), `poste_tm` (postes Transfermarkt → postes du jeu), historique des valeurs dans `infos_joueur`.
+- `outils/scenario.py` : effectifs construits d'après Transfermarkt (arrivées, départs, joueurs manquants jusqu'à 28 par club, avec valeur, contrat, pied, agent, sélections, saisons et transferts réels).
+- `js/monde.js` : niveau des joueurs estimés calculé d'après la valeur marchande (≈ 68 pour 1 M€, 77 pour 10 M€, 85 pour 100 M€, ajusté selon l'âge).
+- Fiche joueur : courbe de la valeur marchande réelle.
+- Test : `outils/tests_transfermarkt_effectifs.py` (format réel des fichiers, valeurs d'exemple) : 7/7.
+- Limites : le stockage du jeu de données (R2, Kaggle) et transfermarkt.com sont bloqués depuis cet environnement : import à lancer sur ton PC (`Enrichir_Base.bat`). Collecte du jeu de données en pause depuis juillet 2026 (données antérieures disponibles). Photos Transfermarkt non utilisées (droits des photographes) ; pas d'aspiration directe du site (conditions d'utilisation).
+
 # État du projet — v62 (3 novembre 2026)
 
 ## Réalisme des matchs (js/realisme_match.js)
