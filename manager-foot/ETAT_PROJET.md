@@ -1,4 +1,13 @@
-# État du projet — v45 (3 novembre 2026)
+# État du projet — v46 (3 novembre 2026)
+
+## v46 — avatars cohérents avec l'origine
+- `js/visages_regions.js` : la teinte de peau des avatars générés suit maintenant la grande région d'origine du joueur
+  (sous-régions de la table des pays intégrée). Avant, elle était tirée au hasard. La diversité reste partout (binationaux,
+  diasporas). Le choix se fait par empreinte, sans tirage : le hasard de la partie ne change pas.
+  Teinte moyenne (0 claire à 5 foncée) : Suède 1,0, France 1,7, Espagne 1,6, Japon 1,3, Maroc 2,6, Brésil 2,8, Sénégal 4,4.
+- emilmirzayev/fm-ai-face-generator (MIT) : la génération de visages par IA passe par un service payant (DeepInfra, clé d'API),
+  elle n'est donc pas intégrée. Seule l'idée des visages par région est reprise.
+Test : `tests/visages_regions.js`. Simulation longue sans erreur ; audit des écrans sans erreur.
 
 ## v45 — prévisions : scores probables et fin de saison simulée
 - `js/previsions.js` : modèle de Poisson corrigé de Dixon-Coles (`dcTau`, `poissonPmf`, `poissonSample`, repris de
