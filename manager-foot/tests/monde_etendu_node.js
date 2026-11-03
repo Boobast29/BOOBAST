@@ -22,3 +22,32 @@ for(const country of index.countries){
   console.log(country.label,group.name,expected,'clubs source',world.sourceCoverage.sourcePlayers,'joueurs source');
  }
 }
+
+// Tous les pays d'une même carrière : calendrier, sauvegarde et promotions.
+const countries=index.countries.map(c=>JSON.parse(zlib.gunzipSync(fs.readFileSync(`${root}/packs/${c.file}`))));
+const all=ctx.construireMondeComplet(countries);
+assert.equal(all.clubs.length,355);assert.equal(all.sourceCoverage.countries.length,5);
+assert.equal(new Set(all.players.map(p=>p.id)).size,all.players.length);
+ctx.setupEuropean=()=>{};ctx.news=()=>{};
+vm.runInContext(fs.readFileSync(`${root}/js/monde_multinational.js`,'utf8'),ctx);
+all.clubId=all.clubs.find(c=>c.worldCountry==='France').id;all.season=2026;all.week=0;all.inbox=[];
+ctx.setupSeason(all);
+const leagues=ctx.liguesDuMonde(all);
+assert.equal(leagues.length,18);
+assert.equal(new Set(leagues.flatMap(l=>l.clubs)).size,355);
+for(const l of leagues)assert.equal(new Set(l.clubs.map(id=>all.clubs.find(c=>c.id===id).worldCountry)).size,1);
+ctx.simulerAutresPays(all,ctx.leagueRoundsTotal(all)-1);
+for(const l of leagues.filter(l=>l.type==='worldLeague')){
+ assert(l.fixtures.flat().every(f=>f.res));
+ assert(ctx.standings(all,l.id).every(r=>r.p===2*(l.clubs.length-1)));
+}
+assert(Object.values(all.worldCups).every(c=>c.winner));
+const roundtrip=JSON.parse(JSON.stringify(all));assert.equal(ctx.liguesDuMonde(roundtrip).length,18);
+const affiliation=new Map(all.clubs.map(c=>[c.id,c.worldCountry]));
+const counts=new Map(leagues.map(l=>[l.country+':'+l.sourceUid,l.clubs.length]));
+ctx.promotionsParPays(all,{promoted:[],relegated:[]},leagues);
+for(const c of all.clubs)assert.equal(c.worldCountry,affiliation.get(c.id));
+const actual=new Map();for(const c of all.clubs){const k=c.worldCountry+':'+c.worldCompetitionUid;actual.set(k,(actual.get(k)||0)+1);}
+for(const [k,n] of counts)assert.equal(actual.get(k),n,'Les mouvements doivent préserver les tailles de chaque groupe');
+ctx.setupSeason(all);assert.equal(ctx.liguesDuMonde(all).length,18);
+console.log('Carrière multi-pays validée : 355 clubs, 18 ligues, saison étrangère complète, coupes, sauvegarde et promotions sans changement de pays.');

@@ -12,7 +12,7 @@ def construire():
     with zipfile.ZipFile(io.BytesIO(content)) as z:
         name = next(n for n in z.namelist() if n.endswith('catalogue_fmb_v15.json'))
         data = json.loads(z.read(name))
-    fmi = {str(p['fmUid']):p for p in json.loads((PACKS/'fminside-fm26.json').read_text())['players']}
+    fmi = {str(p['fmUid']):p for p in json.loads(gzip.decompress((PACKS/'fminside-fm26.json.gz').read_bytes()) if (PACKS/'fminside-fm26.json.gz').exists() else (PACKS/'fminside-fm26.json').read_bytes())['players']}
     details = {(p['entity_type'],str(p['fm_uid'])):p for p in data['detailed_profiles']}
     clubs = {str(c['fm_uid']):c for c in data['clubs']}
     memberships = collections.defaultdict(list)
