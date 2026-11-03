@@ -71,7 +71,7 @@ function meter(v, label = '') {
   const cls = v >= 60 ? 'good' : v >= 35 ? 'mid' : 'bad';
   return `<span class="meter ${cls}" title="${esc(label)} ${Math.round(v)}/100"><i style="width:${clamp(v, 0, 100)}%"></i></span>`;
 }
-function natFlag(code) { const n = NATIONS.find(x => x[0] === code); return `<span class="nat" title="${esc(n ? n[1] : code)}">${esc(code)}</span>`; }
+function natFlag(code) { if (!code || code === 'UNK') return '<span class="nat nat-inconnue" title="Nationalité non renseignée dans la source">—</span>'; const n = NATIONS.find(x => x[0] === code); return `<span class="nat" title="${esc(n ? n[1] : code)}">${esc(code)}</span>`; }
 function status(p) {
   let s = '';
   if (p.injury > 0) s += `<span class="tag red" title="${esc(p.inj?.name || 'Blessé')}">✚ ${typeof fmtDays === 'function' ? fmtDays(p.injury) : p.injury}</span>`;

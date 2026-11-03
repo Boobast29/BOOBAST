@@ -1,3 +1,16 @@
+# État du projet — v79 (3 novembre 2026)
+
+## Préférences de partie (js/preferences_partie.js) — au début de chaque nouvelle partie, puis dans Options
+- Championnats simulés : décocher ceux qu'on ne veut pas (championnats réels ajoutés ; clubs et joueurs retirés pour toute la partie, semaines plus rapides).
+- Joueurs non observés : fourchette par attribut ou « ? » partout. La fourchette n'est plus centrée sur la vraie valeur (avant : v ± 2, qui la révélait) ; largeur selon le recruteur.
+- Note globale masquée (comme Football Manager) : badges de note et colonnes « Note » cachés partout, jugement sur les attributs.
+- Messages : normal (6 par semaine) ou peu (3) ; au-delà, dans le résumé de la semaine (questions, blessures, direction et résultats toujours envoyés).
+
+## Corrections monde étendu
+- Effectif : onglets Équipe première / Réserve / Tous (+ lien U19) ; avant, 92 joueurs mélangés.
+- Nationalité absente de la source : « — » au lieu de « UNK ».
+- Menu : le bouton « Tous les pays » écrasait le menu de gauche.
+
 # État du projet — v78 (3 novembre 2026)
 
 ## Les 40 meilleurs championnats du monde et plus (monde étendu)

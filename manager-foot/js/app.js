@@ -383,13 +383,13 @@ function matchReport(key) {
 //  Effectif
 // ============================================================
 let SQUAD_SORT = { k: 'pos', d: 1 };
-let SQUAD_LINE = '';
+let SQUAD_LINE = '', SQUAD_EQUIPE = 'A'; // A : équipe première, R : réserve, T : tous (les U19 sont dans Formation)
 let SQUAD_VIEW = 'gen';
 const POS_ORDER = Object.keys(ROLES);
 function vSquad(el, clubId = G.clubId) {
   const mine = clubId === G.clubId;
   const club = getClub(G, clubId);
-  let list = clubPlayers(G, clubId).filter(p => !p.academy);
+  let list = clubPlayers(G, clubId).filter(p => !p.academy && (SQUAD_EQUIPE === 'T' || (SQUAD_EQUIPE === 'R') === !!p.reserve));
   if (SQUAD_LINE) list = list.filter(p => ROLES[p.pos].line === SQUAD_LINE);
   const key = SQUAD_SORT.k, d = SQUAD_SORT.d;
   const val = p => ({ num: p.num || 99, pos: POS_ORDER.indexOf(p.pos) * 1000 - playerOvr(p), name: p.name, age: p.age, ovr: playerOvr(p), pot: p.pot, fit: p.fit, mor: p.morale, val: p.value, wage: p.wage, apps: p.stats.apps, goals: p.stats.goals, rat: p.stats.apps ? p.stats.rating / p.stats.apps : 0, con: p.contract })[key];
@@ -414,6 +414,12 @@ function vSquad(el, clubId = G.clubId) {
     ${mine ? (() => { const ln = G.players.filter(p => p.loan?.from === G.clubId); return ln.length ? `<section class="card"><h2>🔁 Joueurs prêtés</h2><table class="tbl compact">${ln.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 26)}</td><td class="nm">${esc(p.name)}</td><td>${p.pos}</td><td>${ovrBadge(playerOvr(p))}</td><td>${crest(getClub(G, p.club), 18)} ${esc(getClub(G, p.club).name)}</td><td>${p.stats.apps} MJ · ${p.stats.goals} buts · ${p.stats.apps ? (p.stats.rating / p.stats.apps).toFixed(2) : '-'}</td></tr>`).join('')}</table></section>` : ''; })() : ''}`;
   el.querySelectorAll('th[data-k]').forEach(t => t.onclick = () => { SQUAD_SORT = { k: t.dataset.k, d: SQUAD_SORT.k === t.dataset.k ? -SQUAD_SORT.d : (['name', 'pos', 'age', 'num'].includes(t.dataset.k) ? 1 : -1) }; vSquad(el, clubId); });
   el.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { SQUAD_LINE = b.dataset.l; vSquad(el, clubId); });
+  { // équipe affichée : première, réserve, tous (les U19 sont dans Formation)
+    const nR = clubPlayers(G, clubId).filter(p => p.reserve && !p.academy).length, nU = clubPlayers(G, clubId).filter(p => p.academy).length;
+    const lignes = el.querySelector('[data-l]')?.parentElement;
+    if (lignes && (nR || nU)) lignes.insertAdjacentHTML('beforebegin', `<div class="tabs sm eq-tabs">${[['A', 'Équipe première'], ['R', `Réserve (${nR})`], ['T', 'Tous']].map(([k, l]) => `<button data-eq="${k}" class="${SQUAD_EQUIPE === k ? 'on' : ''}">${l}</button>`).join('')}${nU && mine ? `<button onclick="YOUTH_TAB='U19';show('youth')">U19 (${nU}) →</button>` : ''}</div>`);
+    el.querySelectorAll('[data-eq]').forEach(b => b.onclick = () => { SQUAD_EQUIPE = b.dataset.eq; vSquad(el, clubId); });
+  }
   el.querySelectorAll('[data-vw]').forEach(b => b.onclick = () => { SQUAD_VIEW = b.dataset.vw; vSquad(el, clubId); });
   el.querySelectorAll('tr[data-pid]').forEach(r => r.onclick = () => playerModal(+r.dataset.pid));
 }

@@ -7,6 +7,7 @@ const a32 = (n) => typeof window[n] !== 'undefined';
 // 1-3. flag-icons (MIT) + datasets/country-codes (PDDL) + mledoze/countries (ODbL) : vrais drapeaux, noms et régions
 const PAYS2 = typeof DO2_PAYS !== 'undefined' ? DO2_PAYS : {};
 natFlag = function (code) {
+  if (!code || code === 'UNK') return '<span class="nat nat-inconnue" data-tip="Nationalité non renseignée dans la source">—</span>';
   const p = PAYS2[code], nom = natName(code);
   const reg = p?.region ? ` — ${p.region}` : '';
   return p?.iso2 ? `<span class="nat drap" data-tip="${esc(nom + reg)}"><span class="fi" style="background-image:url(vendor/flag-icons/4x3/${p.iso2}.svg)"></span>${esc(code)}</span>`

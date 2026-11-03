@@ -172,14 +172,22 @@ const posteAuPluriel = pos => POSTES_PLURIEL[pos] || (ROLES[pos]?.label || pos).
 let couleurAttr = v => v >= 16 ? 'a-top' : v >= 13 ? 'a-bon' : v >= 9 ? 'a-moy' : v >= 6 ? 'a-faible' : 'a-tres';
 function blocAttributs(p) {
   const D = attributsDetail(p), n20 = notePoste(p, p.pos, D), connu = typeof knows !== 'function' || knows(G, p);
-  const flou = v => connu ? v : `${Math.max(1, v - 2)}-${Math.min(20, v + 2)}`;
+  // joueur non observé : fourchette (option de partie) plus ou moins large selon le recruteur, pas forcément centrée
+  // sur la vraie valeur (avant : toujours v ± 2, ce qui révélait la valeur exacte) ; ou « ? » si l'option est coupée
+  const flou = (v, k = '') => {
+    if (connu) return v;
+    if (G?.prefs && G.prefs.fourchette === false) return '?';
+    const e = Math.max(1, 4 - Math.floor((G?.staff?.scout || 2) / 2)), h = typeof hashTrait === 'function' ? hashTrait(`fourch|${p.id}|${k}`) : 0;
+    const dec = (h % (2 * e + 1)) - e, lo = clamp(v + dec - e, 1, 20), hi = clamp(v + dec + e, 1, 20);
+    return `${lo}-${hi}`;
+  };
   const fams = ['tech', 'ment', 'phys', ...(p.pos === 'GB' ? ['gb'] : [])];
   const bp = meilleursPostes(p, D).map(([r, n]) => `${r} ${noteSur100(n)}`).join(' · ');
   return `<section class="attr36"><div class="a36-tete"><div class="a36-note" style="--n:${n20 / 20}"><b>${connu ? noteSur100(n20) : '?'}</b><small>/100</small></div>
       <div><b>Note de poste (${esc(ROLES[p.pos]?.label || p.pos)})</b><small>moyenne pondérée de ${Object.keys(POIDS_POSTE[p.pos] || {}).length} attributs clés · ${connu ? n20.toFixed(1).replace('.', ',') : '?'} sur 20</small><small>Meilleurs postes : ${connu ? bp : 'à découvrir'}${connu && estPolyvalent(p) ? ' · <b class="pos">polyvalent</b>' : ''}${connu && postesSecondaires(p).length ? ` · postes secondaires : ${postesSecondaires(p).join(', ')}` : ''}</small></div></div>
     <div class="a36-grille">${fams.map(fm => `<div class="a36-fam"><h4>${FAMILLES[fm]}</h4>${ATTR_DETAIL.filter(a => a[2] === fm).map(([k, l]) => {
       const v = D[k], cle = (POIDS_POSTE[p.pos] || {})[k];
-      return `<div class="a36-l ${cle ? 'cle' : ''}" data-k="${k}" data-tip="${esc(l)}${connu ? ` : ${v}/20, mieux que ${percentile(p, k)} % des ${esc(posteAuPluriel(p.pos))}` : ''}${cle ? ` · compte pour ${Math.round(cle * 100)} % de la note de poste` : ''}"><span>${esc(l)}</span><b class="${connu ? couleurAttr(v) : 'a-flou'}">${flou(v)}</b></div>`;
+      return `<div class="a36-l ${cle ? 'cle' : ''}" data-k="${k}" data-tip="${esc(l)}${connu ? ` : ${v}/20, mieux que ${percentile(p, k)} % des ${esc(posteAuPluriel(p.pos))}` : ''}${cle ? ` · compte pour ${Math.round(cle * 100)} % de la note de poste` : ''}"><span>${esc(l)}</span><b class="${connu ? couleurAttr(v) : 'a-flou'}">${flou(v, k)}</b></div>`;
     }).join('')}</div>`).join('')}</div>
     <p class="hint">${p.detail99 ? 'Attributs issus des sous-notes réelles du pack (sur 99, ramenées sur 20), plus la progression en jeu.' : 'Attributs dérivés des 9 qualités du moteur de match, avec un profil propre au joueur.'} En gras : attributs clés du poste.${connu ? '' : ' Envoie ta cellule de recrutement pour connaître les valeurs exactes.'}</p></section>`;
 }
