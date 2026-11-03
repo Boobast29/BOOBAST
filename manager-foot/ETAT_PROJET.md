@@ -1,3 +1,12 @@
+# État du projet — v59 (3 novembre 2026)
+
+## Entente du staff (js/entente_staff.js)
+- Chaque membre (adjoint, entraîneur technique, kiné, recruteur, formateur, + entraîneur principal en mode directeur sportif) a une philosophie (formation, résultats immédiats, données, discipline, jeu offensif) et un caractère (diplomate, exigeant, charismatique, discret, ombrageux), tirés de son nom (stables, sans toucher au hasard du jeu).
+- Entente par binôme (0-100) : compatibilité de base, puis chaque semaine retour vers la base, +victoires, −défaites, + ancienneté commune. Relation de chaque membre avec toi.
+- Effet réel chaque semaine de championnat : cohésion du staff → récupération (±1,6 pt) et moral (±0,45 pt) des joueurs.
+- Conflit (binôme sous 28) → question « Tension dans le staff » dans la messagerie : réunion de conciliation, donner raison à l'un, laisser faire.
+- Écran Staff : carte « Entente du staff » (jauge, membres, binômes du plus tendu au plus soudé) ; candidats avec profil et « entente prévue ».
+
 # État du projet — v58 (3 novembre 2026)
 
 ## Messagerie refaite (js/messagerie.js, css/messagerie.css)
