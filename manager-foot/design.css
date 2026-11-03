@@ -1,0 +1,96 @@
+/* ============================================================
+   Design v39 — finition d'ensemble (chargé en dernier)
+   Direction : « tribune de nuit ». Des surfaces bleu nuit éclairées par la couleur du club et des chiffres
+   façon tableau d'affichage (Bebas Neue). Le texte courant reste en Inter, sobre.
+   Un seul élément marquant : la barre du haut, qui sert de tableau d'affichage. Tout le reste reste calme.
+   Objectifs : lisibilité (contrastes AA, interlignage), ergonomie (en-tête qui ne se tasse plus, notifications
+   qui ne masquent plus le contenu), fluidité (entrée douce des écrans, sans effet quand le système demande
+   moins d'animations).
+   ============================================================ */
+:root {
+  --mut: #9aa9bb;                 /* texte secondaire : contraste ≥ 4,5:1 sur les panneaux */
+  --line: #283444;
+  --txt: #e9eef4;
+  --t-xs: 11.5px; --t-s: 12.5px; --t-m: 14px; --t-l: 17px; --t-xl: 22px;
+  --esp-1: 4px; --esp-2: 8px; --esp-3: 12px; --esp-4: 16px; --esp-5: 24px;
+}
+body { line-height: 1.45; }
+.hint { font-size: var(--t-s); line-height: 1.5; }
+p { max-width: 80ch; }
+.card p, .mbox p { max-width: none; }
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- barre du haut : une ligne, jamais de chiffres coupés ---------- */
+#top { flex-wrap: nowrap; min-width: 0; }
+#top > * { min-width: 0; }
+#top .tclub { min-width: 0; flex: 0 1 auto; }
+#top .tclub > div { min-width: 0; }
+#top .tclub b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 230px; }
+#top .tclub small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 230px; }
+#top .tinfo { flex: none; }
+#top .tinfo small, #top .tinfo b { white-space: nowrap; }
+#top .tinfo b { font-family: 'Bebas Neue', 'Inter', sans-serif; font-weight: 400; font-size: 21px; letter-spacing: .03em; line-height: 1.05; }
+#top .tnext { min-width: 0; flex: 0 1 auto; }
+#top .tnext small, #top .tnext b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; }
+#top #btnGo { flex: none; }
+#top .search { flex: 0 1 220px; }
+#top .search input { width: 100%; }
+@media (max-width: 1480px) { #top .search { display: none; } }
+@media (max-width: 1280px) { #top .tnext small { display: none; } #top .tclub small { display: none; } }
+@media (max-width: 1120px) { #top .tnext { display: none; } }
+@media (max-width: 760px) {
+  #top { flex-wrap: wrap; }
+  #top .tclub b { max-width: 60vw; }
+  #top .tinfo b { font-size: 19px; }
+}
+
+/* ---------- notifications : en bas à gauche, au-dessus du menu (zone la moins utile), compactes ---------- */
+#toasts { top: auto !important; bottom: 14px !important; left: 12px !important; right: auto !important; align-items: flex-start !important; gap: 6px !important; max-width: min(320px, calc(100vw - 24px)); }
+#toasts .toast { transform: translateX(-16px) !important; }
+#toasts .toast.show { transform: none !important; }
+.toast { font-size: 13px !important; line-height: 1.35; padding: 8px 12px !important; box-shadow: 0 12px 28px -14px rgba(0, 0, 0, .8) !important; }
+@media (max-width: 760px) {
+  #toasts { top: 8px !important; bottom: auto !important; right: 8px !important; left: 8px !important; max-width: none; align-items: stretch !important; }
+  #toasts .toast:nth-last-child(n+3) { display: none; } /* deux au plus sur téléphone */
+}
+
+/* ---------- écrans : entrée douce lors d'un changement d'écran ---------- */
+@keyframes entreeVue { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+#main.vue-entree > * { animation: entreeVue .22s var(--anim, ease-out) both; }
+#main.vue-entree > *:nth-child(2) { animation-delay: .03s; }
+#main.vue-entree > *:nth-child(n+3) { animation-delay: .06s; }
+#modal .mbox { animation: entreeVue .18s var(--anim, ease-out) both; }
+@media (prefers-reduced-motion: reduce) {
+  #main.vue-entree > *, #modal .mbox { animation: none !important; }
+  * { scroll-behavior: auto !important; }
+}
+html { scroll-behavior: smooth; }
+
+/* ---------- titres de cartes : hiérarchie nette ---------- */
+.card > h2:first-child { font-size: var(--t-l); margin-bottom: var(--esp-3); }
+h3 { color: #a9b6c6; font-size: 12px; letter-spacing: .06em; }
+
+/* ---------- tableaux : en-têtes fixes, chiffres alignés, lignes aérées ---------- */
+.scroll .tbl thead th, .tbl-wrap .tbl thead th { position: sticky; top: 0; z-index: 1; background: var(--panel); }
+.tbl td { font-variant-numeric: tabular-nums; }
+.tbl tbody tr:focus-within { background: rgba(255, 255, 255, .035); }
+
+/* ---------- boutons et segments : états lisibles ---------- */
+.btn { touch-action: manipulation; }
+.btn:disabled { opacity: .45; filter: saturate(.4); }
+.seg button.on, [data-tk].on { color: #04140c !important; font-weight: 700; }
+@media (pointer: coarse) { .btn { min-height: 40px; } .btn.sm { min-height: 34px; } .tabs button { min-height: 36px; } }
+
+/* ---------- contrastes (audit axe-core) ---------- */
+.nav-h, .nav-h span { color: #8496ab !important; }
+i.nb, .nb { background: #c22f3b !important; color: #fff; }
+.ev.lg2, .ev.c-L, .ev.c-C { color: #c3cedb !important; }
+
+/* ---------- champs : libellés plus lisibles ---------- */
+label { color: #a9b6c6; font-size: var(--t-s); }
+input, select { min-height: 34px; }
+
+/* ---------- prochaine étape (tableau de bord) ---------- */
+.af-next small { color: #c8d3df; }
+h1.logo-big { margin: 0; font-weight: inherit; }
+.afaire h2.af-titre { font-size: 12px; margin: 14px 0 8px; color: #a9b6c6; text-transform: uppercase; letter-spacing: .06em; display: flex; gap: 6px; }

@@ -1,4 +1,18 @@
-# État du projet — v38 (3 novembre 2026)
+# État du projet — v39 (3 novembre 2026)
+
+## v39 — finition visuelle et ergonomie (skill frontend-design + audit axe-core)
+- `design.css` (chargé en dernier) et `js/design.js`. Direction « tribune de nuit » : la barre du haut sert de tableau d'affichage,
+  avec les chiffres en Bebas Neue, sur une seule ligne. Le nom du club et le prochain adversaire sont coupés proprement ; la recherche
+  et les détails disparaissent sur les écrans plus étroits.
+- Montants au format français partout (59,1 M€ au lieu de 59.1 M€).
+- Notifications compactes en bas à gauche, au-dessus du menu ; en haut sur téléphone, deux au plus. Elles ne cachent plus
+  les filtres ni le contenu.
+- Changement d'écran : entrée douce de 0,22 s, coupée quand le système demande moins d'animations.
+- Accessibilité, mesurée avec axe-core sur 9 écrans : contrastes des titres du menu, des pastilles et des segments corrigés ;
+  titre de niveau 1 pour chaque écran (lecteurs d'écran) ; champs et listes sans libellé nommés ; zones défilantes atteignables au clavier ;
+  fenêtres annoncées comme dialogues ; zone de notifications annoncée. Il reste seulement les lignes volontairement grisées (joueurs indisponibles).
+- Onglets segmentés en texte seul, sans émoji de tête ; « Prochaine étape » remplace « « Continuer » va : » ; boutons plus hauts au doigt.
+Vérifications : audit des 27 écrans (ordinateur et mobile) sans erreur ni débordement ; simulation longue sans erreur.
 
 ## v38 — import local des packs graphiques Football Manager (visages, logos, maillots)
 - `outils/importer_pack_fm.py` (+ `Importer_Pack_FM.bat`) : importe sur ton PC un pack déjà téléchargé (FMEurope, sortitoutsi…).

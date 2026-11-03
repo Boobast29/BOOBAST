@@ -48,9 +48,9 @@ function aFaire(G) {
 function carteAFaire(G) {
   const nx = prochaineAction(G), L = aFaire(G);
   const coul = u => u >= 90 ? 'u-rouge' : u >= 60 ? 'u-orange' : u >= 40 ? 'u-jaune' : 'u-gris';
-  return `<section class="card afaire"><div class="af-next"><span class="af-i">${nx.i}</span><div><small>« Continuer » va :</small><b>${esc(nx.t)}</b></div>
+  return `<section class="card afaire"><div class="af-next"><span class="af-i">${nx.i}</span><div><small>Prochaine étape</small><b>${esc(nx.t)}</b></div>
       ${nx.v ? `<button class="btn sm" data-af="${nx.v}">Ouvrir</button>` : `<button class="btn primary sm" id="afGo">Continuer ▶</button>`}</div>
-    ${L.length ? `<h3>À faire <small class="muted">${L.length}</small></h3><div class="af-liste">${L.map(x => `<button class="af-it ${coul(x.urg)}" data-af="${x.v}"><span>${x.i}</span><div><b>${esc(x.t)}</b>${x.d ? `<small>${esc(x.d)}</small>` : ''}</div><i>›</i></button>`).join('')}</div>`
+    ${L.length ? `<h2 class="af-titre">À faire <small class="muted">${L.length}</small></h2><div class="af-liste">${L.map(x => `<button class="af-it ${coul(x.urg)}" data-af="${x.v}"><span>${x.i}</span><div><b>${esc(x.t)}</b>${x.d ? `<small>${esc(x.d)}</small>` : ''}</div><i>›</i></button>`).join('')}</div>`
       : '<p class="muted af-rien">✓ Rien d\'urgent : tu peux continuer.</p>'}</section>`;
 }
 const __vInboxH = vInbox;

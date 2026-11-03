@@ -29,9 +29,9 @@ async function startScreen() {
   const divs = [...new Set(DB.clubs.filter(c => !c.foreign).map(c => c.div || 1))].sort();
   const exClub = ex ? ex.clubs.find(c => c.id === ex.clubId) : null;
   $('#app').innerHTML = `
-  <div class="start-wrap">
+  <div class="start-wrap" role="main">
     <div class="hero">
-      <div class="logo-big">⚽ <b>Manager</b> Foot</div>
+      <h1 class="logo-big">⚽ <b>Manager</b> Foot</h1>
       <p class="sub">Trois divisions, les vrais règlements de 5 pays, barrages et play-offs jouables, un mercato aux règles FIFA et des matchs en direct en 2D. À toi d'écrire l'histoire.</p>
       <div class="hero-etapes"><span><b>1</b>Reprends une partie</span><span><b>2</b>ou choisis le monde réel</span><span><b>3</b>ou un club fictif ci-dessous</span><span><kbd>Ctrl K</kbd> en jeu : aller n'importe où</span></div>
     </div>
