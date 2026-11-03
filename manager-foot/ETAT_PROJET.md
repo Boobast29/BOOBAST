@@ -1,4 +1,19 @@
-# État du projet — v39 (3 novembre 2026)
+# État du projet — v40 (3 novembre 2026)
+
+## v40 — finance des transferts : comptabilité et montages financiers (`js/finance_transferts.js`)
+- **Amortissement** : chaque indemnité, commission d'agent comprise, est étalée de façon linéaire sur la durée du contrat
+  (5 ans au plus, comme le prévoit l'UEFA). Une prolongation réétale la valeur restante. Exemple testé : achat 20 M€ sur 4 ans,
+  donc 5 M€ amortis par saison ; après une saison et une prolongation à 5 ans, les 15 M€ restants sont réétalés.
+- **Plus-values et moins-values** : une vente rapporte prix − valeur nette comptable ; un départ libre coûte la valeur restante.
+  Un journal garde les dernières ventes.
+- **Ratio de coût d'effectif UEFA** (limite 70 %) : (salaires + amortissements + agents) / (recettes + plus-values), affiché dans Finances.
+- **Montages** : vente payée en plusieurs fois (+8 %, 40 % tout de suite et le reste sur deux saisons) ; affacturage d'une créance
+  (comptant immédiat, décote de 5 % par an restant) ; plan d'achat « 25 % maintenant, 75 % sur 3 ans ».
+- Dans Mercato > Offres reçues, chaque offre indique la plus-value ou la moins-value comptable qu'elle produirait.
+- Recherche GitHub : rien de réutilisable. ZenGM n'est pas open source (idées seulement) ; ewenme/transfers et BBC-Data-Unit sont sans licence ;
+  les données transfermarkt-datasets (CC0) sont hébergées hors de GitHub et déjà importables sur ton PC (`importer_transfermarkt.py`).
+  Les mécanismes reprennent donc les règles réelles (IFRS, règlement financier UEFA).
+Test : `tests/finance_transferts.js`. Simulation longue sans erreur ; audit des 27 écrans sans erreur.
 
 ## v39 — finition visuelle et ergonomie (skill frontend-design + audit axe-core)
 - `design.css` (chargé en dernier) et `js/design.js`. Direction « tribune de nuit » : la barre du haut sert de tableau d'affichage,

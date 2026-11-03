@@ -94,3 +94,11 @@ input, select { min-height: 34px; }
 .af-next small { color: #c8d3df; }
 h1.logo-big { margin: 0; font-weight: inherit; }
 .afaire h2.af-titre { font-size: 12px; margin: 14px 0 8px; color: #a9b6c6; text-transform: uppercase; letter-spacing: .06em; display: flex; gap: 6px; }
+/* comptabilité des transferts (js/finance_transferts.js) */
+.compta-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 10px 0; padding: 0; border: 0; background: none; box-shadow: none; }
+.compta-kpis > div { background: #121a24; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.compta-kpis small { display: block; color: var(--mut); font-size: var(--t-xs); }
+.compta-kpis b { font-family: 'Bebas Neue', 'Inter', sans-serif; font-weight: 400; font-size: 24px; letter-spacing: .02em; }
+.compta-kpis em { display: block; font-style: normal; font-size: var(--t-xs); color: var(--mut); }
+.compta .creance { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.warn { color: var(--yel); }
