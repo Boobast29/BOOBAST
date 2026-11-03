@@ -29,6 +29,9 @@
 .dir-task strong { font-size:14px; color:#f0f5fa; }
 .dir-task small { color:#b7c6d1; line-height:1.5; flex:1; }
 .dir-task .btn { width:100%; justify-content:center; white-space:normal; min-height:42px; }
+.dir-scout-criteria { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.dir-scout-criteria label { display:grid; gap:4px; min-width:0; color:#bfcec8; font-size:11px; font-weight:700; }
+.dir-scout-criteria select { min-width:0; width:100%; min-height:38px; font-size:12px; padding:6px; }
 .dir-actions { display:flex; gap:9px; flex-wrap:wrap; margin-bottom:14px; }
 .dir-actions .btn, #dirPlayer { min-height:42px; white-space:normal; }
 .dir-log { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; }
