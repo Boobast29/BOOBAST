@@ -21,11 +21,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from commun import BASE, RACINE_JEU, connexion, lire_config, normaliser, trouver_football_monde, unpack  # noqa: E402
 import images  # noqa: E402
 import scenario  # noqa: E402
+from catalogue_fmb import Catalogue  # noqa: E402
 
 LOCAL = threading.local()
 FM = None
 RES = None
-STATIQUES_INTERDITS = ('donnees_jeu', 'outils', '.git')
+CATALOGUE = None
+STATIQUES_INTERDITS = ('donnees_jeu', 'outils', '.git', 'packs')
 
 
 def db():
@@ -238,6 +240,8 @@ class Handler(BaseHTTPRequestHandler):
             if parts[:1] == ['api']:
                 return self.api_get(parts[1:], p)
             if parts[:1] == ['img'] and len(parts) == 3 and parts[1] in ('joueur', 'club', 'wd', 'maillot'):
+                if RES is None:
+                    return self.envoyer(404, {'erreur': 'Base mondiale non installée'})
                 f = RES.trouver(db(), parts[1], parts[2], telecharger=p.get('dl', '1') == '1')
                 if not f:
                     return self.envoyer(404, {'erreur': 'aucune image disponible'})
@@ -247,12 +251,30 @@ class Handler(BaseHTTPRequestHandler):
                     return self.envoyer(404, {'erreur': 'fichier image illisible'})
                 return self.envoyer(200, data, images.MIME[ext], 'max-age=86400')
             return self.statique(u.path)
+        except ValueError as e:
+            self.envoyer(400, {'erreur': str(e)})
         except BrokenPipeError:
             pass
         except Exception as e:
             self.envoyer(500, {'erreur': repr(e)[:300]})
 
     def api_get(self, parts, p):
+        if parts[:1] == ['catalogue']:
+            if CATALOGUE is None:
+                return self.envoyer(503, {'erreur': 'Catalogue indisponible'})
+            if parts == ['catalogue', 'etat']:
+                return self.envoyer(200, CATALOGUE.etat())
+            if parts == ['catalogue', 'recherche']:
+                return self.envoyer(200, CATALOGUE.liste(p))
+            if len(parts) == 4 and parts[1] == 'fiche':
+                f = CATALOGUE.fiche(parts[2], parts[3])
+                return self.envoyer(200 if f else 404, f or {'erreur': 'Fiche inconnue'})
+            if len(parts) == 4 and parts[1] == 'image':
+                f = CATALOGUE.photo(parts[2], parts[3])
+                return self.envoyer(200, f[0], f[1], 'max-age=86400') if f else self.envoyer(404, {'erreur': 'Image inconnue'})
+            return self.envoyer(404, {'erreur': 'Route catalogue inconnue'})
+        if RES is None:
+            return self.envoyer(503, {'erreur': 'Base mondiale non installée. Le catalogue FMB reste disponible.'})
         if parts == ['etat']:
             return self.envoyer(200, etat())
         if parts == ['recherche']:
@@ -281,6 +303,8 @@ class Handler(BaseHTTPRequestHandler):
         return self.envoyer(404, {'erreur': 'route inconnue'})
 
     def do_POST(self):
+        if RES is None:
+            return self.envoyer(503, {'erreur': 'Base mondiale non installée'})
         u = urllib.parse.urlparse(self.path)
         parts = [urllib.parse.unquote(x) for x in u.path.split('/') if x]
         n = int(self.headers.get('Content-Length') or 0)
@@ -332,17 +356,19 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    global FM, RES
+    global FM, RES, CATALOGUE
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--port', type=int, default=8765)
     ap.add_argument('--donnees', help='dossier Football_Monde')
     ap.add_argument('--hors-ligne', action='store_true', help='ne jamais télécharger d\'image')
     a = ap.parse_args()
     FM = trouver_football_monde(a.donnees or lire_config().get('football_monde'))
-    if not FM or not BASE.exists():
-        sys.exit('Base absente : lance d\'abord  python outils/importer_monde.py --donnees CHEMIN/Football_Monde')
-    RES = images.Ressources(lambda: connexion(), FM)
-    RES.hors_ligne = a.hors_ligne
+    CATALOGUE = Catalogue(FM)
+    if FM and BASE.exists():
+        RES = images.Ressources(lambda: connexion(), FM)
+        RES.hors_ligne = a.hors_ligne
+    else:
+        print('Catalogue FMB inclus prêt. Pour une carrière mondiale : outils/importer_monde.py --donnees CHEMIN/Football_Monde', flush=True)
     srv = ThreadingHTTPServer(('127.0.0.1', a.port), Handler)
     print(f'Manager Foot prêt : http://127.0.0.1:{a.port}/  (Ctrl+C pour arrêter)', flush=True)
     try:
