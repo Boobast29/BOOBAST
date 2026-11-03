@@ -43,7 +43,6 @@ show = function (...args) {
   if (args[0] === 'direction' || args[0] === 'compare') {
     if (typeof filAriane === 'function') filAriane(VIEW);
     if (typeof majBarreMobile === 'function') majBarreMobile(VIEW);
-    if (typeof accessibiliserVue === 'function') accessibiliserVue($('#main'), args[0] === 'compare' ? 'Comparer les joueurs' : 'Décisions et délégation');
   }
   visualChrome();
   return result;
