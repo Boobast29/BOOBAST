@@ -14,7 +14,7 @@
   function image(type, id, nom, dispo) {
     const repli = `<span class="fmb-initiales" aria-hidden="true">${e(nom.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`;
     const credit = type === 'players' && photosCommons[String(id)]?.name === nom ? photosCommons[String(id)] : null;
-    const distant = type === 'players' && photosAvecUrl.has(String(id)) ? `https://media.footballmanagerblog.org/faces/${encodeURIComponent(id)}.webp` : credit ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(credit.file.replaceAll(' ','_'))}?width=300` : '';
+    const distant = credit ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(credit.file.replaceAll(' ','_'))}?width=300` : type === 'players' && /^\d+$/.test(String(id)) ? `https://media.footballmanagerblog.org/faces/${encodeURIComponent(id)}.webp` : '';
     if (!dispo && !distant) return repli;
     return `<img class="fmb-image" src="${e(dispo ? url('image',type,id) : distant)}" alt="${e(nom)}" loading="lazy" referrerpolicy="no-referrer" data-alt-src="${e(dispo ? distant : '')}" data-fb="${e(repli)}" onerror="if(this.dataset.altSrc){this.src=this.dataset.altSrc;this.dataset.altSrc='';}else this.outerHTML=this.dataset.fb">`;
   }
@@ -40,6 +40,7 @@
         const groupes = Object.entries(d?.attributes_1_99||{});
         target.innerHTML=`<div class="fmb-profil">${image(type,id,x.name,media?.available_offline)}<div><small>${e(lib[type])} · UID ${e(id)}</small><h2>${e(x.name)}</h2></div></div>
           <p class="fmb-mention">FM26 26.3.2 · ${e(d?.retrieved_on||'Collecte du pack : 03/11/2026')}. Situation réelle actuelle non vérifiée.</p>
+          ${type==='players' && !media?.available_offline && !photosAvecUrl.has(String(id)) && !credit ? '<p class="fmb-mention">Photo : adresse FMB tentée à partir de l’identifiant, sans disponibilité vérifiée. Initiales affichées si elle échoue.</p>' : ''}
           ${credit ? `<p class="fmb-mention">Photo : <a href="https://commons.wikimedia.org/wiki/File:${encodeURIComponent(credit.file.replaceAll(' ','_'))}" target="_blank" rel="noopener noreferrer">${e(credit.author)} · ${e(credit.license)} · Wikimedia Commons</a>${credit.note ? ` · ${e(credit.note)}` : ''}</p>` : ''}
           ${d?.role_or_position_source||champs.position||champs.job ? `<p><b>Rôle source :</b> ${e(d?.role_or_position_source||champs.position||champs.job)}</p>` : ''}
           ${x.country ? `<p><b>Pays :</b> ${e(x.country)}</p>`:''}
