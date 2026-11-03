@@ -103,3 +103,5 @@ h1.logo-big { margin: 0; font-weight: inherit; }
 .compta .creance { padding: 6px 0; border-bottom: 1px solid var(--line); }
 .warn { color: var(--yel); }
 .sim { margin: 10px 0; } .sim-tbl td { white-space: nowrap; }
+.reco { margin-bottom: 14px; } .reco h3 { margin-top: 0; }
+.ch-bloc { margin-top: 14px; } .ch-bloc h4 { margin: 0 0 6px; } .ch-carte { width: 100%; max-width: 520px; display: block; border-radius: 6px; margin-top: 6px; }

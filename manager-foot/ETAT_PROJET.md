@@ -1,4 +1,17 @@
-# État du projet — v42 (3 novembre 2026)
+# État du projet — v43 (3 novembre 2026)
+
+## v43 — recommandations selon les besoins du club, cartes de chaleur
+- **Recommandés pour ton club** (`js/recommandation.js`, Mercato > Recherche sans filtre) : chaque secteur du onze reçoit un poids
+  inverse de sa note moyenne (fonction réciproque, méthode de tonyz0x0/football-manager, MIT ; ses données FIFA ne sont pas reprises).
+  Chaque joueur abordable est ensuite noté selon ce qu'il apporte au titulaire le plus faible de son poste. Le brouillard est respecté
+  (note estimée). Exemple en D2 : un DG noté 71 pour remplacer un titulaire à 51, à 11 M€.
+- **Cartes de chaleur** (`js/carte_chaleur.js`, idée d'osnsyc/FMMatchLens, MIT, sans code repris) : pendant les matchs de ton club,
+  la position de chaque joueur est relevée à chaque action (grille 12 × 8). Analyse du match > « Cartes de chaleur », avec un choix
+  du joueur. Stockage compact : 2,6 Ko par match. Vérifié : gardien en colonne 1, avant-centre en colonne 9 sur 12 ; rien n'est relevé
+  pour les autres matchs.
+- Écartés : cruelspawngenerate/football-manager-27-mod-install-guide (piège à logiciel malveillant : ZIP avec exécutable « non vérifié »),
+  Farketmez59/football-club-manager-data-pack (vide).
+Tests : `tests/recommandation.js`, `tests/carte_chaleur.js`. Simulation longue sans erreur ; audit des 27 écrans sans erreur.
 
 ## v42 — onze optimal
 - `js/onze_optimal.js` : pour ton club, la composition automatique résout l'affectation joueurs → postes avec l'algorithme hongrois,
