@@ -148,3 +148,16 @@
 .notyf__toast { max-width: 300px !important; }
 .mx-resume { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
 .mx-resume li { line-height: 1.45; }
+
+/* Fiche joueur : évolution (js/fiche_evolution.js) */
+.fe-evo { margin: 12px 0; padding: 12px 14px; border-radius: var(--r-l); background: var(--surface-3); }
+.fe-evo h3 { margin: 0 0 6px; font-size: var(--fs-2xs); letter-spacing: .08em; text-transform: uppercase; color: var(--mut); }
+.fe-courbe { display: block; width: 100%; max-width: 420px; height: 90px; }
+.fe-courbe text { font-size: 10px; fill: var(--txt-2, var(--txt)); font-variant-numeric: tabular-nums; }
+.fe-courbe .fe-an { fill: var(--mut); font-size: 9px; }
+.fe-avis { margin: 6px 0 0; font-size: var(--fs-s); }
+.fe-ret { margin: 6px 0 0; font-size: var(--fs-s); color: var(--warn); }
+.fe-app { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; font-size: var(--fs-s); }
+.fe-jauge { display: block; height: 6px; max-width: 260px; border-radius: 3px; background: var(--surface-1); overflow: hidden; }
+.fe-jauge i { display: block; height: 100%; background: var(--acc); }
+.fe-app small { color: var(--mut); font-size: var(--fs-xs); }

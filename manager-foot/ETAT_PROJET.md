@@ -1,3 +1,10 @@
+# État du projet — v68 (3 novembre 2026)
+
+## Fiche joueur et retraites annoncées (js/fiche_evolution.js)
+- Fiche (profil) : courbe du niveau saison par saison + aujourd'hui, avis du staff (progresse bien / doucement, au sommet, stagne, en recul, décline avec l'âge, plafond atteint).
+- Apprentissage d'un poste (profil et onglet Développement) : jauge de familiarité, note au poste aujourd'hui → une fois maîtrisé.
+- Retraites annoncées à la mi-saison (mercato d'hiver) : les joueurs concernés arrêtent en fin de saison ; tes joueurs te préviennent (« pense à préparer sa succession »), mention sur la fiche. Retraite sans annonce : plus rare (×0,45). Test : 170 annonces dans le monde, toutes effectives.
+
 # État du projet — v67 (3 novembre 2026)
 
 ## Confort de jeu (js/confort.js)

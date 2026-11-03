@@ -27,11 +27,11 @@ function ajouterVivier(G, p, prof, club) {
   G.reconv = G.reconv.slice(0, 60);
   return x;
 }
-function finsDeCarriere(G, avant) {
+function finsDeCarriere(G, avant, saison0 = G.season) {
   const partis = [], mesRetraites = [];
   withSideRng(`${G.seed}|retraites|${G.season}`, () => {
     for (const p of G.players) {
-      if (p.academy || p.age < 30) continue;
+      if (p.academy || (p.age < 30 && p.retraiteAnnoncee == null)) continue;
       const a = avant.get(p.id); if (!a) continue;
       const club = p.club != null ? getClub(G, p.club) : null, o = playerOvr(p);
       let ch = 0;
@@ -40,6 +40,8 @@ function finsDeCarriere(G, avant) {
       if (p.age >= 30 && (p.injury || 0) > 120) ch += .35;                              // grave blessure
       if (p.age >= 33) ch += (p.age - 32) * .06;
       if (p.club === G.clubId) ch *= .6;                                                // tes joueurs sous contrat : plus rarement
+      if (p.retraiteAnnoncee != null) ch = p.retraiteAnnoncee === saison0 ? 1 : ch;      // annoncée à la mi-saison : il arrête
+      else ch *= .45;                                                                   // sans annonce : retraite surprise plus rare
       if (ch > 0 && rnd() < ch) partis.push(p);
     }
   });
@@ -109,6 +111,7 @@ function retraitesStaff(G) {
 if (typeof endSeason === 'function') {
   const __endSeasonRT = endSeason;
   endSeason = function (G) {
+    const saison0 = G.season;
     const avant = new Map(G.players.map(p => [p.id, { apps: p.stats?.apps || 0, club: p.club }]));
     const ids0 = new Set(G.players.map(p => p.id)), copie = new Map(G.players.map(p => [p.id, p]));
     const S = __endSeasonRT.apply(this, arguments);
@@ -117,7 +120,7 @@ if (typeof endSeason === 'function') {
       const presents = new Set(G.players.map(p => p.id));
       const retraites = [];
       for (const id of ids0) if (!presents.has(id)) { const p = copie.get(id); if (p && !p.academy && p.age >= 32) retraites.push({ p, club: avant.get(id)?.club != null ? getClub(G, avant.get(id).club) : null }); }
-      const { partis } = finsDeCarriere(G, avant);
+      const { partis } = finsDeCarriere(G, avant, saison0);
       for (const p of partis) retraites.push({ p, club: avant.get(p.id)?.club != null ? getClub(G, avant.get(p.id).club) : null });
       vivierSaison(G);
       reconversions(G, retraites);
