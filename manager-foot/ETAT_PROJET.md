@@ -1,3 +1,10 @@
+# État du projet — v70 (3 novembre 2026)
+
+## Visages du pack NewGAN (outils/visages_newgan.py, Visages_NewGAN.bat)
+- Lib-LOCALE/NewGAN-Manager-26 examiné : application Tauri/Svelte saine (aucun code suspect), en pause (FM26 n'exporte plus les identifiants), licence GPL-3 → aucune ligne reprise, idée seulement.
+- Outil maison : attribue un portrait du pack NewGAN (visages générés par IA, à télécharger soi-même) à chaque joueur sans image. Dossier choisi d'après la nationalité, avec la diversité réelle des pays (France, Angleterre, Belgique, Pays-Bas, Brésil… : une part de visages d'un autre groupe, stable par joueur) — mieux que NewGAN, qui donne un visage d'Europe centrale à tous les Français. Chaque portrait utilisé une fois, nationalités non reconnues signalées, vraie photo prioritaire, « Visage généré par IA » sur la fiche, `--essai`, `--pays`, `--retirer`.
+- Test : `outils/tests_visages_newgan.py` (faux pack) : 8/8.
+
 # État du projet — v69 (3 novembre 2026)
 
 ## openfootball/europe (CC0)
