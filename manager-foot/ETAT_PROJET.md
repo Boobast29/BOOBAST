@@ -1,4 +1,17 @@
-# État du projet — v48 (3 novembre 2026)
+# État du projet — v49 (3 novembre 2026)
+
+## v49 — confirmation des transferts, recherche dans le monde entier, onglet Monde
+- **Confirmation finale** (`js/mercato_monde.js`) : après une visite médicale réussie, le transfert passe à l'étape « signature à confirmer ».
+  Une décision s'affiche avec le récapitulatif du coût : indemnité, salaires sur la durée du contrat, primes et agent, total.
+  Tu choisis « ✍ Confirmer la signature » ou « Renoncer au joueur ».
+  Sans réponse en 2 semaines, la négociation est close, comme aux autres étapes. La fermeture du mercato n'annule plus un transfert
+  qui attend ta confirmation. En délégation complète à la cellule de recrutement, la signature reste automatique.
+- **Recherche de joueurs** : nouveau filtre « Championnat » avec toutes les divisions de ton pays, les 20 pays étrangers du monde du jeu
+  (nombre de clubs indiqué) et les joueurs libres.
+- **Classements > 🌍 Monde** : toutes les divisions du pays et tous les clubs étrangers, regroupés par pays, avec réputation, valeur de l'effectif
+  et meilleur joueur (note estimée si non supervisé). Un clic ouvre la fiche du club. Les clubs étrangers n'ont pas de championnat simulé :
+  ils jouent les coupes d'Europe et alimentent le mercato.
+Test : `tests/mercato_monde.js`. Simulation longue sans erreur ; audit des 27 écrans sans erreur.
 
 ## v48 — ergonomie à la manière des jeux de gestion (barre de section, panneaux, fiche joueur)
 - **Barre de section** en haut de chaque écran : nom du groupe, écrans du groupe en sous-onglets soulignés (avec leurs pastilles),

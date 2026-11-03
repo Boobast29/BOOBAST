@@ -48,7 +48,7 @@ if (typeof vTransfers === 'function') {
   const __vTransfersRC = vTransfers;
   vTransfers = function (el) {
     const r = __vTransfersRC.apply(this, arguments);
-    if (typeof TR_TAB !== 'undefined' && TR_TAB === 'search' && !(TF.q || TF.pos || TF.maxv || TF.maxage || TF.minovr || TF.free)) {
+    if (typeof TR_TAB !== 'undefined' && TR_TAB === 'search' && !(TF.q || TF.pos || TF.maxv || TF.maxage || TF.minovr || TF.free || TF.lg)) {
       const f = el.querySelector('.filters');
       if (f) {
         f.insertAdjacentHTML('beforebegin', blocRecommandations(G));

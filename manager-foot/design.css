@@ -148,3 +148,6 @@ h1.logo-big { margin: 0; font-weight: inherit; }
 .mbox .tabs button.on, .card > .tabs button.on { color: #fff; border-bottom-color: color-mix(in srgb, var(--club1) 80%, #fff) !important; font-weight: 650; }
 #top #btnBack { display: none; } /* remplacé par ‹ › dans la barre de section */
 .rL { color: #ff9aa1 !important; }
+.confirm-deal { margin: 10px 0; padding: 12px; border: 1px solid color-mix(in srgb, var(--acc) 45%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--acc) 7%, transparent); }
+.monde-pays { margin-top: 14px; } .monde-pays tr.click { cursor: pointer; }
+.monde-pays { display: block !important; grid-template-columns: none !important; }

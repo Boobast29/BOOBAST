@@ -954,7 +954,7 @@ function viewClub(id) {
 // ============================================================
 //  Mercato
 // ============================================================
-let TF = { q: '', pos: '', maxv: '', maxage: '', minovr: '', free: false };
+let TF = { q: '', pos: '', maxv: '', maxage: '', minovr: '', free: false, lg: '' };
 let TR_TAB = 'search';
 function vTransfers(el) {
   const club = myClub(G);
@@ -980,6 +980,7 @@ function vTransfers(el) {
     if (TF.maxage) list = list.filter(p => p.age <= +TF.maxage);
     if (TF.minovr) list = list.filter(p => estOvr(G, p) >= +TF.minovr);
     if (TF.free) list = list.filter(p => p.club == null || p.listed);
+    if (TF.lg && typeof ligueDe === 'function') list = list.filter(p => ligueDe(G, p) === TF.lg);
     list.sort((a, b) => estOvr(G, b) - estOvr(G, a));
     body.innerHTML = `<div class="row gap wrap filters">
       <input id="fq" placeholder="Nom…" value="${esc(TF.q)}">
@@ -987,10 +988,11 @@ function vTransfers(el) {
       <input id="fmo" type="number" placeholder="Note min." value="${esc(TF.minovr)}">
       <input id="fmv" type="number" placeholder="Valeur max (M€)" value="${esc(TF.maxv)}">
       <input id="fage" type="number" placeholder="Âge max" value="${esc(TF.maxage)}">
+      ${typeof selectLigues === 'function' ? selectLigues(G, TF.lg) : ''}
       <label class="chk"><input type="checkbox" id="ffree" ${TF.free ? 'checked' : ''}> Libres / en vente</label>
     </div>${table(list.slice(0, 150))}<p class="hint">${list.length} joueurs${list.length > 150 ? ' (150 affichés)' : ''}.</p>`;
-    const upd = () => { TF = { q: $('#fq').value, pos: $('#fpos').value, maxv: $('#fmv').value, maxage: $('#fage').value, minovr: $('#fmo').value, free: $('#ffree').checked }; vTransfers(el); };
-    ['#fq', '#fpos', '#fmv', '#fage', '#fmo', '#ffree'].forEach(s => $(s).onchange = upd);
+    const upd = () => { TF = { q: $('#fq').value, pos: $('#fpos').value, maxv: $('#fmv').value, maxage: $('#fage').value, minovr: $('#fmo').value, free: $('#ffree').checked, lg: $('#flg')?.value || '' }; vTransfers(el); };
+    ['#fq', '#fpos', '#fmv', '#fage', '#fmo', '#ffree', '#flg'].forEach(s => { if ($(s)) $(s).onchange = upd; });
   } else if (TR_TAB === 'history') {
     const all = G.transfers || [];
     const mine = all.filter(t => t.from === G.clubId || t.to === G.clubId);

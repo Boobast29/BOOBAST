@@ -530,7 +530,7 @@ function dealsWeekly(G) {
     const p = getPlayer(G, d.pid), seller = d.from != null ? getClub(G, d.from) : null;
     if (!p) { d.status = 'failed'; continue; }
     if (seller && p.club !== seller.id) { dealFail(d, `${p.name} a rejoint un autre club entre-temps.`); continue; }
-    if (seller && !windowOpen(G) && d.status !== 'medical') { dealFail(d, 'le mercato a fermé avant la fin des négociations.'); continue; }
+    if (seller && !windowOpen(G) && !['medical', 'confirm'].includes(d.status)) { dealFail(d, 'le mercato a fermé avant la fin des négociations.'); continue; }
     if (d.status === 'club_wait' && G.week >= d.respond) {
       const ask = sellerAsk(G, p, myClub(G)), v = dealValue(G, d.offer, p);
       const key = clubPlayers(G, seller.id).sort((a, b) => playerOvr(b) - playerOvr(a)).indexOf(p) < 3;
