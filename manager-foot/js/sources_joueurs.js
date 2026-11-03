@@ -18,6 +18,7 @@
     if(source?.url && /^https:\/\//.test(source.url)){
       const link=document.createElement('a');link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';link.className='btn';link.textContent='Voir la fiche source';info.append(link);
     }
+    if(p.photoCandidate){const note=document.createElement('small');note.textContent='Photo : lien FMB essayé avec l’identifiant du joueur, disponibilité non vérifiée. Si l’image manque, ses initiales restent affichées.';info.append(note);}
     if(p.photoCredit?.page?.startsWith('https://commons.wikimedia.org/wiki/File:')){
       const credit=document.createElement('p'),link=document.createElement('a');
       link.href=p.photoCredit.page;link.target='_blank';link.rel='noopener noreferrer';
