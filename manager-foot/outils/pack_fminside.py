@@ -6,9 +6,16 @@ PACKS=Path(__file__).resolve().parent.parent/'packs'
 def lire_catalogue(root=PACKS):
     root=Path(root);manifest_path=root/'fminside-fm26.manifest.json'
     manifest=json.loads(manifest_path.read_text(encoding='utf-8')) if manifest_path.exists() else None
-    mono=root/'fminside-fm26.json.gz'
-    if mono.exists():
-        data=json.loads(gzip.decompress(mono.read_bytes()))
+    candidates=[]
+    for name in ('fminside-fm26.json','fminside-fm26.json.gz'):
+        file=root/name
+        if not file.exists():continue
+        try:
+            content=file.read_bytes();data=json.loads(gzip.decompress(content) if name.endswith('.gz') else content)
+            candidates.append(data)
+        except (OSError,ValueError,EOFError):continue
+    if candidates:
+        data=max(candidates,key=lambda d:(len(d['players']),d.get('retrievedAt','')))
         if not manifest or len(data['players'])>=manifest['profiles']:return data
     if manifest:
         parts=[]

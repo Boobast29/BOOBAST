@@ -11,6 +11,7 @@
     if(!labels[kind])return result;
     const info=document.createElement('div');info.className='card';info.dataset.playerSource='';
     const text=document.createElement('p');text.textContent=labels[kind]+(source?.database?' · '+source.database:'');info.append(text);
+    if(source?.freeAgentSnapshot && p.club==null){const note=document.createElement('small');note.textContent='Libre dans la base source FM26. Exigences salariales estimées pour la négociation.';info.append(note);}
     if(kind==='documented_attributes'){
       const note=document.createElement('small');note.textContent='Instantané partiel de la base source. Les autres notes restent calculées par le jeu ; les attributs évoluent avec la progression de cette carrière.';info.append(note);
     }
@@ -39,16 +40,21 @@ function actualiserAttributsCarriere(world,catalogue){
   const result={...world,players};delete result.pmap;delete result._pow;
   return {world:result,count};
 }
+async function enregistrerMiseAJourCarriere(before,after){
+  const key=before.slot && typeof slotKey==='function'?slotKey(before.slot):SAVE_KEY;
+  const {pmap,...backup}=before;await Store.set(key+'-bak1',backup);await Store.set(key,after);
+}
 async function proposerMiseAJourAttributs(){
   try{
     const catalogue=await chargerCatalogueFMInside();
     const update=actualiserAttributsCarriere(G,catalogue);
-    if(!update.count)return toast('Les fiches disponibles de cette carrière sont déjà à jour.');
-    confirmBox(`Actualiser les attributs initiaux de ${update.count} joueurs ? La progression, les statistiques, les transferts et les contrats de la carrière seront conservés.`,async()=>{
+    const libres=ajouterJoueursLibresDocumentes(update.world,catalogue);
+    if(!update.count && !libres.ajoutes)return toast('Les fiches disponibles de cette carrière sont déjà à jour.');
+    confirmBox(`Actualiser les attributs initiaux de ${update.count} joueurs et ajouter ${libres.ajoutes} joueurs libres documentés ? La progression, les statistiques, les transferts et les contrats de la carrière seront conservés.`,async()=>{
       try{
-        const current=actualiserAttributsCarriere(G,catalogue);current.world.rngState=RNGS.s;
-        await Store.set(SAVE_KEY,current.world);G=current.world;reindex(G);
-        toast(`${current.count} fiches actualisées et carrière sauvegardée.`);ouvrirClassementsMonde();
+        const current=actualiserAttributsCarriere(G,catalogue),libres=ajouterJoueursLibresDocumentes(current.world,catalogue);libres.monde.rngState=RNGS.s;
+        await enregistrerMiseAJourCarriere(G,libres.monde);G=libres.monde;reindex(G);
+        toast(`${current.count} fiches actualisées, ${libres.ajoutes} joueurs libres ajoutés et carrière sauvegardée.`);ouvrirClassementsMonde();
       }catch(err){toast('Mise à jour impossible : '+err.message,'err');}
     },'Actualiser les attributs');
   }catch(err){toast(err.message,'err');}

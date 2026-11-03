@@ -25,7 +25,12 @@ for(const country of index.countries){
 
 // Tous les pays d'une même carrière : calendrier, sauvegarde et promotions.
 const countries=index.countries.map(c=>JSON.parse(zlib.gunzipSync(fs.readFileSync(`${root}/packs/${c.file}`))));
-const all=ctx.construireMondeComplet(countries);
+vm.runInContext(fs.readFileSync(`${root}/js/integration_fminside.js`,'utf8'),ctx);
+const mf=JSON.parse(fs.readFileSync(`${root}/packs/fminside-fm26.manifest.json`));
+const realCatalogue=JSON.parse(zlib.gunzipSync(Buffer.concat(mf.parts.map(p=>fs.readFileSync(`${root}/packs/${p.file}`)))));
+const all=ctx.construireMondeComplet(countries,realCatalogue);
+assert.equal(all.players.filter(p=>p.club==null && p.sourceProfile?.freeAgentSnapshot).length,index.freeAgentsDocumented || 0);
+assert.equal(all.players.filter(p=>p.club==null).length,index.freeAgentsDocumented || 0);
 assert.equal(all.clubs.length,355);assert.equal(all.sourceCoverage.countries.length,5);
 assert.equal(new Set(all.players.map(p=>p.id)).size,all.players.length);
 ctx.setupEuropean=()=>{};ctx.news=()=>{};

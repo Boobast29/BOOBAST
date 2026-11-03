@@ -63,7 +63,7 @@ function construireCarriereMonde(pays, groupeD3) {
   monde.sourceCoverage={country:pays.country,competitions:comps.map(c=>c.fmUid),sourcePlayers:uids.size};
   return monde;
 }
-function construireMondeComplet(listePays) {
+function construireMondeComplet(listePays,catalogueLibres=null) {
   const clubs=[], players=[], seen=new Set(); let nextClub=1,nextPlayer=1;
   const catalogue=[];
   for(const pays of listePays){
@@ -85,9 +85,11 @@ function construireMondeComplet(listePays) {
     }
     catalogue.push({country:pays.country,label:pays.label,competitions:comps});
   }
-  return {clubs,players,noForeign:true,wagesScaled:true,worldMode:true,worldCountries:catalogue,
+  const monde={clubs,players,noForeign:true,wagesScaled:true,worldMode:true,worldCountries:catalogue,
     leagueNames:['D1 · tous les pays','D2 · tous les pays','D3 · groupe 1','D3 · groupe 2','D3 · groupe 3'],cupName:'Coupe nationale',
     sourceCoverage:{countries:listePays.map(p=>p.country),sourcePlayers:seen.size,competitions:catalogue.flatMap(c=>c.competitions.map(c=>c.fmUid))}};
+  if(catalogueLibres){const result=ajouterJoueursLibresDocumentes(monde,catalogueLibres);result.monde.sourceCoverage.freeAgents=result.ajoutes;return result.monde;}
+  return monde;
 }
 async function ouvrirMondeEtendu() {
   const host=document.querySelector('#app');
@@ -95,7 +97,7 @@ async function ouvrirMondeEtendu() {
   const el=id=>document.getElementById(id);el('meRetour').onclick=startScreen;
   try {
     const r=await fetch('packs/monde-index.json');if(!r.ok)throw Error('Index mondial indisponible');const index=await r.json();
-    el('meEtat').textContent=`${index.totals.clubs} clubs · ${index.totals.competitions} compétitions · ${index.totals.players} joueurs · ${index.totals.staff} membres du staff. ${index.notice}`;
+    el('meEtat').textContent=`${index.totals.clubs} clubs · ${index.totals.competitions} compétitions · ${index.totals.players} joueurs · ${index.totals.staff} membres du staff · ${index.freeAgentsDocumented || 0} joueurs libres documentés. ${index.notice}`;
     el('mePays').innerHTML=index.countries.map(c=>`<option value="${esc(c.key)}">${esc(c.label)}</option>`).join('');
     let pays, request=0;
     const charger=async()=>{
@@ -113,7 +115,7 @@ async function ouvrirMondeEtendu() {
       el('meCreer').disabled=true;
       try {
         const tousLesPays=await Promise.all(index.countries.map(c=>lirePaysMonde(c.file)));
-        const monde=construireMondeComplet(tousLesPays);
+        const monde=construireMondeComplet(tousLesPays,await chargerCatalogueFMInside());
         await Store.set(DB_KEY,monde);DB=monde;startScreen();toast(`Base préparée : ${monde.clubs.length} clubs, ${monde.sourceCoverage.sourcePlayers} joueurs issus des sources. Choisis ton club.`);
       }catch(err){el('meBilan').textContent=err.message;el('meCreer').disabled=false;}
     };

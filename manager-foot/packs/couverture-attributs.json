@@ -1,11 +1,13 @@
 {
-  "auditedAt": "2026-11-03T18:53:29.218282+00:00",
-  "fmInsideProfiles": 2482,
+  "auditedAt": "2026-11-03T19:19:36.853799+00:00",
+  "fmInsideProfiles": 2631,
   "attributesPerProfile": {
-    "36": 2294,
-    "38": 188
+    "36": 2433,
+    "38": 198
   },
-  "uniqueUids": 2482,
+  "documentedFreeAgents": 150,
+  "freeAgentSourceVersion": "FM26 26.2.0",
+  "uniqueUids": 2631,
   "documentedPlayersInGame": 2218,
   "countries": [
     {
@@ -40,37 +42,5 @@
     }
   ],
   "collectionErrors": [],
-  "note": "Données du jeu FM26, situation réelle actuelle non vérifiée. Les profils hors effectifs connus ne sont pas affectés arbitrairement.",
-  "targeting": {
-    "newProfilesInGame": 1200,
-    "allNewProfilesInGame": true,
-    "enrichedClubs": 343,
-    "countries": {
-      "France": 201,
-      "England": 201,
-      "Italy": 333,
-      "Germany": 201,
-      "Spain": 264
-    },
-    "competitions": {
-      "Ligue 1": 67,
-      "Premier League": 67,
-      "Serie A": 67,
-      "Bundesliga": 67,
-      "LaLiga": 66,
-      "Bundesliga 2": 67,
-      "Championship": 67,
-      "Ligue 2": 67,
-      "Spanish Second Division": 66,
-      "Serie B": 67,
-      "3. Liga": 67,
-      "Spanish Federation First Division B": 66,
-      "League One": 67,
-      "Spanish Federation First Division A": 66,
-      "Lega Pro Girone C": 66,
-      "Lega Pro Girone A": 67,
-      "National": 67,
-      "Lega Pro Girone B": 66
-    }
-  }
+  "note": "Données du jeu FM26, situation réelle actuelle non vérifiée. Les profils hors effectifs connus ne sont pas affectés arbitrairement."
 }

@@ -51,3 +51,11 @@ python outils/enrichir_effectifs.py --tout
 ```
 
 Sous Windows, `Completer_Attributs_Des_Clubs.bat` lance ce dernier mode avec Python et curl disponibles. Les fiches déjà récupérées sont réutilisées. Le téléchargement peut être long ; une relance reprend les cibles manquantes. Le script contrôle les identifiants et les valeurs, actualise les compteurs puis prépare les fichiers du jeu. Les profils indisponibles ou incomplets restent signalés, sans notes inventées. La publication en petites parties vérifiées facilite les compléments successifs ; l’ancien fichier gzip reste lisible.
+
+Joueurs libres : premier lot de 150 profils explicitement identifiés par le filtre « Free transfers / No contract » de FMInside en version FM26. Un club vide ne suffit jamais à déclarer un joueur libre. Le statut correspond à l’instantané FM26 de la source, sans vérification en temps réel. Le catalogue indique ce statut ; les nouvelles carrières multi-pays ajoutent ces joueurs au marché des agents libres, après dédoublonnage par UID. Les profils déjà rattachés à un club dans la base ou dans une carrière restent sous contrat dans ce club. Les exigences salariales des agents libres sont estimées pour la simulation, et leur recrutement passe par les négociations habituelles.
+
+Dans une carrière existante, **Tous les pays → Actualiser les attributs documentés** propose aussi l’ajout des agents libres manquants. Les signatures déjà réalisées, les salaires et les contrats de la carrière sont conservés.
+
+Collecte dédiée : `python outils/enrichir_effectifs.py --libres-seulement --pages-libres 3` ; mettre `0` pour toutes les pages. `Completer_Joueurs_Libres.bat` lance ce mode complet sous Windows. `--libres` ajoute un lot de joueurs libres à la collecte habituelle des effectifs. Les pages sont filtrées sur le statut explicite « Free Agent » et la source FM26.
+
+La mise à jour d’une carrière écrit dans son emplacement de sauvegarde actif et conserve une copie avant modification. Les anciens profils homonymes sans UID empêchent un ajout ambigu de joueur libre, sans modification de leur contrat.

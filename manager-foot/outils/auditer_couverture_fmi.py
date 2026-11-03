@@ -24,10 +24,13 @@ def audit(baseline=None):
         documented=sum(bool(p.get('attributes')) or str(p['fmUid']) in known for p in ps)
         country['detailedPlayers']=documented
         countries.append({'country':country['key'],'label':country['label'],'players':len(ps),'documentedPlayers':documented})
+    libres=[p for p in players if p.get('freeAgentSnapshot') is True and str(p['fmUid']) not in owners]
+    index['freeAgentsDocumented']=len(libres)
     index['totals']['detailedPlayers']=sum(c['documentedPlayers'] for c in countries)
     index['fmInsideProfiles']=len(players);index['attributesOverlay']='fminside-fm26.json.gz'
     report={'auditedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'fmInsideProfiles':len(players),
             'attributesPerProfile':dict(collections.Counter(len(p['attributes']) for p in players)),
+            'documentedFreeAgents':len(libres),'freeAgentSourceVersion':'FM26 26.2.0',
             'uniqueUids':len(known),'documentedPlayersInGame':index['totals']['detailedPlayers'],
             'countries':countries,'collectionErrors':data.get('errors',[]),
             'note':'Données du jeu FM26, situation réelle actuelle non vérifiée. Les profils hors effectifs connus ne sont pas affectés arbitrairement.'}

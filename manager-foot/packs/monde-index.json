@@ -68,5 +68,6 @@
     "detailedPlayers": 2218
   },
   "attributesOverlay": "fminside-fm26.json.gz",
-  "fmInsideProfiles": 2482
+  "fmInsideProfiles": 2631,
+  "freeAgentsDocumented": 150
 }
