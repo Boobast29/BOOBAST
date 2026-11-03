@@ -1,0 +1,453 @@
+{
+  "source": "npm releases, resolved versions fixed in tools/integration20/package-lock.json",
+  "repositories": [
+    {
+      "package": "minisearch",
+      "version": "7.2.0",
+      "repository": "https://github.com/lucaong/minisearch",
+      "license": "MIT",
+      "license_file": "licenses/minisearch/LICENSE.txt",
+      "feature": "Recherche des dossiers",
+      "entry": "s20Notes",
+      "usage_key": "minisearch"
+    },
+    {
+      "package": "microdiff",
+      "version": "1.6.0",
+      "repository": "https://github.com/AsyncBanana/microdiff",
+      "license": "MIT",
+      "license_file": "licenses/microdiff/LICENSE",
+      "feature": "Annuler/rétablir dans l’éditeur",
+      "entry": "persistWorld et s20Undo",
+      "usage_key": "microdiff"
+    },
+    {
+      "package": "decimal.js",
+      "version": "10.6.0",
+      "repository": "https://github.com/MikeMcl/decimal.js",
+      "license": "MIT",
+      "license_file": "licenses/decimal.js/LICENCE.md",
+      "feature": "Échéances monétaires exactes",
+      "entry": "s20Schedule",
+      "usage_key": "decimal.js"
+    },
+    {
+      "package": "sortablejs",
+      "version": "1.15.7",
+      "repository": "https://github.com/SortableJS/Sortable",
+      "license": "MIT",
+      "license_file": "licenses/sortablejs/LICENSE",
+      "feature": "Ordre des dossiers",
+      "entry": "s20Notes",
+      "usage_key": "sortablejs"
+    },
+    {
+      "package": "cropperjs",
+      "version": "1.6.2",
+      "repository": "https://github.com/fengyuanchen/cropperjs",
+      "license": "MIT",
+      "license_file": "licenses/cropperjs/LICENSE",
+      "feature": "Recadrage de logo/photo",
+      "entry": "s20Image",
+      "usage_key": "cropperjs"
+    },
+    {
+      "package": "overlayscrollbars",
+      "version": "2.17.0",
+      "repository": "https://github.com/KingSora/OverlayScrollbars",
+      "license": "MIT",
+      "license_file": "licenses/overlayscrollbars/LICENSE",
+      "feature": "Défilement du menu",
+      "entry": "s20Context",
+      "usage_key": "overlayscrollbars"
+    },
+    {
+      "package": "split.js",
+      "version": "1.6.5",
+      "repository": "https://github.com/nathancahill/split",
+      "license": "MIT",
+      "license_file": "licenses/split.js/LICENSE.txt",
+      "feature": "Largeur des panneaux de mail",
+      "entry": "s20Context",
+      "usage_key": "split.js"
+    },
+    {
+      "package": "@panzoom/panzoom",
+      "version": "4.6.2",
+      "repository": "https://github.com/timmywil/panzoom",
+      "license": "MIT",
+      "license_file": "licenses/@panzoom_panzoom/MIT-License.txt",
+      "feature": "Zoom de carte des tirs",
+      "entry": "s20Context",
+      "usage_key": "panzoom"
+    },
+    {
+      "package": "cytoscape",
+      "version": "3.34.4",
+      "repository": "https://github.com/cytoscape/cytoscape.js",
+      "license": "MIT",
+      "license_file": "licenses/cytoscape/LICENSE",
+      "feature": "Carte du vestiaire",
+      "entry": "s20Network",
+      "usage_key": "cytoscape"
+    },
+    {
+      "package": "graphology",
+      "version": "0.26.0",
+      "repository": "https://github.com/graphology/graphology",
+      "license": "MIT",
+      "license_file": "licenses/graphology/LICENSE.txt",
+      "feature": "Modèle et degrés des relations",
+      "entry": "s20Network",
+      "usage_key": "graphology"
+    },
+    {
+      "package": "gridstack",
+      "version": "14.0.0",
+      "repository": "https://github.com/gridstack/gridstack.js",
+      "license": "MIT",
+      "license_file": "licenses/gridstack/LICENSE",
+      "feature": "Bureau déplaçable et redimensionnable",
+      "entry": "s20Dashboard",
+      "usage_key": "gridstack"
+    },
+    {
+      "package": "@fullcalendar/core",
+      "version": "6.1.22",
+      "repository": "https://github.com/fullcalendar/fullcalendar",
+      "license": "MIT",
+      "license_file": "licenses/@fullcalendar_core/LICENSE.md",
+      "feature": "Planning mensuel et hebdomadaire",
+      "entry": "s20Planning",
+      "usage_key": "fullcalendar"
+    },
+    {
+      "package": "rrule",
+      "version": "2.8.1",
+      "repository": "https://github.com/jkbrzt/rrule",
+      "license": "BSD-3-Clause",
+      "license_file": "licenses/rrule/LICENCE",
+      "feature": "Bilans récurrents",
+      "entry": "s20Planning",
+      "usage_key": "rrule"
+    },
+    {
+      "package": "ical.js",
+      "version": "2.2.1",
+      "repository": "https://github.com/kewisch/ical.js",
+      "license": "MPL-2.0",
+      "license_file": "licenses/ical.js/LICENSE",
+      "feature": "Export calendrier iCalendar",
+      "entry": "s20CalendarText",
+      "usage_key": "ical.js"
+    },
+    {
+      "package": "ajv",
+      "version": "8.20.0",
+      "repository": "https://github.com/ajv-validator/ajv",
+      "license": "MIT",
+      "license_file": "licenses/ajv/LICENSE",
+      "feature": "Validation des dossiers JSON",
+      "entry": "s20CheckRecords",
+      "usage_key": "ajv"
+    },
+    {
+      "package": "jedison",
+      "version": "1.31.1",
+      "repository": "https://github.com/germanbisurgi/jedison",
+      "license": "MIT",
+      "license_file": "licenses/jedison/LICENSE",
+      "feature": "Formulaire de projet",
+      "entry": "s20ProjectForm",
+      "usage_key": "jedison"
+    },
+    {
+      "package": "dexie",
+      "version": "4.4.7",
+      "repository": "https://github.com/dexie/Dexie.js",
+      "license": "Apache-2.0",
+      "license_file": "licenses/dexie/LICENSE",
+      "feature": "Dossiers locaux par partie",
+      "entry": "s20Store",
+      "usage_key": "dexie"
+    },
+    {
+      "package": "nanoid",
+      "version": "6.0.2",
+      "repository": "https://github.com/ai/nanoid",
+      "license": "MIT",
+      "license_file": "licenses/nanoid/LICENSE",
+      "feature": "Identifiants des dossiers",
+      "entry": "s20Record",
+      "usage_key": "nanoid"
+    },
+    {
+      "package": "notyf",
+      "version": "3.10.0",
+      "repository": "https://github.com/caroso1222/notyf",
+      "license": "MIT",
+      "license_file": "licenses/notyf/LICENSE.md",
+      "feature": "Notifications globales",
+      "entry": "toast",
+      "usage_key": "notyf"
+    },
+    {
+      "package": "focus-trap",
+      "version": "8.2.4",
+      "repository": "https://github.com/focus-trap/focus-trap",
+      "license": "MIT",
+      "license_file": "licenses/focus-trap/LICENSE",
+      "feature": "Clavier des fenêtres du Studio",
+      "entry": "s20Modal",
+      "usage_key": "focus-trap"
+    }
+  ],
+  "transitive_notices": [
+    {
+      "name": "minisearch",
+      "version": "7.2.0",
+      "license": "MIT",
+      "files": [
+        "LICENSE.txt"
+      ]
+    },
+    {
+      "name": "microdiff",
+      "version": "1.6.0",
+      "license": "MIT",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "decimal.js",
+      "version": "10.6.0",
+      "license": "MIT",
+      "files": [
+        "LICENCE.md"
+      ]
+    },
+    {
+      "name": "sortablejs",
+      "version": "1.15.7",
+      "license": "MIT",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "cropperjs",
+      "version": "1.6.2",
+      "license": "MIT",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "overlayscrollbars",
+      "version": "2.17.0",
+      "license": "MIT",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "split.js",
+      "version": "1.6.5",
+      "license": "MIT",
+      "files": [
+        "LICENSE.txt"
+      ]
+    },
+    {
+      "name": "@panzoom/panzoom",
+      "version": "4.6.2",
+      "license": "MIT",
+      "files": [
+        "MIT-License.txt"
+      ]
+    },
+    {
+      "name": "cytoscape",
+      "version": "3.34.4",
+      "license": "MIT",
+      "files": [
+        "LICENSE",
+        "license-update.mjs"
+      ]
+    },
+    {
+      "name": "events",
+      "version": "3.3.0",
+      "license": "MIT",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "graphology",
+      "version": "0.26.0",
+      "license": "MIT",
+      "files": [
+        "LICENSE.txt"
+      ]
+    },
+    {
+      "name": "gridstack",
+      "version": "14.0.0",
+      "license": "MIT",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "preact",
+      "version": "10.12.1",
+      "license": "MIT",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "preact-hooks",
+      "version": "0.1.0",
+      "license": "MIT",
+      "files": []
+    },
+    {
+      "name": "preact-compat",
+      "version": "4.0.0",
+      "license": "MIT",
+      "files": []
+    },
+    {
+      "name": "@fullcalendar/core",
+      "version": "6.1.22",
+      "license": "MIT",
+      "files": [
+        "LICENSE.md"
+      ]
+    },
+    {
+      "name": "@fullcalendar/daygrid",
+      "version": "6.1.22",
+      "license": "MIT",
+      "files": [
+        "LICENSE.md"
+      ]
+    },
+    {
+      "name": "@fullcalendar/interaction",
+      "version": "6.1.22",
+      "license": "MIT",
+      "files": [
+        "LICENSE.md"
+      ]
+    },
+    {
+      "name": "rrule",
+      "version": "2.8.1",
+      "license": "BSD-3-Clause",
+      "files": [
+        "LICENCE"
+      ]
+    },
+    {
+      "name": "tslib",
+      "version": "2.9.1",
+      "license": "0BSD",
+      "files": [
+        "LICENSE.txt"
+      ]
+    },
+    {
+      "name": "ical.js",
+      "version": "2.2.1",
+      "license": "MPL-2.0",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "ajv",
+      "version": "8.20.0",
+      "license": "MIT",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "fast-deep-equal",
+      "version": "3.1.3",
+      "license": "MIT",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "json-schema-traverse",
+      "version": "1.0.0",
+      "license": "MIT",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "fast-uri",
+      "version": "3.1.9",
+      "license": "BSD-3-Clause",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "jedison",
+      "version": "1.31.1",
+      "license": "MIT",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "dexie",
+      "version": "4.4.7",
+      "license": "Apache-2.0",
+      "files": [
+        "LICENSE",
+        "NOTICE"
+      ]
+    },
+    {
+      "name": "nanoid",
+      "version": "6.0.2",
+      "license": "MIT",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "notyf",
+      "version": "3.10.0",
+      "license": "MIT",
+      "files": [
+        "LICENSE.md"
+      ]
+    },
+    {
+      "name": "tabbable",
+      "version": "6.5.1",
+      "license": "MIT",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "name": "focus-trap",
+      "version": "8.2.4",
+      "license": "MIT",
+      "files": [
+        "LICENSE"
+      ]
+    }
+  ]
+}

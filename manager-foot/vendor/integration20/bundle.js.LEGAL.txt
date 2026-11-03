@@ -1,0 +1,93 @@
+Bundled license information:
+
+cropperjs/dist/cropper.js:
+  /*!
+   * Cropper.js v1.6.2
+   * https://fengyuanchen.github.io/cropperjs
+   *
+   * Copyright 2015-present Chen Fengyuan
+   * Released under the MIT license
+   *
+   * Date: 2024-04-21T07:43:05.335Z
+   */
+
+decimal.js/decimal.mjs:
+  /*!
+   *  decimal.js v10.6.0
+   *  An arbitrary-precision Decimal type for JavaScript.
+   *  https://github.com/MikeMcl/decimal.js
+   *  Copyright (c) 2025 Michael Mclaughlin <M8ch88l@gmail.com>
+   *  MIT Licence
+   */
+
+sortablejs/modular/sortable.esm.js:
+  /**!
+   * Sortable 1.15.7
+   * @author	RubaXa   <trash@rubaxa.org>
+   * @author	owenm    <owen23355@gmail.com>
+   * @license MIT
+   */
+
+overlayscrollbars/overlayscrollbars.mjs:
+  /*!
+   * OverlayScrollbars
+   * Version: 2.17.0
+   *
+   * Copyright (c) Rene Haas | KingSora.
+   * https://github.com/KingSora
+   *
+   * Released under the MIT license.
+   */
+
+cytoscape/dist/cytoscape.esm.mjs:
+  /*!
+  Embeddable Minimum Strictly-Compliant Promises/A+ 1.1.1 Thenable
+  Copyright (c) 2013-2014 Ralf S. Engelschall (http://engelschall.com)
+  Licensed under The MIT License (http://opensource.org/licenses/MIT)
+  */
+  /*!
+  Event object based on jQuery events, MIT license
+  
+  https://jquery.org/license/
+  https://tldrlegal.com/license/mit-license
+  https://github.com/jquery/jquery/blob/master/src/event.js
+  */
+  /*! Bezier curve function generator. Copyright Gaetan Renaudeau. MIT License: http://en.wikipedia.org/wiki/MIT_License */
+  /*! Runge-Kutta spring physics function generator. Adapted from Framer.js, copyright Koen Bok. MIT License: http://en.wikipedia.org/wiki/MIT_License */
+
+gridstack/dist/gridstack.js:
+  /*!
+   * GridStack 14.0.0
+   * https://gridstackjs.com/
+   *
+   * Copyright (c) 2021-2025  Alain Dumesny
+   * see root license https://github.com/gridstack/gridstack.js/tree/master/LICENSE
+   */
+
+notyf/notyf.es.js:
+  /*! *****************************************************************************
+  Copyright (c) Microsoft Corporation.
+  
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted.
+  
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+  REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+  INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+  LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+  OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+  PERFORMANCE OF THIS SOFTWARE.
+  ***************************************************************************** */
+
+tabbable/dist/index.esm.js:
+  /*!
+  * tabbable 6.5.1
+  * @license MIT, https://github.com/focus-trap/tabbable/blob/master/LICENSE
+  */
+
+focus-trap/dist/focus-trap.esm.js:
+  /*!
+  * focus-trap 8.2.4
+  * @license MIT, https://github.com/focus-trap/focus-trap/blob/master/LICENSE
+  */

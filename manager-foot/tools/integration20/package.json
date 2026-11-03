@@ -1,0 +1,35 @@
+{
+  "name": "manager-foot-integration20-build",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "minisearch": "7.2.0",
+    "microdiff": "1.6.0",
+    "decimal.js": "10.6.0",
+    "sortablejs": "1.15.7",
+    "cropperjs": "1.6.2",
+    "overlayscrollbars": "2.17.0",
+    "split.js": "1.6.5",
+    "@panzoom/panzoom": "4.6.2",
+    "cytoscape": "3.34.4",
+    "graphology": "0.26.0",
+    "gridstack": "14.0.0",
+    "@fullcalendar/core": "6.1.22",
+    "rrule": "2.8.1",
+    "ical.js": "2.2.1",
+    "ajv": "8.20.0",
+    "jedison": "1.31.1",
+    "dexie": "4.4.7",
+    "nanoid": "6.0.2",
+    "notyf": "3.10.0",
+    "focus-trap": "8.2.4",
+    "@fullcalendar/daygrid": "6.1.22",
+    "@fullcalendar/interaction": "6.1.22"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

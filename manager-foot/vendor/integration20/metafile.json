@@ -1,0 +1,3224 @@
+{
+  "inputs": {
+    "npm/minisearch/dist/es/index.js": {
+      "bytes": 78014,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/microdiff/dist/index.js": {
+      "bytes": 2589,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/decimal.js/decimal.mjs": {
+      "bytes": 127787,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/sortablejs/modular/sortable.esm.js": {
+      "bytes": 119505,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/cropperjs/dist/cropper.js": {
+      "bytes": 113899,
+      "imports": [],
+      "format": "cjs"
+    },
+    "npm/overlayscrollbars/overlayscrollbars.mjs": {
+      "bytes": 75610,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/split.js/dist/split.es.js": {
+      "bytes": 27761,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/@panzoom/panzoom/dist/panzoom.es.js": {
+      "bytes": 26822,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/cytoscape/dist/cytoscape.esm.mjs": {
+      "bytes": 1109486,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/events/events.js": {
+      "bytes": 14890,
+      "imports": [],
+      "format": "cjs"
+    },
+    "npm/graphology/dist/graphology.mjs": {
+      "bytes": 178150,
+      "imports": [
+        {
+          "path": "npm/events/events.js",
+          "kind": "import-statement",
+          "original": "events"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/gridstack/dist/utils.js": {
+      "bytes": 26606,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/gridstack/dist/gridstack-engine.js": {
+      "bytes": 59761,
+      "imports": [
+        {
+          "path": "npm/gridstack/dist/utils.js",
+          "kind": "import-statement",
+          "original": "./utils"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/gridstack/dist/types.js": {
+      "bytes": 1164,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/gridstack/dist/dd-manager.js": {
+      "bytes": 464,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/gridstack/dist/dd-touch.js": {
+      "bytes": 8673,
+      "imports": [
+        {
+          "path": "npm/gridstack/dist/dd-manager.js",
+          "kind": "import-statement",
+          "original": "./dd-manager"
+        },
+        {
+          "path": "npm/gridstack/dist/utils.js",
+          "kind": "import-statement",
+          "original": "./utils"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/gridstack/dist/dd-resizable-handle.js": {
+      "bytes": 5483,
+      "imports": [
+        {
+          "path": "npm/gridstack/dist/dd-touch.js",
+          "kind": "import-statement",
+          "original": "./dd-touch"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/gridstack/dist/dd-base-impl.js": {
+      "bytes": 2190,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/gridstack/dist/dd-resizable.js": {
+      "bytes": 14416,
+      "imports": [
+        {
+          "path": "npm/gridstack/dist/dd-resizable-handle.js",
+          "kind": "import-statement",
+          "original": "./dd-resizable-handle"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-base-impl.js",
+          "kind": "import-statement",
+          "original": "./dd-base-impl"
+        },
+        {
+          "path": "npm/gridstack/dist/utils.js",
+          "kind": "import-statement",
+          "original": "./utils"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-manager.js",
+          "kind": "import-statement",
+          "original": "./dd-manager"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/gridstack/dist/dd-draggable.js": {
+      "bytes": 25967,
+      "imports": [
+        {
+          "path": "npm/gridstack/dist/dd-manager.js",
+          "kind": "import-statement",
+          "original": "./dd-manager"
+        },
+        {
+          "path": "npm/gridstack/dist/utils.js",
+          "kind": "import-statement",
+          "original": "./utils"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-base-impl.js",
+          "kind": "import-statement",
+          "original": "./dd-base-impl"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-touch.js",
+          "kind": "import-statement",
+          "original": "./dd-touch"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/gridstack/dist/dd-droppable.js": {
+      "bytes": 6657,
+      "imports": [
+        {
+          "path": "npm/gridstack/dist/dd-manager.js",
+          "kind": "import-statement",
+          "original": "./dd-manager"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-base-impl.js",
+          "kind": "import-statement",
+          "original": "./dd-base-impl"
+        },
+        {
+          "path": "npm/gridstack/dist/utils.js",
+          "kind": "import-statement",
+          "original": "./utils"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-touch.js",
+          "kind": "import-statement",
+          "original": "./dd-touch"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/gridstack/dist/dd-element.js": {
+      "bytes": 2755,
+      "imports": [
+        {
+          "path": "npm/gridstack/dist/dd-resizable.js",
+          "kind": "import-statement",
+          "original": "./dd-resizable"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-draggable.js",
+          "kind": "import-statement",
+          "original": "./dd-draggable"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-droppable.js",
+          "kind": "import-statement",
+          "original": "./dd-droppable"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/gridstack/dist/dd-gridstack.js": {
+      "bytes": 7455,
+      "imports": [
+        {
+          "path": "npm/gridstack/dist/utils.js",
+          "kind": "import-statement",
+          "original": "./utils"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-manager.js",
+          "kind": "import-statement",
+          "original": "./dd-manager"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-element.js",
+          "kind": "import-statement",
+          "original": "./dd-element"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/gridstack/dist/gridstack.js": {
+      "bytes": 143835,
+      "imports": [
+        {
+          "path": "npm/gridstack/dist/gridstack-engine.js",
+          "kind": "import-statement",
+          "original": "./gridstack-engine"
+        },
+        {
+          "path": "npm/gridstack/dist/utils.js",
+          "kind": "import-statement",
+          "original": "./utils"
+        },
+        {
+          "path": "npm/gridstack/dist/types.js",
+          "kind": "import-statement",
+          "original": "./types"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-gridstack.js",
+          "kind": "import-statement",
+          "original": "./dd-gridstack"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-touch.js",
+          "kind": "import-statement",
+          "original": "./dd-touch"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-manager.js",
+          "kind": "import-statement",
+          "original": "./dd-manager"
+        },
+        {
+          "path": "npm/gridstack/dist/types.js",
+          "kind": "import-statement",
+          "original": "./types"
+        },
+        {
+          "path": "npm/gridstack/dist/utils.js",
+          "kind": "import-statement",
+          "original": "./utils"
+        },
+        {
+          "path": "npm/gridstack/dist/gridstack-engine.js",
+          "kind": "import-statement",
+          "original": "./gridstack-engine"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-gridstack.js",
+          "kind": "import-statement",
+          "original": "./dd-gridstack"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-manager.js",
+          "kind": "import-statement",
+          "original": "./dd-manager"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-element.js",
+          "kind": "import-statement",
+          "original": "./dd-element"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-draggable.js",
+          "kind": "import-statement",
+          "original": "./dd-draggable"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-droppable.js",
+          "kind": "import-statement",
+          "original": "./dd-droppable"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-resizable.js",
+          "kind": "import-statement",
+          "original": "./dd-resizable"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-resizable-handle.js",
+          "kind": "import-statement",
+          "original": "./dd-resizable-handle"
+        },
+        {
+          "path": "npm/gridstack/dist/dd-base-impl.js",
+          "kind": "import-statement",
+          "original": "./dd-base-impl"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/preact/dist/preact.module.js": {
+      "bytes": 10726,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/preact/hooks/dist/hooks.module.js": {
+      "bytes": 3562,
+      "imports": [
+        {
+          "path": "npm/preact/dist/preact.module.js",
+          "kind": "import-statement",
+          "original": "preact"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/preact/compat/dist/compat.module.js": {
+      "bytes": 9341,
+      "imports": [
+        {
+          "path": "npm/preact/dist/preact.module.js",
+          "kind": "import-statement",
+          "original": "preact"
+        },
+        {
+          "path": "npm/preact/dist/preact.module.js",
+          "kind": "import-statement",
+          "original": "preact"
+        },
+        {
+          "path": "npm/preact/hooks/dist/hooks.module.js",
+          "kind": "import-statement",
+          "original": "preact/hooks"
+        },
+        {
+          "path": "npm/preact/hooks/dist/hooks.module.js",
+          "kind": "import-statement",
+          "original": "preact/hooks"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/@fullcalendar/core/internal-common.js": {
+      "bytes": 301989,
+      "imports": [
+        {
+          "path": "npm/preact/dist/preact.module.js",
+          "kind": "import-statement",
+          "original": "preact"
+        },
+        {
+          "path": "npm/preact/dist/preact.module.js",
+          "kind": "import-statement",
+          "original": "preact"
+        },
+        {
+          "path": "npm/preact/compat/dist/compat.module.js",
+          "kind": "import-statement",
+          "original": "preact/compat"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/@fullcalendar/core/index.js": {
+      "bytes": 95470,
+      "imports": [
+        {
+          "path": "npm/@fullcalendar/core/internal-common.js",
+          "kind": "import-statement",
+          "original": "./internal-common.js"
+        },
+        {
+          "path": "npm/@fullcalendar/core/internal-common.js",
+          "kind": "import-statement",
+          "original": "./internal-common.js"
+        },
+        {
+          "path": "npm/preact/dist/preact.module.js",
+          "kind": "import-statement",
+          "original": "preact"
+        },
+        {
+          "path": "npm/preact/compat/dist/compat.module.js",
+          "kind": "import-statement",
+          "original": "preact/compat"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/@fullcalendar/core/internal.js": {
+      "bytes": 4228,
+      "imports": [
+        {
+          "path": "npm/@fullcalendar/core/internal-common.js",
+          "kind": "import-statement",
+          "original": "./internal-common.js"
+        },
+        {
+          "path": "npm/preact/dist/preact.module.js",
+          "kind": "import-statement",
+          "original": "preact"
+        },
+        {
+          "path": "npm/preact/compat/dist/compat.module.js",
+          "kind": "import-statement",
+          "original": "preact/compat"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/@fullcalendar/core/preact.js": {
+      "bytes": 147,
+      "imports": [
+        {
+          "path": "npm/preact/dist/preact.module.js",
+          "kind": "import-statement",
+          "original": "preact"
+        },
+        {
+          "path": "npm/preact/compat/dist/compat.module.js",
+          "kind": "import-statement",
+          "original": "preact/compat"
+        },
+        {
+          "path": "npm/@fullcalendar/core/internal-common.js",
+          "kind": "import-statement",
+          "original": "./internal-common.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/@fullcalendar/daygrid/internal.js": {
+      "bytes": 52637,
+      "imports": [
+        {
+          "path": "npm/@fullcalendar/core/internal.js",
+          "kind": "import-statement",
+          "original": "@fullcalendar/core/internal.js"
+        },
+        {
+          "path": "npm/@fullcalendar/core/preact.js",
+          "kind": "import-statement",
+          "original": "@fullcalendar/core/preact.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/@fullcalendar/daygrid/index.js": {
+      "bytes": 941,
+      "imports": [
+        {
+          "path": "npm/@fullcalendar/core/index.js",
+          "kind": "import-statement",
+          "original": "@fullcalendar/core/index.js"
+        },
+        {
+          "path": "npm/@fullcalendar/daygrid/internal.js",
+          "kind": "import-statement",
+          "original": "./internal.js"
+        },
+        {
+          "path": "npm/@fullcalendar/core/internal.js",
+          "kind": "import-statement",
+          "original": "@fullcalendar/core/internal.js"
+        },
+        {
+          "path": "npm/@fullcalendar/core/preact.js",
+          "kind": "import-statement",
+          "original": "@fullcalendar/core/preact.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/@fullcalendar/interaction/index.js": {
+      "bytes": 90612,
+      "imports": [
+        {
+          "path": "npm/@fullcalendar/core/index.js",
+          "kind": "import-statement",
+          "original": "@fullcalendar/core/index.js"
+        },
+        {
+          "path": "npm/@fullcalendar/core/internal.js",
+          "kind": "import-statement",
+          "original": "@fullcalendar/core/internal.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/@fullcalendar/core/locales/fr.js": {
+      "bytes": 572,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/weekday.js": {
+      "bytes": 1368,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/helpers.js": {
+      "bytes": 3631,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/weekday.js",
+          "kind": "import-statement",
+          "original": "./weekday"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/dateutil.js": {
+      "bytes": 5586,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/helpers.js",
+          "kind": "import-statement",
+          "original": "./helpers"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/iterresult.js": {
+      "bytes": 2747,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/tslib/tslib.es6.mjs": {
+      "bytes": 18116,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/callbackiterresult.js": {
+      "bytes": 832,
+      "imports": [
+        {
+          "path": "npm/tslib/tslib.es6.mjs",
+          "kind": "import-statement",
+          "original": "tslib"
+        },
+        {
+          "path": "npm/rrule/dist/esm/iterresult.js",
+          "kind": "import-statement",
+          "original": "./iterresult"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/nlp/i18n.js": {
+      "bytes": 2006,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/nlp/totext.js": {
+      "bytes": 14706,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/nlp/i18n.js",
+          "kind": "import-statement",
+          "original": "./i18n"
+        },
+        {
+          "path": "npm/rrule/dist/esm/rrule.js",
+          "kind": "import-statement",
+          "original": "../rrule"
+        },
+        {
+          "path": "npm/rrule/dist/esm/helpers.js",
+          "kind": "import-statement",
+          "original": "../helpers"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/nlp/parsetext.js": {
+      "bytes": 12616,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/nlp/i18n.js",
+          "kind": "import-statement",
+          "original": "./i18n"
+        },
+        {
+          "path": "npm/rrule/dist/esm/rrule.js",
+          "kind": "import-statement",
+          "original": "../rrule"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/types.js": {
+      "bytes": 562,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/nlp/index.js": {
+      "bytes": 3451,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/nlp/totext.js",
+          "kind": "import-statement",
+          "original": "./totext"
+        },
+        {
+          "path": "npm/rrule/dist/esm/nlp/parsetext.js",
+          "kind": "import-statement",
+          "original": "./parsetext"
+        },
+        {
+          "path": "npm/rrule/dist/esm/rrule.js",
+          "kind": "import-statement",
+          "original": "../rrule"
+        },
+        {
+          "path": "npm/rrule/dist/esm/types.js",
+          "kind": "import-statement",
+          "original": "../types"
+        },
+        {
+          "path": "npm/rrule/dist/esm/nlp/i18n.js",
+          "kind": "import-statement",
+          "original": "./i18n"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/datetime.js": {
+      "bytes": 6893,
+      "imports": [
+        {
+          "path": "npm/tslib/tslib.es6.mjs",
+          "kind": "import-statement",
+          "original": "tslib"
+        },
+        {
+          "path": "npm/rrule/dist/esm/types.js",
+          "kind": "import-statement",
+          "original": "./types"
+        },
+        {
+          "path": "npm/rrule/dist/esm/helpers.js",
+          "kind": "import-statement",
+          "original": "./helpers"
+        },
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "./dateutil"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/parseoptions.js": {
+      "bytes": 6757,
+      "imports": [
+        {
+          "path": "npm/tslib/tslib.es6.mjs",
+          "kind": "import-statement",
+          "original": "tslib"
+        },
+        {
+          "path": "npm/rrule/dist/esm/types.js",
+          "kind": "import-statement",
+          "original": "./types"
+        },
+        {
+          "path": "npm/rrule/dist/esm/helpers.js",
+          "kind": "import-statement",
+          "original": "./helpers"
+        },
+        {
+          "path": "npm/rrule/dist/esm/rrule.js",
+          "kind": "import-statement",
+          "original": "./rrule"
+        },
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "./dateutil"
+        },
+        {
+          "path": "npm/rrule/dist/esm/weekday.js",
+          "kind": "import-statement",
+          "original": "./weekday"
+        },
+        {
+          "path": "npm/rrule/dist/esm/datetime.js",
+          "kind": "import-statement",
+          "original": "./datetime"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/parsestring.js": {
+      "bytes": 4234,
+      "imports": [
+        {
+          "path": "npm/tslib/tslib.es6.mjs",
+          "kind": "import-statement",
+          "original": "tslib"
+        },
+        {
+          "path": "npm/rrule/dist/esm/types.js",
+          "kind": "import-statement",
+          "original": "./types"
+        },
+        {
+          "path": "npm/rrule/dist/esm/weekday.js",
+          "kind": "import-statement",
+          "original": "./weekday"
+        },
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "./dateutil"
+        },
+        {
+          "path": "npm/rrule/dist/esm/rrule.js",
+          "kind": "import-statement",
+          "original": "./rrule"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/datewithzone.js": {
+      "bytes": 1204,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "./dateutil"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/optionstostring.js": {
+      "bytes": 3476,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/rrule.js",
+          "kind": "import-statement",
+          "original": "./rrule"
+        },
+        {
+          "path": "npm/rrule/dist/esm/helpers.js",
+          "kind": "import-statement",
+          "original": "./helpers"
+        },
+        {
+          "path": "npm/rrule/dist/esm/weekday.js",
+          "kind": "import-statement",
+          "original": "./weekday"
+        },
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "./dateutil"
+        },
+        {
+          "path": "npm/rrule/dist/esm/datewithzone.js",
+          "kind": "import-statement",
+          "original": "./datewithzone"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/cache.js": {
+      "bytes": 3262,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/iterresult.js",
+          "kind": "import-statement",
+          "original": "./iterresult"
+        },
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "./dateutil"
+        },
+        {
+          "path": "npm/rrule/dist/esm/helpers.js",
+          "kind": "import-statement",
+          "original": "./helpers"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/masks.js": {
+      "bytes": 3486,
+      "imports": [
+        {
+          "path": "npm/tslib/tslib.es6.mjs",
+          "kind": "import-statement",
+          "original": "tslib"
+        },
+        {
+          "path": "npm/rrule/dist/esm/helpers.js",
+          "kind": "import-statement",
+          "original": "./helpers"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/iterinfo/yearinfo.js": {
+      "bytes": 4442,
+      "imports": [
+        {
+          "path": "npm/tslib/tslib.es6.mjs",
+          "kind": "import-statement",
+          "original": "tslib"
+        },
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "../dateutil"
+        },
+        {
+          "path": "npm/rrule/dist/esm/helpers.js",
+          "kind": "import-statement",
+          "original": "../helpers"
+        },
+        {
+          "path": "npm/rrule/dist/esm/masks.js",
+          "kind": "import-statement",
+          "original": "../masks"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/iterinfo/monthinfo.js": {
+      "bytes": 1643,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/rrule.js",
+          "kind": "import-statement",
+          "original": "../rrule"
+        },
+        {
+          "path": "npm/rrule/dist/esm/helpers.js",
+          "kind": "import-statement",
+          "original": "../helpers"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/iterinfo/easter.js": {
+      "bytes": 795,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/iterinfo/index.js": {
+      "bytes": 6559,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/helpers.js",
+          "kind": "import-statement",
+          "original": "../helpers"
+        },
+        {
+          "path": "npm/rrule/dist/esm/types.js",
+          "kind": "import-statement",
+          "original": "../types"
+        },
+        {
+          "path": "npm/rrule/dist/esm/iterinfo/yearinfo.js",
+          "kind": "import-statement",
+          "original": "./yearinfo"
+        },
+        {
+          "path": "npm/rrule/dist/esm/iterinfo/monthinfo.js",
+          "kind": "import-statement",
+          "original": "./monthinfo"
+        },
+        {
+          "path": "npm/rrule/dist/esm/iterinfo/easter.js",
+          "kind": "import-statement",
+          "original": "./easter"
+        },
+        {
+          "path": "npm/rrule/dist/esm/datetime.js",
+          "kind": "import-statement",
+          "original": "../datetime"
+        },
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "../dateutil"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/iter/poslist.js": {
+      "bytes": 1345,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "../dateutil"
+        },
+        {
+          "path": "npm/rrule/dist/esm/helpers.js",
+          "kind": "import-statement",
+          "original": "../helpers"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/iter/index.js": {
+      "bytes": 6082,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/types.js",
+          "kind": "import-statement",
+          "original": "../types"
+        },
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "../dateutil"
+        },
+        {
+          "path": "npm/rrule/dist/esm/iterinfo/index.js",
+          "kind": "import-statement",
+          "original": "../iterinfo/index"
+        },
+        {
+          "path": "npm/rrule/dist/esm/rrule.js",
+          "kind": "import-statement",
+          "original": "../rrule"
+        },
+        {
+          "path": "npm/rrule/dist/esm/parseoptions.js",
+          "kind": "import-statement",
+          "original": "../parseoptions"
+        },
+        {
+          "path": "npm/rrule/dist/esm/helpers.js",
+          "kind": "import-statement",
+          "original": "../helpers"
+        },
+        {
+          "path": "npm/rrule/dist/esm/datewithzone.js",
+          "kind": "import-statement",
+          "original": "../datewithzone"
+        },
+        {
+          "path": "npm/rrule/dist/esm/iter/poslist.js",
+          "kind": "import-statement",
+          "original": "./poslist"
+        },
+        {
+          "path": "npm/rrule/dist/esm/datetime.js",
+          "kind": "import-statement",
+          "original": "../datetime"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/rrule.js": {
+      "bytes": 7771,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "./dateutil"
+        },
+        {
+          "path": "npm/rrule/dist/esm/iterresult.js",
+          "kind": "import-statement",
+          "original": "./iterresult"
+        },
+        {
+          "path": "npm/rrule/dist/esm/callbackiterresult.js",
+          "kind": "import-statement",
+          "original": "./callbackiterresult"
+        },
+        {
+          "path": "npm/rrule/dist/esm/nlp/index.js",
+          "kind": "import-statement",
+          "original": "./nlp/index"
+        },
+        {
+          "path": "npm/rrule/dist/esm/types.js",
+          "kind": "import-statement",
+          "original": "./types"
+        },
+        {
+          "path": "npm/rrule/dist/esm/parseoptions.js",
+          "kind": "import-statement",
+          "original": "./parseoptions"
+        },
+        {
+          "path": "npm/rrule/dist/esm/parsestring.js",
+          "kind": "import-statement",
+          "original": "./parsestring"
+        },
+        {
+          "path": "npm/rrule/dist/esm/optionstostring.js",
+          "kind": "import-statement",
+          "original": "./optionstostring"
+        },
+        {
+          "path": "npm/rrule/dist/esm/cache.js",
+          "kind": "import-statement",
+          "original": "./cache"
+        },
+        {
+          "path": "npm/rrule/dist/esm/weekday.js",
+          "kind": "import-statement",
+          "original": "./weekday"
+        },
+        {
+          "path": "npm/rrule/dist/esm/iter/index.js",
+          "kind": "import-statement",
+          "original": "./iter/index"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/iterset.js": {
+      "bytes": 2106,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/datewithzone.js",
+          "kind": "import-statement",
+          "original": "./datewithzone"
+        },
+        {
+          "path": "npm/rrule/dist/esm/iter/index.js",
+          "kind": "import-statement",
+          "original": "./iter"
+        },
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "./dateutil"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/rrulestr.js": {
+      "bytes": 6087,
+      "imports": [
+        {
+          "path": "npm/tslib/tslib.es6.mjs",
+          "kind": "import-statement",
+          "original": "tslib"
+        },
+        {
+          "path": "npm/rrule/dist/esm/rrule.js",
+          "kind": "import-statement",
+          "original": "./rrule"
+        },
+        {
+          "path": "npm/rrule/dist/esm/rruleset.js",
+          "kind": "import-statement",
+          "original": "./rruleset"
+        },
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "./dateutil"
+        },
+        {
+          "path": "npm/rrule/dist/esm/helpers.js",
+          "kind": "import-statement",
+          "original": "./helpers"
+        },
+        {
+          "path": "npm/rrule/dist/esm/parsestring.js",
+          "kind": "import-statement",
+          "original": "./parsestring"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/rruleset.js": {
+      "bytes": 6061,
+      "imports": [
+        {
+          "path": "npm/tslib/tslib.es6.mjs",
+          "kind": "import-statement",
+          "original": "tslib"
+        },
+        {
+          "path": "npm/rrule/dist/esm/rrule.js",
+          "kind": "import-statement",
+          "original": "./rrule"
+        },
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "./dateutil"
+        },
+        {
+          "path": "npm/rrule/dist/esm/helpers.js",
+          "kind": "import-statement",
+          "original": "./helpers"
+        },
+        {
+          "path": "npm/rrule/dist/esm/iterset.js",
+          "kind": "import-statement",
+          "original": "./iterset"
+        },
+        {
+          "path": "npm/rrule/dist/esm/rrulestr.js",
+          "kind": "import-statement",
+          "original": "./rrulestr"
+        },
+        {
+          "path": "npm/rrule/dist/esm/optionstostring.js",
+          "kind": "import-statement",
+          "original": "./optionstostring"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/rrule/dist/esm/index.js": {
+      "bytes": 840,
+      "imports": [
+        {
+          "path": "npm/rrule/dist/esm/rrule.js",
+          "kind": "import-statement",
+          "original": "./rrule"
+        },
+        {
+          "path": "npm/rrule/dist/esm/rruleset.js",
+          "kind": "import-statement",
+          "original": "./rruleset"
+        },
+        {
+          "path": "npm/rrule/dist/esm/rrulestr.js",
+          "kind": "import-statement",
+          "original": "./rrulestr"
+        },
+        {
+          "path": "npm/rrule/dist/esm/types.js",
+          "kind": "import-statement",
+          "original": "./types"
+        },
+        {
+          "path": "npm/rrule/dist/esm/weekday.js",
+          "kind": "import-statement",
+          "original": "./weekday"
+        },
+        {
+          "path": "npm/rrule/dist/esm/dateutil.js",
+          "kind": "import-statement",
+          "original": "./dateutil"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/ical.js/dist/ical.js": {
+      "bytes": 267656,
+      "imports": [
+        {
+          "path": "../<runtime>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/ajv/dist/compile/codegen/code.js": {
+      "bytes": 4676,
+      "imports": [],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/codegen/scope.js": {
+      "bytes": 5198,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/code.js",
+          "kind": "require-call",
+          "original": "./code"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/codegen/index.js": {
+      "bytes": 23127,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/code.js",
+          "kind": "require-call",
+          "original": "./code"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/scope.js",
+          "kind": "require-call",
+          "original": "./scope"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/code.js",
+          "kind": "require-call",
+          "original": "./code"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/scope.js",
+          "kind": "require-call",
+          "original": "./scope"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/util.js": {
+      "bytes": 7103,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "./codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/code.js",
+          "kind": "require-call",
+          "original": "./codegen/code"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/names.js": {
+      "bytes": 1440,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "./codegen"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/errors.js": {
+      "bytes": 5771,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "./codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "./util"
+        },
+        {
+          "path": "npm/ajv/dist/compile/names.js",
+          "kind": "require-call",
+          "original": "./names"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/validate/boolSchema.js": {
+      "bytes": 1531,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/errors.js",
+          "kind": "require-call",
+          "original": "../errors"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/names.js",
+          "kind": "require-call",
+          "original": "../names"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/rules.js": {
+      "bytes": 918,
+      "imports": [],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/validate/applicability.js": {
+      "bytes": 853,
+      "imports": [],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/validate/dataType.js": {
+      "bytes": 8409,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/rules.js",
+          "kind": "require-call",
+          "original": "../rules"
+        },
+        {
+          "path": "npm/ajv/dist/compile/validate/applicability.js",
+          "kind": "require-call",
+          "original": "./applicability"
+        },
+        {
+          "path": "npm/ajv/dist/compile/errors.js",
+          "kind": "require-call",
+          "original": "../errors"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/validate/defaults.js": {
+      "bytes": 1448,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/code.js": {
+      "bytes": 6216,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../compile/util"
+        },
+        {
+          "path": "npm/ajv/dist/compile/names.js",
+          "kind": "require-call",
+          "original": "../compile/names"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../compile/util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/validate/keyword.js": {
+      "bytes": 5695,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/names.js",
+          "kind": "require-call",
+          "original": "../names"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/code.js",
+          "kind": "require-call",
+          "original": "../../vocabularies/code"
+        },
+        {
+          "path": "npm/ajv/dist/compile/errors.js",
+          "kind": "require-call",
+          "original": "../errors"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/validate/subschema.js": {
+      "bytes": 3858,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/fast-deep-equal/index.js": {
+      "bytes": 1177,
+      "imports": [],
+      "format": "cjs"
+    },
+    "npm/json-schema-traverse/index.js": {
+      "bytes": 2428,
+      "imports": [],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/resolve.js": {
+      "bytes": 5006,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "./util"
+        },
+        {
+          "path": "npm/fast-deep-equal/index.js",
+          "kind": "require-call",
+          "original": "fast-deep-equal"
+        },
+        {
+          "path": "npm/json-schema-traverse/index.js",
+          "kind": "require-call",
+          "original": "json-schema-traverse"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/validate/index.js": {
+      "bytes": 20552,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/validate/boolSchema.js",
+          "kind": "require-call",
+          "original": "./boolSchema"
+        },
+        {
+          "path": "npm/ajv/dist/compile/validate/dataType.js",
+          "kind": "require-call",
+          "original": "./dataType"
+        },
+        {
+          "path": "npm/ajv/dist/compile/validate/applicability.js",
+          "kind": "require-call",
+          "original": "./applicability"
+        },
+        {
+          "path": "npm/ajv/dist/compile/validate/dataType.js",
+          "kind": "require-call",
+          "original": "./dataType"
+        },
+        {
+          "path": "npm/ajv/dist/compile/validate/defaults.js",
+          "kind": "require-call",
+          "original": "./defaults"
+        },
+        {
+          "path": "npm/ajv/dist/compile/validate/keyword.js",
+          "kind": "require-call",
+          "original": "./keyword"
+        },
+        {
+          "path": "npm/ajv/dist/compile/validate/subschema.js",
+          "kind": "require-call",
+          "original": "./subschema"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/names.js",
+          "kind": "require-call",
+          "original": "../names"
+        },
+        {
+          "path": "npm/ajv/dist/compile/resolve.js",
+          "kind": "require-call",
+          "original": "../resolve"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../util"
+        },
+        {
+          "path": "npm/ajv/dist/compile/errors.js",
+          "kind": "require-call",
+          "original": "../errors"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/runtime/validation_error.js": {
+      "bytes": 337,
+      "imports": [],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/ref_error.js": {
+      "bytes": 543,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/resolve.js",
+          "kind": "require-call",
+          "original": "./resolve"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/compile/index.js": {
+      "bytes": 10046,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "./codegen"
+        },
+        {
+          "path": "npm/ajv/dist/runtime/validation_error.js",
+          "kind": "require-call",
+          "original": "../runtime/validation_error"
+        },
+        {
+          "path": "npm/ajv/dist/compile/names.js",
+          "kind": "require-call",
+          "original": "./names"
+        },
+        {
+          "path": "npm/ajv/dist/compile/resolve.js",
+          "kind": "require-call",
+          "original": "./resolve"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "./util"
+        },
+        {
+          "path": "npm/ajv/dist/compile/validate/index.js",
+          "kind": "require-call",
+          "original": "./validate"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/refs/data.json": {
+      "bytes": 409,
+      "imports": []
+    },
+    "npm/fast-uri/lib/utils.js": {
+      "bytes": 22505,
+      "imports": [],
+      "format": "cjs"
+    },
+    "npm/fast-uri/lib/schemes.js": {
+      "bytes": 7367,
+      "imports": [
+        {
+          "path": "npm/fast-uri/lib/utils.js",
+          "kind": "require-call",
+          "original": "./utils"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/fast-uri/index.js": {
+      "bytes": 25881,
+      "imports": [
+        {
+          "path": "npm/fast-uri/lib/utils.js",
+          "kind": "require-call",
+          "original": "./lib/utils"
+        },
+        {
+          "path": "npm/fast-uri/lib/schemes.js",
+          "kind": "require-call",
+          "original": "./lib/schemes"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/runtime/uri.js": {
+      "bytes": 218,
+      "imports": [
+        {
+          "path": "npm/fast-uri/index.js",
+          "kind": "require-call",
+          "original": "fast-uri"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/core.js": {
+      "bytes": 25202,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/validate/index.js",
+          "kind": "require-call",
+          "original": "./compile/validate"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "./compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/runtime/validation_error.js",
+          "kind": "require-call",
+          "original": "./runtime/validation_error"
+        },
+        {
+          "path": "npm/ajv/dist/compile/ref_error.js",
+          "kind": "require-call",
+          "original": "./compile/ref_error"
+        },
+        {
+          "path": "npm/ajv/dist/compile/rules.js",
+          "kind": "require-call",
+          "original": "./compile/rules"
+        },
+        {
+          "path": "npm/ajv/dist/compile/index.js",
+          "kind": "require-call",
+          "original": "./compile"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "./compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/resolve.js",
+          "kind": "require-call",
+          "original": "./compile/resolve"
+        },
+        {
+          "path": "npm/ajv/dist/compile/validate/dataType.js",
+          "kind": "require-call",
+          "original": "./compile/validate/dataType"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "./compile/util"
+        },
+        {
+          "path": "npm/ajv/dist/refs/data.json",
+          "kind": "require-call",
+          "original": "./refs/data.json"
+        },
+        {
+          "path": "npm/ajv/dist/runtime/uri.js",
+          "kind": "require-call",
+          "original": "./runtime/uri"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/core/id.js": {
+      "bytes": 267,
+      "imports": [],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/core/ref.js": {
+      "bytes": 5234,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/ref_error.js",
+          "kind": "require-call",
+          "original": "../../compile/ref_error"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/code.js",
+          "kind": "require-call",
+          "original": "../code"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/names.js",
+          "kind": "require-call",
+          "original": "../../compile/names"
+        },
+        {
+          "path": "npm/ajv/dist/compile/index.js",
+          "kind": "require-call",
+          "original": "../../compile"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/core/index.js": {
+      "bytes": 357,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/vocabularies/core/id.js",
+          "kind": "require-call",
+          "original": "./id"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/core/ref.js",
+          "kind": "require-call",
+          "original": "./ref"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/validation/limitNumber.js": {
+      "bytes": 1036,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/validation/multipleOf.js": {
+      "bytes": 1023,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/runtime/ucs2length.js": {
+      "bytes": 808,
+      "imports": [],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/validation/limitLength.js": {
+      "bytes": 1130,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        },
+        {
+          "path": "npm/ajv/dist/runtime/ucs2length.js",
+          "kind": "require-call",
+          "original": "../../runtime/ucs2length"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/validation/pattern.js": {
+      "bytes": 1323,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/vocabularies/code.js",
+          "kind": "require-call",
+          "original": "../code"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/validation/limitProperties.js": {
+      "bytes": 896,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/validation/required.js": {
+      "bytes": 3188,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/vocabularies/code.js",
+          "kind": "require-call",
+          "original": "../code"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/validation/limitItems.js": {
+      "bytes": 852,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/runtime/equal.js": {
+      "bytes": 286,
+      "imports": [
+        {
+          "path": "npm/fast-deep-equal/index.js",
+          "kind": "require-call",
+          "original": "fast-deep-equal"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/validation/uniqueItems.js": {
+      "bytes": 3037,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/validate/dataType.js",
+          "kind": "require-call",
+          "original": "../../compile/validate/dataType"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        },
+        {
+          "path": "npm/ajv/dist/runtime/equal.js",
+          "kind": "require-call",
+          "original": "../../runtime/equal"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/validation/const.js": {
+      "bytes": 852,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        },
+        {
+          "path": "npm/ajv/dist/runtime/equal.js",
+          "kind": "require-call",
+          "original": "../../runtime/equal"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/validation/enum.js": {
+      "bytes": 1901,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        },
+        {
+          "path": "npm/ajv/dist/runtime/equal.js",
+          "kind": "require-call",
+          "original": "../../runtime/equal"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/validation/index.js": {
+      "bytes": 1036,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/vocabularies/validation/limitNumber.js",
+          "kind": "require-call",
+          "original": "./limitNumber"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/validation/multipleOf.js",
+          "kind": "require-call",
+          "original": "./multipleOf"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/validation/limitLength.js",
+          "kind": "require-call",
+          "original": "./limitLength"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/validation/pattern.js",
+          "kind": "require-call",
+          "original": "./pattern"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/validation/limitProperties.js",
+          "kind": "require-call",
+          "original": "./limitProperties"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/validation/required.js",
+          "kind": "require-call",
+          "original": "./required"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/validation/limitItems.js",
+          "kind": "require-call",
+          "original": "./limitItems"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/validation/uniqueItems.js",
+          "kind": "require-call",
+          "original": "./uniqueItems"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/validation/const.js",
+          "kind": "require-call",
+          "original": "./const"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/validation/enum.js",
+          "kind": "require-call",
+          "original": "./enum"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/additionalItems.js": {
+      "bytes": 1931,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/items.js": {
+      "bytes": 1993,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/code.js",
+          "kind": "require-call",
+          "original": "../code"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/prefixItems.js": {
+      "bytes": 354,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/items.js",
+          "kind": "require-call",
+          "original": "./items"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/items2020.js": {
+      "bytes": 1037,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/code.js",
+          "kind": "require-call",
+          "original": "../code"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/additionalItems.js",
+          "kind": "require-call",
+          "original": "./additionalItems"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/contains.js": {
+      "bytes": 3680,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/dependencies.js": {
+      "bytes": 3198,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/code.js",
+          "kind": "require-call",
+          "original": "../code"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/propertyNames.js": {
+      "bytes": 1221,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/additionalProperties.js": {
+      "bytes": 4309,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/vocabularies/code.js",
+          "kind": "require-call",
+          "original": "../code"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/names.js",
+          "kind": "require-call",
+          "original": "../../compile/names"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/properties.js": {
+      "bytes": 2153,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/validate/index.js",
+          "kind": "require-call",
+          "original": "../../compile/validate"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/code.js",
+          "kind": "require-call",
+          "original": "../code"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/additionalProperties.js",
+          "kind": "require-call",
+          "original": "./additionalProperties"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/patternProperties.js": {
+      "bytes": 3236,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/vocabularies/code.js",
+          "kind": "require-call",
+          "original": "../code"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/not.js": {
+      "bytes": 773,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/anyOf.js": {
+      "bytes": 343,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/vocabularies/code.js",
+          "kind": "require-call",
+          "original": "../code"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/oneOf.js": {
+      "bytes": 2257,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/allOf.js": {
+      "bytes": 756,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/if.js": {
+      "bytes": 2438,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/thenElse.js": {
+      "bytes": 446,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/applicator/index.js": {
+      "bytes": 1529,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/additionalItems.js",
+          "kind": "require-call",
+          "original": "./additionalItems"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/prefixItems.js",
+          "kind": "require-call",
+          "original": "./prefixItems"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/items.js",
+          "kind": "require-call",
+          "original": "./items"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/items2020.js",
+          "kind": "require-call",
+          "original": "./items2020"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/contains.js",
+          "kind": "require-call",
+          "original": "./contains"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/dependencies.js",
+          "kind": "require-call",
+          "original": "./dependencies"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/propertyNames.js",
+          "kind": "require-call",
+          "original": "./propertyNames"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/additionalProperties.js",
+          "kind": "require-call",
+          "original": "./additionalProperties"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/properties.js",
+          "kind": "require-call",
+          "original": "./properties"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/patternProperties.js",
+          "kind": "require-call",
+          "original": "./patternProperties"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/not.js",
+          "kind": "require-call",
+          "original": "./not"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/anyOf.js",
+          "kind": "require-call",
+          "original": "./anyOf"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/oneOf.js",
+          "kind": "require-call",
+          "original": "./oneOf"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/allOf.js",
+          "kind": "require-call",
+          "original": "./allOf"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/if.js",
+          "kind": "require-call",
+          "original": "./if"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/thenElse.js",
+          "kind": "require-call",
+          "original": "./thenElse"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/format/format.js": {
+      "bytes": 4317,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/format/index.js": {
+      "bytes": 209,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/vocabularies/format/format.js",
+          "kind": "require-call",
+          "original": "./format"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/metadata.js": {
+      "bytes": 427,
+      "imports": [],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/draft7.js": {
+      "bytes": 557,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/vocabularies/core/index.js",
+          "kind": "require-call",
+          "original": "./core"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/validation/index.js",
+          "kind": "require-call",
+          "original": "./validation"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/applicator/index.js",
+          "kind": "require-call",
+          "original": "./applicator"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/format/index.js",
+          "kind": "require-call",
+          "original": "./format"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/metadata.js",
+          "kind": "require-call",
+          "original": "./metadata"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/discriminator/types.js": {
+      "bytes": 308,
+      "imports": [],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/vocabularies/discriminator/index.js": {
+      "bytes": 4845,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "../../compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/discriminator/types.js",
+          "kind": "require-call",
+          "original": "../discriminator/types"
+        },
+        {
+          "path": "npm/ajv/dist/compile/index.js",
+          "kind": "require-call",
+          "original": "../../compile"
+        },
+        {
+          "path": "npm/ajv/dist/compile/ref_error.js",
+          "kind": "require-call",
+          "original": "../../compile/ref_error"
+        },
+        {
+          "path": "npm/ajv/dist/compile/util.js",
+          "kind": "require-call",
+          "original": "../../compile/util"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/ajv/dist/refs/json-schema-draft-07.json": {
+      "bytes": 3811,
+      "imports": []
+    },
+    "npm/ajv/dist/ajv.js": {
+      "bytes": 2841,
+      "imports": [
+        {
+          "path": "npm/ajv/dist/core.js",
+          "kind": "require-call",
+          "original": "./core"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/draft7.js",
+          "kind": "require-call",
+          "original": "./vocabularies/draft7"
+        },
+        {
+          "path": "npm/ajv/dist/vocabularies/discriminator/index.js",
+          "kind": "require-call",
+          "original": "./vocabularies/discriminator"
+        },
+        {
+          "path": "npm/ajv/dist/refs/json-schema-draft-07.json",
+          "kind": "require-call",
+          "original": "./refs/json-schema-draft-07.json"
+        },
+        {
+          "path": "npm/ajv/dist/compile/validate/index.js",
+          "kind": "require-call",
+          "original": "./compile/validate"
+        },
+        {
+          "path": "npm/ajv/dist/compile/codegen/index.js",
+          "kind": "require-call",
+          "original": "./compile/codegen"
+        },
+        {
+          "path": "npm/ajv/dist/runtime/validation_error.js",
+          "kind": "require-call",
+          "original": "./runtime/validation_error"
+        },
+        {
+          "path": "npm/ajv/dist/compile/ref_error.js",
+          "kind": "require-call",
+          "original": "./compile/ref_error"
+        }
+      ],
+      "format": "cjs"
+    },
+    "npm/jedison/dist/esm/jedison.js": {
+      "bytes": 495548,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/dexie/dist/dexie.js": {
+      "bytes": 275423,
+      "imports": [],
+      "format": "cjs"
+    },
+    "npm/dexie/import-wrapper.mjs": {
+      "bytes": 848,
+      "imports": [
+        {
+          "path": "npm/dexie/dist/dexie.js",
+          "kind": "import-statement",
+          "original": "./dist/dexie.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/nanoid/url-alphabet/index.js": {
+      "bytes": 94,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/nanoid/index.browser.js": {
+      "bytes": 1337,
+      "imports": [
+        {
+          "path": "npm/nanoid/url-alphabet/index.js",
+          "kind": "import-statement",
+          "original": "./url-alphabet/index.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/notyf/notyf.es.js": {
+      "bytes": 19241,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/tabbable/dist/index.esm.js": {
+      "bytes": 27359,
+      "imports": [],
+      "format": "esm"
+    },
+    "npm/focus-trap/dist/focus-trap.esm.js": {
+      "bytes": 57716,
+      "imports": [
+        {
+          "path": "npm/tabbable/dist/index.esm.js",
+          "kind": "import-statement",
+          "original": "tabbable"
+        }
+      ],
+      "format": "esm"
+    },
+    "npm/cropperjs/dist/cropper.css": {
+      "bytes": 4978,
+      "imports": [
+        {
+          "path": "../data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAA3NCSVQICAjb4U/gAAAABlBMVEXMzMz/TjRV2AAAACXBIWXMAAArrAAAK6wGCiw1aAAAAHHRFWHRTb2Z0d2FyZQBBZG9iZSBGaXJld29ya3MgQ1M26LyyjAAAABFJREFUCJlj+M/AgBVhF/0PAH6/D/HkDxOGAAAAAElFTkSuQmCC",
+          "kind": "url-token",
+          "external": true
+        }
+      ]
+    },
+    "npm/overlayscrollbars/styles/overlayscrollbars.css": {
+      "bytes": 17265,
+      "imports": []
+    },
+    "npm/gridstack/dist/gridstack.css": {
+      "bytes": 10560,
+      "imports": [
+        {
+          "path": "../data:image/svg+xml;utf8,<svg xmlns=\"http:/www.w3.org/2000/svg\" fill=\"none\" stroke=\"%23666\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" viewBox=\"0 0 20 20\"><path d=\"m10 3 2 2H8l2-2v14l-2-2h4l-2 2\"/></svg>",
+          "kind": "url-token",
+          "external": true
+        }
+      ]
+    },
+    "npm/notyf/notyf.min.css": {
+      "bytes": 5159,
+      "imports": []
+    },
+    "tools/integration20/entry.mjs": {
+      "bytes": 1280,
+      "imports": [
+        {
+          "path": "npm/minisearch/dist/es/index.js",
+          "kind": "import-statement",
+          "original": "minisearch"
+        },
+        {
+          "path": "npm/microdiff/dist/index.js",
+          "kind": "import-statement",
+          "original": "microdiff"
+        },
+        {
+          "path": "npm/decimal.js/decimal.mjs",
+          "kind": "import-statement",
+          "original": "decimal.js"
+        },
+        {
+          "path": "npm/sortablejs/modular/sortable.esm.js",
+          "kind": "import-statement",
+          "original": "sortablejs"
+        },
+        {
+          "path": "npm/cropperjs/dist/cropper.js",
+          "kind": "import-statement",
+          "original": "cropperjs"
+        },
+        {
+          "path": "npm/overlayscrollbars/overlayscrollbars.mjs",
+          "kind": "import-statement",
+          "original": "overlayscrollbars"
+        },
+        {
+          "path": "npm/split.js/dist/split.es.js",
+          "kind": "import-statement",
+          "original": "split.js"
+        },
+        {
+          "path": "npm/@panzoom/panzoom/dist/panzoom.es.js",
+          "kind": "import-statement",
+          "original": "@panzoom/panzoom"
+        },
+        {
+          "path": "npm/cytoscape/dist/cytoscape.esm.mjs",
+          "kind": "import-statement",
+          "original": "cytoscape"
+        },
+        {
+          "path": "npm/graphology/dist/graphology.mjs",
+          "kind": "import-statement",
+          "original": "graphology"
+        },
+        {
+          "path": "npm/gridstack/dist/gridstack.js",
+          "kind": "import-statement",
+          "original": "gridstack"
+        },
+        {
+          "path": "npm/@fullcalendar/core/index.js",
+          "kind": "import-statement",
+          "original": "@fullcalendar/core"
+        },
+        {
+          "path": "npm/@fullcalendar/daygrid/index.js",
+          "kind": "import-statement",
+          "original": "@fullcalendar/daygrid"
+        },
+        {
+          "path": "npm/@fullcalendar/interaction/index.js",
+          "kind": "import-statement",
+          "original": "@fullcalendar/interaction"
+        },
+        {
+          "path": "npm/@fullcalendar/core/locales/fr.js",
+          "kind": "import-statement",
+          "original": "@fullcalendar/core/locales/fr"
+        },
+        {
+          "path": "npm/rrule/dist/esm/index.js",
+          "kind": "import-statement",
+          "original": "rrule"
+        },
+        {
+          "path": "npm/ical.js/dist/ical.js",
+          "kind": "import-statement",
+          "original": "ical.js"
+        },
+        {
+          "path": "npm/ajv/dist/ajv.js",
+          "kind": "import-statement",
+          "original": "ajv"
+        },
+        {
+          "path": "npm/jedison/dist/esm/jedison.js",
+          "kind": "import-statement",
+          "original": "jedison"
+        },
+        {
+          "path": "npm/dexie/import-wrapper.mjs",
+          "kind": "import-statement",
+          "original": "dexie"
+        },
+        {
+          "path": "npm/nanoid/index.browser.js",
+          "kind": "import-statement",
+          "original": "nanoid"
+        },
+        {
+          "path": "npm/notyf/notyf.es.js",
+          "kind": "import-statement",
+          "original": "notyf"
+        },
+        {
+          "path": "npm/focus-trap/dist/focus-trap.esm.js",
+          "kind": "import-statement",
+          "original": "focus-trap"
+        },
+        {
+          "path": "npm/cropperjs/dist/cropper.css",
+          "kind": "import-statement",
+          "original": "cropperjs/dist/cropper.css"
+        },
+        {
+          "path": "npm/overlayscrollbars/styles/overlayscrollbars.css",
+          "kind": "import-statement",
+          "original": "overlayscrollbars/styles/overlayscrollbars.css"
+        },
+        {
+          "path": "npm/gridstack/dist/gridstack.css",
+          "kind": "import-statement",
+          "original": "gridstack/dist/gridstack.css"
+        },
+        {
+          "path": "npm/notyf/notyf.min.css",
+          "kind": "import-statement",
+          "original": "notyf/notyf.min.css"
+        }
+      ],
+      "format": "esm"
+    }
+  },
+  "outputs": {
+    "vendor/integration20/bundle.js.LEGAL.txt": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 2998
+    },
+    "vendor/integration20/bundle.js": {
+      "imports": [],
+      "exports": [],
+      "entryPoint": "manager-foot/tools/integration20/entry.mjs",
+      "cssBundle": "manager-foot/vendor/integration20/bundle.css",
+      "inputs": {
+        "npm/cropperjs/dist/cropper.js": {
+          "bytesInOutput": 40233
+        },
+        "npm/events/events.js": {
+          "bytesInOutput": 6160
+        },
+        "npm/ajv/dist/compile/codegen/code.js": {
+          "bytesInOutput": 2585
+        },
+        "npm/ajv/dist/compile/codegen/scope.js": {
+          "bytesInOutput": 2586
+        },
+        "npm/ajv/dist/compile/codegen/index.js": {
+          "bytesInOutput": 11835
+        },
+        "npm/ajv/dist/compile/util.js": {
+          "bytesInOutput": 3639
+        },
+        "npm/ajv/dist/compile/names.js": {
+          "bytesInOutput": 631
+        },
+        "npm/ajv/dist/compile/errors.js": {
+          "bytesInOutput": 3142
+        },
+        "npm/ajv/dist/compile/validate/boolSchema.js": {
+          "bytesInOutput": 674
+        },
+        "npm/ajv/dist/compile/rules.js": {
+          "bytesInOutput": 571
+        },
+        "npm/ajv/dist/compile/validate/applicability.js": {
+          "bytesInOutput": 481
+        },
+        "npm/ajv/dist/compile/validate/dataType.js": {
+          "bytesInOutput": 4174
+        },
+        "npm/ajv/dist/compile/validate/defaults.js": {
+          "bytesInOutput": 687
+        },
+        "npm/ajv/dist/vocabularies/code.js": {
+          "bytesInOutput": 3186
+        },
+        "npm/ajv/dist/compile/validate/keyword.js": {
+          "bytesInOutput": 2979
+        },
+        "npm/ajv/dist/compile/validate/subschema.js": {
+          "bytesInOutput": 1987
+        },
+        "npm/fast-deep-equal/index.js": {
+          "bytesInOutput": 738
+        },
+        "npm/json-schema-traverse/index.js": {
+          "bytesInOutput": 1250
+        },
+        "npm/ajv/dist/compile/resolve.js": {
+          "bytesInOutput": 2109
+        },
+        "npm/ajv/dist/compile/validate/index.js": {
+          "bytesInOutput": 10336
+        },
+        "npm/ajv/dist/runtime/validation_error.js": {
+          "bytesInOutput": 207
+        },
+        "npm/ajv/dist/compile/ref_error.js": {
+          "bytesInOutput": 324
+        },
+        "npm/ajv/dist/compile/index.js": {
+          "bytesInOutput": 4705
+        },
+        "npm/ajv/dist/refs/data.json": {
+          "bytesInOutput": 362
+        },
+        "npm/fast-uri/lib/utils.js": {
+          "bytesInOutput": 7652
+        },
+        "npm/fast-uri/lib/schemes.js": {
+          "bytesInOutput": 2556
+        },
+        "npm/fast-uri/index.js": {
+          "bytesInOutput": 7739
+        },
+        "npm/ajv/dist/runtime/uri.js": {
+          "bytesInOutput": 156
+        },
+        "npm/ajv/dist/core.js": {
+          "bytesInOutput": 12322
+        },
+        "npm/ajv/dist/vocabularies/core/id.js": {
+          "bytesInOutput": 198
+        },
+        "npm/ajv/dist/vocabularies/core/ref.js": {
+          "bytesInOutput": 2386
+        },
+        "npm/ajv/dist/vocabularies/core/index.js": {
+          "bytesInOutput": 220
+        },
+        "npm/ajv/dist/vocabularies/validation/limitNumber.js": {
+          "bytesInOutput": 672
+        },
+        "npm/ajv/dist/vocabularies/validation/multipleOf.js": {
+          "bytesInOutput": 557
+        },
+        "npm/ajv/dist/runtime/ucs2length.js": {
+          "bytesInOutput": 302
+        },
+        "npm/ajv/dist/vocabularies/validation/limitLength.js": {
+          "bytesInOutput": 640
+        },
+        "npm/ajv/dist/vocabularies/validation/pattern.js": {
+          "bytesInOutput": 717
+        },
+        "npm/ajv/dist/vocabularies/validation/limitProperties.js": {
+          "bytesInOutput": 555
+        },
+        "npm/ajv/dist/vocabularies/validation/required.js": {
+          "bytesInOutput": 1409
+        },
+        "npm/ajv/dist/vocabularies/validation/limitItems.js": {
+          "bytesInOutput": 516
+        },
+        "npm/ajv/dist/runtime/equal.js": {
+          "bytesInOutput": 158
+        },
+        "npm/ajv/dist/vocabularies/validation/uniqueItems.js": {
+          "bytesInOutput": 1510
+        },
+        "npm/ajv/dist/vocabularies/validation/const.js": {
+          "bytesInOutput": 450
+        },
+        "npm/ajv/dist/vocabularies/validation/enum.js": {
+          "bytesInOutput": 932
+        },
+        "npm/ajv/dist/vocabularies/validation/index.js": {
+          "bytesInOutput": 404
+        },
+        "npm/ajv/dist/vocabularies/applicator/additionalItems.js": {
+          "bytesInOutput": 1097
+        },
+        "npm/ajv/dist/vocabularies/applicator/items.js": {
+          "bytesInOutput": 1082
+        },
+        "npm/ajv/dist/vocabularies/applicator/prefixItems.js": {
+          "bytesInOutput": 232
+        },
+        "npm/ajv/dist/vocabularies/applicator/items2020.js": {
+          "bytesInOutput": 543
+        },
+        "npm/ajv/dist/vocabularies/applicator/contains.js": {
+          "bytesInOutput": 1741
+        },
+        "npm/ajv/dist/vocabularies/applicator/dependencies.js": {
+          "bytesInOutput": 1574
+        },
+        "npm/ajv/dist/vocabularies/applicator/propertyNames.js": {
+          "bytesInOutput": 639
+        },
+        "npm/ajv/dist/vocabularies/applicator/additionalProperties.js": {
+          "bytesInOutput": 1750
+        },
+        "npm/ajv/dist/vocabularies/applicator/properties.js": {
+          "bytesInOutput": 998
+        },
+        "npm/ajv/dist/vocabularies/applicator/patternProperties.js": {
+          "bytesInOutput": 1174
+        },
+        "npm/ajv/dist/vocabularies/applicator/not.js": {
+          "bytesInOutput": 441
+        },
+        "npm/ajv/dist/vocabularies/applicator/anyOf.js": {
+          "bytesInOutput": 234
+        },
+        "npm/ajv/dist/vocabularies/applicator/oneOf.js": {
+          "bytesInOutput": 921
+        },
+        "npm/ajv/dist/vocabularies/applicator/allOf.js": {
+          "bytesInOutput": 413
+        },
+        "npm/ajv/dist/vocabularies/applicator/if.js": {
+          "bytesInOutput": 1112
+        },
+        "npm/ajv/dist/vocabularies/applicator/thenElse.js": {
+          "bytesInOutput": 284
+        },
+        "npm/ajv/dist/vocabularies/applicator/index.js": {
+          "bytesInOutput": 497
+        },
+        "npm/ajv/dist/vocabularies/format/format.js": {
+          "bytesInOutput": 1955
+        },
+        "npm/ajv/dist/vocabularies/format/index.js": {
+          "bytesInOutput": 126
+        },
+        "npm/ajv/dist/vocabularies/metadata.js": {
+          "bytesInOutput": 309
+        },
+        "npm/ajv/dist/vocabularies/draft7.js": {
+          "bytesInOutput": 246
+        },
+        "npm/ajv/dist/vocabularies/discriminator/types.js": {
+          "bytesInOutput": 182
+        },
+        "npm/ajv/dist/vocabularies/discriminator/index.js": {
+          "bytesInOutput": 2299
+        },
+        "npm/ajv/dist/refs/json-schema-draft-07.json": {
+          "bytesInOutput": 2485
+        },
+        "npm/ajv/dist/ajv.js": {
+          "bytesInOutput": 1712
+        },
+        "npm/dexie/dist/dexie.js": {
+          "bytesInOutput": 102061
+        },
+        "npm/minisearch/dist/es/index.js": {
+          "bytesInOutput": 17747
+        },
+        "npm/microdiff/dist/index.js": {
+          "bytesInOutput": 860
+        },
+        "npm/decimal.js/decimal.mjs": {
+          "bytesInOutput": 32480
+        },
+        "npm/sortablejs/modular/sortable.esm.js": {
+          "bytesInOutput": 37518
+        },
+        "tools/integration20/entry.mjs": {
+          "bytesInOutput": 357
+        },
+        "npm/overlayscrollbars/overlayscrollbars.mjs": {
+          "bytesInOutput": 29371
+        },
+        "npm/split.js/dist/split.es.js": {
+          "bytesInOutput": 6459
+        },
+        "npm/@panzoom/panzoom/dist/panzoom.es.js": {
+          "bytesInOutput": 9785
+        },
+        "npm/cytoscape/dist/cytoscape.esm.mjs": {
+          "bytesInOutput": 444811
+        },
+        "npm/graphology/dist/graphology.mjs": {
+          "bytesInOutput": 61249
+        },
+        "npm/gridstack/dist/utils.js": {
+          "bytesInOutput": 6737
+        },
+        "npm/gridstack/dist/gridstack-engine.js": {
+          "bytesInOutput": 14258
+        },
+        "npm/gridstack/dist/types.js": {
+          "bytesInOutput": 485
+        },
+        "npm/gridstack/dist/dd-manager.js": {
+          "bytesInOutput": 15
+        },
+        "npm/gridstack/dist/dd-touch.js": {
+          "bytesInOutput": 2087
+        },
+        "npm/gridstack/dist/dd-resizable-handle.js": {
+          "bytesInOutput": 2568
+        },
+        "npm/gridstack/dist/dd-base-impl.js": {
+          "bytesInOutput": 340
+        },
+        "npm/gridstack/dist/dd-resizable.js": {
+          "bytesInOutput": 6280
+        },
+        "npm/gridstack/dist/dd-draggable.js": {
+          "bytesInOutput": 10191
+        },
+        "npm/gridstack/dist/dd-droppable.js": {
+          "bytesInOutput": 2636
+        },
+        "npm/gridstack/dist/dd-element.js": {
+          "bytesInOutput": 1337
+        },
+        "npm/gridstack/dist/dd-gridstack.js": {
+          "bytesInOutput": 2094
+        },
+        "npm/gridstack/dist/gridstack.js": {
+          "bytesInOutput": 43503
+        },
+        "npm/preact/dist/preact.module.js": {
+          "bytesInOutput": 10393
+        },
+        "npm/preact/compat/dist/compat.module.js": {
+          "bytesInOutput": 5849
+        },
+        "npm/preact/hooks/dist/hooks.module.js": {
+          "bytesInOutput": 1425
+        },
+        "npm/@fullcalendar/core/internal-common.js": {
+          "bytesInOutput": 117950
+        },
+        "npm/@fullcalendar/core/index.js": {
+          "bytesInOutput": 38432
+        },
+        "npm/@fullcalendar/core/internal.js": {
+          "bytesInOutput": 0
+        },
+        "npm/@fullcalendar/daygrid/internal.js": {
+          "bytesInOutput": 24493
+        },
+        "npm/@fullcalendar/daygrid/index.js": {
+          "bytesInOutput": 339
+        },
+        "npm/@fullcalendar/interaction/index.js": {
+          "bytesInOutput": 29047
+        },
+        "npm/@fullcalendar/core/locales/fr.js": {
+          "bytesInOutput": 312
+        },
+        "npm/rrule/dist/esm/weekday.js": {
+          "bytesInOutput": 566
+        },
+        "npm/rrule/dist/esm/helpers.js": {
+          "bytesInOutput": 891
+        },
+        "npm/rrule/dist/esm/dateutil.js": {
+          "bytesInOutput": 1903
+        },
+        "npm/rrule/dist/esm/iterresult.js": {
+          "bytesInOutput": 973
+        },
+        "npm/tslib/tslib.es6.mjs": {
+          "bytesInOutput": 873
+        },
+        "npm/rrule/dist/esm/callbackiterresult.js": {
+          "bytesInOutput": 220
+        },
+        "npm/rrule/dist/esm/nlp/i18n.js": {
+          "bytesInOutput": 1149
+        },
+        "npm/rrule/dist/esm/nlp/totext.js": {
+          "bytesInOutput": 7030
+        },
+        "npm/rrule/dist/esm/nlp/parsetext.js": {
+          "bytesInOutput": 5199
+        },
+        "npm/rrule/dist/esm/types.js": {
+          "bytesInOutput": 238
+        },
+        "npm/rrule/dist/esm/nlp/index.js": {
+          "bytesInOutput": 470
+        },
+        "npm/rrule/dist/esm/datetime.js": {
+          "bytesInOutput": 3040
+        },
+        "npm/rrule/dist/esm/parseoptions.js": {
+          "bytesInOutput": 2857
+        },
+        "npm/rrule/dist/esm/parsestring.js": {
+          "bytesInOutput": 1717
+        },
+        "npm/rrule/dist/esm/datewithzone.js": {
+          "bytesInOutput": 589
+        },
+        "npm/rrule/dist/esm/optionstostring.js": {
+          "bytesInOutput": 877
+        },
+        "npm/rrule/dist/esm/cache.js": {
+          "bytesInOutput": 896
+        },
+        "npm/rrule/dist/esm/masks.js": {
+          "bytesInOutput": 1300
+        },
+        "npm/rrule/dist/esm/iterinfo/yearinfo.js": {
+          "bytesInOutput": 1123
+        },
+        "npm/rrule/dist/esm/iterinfo/monthinfo.js": {
+          "bytesInOutput": 530
+        },
+        "npm/rrule/dist/esm/iterinfo/easter.js": {
+          "bytesInOutput": 395
+        },
+        "npm/rrule/dist/esm/iterinfo/index.js": {
+          "bytesInOutput": 3229
+        },
+        "npm/rrule/dist/esm/iter/poslist.js": {
+          "bytesInOutput": 356
+        },
+        "npm/rrule/dist/esm/iter/index.js": {
+          "bytesInOutput": 1681
+        },
+        "npm/rrule/dist/esm/rrule.js": {
+          "bytesInOutput": 2570
+        },
+        "npm/rrule/dist/esm/index.js": {
+          "bytesInOutput": 0
+        },
+        "npm/rrule/dist/esm/iterset.js": {
+          "bytesInOutput": 792
+        },
+        "npm/rrule/dist/esm/rrulestr.js": {
+          "bytesInOutput": 2448
+        },
+        "npm/rrule/dist/esm/rruleset.js": {
+          "bytesInOutput": 2504
+        },
+        "npm/ical.js/dist/ical.js": {
+          "bytesInOutput": 79399
+        },
+        "npm/jedison/dist/esm/jedison.js": {
+          "bytesInOutput": 279286
+        },
+        "npm/dexie/import-wrapper.mjs": {
+          "bytesInOutput": 409
+        },
+        "npm/nanoid/url-alphabet/index.js": {
+          "bytesInOutput": 74
+        },
+        "npm/nanoid/index.browser.js": {
+          "bytesInOutput": 106
+        },
+        "npm/notyf/notyf.es.js": {
+          "bytesInOutput": 7829
+        },
+        "npm/tabbable/dist/index.esm.js": {
+          "bytesInOutput": 6091
+        },
+        "npm/focus-trap/dist/focus-trap.esm.js": {
+          "bytesInOutput": 14338
+        },
+        "npm/cropperjs/dist/cropper.css": {
+          "bytesInOutput": 0
+        },
+        "npm/overlayscrollbars/styles/overlayscrollbars.css": {
+          "bytesInOutput": 0
+        },
+        "npm/gridstack/dist/gridstack.css": {
+          "bytesInOutput": 0
+        },
+        "npm/notyf/notyf.min.css": {
+          "bytesInOutput": 0
+        }
+      },
+      "bytes": 1670216
+    },
+    "vendor/integration20/bundle.css.LEGAL.txt": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 492
+    },
+    "vendor/integration20/bundle.css": {
+      "imports": [
+        {
+          "path": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAA3NCSVQICAjb4U/gAAAABlBMVEXMzMz////TjRV2AAAACXBIWXMAAArrAAAK6wGCiw1aAAAAHHRFWHRTb2Z0d2FyZQBBZG9iZSBGaXJld29ya3MgQ1M26LyyjAAAABFJREFUCJlj+M/AgBVhF/0PAH6/D/HkDxOGAAAAAElFTkSuQmCC",
+          "kind": "url-token",
+          "external": true
+        },
+        {
+          "path": "data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" stroke=\"%23666\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" viewBox=\"0 0 20 20\"><path d=\"m10 3 2 2H8l2-2v14l-2-2h4l-2 2\"/></svg>",
+          "kind": "url-token",
+          "external": true
+        }
+      ],
+      "inputs": {
+        "npm/cropperjs/dist/cropper.css": {
+          "bytesInOutput": 3591
+        },
+        "npm/overlayscrollbars/styles/overlayscrollbars.css": {
+          "bytesInOutput": 14546
+        },
+        "npm/gridstack/dist/gridstack.css": {
+          "bytesInOutput": 6067
+        },
+        "npm/notyf/notyf.min.css": {
+          "bytesInOutput": 5117
+        }
+      },
+      "bytes": 29385
+    }
+  }
+}
