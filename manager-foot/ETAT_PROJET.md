@@ -1,3 +1,16 @@
+# État du projet — v62 (3 novembre 2026)
+
+## Réalisme des matchs (js/realisme_match.js)
+- Mesure avant (ligue 1, une saison) : champion 101 pts, dernier 17, 21 % de nuls, 12 % d'écarts de 4+ buts, corrélation réputation/classement 0,90 — trop prévisible (écart de niveau 82 → 58 entre le meilleur et le moins bon onze).
+- Forme du jour par équipe (±, tirée du match, sans rnd), qualités légèrement resserrées, petit contre gros (−14 % / +14 % de conversion des occasions par tranche de 10 points d'écart de niveau), gestion du score (mène de 2+ : gère ; mené après 60' : pousse).
+- Après (2 graines) : ligue 1 champion 81-95 pts, dernier 15-23, 25-29 % de nuls, 5 % d'écarts de 4+, corrélation 0,74-0,82, 2,6 buts/match. Réglages : REALISME_MATCH.
+
+## Difficulté (js/difficulte.js, Options)
+- Découverte · Normal (d'origine) · Exigeant · Réaliste. Agit sur la patience du président, les recettes du club, les exigences salariales, la précision des estimations de potentiel. Le moteur de match ne triche jamais.
+
+## Corrections
+- Réponses aux questions du staff (tension, revalorisation) sans interface affichée (simulation, vacances) : plus d'erreur de rafraîchissement.
+
 # État du projet — v61 (3 novembre 2026)
 
 ## Évolution de tout le monde selon l'environnement (js/evolution.js)

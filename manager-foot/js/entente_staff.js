@@ -124,7 +124,7 @@ window.addEventListener('load', () => {
     d.done = opt; d.answer = msg;
     news(G, `⚡ ${d.title} — ${msg}`, 'info');
     save(); toast(msg);
-    if (VIEW === 'mail' && !$('#modal')) show('mail'); else if (typeof renderTop === 'function') renderTop();
+    if (!$('#top')) return; if (VIEW === 'mail' && !$('#modal')) show('mail'); else if (typeof renderTop === 'function') renderTop();
   };
 });
 

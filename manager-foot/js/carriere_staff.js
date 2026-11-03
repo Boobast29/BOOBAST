@@ -114,7 +114,7 @@ window.addEventListener('load', () => {
       else { aj(-12); x.contract = Math.min(x.contract ?? 1, 1); msg = `${x.name} est déçu. Il ne prolongera pas sans geste de ta part.`; }
     }
     d.done = opt; d.answer = msg; news(G, `💶 ${d.title} — ${msg}`, 'info'); save(); toast(msg);
-    if (VIEW === 'mail' && !$('#modal')) show('mail'); else if (typeof renderTop === 'function') renderTop();
+    if (!$('#top')) return; if (VIEW === 'mail' && !$('#modal')) show('mail'); else if (typeof renderTop === 'function') renderTop();
   };
 });
 

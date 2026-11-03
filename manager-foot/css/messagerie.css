@@ -130,3 +130,12 @@
 .coach-card .cs-sal { display: block; }
 .pot-est { display: inline-flex; align-items: baseline; gap: 4px; white-space: nowrap; }
 .pot-est small { font-size: var(--fs-3xs); color: var(--mut); font-variant-numeric: tabular-nums; }
+
+/* Difficulté (js/difficulte.js) */
+.diff-choix { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+.diff-opt { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-l); background: var(--surface-2); cursor: pointer; }
+.diff-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.diff-opt small { color: var(--mut); font-size: var(--fs-xs); line-height: 1.4; }
+.diff-opt:hover { border-color: var(--line-strong, var(--mut)); }
+.diff-opt.on { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 10%, var(--surface-2)); }
+.diff-opt:has(input:focus-visible) { outline: 2px solid var(--acc); outline-offset: 2px; }

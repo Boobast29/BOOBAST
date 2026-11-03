@@ -141,7 +141,7 @@ window.addEventListener('load', () => {
     const d = G.decisions.find(x => x.id === id);
     const l = d && !d.done ? mxOptions(d).find(o => o[0] === opt)?.[1] : null;
     const r = __decideMX.apply(this, arguments);
-    if (d && d.done && l && !d.answerLabel) { d.answerLabel = l; if (VIEW === 'mail' && !$('#modal')) show('mail'); }
+    if (d && d.done && l && !d.answerLabel) { d.answerLabel = l; if ($('#top') && VIEW === 'mail' && !$('#modal')) show('mail'); }
     return r;
   };
 });
