@@ -1,3 +1,10 @@
+# État du projet — v86 (3 novembre 2026)
+
+## Fiches façon Football Manager
+- Gardien : blocs Gardien (réflexes, plongeon, prise de balle, placement, jeu au pied, sorties + passes et contrôle), Mental, Physique — plus de finition, dribble… Joueur de champ : aucun attribut de gardien (ni dans les meilleurs postes, ni dans le choix du poste de la fiche).
+- Notes cachées (idée de gilgiltsu/FMTools « Les notes cachées », sans code repris : dépôt sans licence) : professionnalisme, pression, tempérament, ambition, fidélité, fair-play, polémique, tirées du caractère et de l'identité du joueur. Personnalité façon FM (Modèle de professionnalisme, Perfectionniste, Leader né, Mercenaire, Friable, Indolent, Résistant, Très loyal…) et attitude face aux médias. Sur la fiche : estimations (jamais exactes), plus précises avec la connaissance du joueur.
+- Effets : professionnalisme → progression des 24 ans et moins (plus rapide, ou recul si très faible) ; ambition → exigences de salaire. Niveau moyen du monde stable (60,5 → 61,2 sur 2 saisons).
+
 # État du projet — v85 (3 novembre 2026)
 
 ## Marché des jeunes (js/marche_jeunes.js)

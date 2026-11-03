@@ -130,7 +130,7 @@ if (typeof familiarity === 'function') {
   };
 }
 const noteSur100 = n20 => Math.round(n20 * 5);
-function meilleursPostes(p, D = attributsDetail(p)) { return Object.keys(POIDS_POSTE).map(r => [r, notePoste(p, r, D)]).sort((a, b) => b[1] - a[1]).slice(0, 3); }
+function meilleursPostes(p, D = attributsDetail(p)) { return Object.keys(POIDS_POSTE).filter(r => (r === 'GB') === (p.pos === 'GB') || postesSecondaires(p).includes(r)).map(r => [r, notePoste(p, r, D)]).sort((a, b) => b[1] - a[1]).slice(0, 3); }
 
 // percentiles par poste (calculés à la demande, en cache par semaine)
 let CACHE_PCT = null;
@@ -181,11 +181,14 @@ function blocAttributs(p) {
     const dec = (h % (2 * e + 1)) - e, lo = clamp(v + dec - e, 1, 20), hi = clamp(v + dec + e, 1, 20);
     return `${lo}-${hi}`;
   };
-  const fams = ['tech', 'ment', 'phys', ...(p.pos === 'GB' ? ['gb'] : [])];
+  // comme Football Manager : un gardien n'a pas de bloc technique (finition, dribble…) mais un bloc Gardien qui inclut
+  // le jeu au pied, les passes et le contrôle ; un joueur de champ n'a aucun attribut de gardien
+  const fams = p.pos === 'GB' ? ['gb', 'ment', 'phys'] : ['tech', 'ment', 'phys'];
+  const attrsFam = fm => fm === 'gb' ? [...ATTR_DETAIL.filter(a => a[2] === 'gb'), ...ATTR_DETAIL.filter(a => ['passeC', 'passeL', 'controle'].includes(a[0]))] : ATTR_DETAIL.filter(a => a[2] === fm);
   const bp = meilleursPostes(p, D).map(([r, n]) => `${r} ${noteSur100(n)}`).join(' · ');
   return `<section class="attr36"><div class="a36-tete"><div class="a36-note" style="--n:${n20 / 20}"><b>${connu ? noteSur100(n20) : '?'}</b><small>/100</small></div>
       <div><b>Note de poste (${esc(ROLES[p.pos]?.label || p.pos)})</b><small>moyenne pondérée de ${Object.keys(POIDS_POSTE[p.pos] || {}).length} attributs clés · ${connu ? n20.toFixed(1).replace('.', ',') : '?'} sur 20</small><small>Meilleurs postes : ${connu ? bp : 'à découvrir'}${connu && estPolyvalent(p) ? ' · <b class="pos">polyvalent</b>' : ''}${connu && postesSecondaires(p).length ? ` · postes secondaires : ${postesSecondaires(p).join(', ')}` : ''}</small></div></div>
-    <div class="a36-grille">${fams.map(fm => `<div class="a36-fam"><h4>${FAMILLES[fm]}</h4>${ATTR_DETAIL.filter(a => a[2] === fm).map(([k, l]) => {
+    <div class="a36-grille">${fams.map(fm => `<div class="a36-fam"><h4>${FAMILLES[fm]}</h4>${attrsFam(fm).map(([k, l]) => {
       const v = D[k], cle = (POIDS_POSTE[p.pos] || {})[k];
       return `<div class="a36-l ${cle ? 'cle' : ''}" data-k="${k}" data-tip="${esc(l)}${connu ? ` : ${v}/20, mieux que ${percentile(p, k)} % des ${esc(posteAuPluriel(p.pos))}` : ''}${cle ? ` · compte pour ${Math.round(cle * 100)} % de la note de poste` : ''}"><span>${esc(l)}</span><b class="${connu ? couleurAttr(v) : 'a-flou'}">${flou(v, k)}</b></div>`;
     }).join('')}</div>`).join('')}</div>

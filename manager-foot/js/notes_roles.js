@@ -68,7 +68,7 @@ function brancherNoteContexte(p) {
   const rolesDe = poste => Object.fromEntries(Object.entries(ROLE_STYLES[poste] || {}).map(([k, s]) => [k, s.label]));
   const tete = sec.querySelector('.a36-tete');
   tete.insertAdjacentHTML('afterend', `<div class="nr-ctrl">
-    <label>Poste <select id="nrPoste">${opts(Object.fromEntries(Object.keys(ROLES).map(r => [r, `${r} · ${ROLES[r].label}`])), ctx.poste)}</select></label>
+    <label>Poste <select id="nrPoste">${opts(Object.fromEntries(Object.keys(ROLES).filter(r => (r === 'GB') === (p.pos === 'GB')).map(r => [r, `${r} · ${ROLES[r].label}`])), ctx.poste)}</select></label>
     <label>Rôle <select id="nrStyle">${opts(rolesDe(ctx.poste), ctx.style)}</select></label>
     <label>Devoir <select id="nrDevoir">${opts({ '-1': 'Défense', 0: 'Soutien', 1: 'Attaque' }, ctx.devoir)}</select></label>
     ${p.club === G.clubId ? `<label class="chk"><input type="checkbox" id="nrEquipe" ${ctx.equipe ? 'checked' : ''}> Consignes de mon équipe</label>` : ''}
