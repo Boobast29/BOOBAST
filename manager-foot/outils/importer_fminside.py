@@ -20,7 +20,7 @@ def fiche(url):
     attrs = {}
     for row in re.findall(r'<tr\b[^>]*>.*?</tr>', s, re.S):
         label = re.search(r'data-player-stat-name="([^"]+)"', row)
-        val = re.search(r'<td class="stat[^"\n]*">(\d+)</td>', row)
+        val = re.search(r'<td\b[^>]*class="(?:stat(?:\s[^"]*)?|profile-stat-value[^"]*)"[^>]*>\s*(\d+)\s*</td>', row)
         if label and val:
             attrs[html.unescape(label[1])] = int(val[1])
     if not nom or len(attrs) < 30:
@@ -34,8 +34,10 @@ def fiche(url):
             return float(v.replace('€ ', '').replace(' pw', '').replace(',', ''))
         return None
     wage = montant('Wages')
+    position_section = re.search(r'Positions:\s*</span>(.*?)</li>', s, re.S)
+    natural = re.search(r'class="position natural">([^<]+)', position_section[1]) if position_section else None
     p = {'name': texte(nom[1]), 'club': info('Club'), 'age': int(info('Age')), 'positions': info('Positions'),
-         'attributes': attrs, 'fmUid': re.search(r'/([0-9]+)-[^/]+$', url)[1],
+         'position': natural[1].strip() if natural else None, 'attributes': attrs, 'fmUid': re.search(r'/([0-9]+)-[^/]+$', url)[1],
          'sourceUrl': url, 'sourceGender': 'male', 'sourceDatabase': info('Database version'), 'birthDateText': info('Date of birth'),
          'foot': info('Footedness'), 'contractEndText': info('Contract end'), 'wageWeekly': wage,
          'wageMonthly': round(wage * 52 / 12, 2) if wage is not None else None,
@@ -98,7 +100,8 @@ def main():
                 checkpoint = dest.with_suffix('.tmp')
                 checkpoint.write_text(json.dumps({'source':'FMInside — données Football Manager 26', 'scale':99, 'coverage':'partial_in_progress', 'retrievedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(), 'players':players, 'errors':errors}, ensure_ascii=False), encoding='utf-8')
                 checkpoint.replace(dest)
-                compressed.write_bytes(gzip.compress(dest.read_bytes(),mtime=0))
+                compressed_temp = compressed.with_suffix('.gz.tmp')
+                compressed_temp.write_bytes(gzip.compress(dest.read_bytes(),mtime=0)); compressed_temp.replace(compressed)
                 if len(players) % 50 == 0: print(f'{len(players)} profils détaillés enregistrés', flush=True)
             except Exception as e: errors.append({'url': futures[f], 'error': str(e)})
     players.sort(key=lambda p: (-p.get('rating', 0), p['name']))

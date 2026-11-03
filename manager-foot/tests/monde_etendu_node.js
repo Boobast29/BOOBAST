@@ -29,6 +29,9 @@ const all=ctx.construireMondeComplet(countries);
 assert.equal(all.clubs.length,355);assert.equal(all.sourceCoverage.countries.length,5);
 assert.equal(new Set(all.players.map(p=>p.id)).size,all.players.length);
 ctx.setupEuropean=()=>{};ctx.news=()=>{};
+let legacySimulations=0;
+ctx.initLiguesEtrangeres=()=>legacySimulations++;ctx.avancerLiguesEtrangeres=()=>legacySimulations++;ctx.cloreLiguesEtrangeres=()=>legacySimulations++;
+ctx.ligueDe=()=> 'legacy';ctx.selectLigues=()=> 'legacy';ctx.esc=String;
 vm.runInContext(fs.readFileSync(`${root}/js/monde_multinational.js`,'utf8'),ctx);
 all.clubId=all.clubs.find(c=>c.worldCountry==='France').id;all.season=2026;all.week=0;all.inbox=[];
 ctx.setupSeason(all);
@@ -51,3 +54,10 @@ const actual=new Map();for(const c of all.clubs){const k=c.worldCountry+':'+c.wo
 for(const [k,n] of counts)assert.equal(actual.get(k),n,'Les mouvements doivent préserver les tailles de chaque groupe');
 ctx.setupSeason(all);assert.equal(ctx.liguesDuMonde(all).length,18);
 console.log('Carrière multi-pays validée : 355 clubs, 18 ligues, saison étrangère complète, coupes, sauvegarde et promotions sans changement de pays.');
+
+ctx.initLiguesEtrangeres(all);ctx.avancerLiguesEtrangeres(all);ctx.cloreLiguesEtrangeres(all);assert.equal(legacySimulations,0,'Pas de second championnat regroupant toutes les divisions');
+ctx.avancerLiguesEtrangeres({});assert.equal(legacySimulations,1,'Les carrières classiques conservent leur moteur');
+const etrClub=all.clubs.find(c=>c.worldCountry==='Germany');const etrPlayer=all.players.find(p=>p.club===etrClub.id);
+assert.equal(ctx.ligueDe(all,etrPlayer),ctx.clubLeague(all,etrClub.id).id);
+assert(ctx.selectLigues(all).includes('Bundesliga'));
+console.log('Mercato : recherche par championnat étranger et absence de double simulation validées.');
