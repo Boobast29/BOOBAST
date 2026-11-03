@@ -1,4 +1,14 @@
-# État du projet — v56 (3 novembre 2026)
+# État du projet — v57 (3 novembre 2026)
+
+## v57 — toutes les branches fusionnées (Studio du club, projet sportif, pack FMInside)
+- **`codex/studio-club-20-integrations`** : Studio du club (bureau déplaçable, dossiers et projets, planning, liens du vestiaire,
+  échéances, recadrage de logo ou de photo), avec 20 bibliothèques locales et leurs licences (`vendor/integration20`).
+  4 conflits résolus. `studio-club.css` réécrivait aussi les tableaux, les boutons et le focus : seules ses règles propres
+  (`.s20-*`, GridStack, FullCalendar, Cropper) sont chargées (`css/studio_club.css`). Les pluriels du Studio sont accordés.
+- **`Manager-foot` / `codex/football-monde-integration-v16`** : documentation du pack FMInside (`packs/fminside-…manifest.json`) ;
+  projet sportif (`js/projet_sportif.js`) : profondeur d'effectif des clubs IA, journal de progression, suivi de recrutement.
+- Le catalogue FMB est conservé, à ta demande.
+Vérifications : 6 onglets du Studio sans erreur ; test du projet sportif ✓ ; simulation longue sans erreur ; audit des écrans sans erreur.
 
 ## v56 — note de poste selon le rôle, le devoir et les consignes ; couleurs des notes
 - `js/notes_roles.js` : chaque rôle de poste (consignes individuelles de la tactique : Stoppeur, Défenseur relanceur, Renard des surfaces,

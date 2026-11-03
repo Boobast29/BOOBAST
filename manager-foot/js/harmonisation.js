@@ -34,3 +34,10 @@ if (typeof playerModal === 'function') {
     return r;
   };
 }
+// Studio du club : contenu rendu en différé, pluriels accordés une fois l'onglet affiché
+// (branché au chargement complet : studio-club.js et design.js sont chargés après ce fichier)
+window.addEventListener('load', () => {
+  if (typeof s20Render !== 'function' || typeof accorderDans !== 'function') return;
+  const __s20RenderH = s20Render;
+  s20Render = async function (el) { const r = await __s20RenderH.apply(this, arguments); try { accorderDans(el); } catch { } return r; };
+});
