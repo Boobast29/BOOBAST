@@ -88,7 +88,7 @@
     const zone=document.querySelector('.start-wrap');
     if(zone&&!document.querySelector('#fmbAccueil')) {
       const c=document.createElement('div');c.className='card';c.id='fmbAccueil';
-      c.innerHTML='<h2>Football Monde · FMB</h2><p>32 852 fiches de joueurs et staff, 355 clubs et 18 compétitions. Portraits, logos et compétences documentées, consultables hors ligne avec le serveur local.</p><button class="btn primary">Explorer le catalogue</button>';
+      c.innerHTML='<h2>Football Monde · FMB</h2><p>32 852 fiches de joueurs et staff, 355 clubs et 18 compétitions. Les logos présents dans le pack local restent accessibles hors ligne ; les autres dépendent de leur URL source.</p><button class="btn primary">Explorer le catalogue</button>';
       c.querySelector('button').onclick=()=>ouvrir();zone.insertBefore(c,zone.querySelector('#mondeCard'));
     }
     return res;

@@ -1,0 +1,142 @@
+/* Manager Foot — bureau du club, nouvelle finition visuelle.
+   Le vert signale l'action, la couleur du club reste une signature discrète. */
+:root {
+  --mf-bg: #0b1119;
+  --mf-side: #101a23;
+  --mf-card: #16222d;
+  --mf-elevated: #1c2b36;
+  --mf-line: #344956;
+  --mf-soft: #adbfcb;
+  --mf-ink: #f1f7f8;
+  --mf-action: #83e0a8;
+  --bg: var(--mf-bg);
+  --panel: var(--mf-card);
+  --panel2: var(--mf-elevated);
+  --line: var(--mf-line);
+  --txt: var(--mf-ink);
+  --mut: var(--mf-soft);
+  --acc: var(--mf-action);
+  --acc2: #4dbe82;
+}
+html, body { background: var(--mf-bg); }
+body.game { background: radial-gradient(1000px 600px at 78% -20%, #1e3b3d 0%, transparent 65%), var(--mf-bg); }
+
+/* Navigation : identité et repères de lecture. */
+body.game #app { grid-template-columns: 248px minmax(0, 1fr); }
+#nav { background: linear-gradient(180deg, #111e27 0%, var(--mf-side) 58%, #0c151d 100%); border-right: 1px solid #344653; padding: 0 12px 26px; gap: 2px; }
+.nav-brand { display:flex; align-items:center; gap:11px; padding:18px 7px 17px; margin-bottom:12px; border-bottom:1px solid var(--mf-line); }
+.nav-monogram { display:grid; place-items:center; width:39px; height:39px; border-radius:11px; flex:none; background:linear-gradient(145deg,#8af0b2,#43a879); color:#09231a; font-size:14px; font-weight:900; letter-spacing:-.08em; box-shadow:0 8px 26px -10px #46ce8e; }
+.nav-brand-text { min-width:0; display:grid; gap:3px; }.nav-brand-text b { font-size:12px; letter-spacing:.085em; color:#f7fbf9; white-space:nowrap; }.nav-brand-text small { color:#a5b8c5; font-size:11px; }
+#nav .nav-cmd { background:#1b2b36; border:1px solid #39505c; border-radius:10px; margin-bottom:10px; min-height:40px; }
+#nav .nav-cmd:hover { background:#29413e; border-color:#70c89b; }
+#nav .nav-h { padding:10px 11px 6px; margin:3px 0; color:#a0b8c5 !important; font-size:10px; font-weight:800; letter-spacing:.13em !important; }
+#nav .nav-g { margin-bottom:7px; }
+#nav button[data-v] { min-height:43px; padding:8px 10px !important; gap:10px; color:#c2d1db; border:1px solid transparent; border-radius:10px; font-weight:600; transition:background .16s ease,color .16s ease,border-color .16s ease; }
+#nav button[data-v] > span { display:grid; place-items:center; flex:none; width:29px; height:29px; border-radius:8px; background:#1d2e39; color:#b4c7d0; }
+#nav button[data-v] > span .ico { width:17px; height:17px; }
+#nav button[data-v]:hover { color:#fff; background:#20343d; border-color:#344e55; }
+#nav button[data-v].on { color:#f9fff9; background:linear-gradient(90deg,#255346 0%,#19342f 70%,#172b2b 100%); border-color:#41755f; box-shadow:inset 0 1px 0 rgba(255,255,255,.06); }
+#nav button[data-v].on::before { left:-12px; top:8px; bottom:8px; width:3px; background:#8de8ad; }
+#nav button[data-v].on > span { background:#32745b; color:#d7ffe4; }
+#nav button em { font-size:13px !important; letter-spacing:0; }
+#nav button .nb:not(:empty) { background:#dd5960; color:#fff; font-weight:800; }
+
+/* Tableau de bord en haut : blocs calmes et action dominante. */
+#top { min-height:78px; gap:clamp(10px,1.6vw,24px); padding:12px clamp(16px,2vw,28px); border-bottom:1px solid #456157; background:linear-gradient(95deg,#172b30 0%,#14222a 36%,#101a23 100%); box-shadow:0 12px 35px -26px #000; }
+#top .tclub { gap:10px; }
+#top .tclub b { font-size:14px; color:#f2f9f4; }
+#top .tclub small { color:#a9c0c8; }
+#top .tinfo { padding-left:12px; border-left:1px solid #395059; }
+#top .tinfo small, #top .tnext small { color:#a9bbc7; font-size:11px; text-transform:uppercase; letter-spacing:.05em; }
+#top .tinfo b { color:#f4faf6; font-size:21px; }
+#top .search input { min-height:42px; border-radius:10px; }
+#top #btnGo { min-height:46px; padding:10px 18px; border-radius:11px; font-size:14px; font-weight:800; box-shadow:0 6px 20px -9px #57ce8c; }
+
+/* Cartes, chiffres, filtres et menus contextuels. */
+#main { padding:clamp(18px,2.4vw,34px); gap:20px; }
+.game .card { background:linear-gradient(160deg,#1a2a34 0%,#14212b 72%); border:1px solid #344b58; border-radius:15px; box-shadow:0 1px 0 rgba(255,255,255,.045) inset,0 16px 32px -28px #000; }
+.game .card > h2:first-child { background:linear-gradient(90deg,#223d3c,#1a2b34 65%); border-bottom-color:#3b575b; border-radius:15px 15px 0 0; padding:13px 18px; margin:-16px -16px 16px; color:#f2f9f5; font-size:16px; }
+.game .card h3 { color:#b1d6c5; font-size:12px; font-weight:800; letter-spacing:.07em; }
+.game .kpis b, .game .tinfo b { font-variant-numeric:tabular-nums; }
+.game .kpis b { color:#f3faf6; }
+.game .hint, .game small.muted { color:#adbfcb; line-height:1.5; }
+.game input,.game select,.game textarea { background:#10202a; border:1px solid #405665; border-radius:9px; color:#f4f9fa; min-height:39px; }
+.game input::placeholder { color:#a4b6c2; }
+.game input:hover,.game select:hover { border-color:#739a95; }
+.game input:focus,.game select:focus,.game textarea:focus { border-color:#8de0ad; }
+.game .tabs button,.game .sect-tabs button { min-height:38px; color:#bacbd4; }
+.game .tabs button:hover,.game .sect-tabs button:hover { color:#fff; }
+.game .tabs button.on,.game .sect-tabs button.on { color:#eafff0; border-bottom-color:#8fe6ad !important; }
+.game #ariane.sect-bar { border-bottom-color:#3d505c; min-height:48px; }
+.game .sect-nom { color:#cfe6d8; }
+.game .af-it,.game .chr-s { border-color:#38515b; background:#172935; }
+.game .af-it:hover { background:#24443e; }
+
+/* Les actions conservent une hiérarchie claire. */
+.game .btn { background:#213441; border:1px solid #486071; color:#edf5f7; border-radius:9px; min-height:39px; padding:8px 13px; font-weight:650; box-shadow:0 1px 0 rgba(255,255,255,.07) inset; }
+.game .btn:hover:not(:disabled) { background:#31514b; border-color:#87d7a8; color:#fff; }
+.game .btn.primary { color:#092b1d; background:linear-gradient(180deg,#a0f0bd,#5bc98f); border-color:#a8f2c4; font-weight:800; }
+.game .btn.primary:hover:not(:disabled) { background:linear-gradient(180deg,#b6facd,#77dba4); color:#062416; }
+.game .btn.danger { background:#44292e; color:#ffd6d6; border-color:#9c555e; }
+.game .btn.danger:hover:not(:disabled) { background:#60353a; border-color:#e48c91; }
+.game .btn:disabled { opacity:.5; box-shadow:none; cursor:not-allowed; }
+.game .btn.sm { min-height:33px; }
+.game .btn:focus-visible,.game #nav button:focus-visible,.game input:focus-visible,.game select:focus-visible,.game .sect-tabs button:focus-visible { outline:2px solid #a3eebd; outline-offset:2px; box-shadow:none; }
+
+/* Tableaux : en-têtes lisibles, repères numériques, ligne sélectionnée. */
+.game .tbl th { background:#21323c; color:#c1d2dc; font-size:11px; font-weight:800; letter-spacing:.04em; border-bottom:1px solid #52636b; }
+.game .tbl td { border-bottom-color:#30444f; color:#e1ebee; }
+.game .tbl tbody tr:nth-child(even) { background:rgba(202,241,225,.025); }
+.game .tbl tbody tr:hover { background:#25433f !important; }
+.game .tbl tr.me { background:#244a3a !important; }
+.game .tbl td.nm { color:#f6fafb; font-weight:700; }
+.game .scroll,.game .defile-x { border-radius:9px; }
+
+/* Dialogues, recherche rapide et accueil. */
+.game .mbox, .mbox { background:linear-gradient(160deg,#1e303b,#13212a); border:1px solid #547069; border-radius:18px; box-shadow:0 28px 80px rgba(0,0,0,.65); }
+.pal-boite { background:#182a35; border-color:#4c655f; border-radius:15px; }
+.pal-it.on { background:#2b5545; }
+body.start #app { max-width:1440px; padding:clamp(20px,3vw,48px); }
+body.start { background:radial-gradient(900px 550px at 75% -8%,#255244 0%,transparent 75%),radial-gradient(850px 500px at 0% 20%,#1d3441 0%,transparent 65%),#0b1119; }
+.start-wrap { gap:20px; }
+.hero { position:relative; overflow:hidden; padding:clamp(25px,4vw,54px); border:1px solid #42665f; border-radius:22px; background:linear-gradient(110deg,#183a38 0%,#172d34 55%,#12222d 100%); box-shadow:0 25px 65px -45px #000; }
+.hero::after { content:""; position:absolute; right:-80px; bottom:-140px; width:430px; height:430px; border:1px solid rgba(168,238,190,.16); border-radius:50%; box-shadow:0 0 0 60px rgba(168,238,190,.035),0 0 0 122px rgba(168,238,190,.025); pointer-events:none; }
+.hero .logo-big { position:relative; z-index:1; font-size:clamp(34px,4vw,60px); letter-spacing:-.055em; color:#f8fff9; }
+.hero .logo-big b { background:linear-gradient(100deg,#b5f8c9,#62d69b); background-clip:text; -webkit-background-clip:text; color:transparent; }
+.hero .sub { position:relative; z-index:1; color:#c8d9da; font-size:clamp(14px,1.2vw,17px); line-height:1.65; margin:14px 0 24px !important; }
+.hero-etapes { position:relative; z-index:1; gap:9px; }
+.hero-etapes span { background:#1e4040; border-color:#41746b; color:#e4f5ed; border-radius:9px; padding:8px 12px; }
+.hero-etapes b { color:#b1f6c8; }
+.start .card { background:linear-gradient(155deg,#1c2d38,#14222c); border-color:#3c555e; border-radius:15px; }
+.start .club-pick { min-height:76px; border-radius:13px; border-color:#425b61; background:linear-gradient(105deg,color-mix(in srgb,var(--c1) 30%,#1c3340),#192936 72%); padding:12px; }
+.start .club-pick:hover { border-color:#83d5a5; transform:translateY(-2px); }
+.start .club-pick b { color:#f7fafb; font-size:14px; }
+.start .club-pick small { color:#c0d0d5; }
+
+@media (max-width:1250px) { #top .tinfo:nth-of-type(5),#top .tinfo.hide-s { display:none; } }
+@media (max-width:900px) {
+  body.game #app { grid-template-columns:minmax(0,1fr); }
+  #nav { display:none !important; }
+  #top { min-height:0; padding:10px 14px !important; }
+  #top .tinfo { border-left:0; padding-left:0; }
+  #tabbar { background:rgba(16,28,35,.98); border-top-color:#506b62; padding:6px 5px calc(5px + env(safe-area-inset-bottom)); box-shadow:0 -12px 35px -23px #000; }
+  #tabbar button { min-height:52px; color:#bccbd2; }
+  #tabbar button.on { background:#275441; color:#f0fff4; }
+  #tabbar button em { font-size:11px; font-weight:700; }
+  #tiroir .tir-boite { background:linear-gradient(180deg,#1d3039,#101d27); border-top-color:#6ca68b; }
+  .tir-grille { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .tir-grille button { min-height:70px; background:#1d3440; border-color:#405b65; }
+  .tir-grille button.on { background:#2a5a44; border-color:#83dba7; }
+  .tir-grille button em { font-size:12px; color:#edf6f2; }
+  #main { padding:16px 12px calc(85px + env(safe-area-inset-bottom)); }
+}
+@media (max-width:600px) {
+  #top .tclub { flex:1 1 auto; }
+  #top .tinfo { display:none; }
+  #top .tinfo:nth-of-type(2) { display:block; }
+  #top #btnGo { width:100%; min-height:44px; }
+  .game .card > h2:first-child { font-size:15px; }
+  .hero::after { opacity:.45; }
+  .hero-etapes span { font-size:11px; }
+}
+@media (prefers-reduced-motion: reduce) { .game .btn,#nav button,.start .club-pick { transition:none !important; } }

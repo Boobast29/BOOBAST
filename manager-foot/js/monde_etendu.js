@@ -98,7 +98,7 @@ async function ouvrirMondeEtendu() {
   const el=id=>document.getElementById(id);el('meRetour').onclick=startScreen;
   try {
     const r=await fetch('packs/monde-index.json');if(!r.ok)throw Error('Index mondial indisponible');const index=await r.json();
-    el('meEtat').textContent=`${index.totals.clubs} clubs · ${index.totals.competitions} compétitions · ${index.totals.players} joueurs · ${index.totals.staff} membres du staff · ${index.freeAgentsDocumented || 0} joueurs libres documentés. ${index.notice}`;
+    el('meEtat').textContent=`${index.totals.clubs} clubs · ${index.totals.competitions} compétitions · ${index.totals.players} joueurs · ${index.totals.staff} membres du staff · ${index.freeAgentsDocumented || 0} joueurs libres documentés. Logos liés à des URL externes : un blason de remplacement s'affiche si le fichier est indisponible. ${index.notice}`;
     el('mePays').innerHTML=index.countries.map(c=>`<option value="${esc(c.key)}">${esc(c.label)}</option>`).join('');
     let pays, request=0;
     const charger=async()=>{
