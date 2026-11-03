@@ -445,8 +445,9 @@ function weeklyUpdate(G, full = true) {
     const o = playerOvr(p);
     let chance = p.age <= 21 ? .16 : p.age <= 24 ? .11 : p.age <= 28 ? .04 : 0;
     if (p.pers === 'Professionnel') chance *= 1.25;
-    if (p.loan) { const lr = Math.max(1, leagueRoundAt(G)); chance *= clamp(.55 + (p.stats.min || 0) / lr / 90 * .6, .55, 1.15); } // prêt : progression selon les minutes réellement jouées, sans bonus automatique
+    { const lr = Math.max(1, leagueRoundAt(G)); chance *= clamp(.4 + (p.stats.min || 0) / lr / 90 * .75, .4, 1.15); } // prêt : progression selon les minutes réellement jouées, sans bonus automatique
     if (mine) chance *= [.6, 1, 1.4][tr.intensity] * (tr.focus === 'repos' ? 0 : 1) * (.75 + .1 * (st.coach || 2) + .07 * (fac.training || 2));
+    if (p.injury > 0) chance = 0;
     if (o < p.pot && rnd() < chance) {
       const k = bumpAttr(p, 1, mine ? focus.keys : null);
       if (mine) G.weekProg.push({ pid: p.id, k, d: 1 });
