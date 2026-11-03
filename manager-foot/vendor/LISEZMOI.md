@@ -55,3 +55,5 @@ le jeu reste jouable sans (recherche simple, sons d'origine).
 - openfootball/football.json (CC0) : palmarès dans `js/palmares_reel.js`.
 - `fmsuperscout/LICENSE` : mavarobli/FMSuperScout (MIT). Table des nations FM dans `outils/nations_fm.json`.
 - rhiever/fmsave (MIT) : bibliothèque installée par l'utilisateur (`pip install fmsave`), non incluse.
+- `world-cup-2026-prediction-model/LICENSE` : Hicruben/world-cup-2026-prediction-model (MIT). Fonctions Dixon-Coles dans `js/previsions.js`.
+- vickyfriss/football-league-predictions (MIT) : méthode Monte-Carlo de fin de saison, réécrite dans `js/previsions.js`.

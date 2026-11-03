@@ -1,4 +1,13 @@
-# État du projet — v44 (3 novembre 2026)
+# État du projet — v45 (3 novembre 2026)
+
+## v45 — prévisions : scores probables et fin de saison simulée
+- `js/previsions.js` : modèle de Poisson corrigé de Dixon-Coles (`dcTau`, `poissonPmf`, `poissonSample`, repris de
+  Hicruben/world-cup-2026-prediction-model, MIT, `vendor/world-cup-2026-prediction-model/LICENSE`).
+  - Avant-match : les 3 scores les plus probables et les buts attendus.
+  - Compétitions > championnat : « Prévisions de fin de saison », 2 000 saisons simulées (méthode de vickyfriss/football-league-predictions,
+    MIT, réécrite). On obtient les points projetés et les chances de titre, de top 4, de montée et de relégation. 0,16 s pour 260 matchs restants.
+  - Générateur pseudo-aléatoire séparé (mulberry32) : le hasard de la partie ne bouge pas (test `tests/previsions_hasard.js`).
+Tests : `tests/previsions.js`, `tests/previsions_hasard.js`. Simulation longue sans erreur.
 
 ## v44 — édition groupée, radar des progressions
 - **Édition groupée** (`js/edition_groupee.js`, idée de tozmoz/FMLibreEditor, GPL-3.0, sans code repris) dans l'éditeur.
