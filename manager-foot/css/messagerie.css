@@ -342,3 +342,4 @@
 .ra-filtres > label .choices__inner { width: 100%; box-sizing: border-box; }
 .ra-filtres > label .choices, .ra-filtres > label .choices__inner { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
 .ra-raccourcis { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; font-size: var(--fs-s); } .ra-raccourcis > span { font-size: var(--fs-2xs); letter-spacing: .08em; text-transform: uppercase; color: var(--mut); }
+.ag-rel { padding: 1px 6px; border-radius: var(--r-pill); font-size: 11px; font-weight: 600; } .ag-bon { background: color-mix(in srgb, var(--acc) 22%, transparent); color: var(--acc); } .ag-neu { background: var(--surface-3); } .ag-mau { background: color-mix(in srgb, var(--red) 22%, transparent); color: #ff9aa2; }

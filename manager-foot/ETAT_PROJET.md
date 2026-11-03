@@ -1,3 +1,10 @@
+# État du projet — v89 (3 novembre 2026)
+
+## Relations avec les agences d'agents (js/agents_relation.js)
+- Chaque agence a une relation avec ton club (0-100, 50 au départ). Négociations : salaire et commission demandés de −20 % (excellente) à +20 % (mauvaise), patience de l'agent +1 / −1 (testé : salaire 510 k / 610 k / 710 k et commission 1,9 / 2,3 / 2,7 M€ pour une relation de 90 / 50 / 10).
+- Évolution : transfert conclu avec un de ses joueurs +6, vente d'un de ses joueurs +3, négociation rompue −5, joueur non conservé −4 ; retour lent vers 50 chaque saison ; journal des derniers changements.
+- Affichage : relation sur la fiche joueur (ligne Agent) ; tableau des agences dans Négociations.
+
 # État du projet — v88 (3 novembre 2026)
 
 ## Catalogue des vrais joueurs libres
