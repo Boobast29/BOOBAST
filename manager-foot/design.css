@@ -152,3 +152,20 @@ h1.logo-big { margin: 0; font-weight: inherit; }
 .monde-pays { margin-top: 14px; } .monde-pays tr.click { cursor: pointer; }
 .monde-pays { display: block !important; grid-template-columns: none !important; }
 .etr-ligue { margin-bottom: 10px; } .etr-res { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 6px; font-size: 13px; } .monde-pays details summary { cursor: pointer; color: var(--mut); margin: 8px 0 4px; }
+
+/* v51 — critique de design : contenu jamais coupé, titres sobres, notifications discrètes */
+.defile-x { overflow-x: auto; max-width: 100%; }
+.defile-x, .tbl-wrap, .scroll { background: linear-gradient(90deg, var(--panel) 30%, transparent) left / 24px 100% no-repeat local, linear-gradient(270deg, var(--panel) 30%, transparent) right / 24px 100% no-repeat local, radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.45), transparent) left / 10px 100% no-repeat scroll, radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.45), transparent) right / 10px 100% no-repeat scroll; }
+.tbl td.nm { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card > h2:first-child { background: linear-gradient(90deg, color-mix(in srgb, var(--club1) 10%, #19222d), #19222d 50%); }
+#toasts .toast:nth-last-child(n+3) { display: none; }
+/* calendrier : adversaire abrégé, textes longs sur deux lignes, score toujours visible */
+tr[data-w] td { padding-left: 7px; padding-right: 7px; }
+tr[data-w] td:nth-child(2) { white-space: nowrap; color: var(--mut); }
+tr[data-w] td:nth-child(4):not([colspan]) { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+tr[data-w] td[colspan] { white-space: normal; }
+.scroll > .tbl:has(tr[data-w]) { table-layout: fixed; width: 100%; }
+.scroll > .tbl:has(tr[data-w]) td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scroll > .tbl:has(tr[data-w]) td:nth-child(1) { width: 21%; } .scroll > .tbl:has(tr[data-w]) td:nth-child(2) { width: 22%; }
+.scroll > .tbl:has(tr[data-w]) td:nth-child(3) { width: 10%; } .scroll > .tbl:has(tr[data-w]) td:nth-child(5) { width: 15%; text-align: right; }
+.scroll > .tbl:has(tr[data-w]) td[colspan] { white-space: normal; }

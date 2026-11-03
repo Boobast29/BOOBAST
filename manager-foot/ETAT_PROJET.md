@@ -1,4 +1,13 @@
-# État du projet — v50 (3 novembre 2026)
+# État du projet — v51 (3 novembre 2026)
+
+## v51 — corrections issues de la critique de design (skill design-critique) et d'axe-core
+- **Contenu jamais coupé** : tout tableau sans conteneur défilant est enveloppé (`.defile-x`, atteignable au clavier), avec des ombres sur
+  les bords quand il défile. Les noms longs sont abrégés avec une infobulle. Calendrier en largeurs fixes : adversaire abrégé, score toujours
+  visible et coloré, textes longs sur deux lignes.
+- **Titres de panneaux** en texte seul (émojis de tête retirés, cohérent avec les icônes du menu) ; teinte de la barre de titre adoucie.
+- **Notifications** : deux au plus, durée raccourcie (2,2 à 5 s).
+- axe-core après animations : aucun défaut de contraste. Il reste un avertissement sur l'infobulle (rôle tooltip correct, rattachée au body).
+Vérifications : audit des 27 écrans sans erreur ; simulation longue sans erreur.
 
 ## v50 — championnats étrangers simulés ; hasard de la partie protégé
 - **Championnats étrangers** (`js/ligues_etrangeres.js`) : chacun des 16 pays étrangers d'au moins 4 clubs a son championnat aller-retour

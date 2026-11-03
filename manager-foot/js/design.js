@@ -25,6 +25,13 @@ function accessibiliserVue(root, titre) {
   // onglets segmentés : texte seul (les émojis de tête brouillaient la lecture et juraient avec les icônes du menu)
   root.querySelectorAll('.tabs > button').forEach(b => { const n = b.firstChild; if (n?.nodeType === 3) { const t = n.textContent.replace(/^\s*[\p{Extended_Pictographic}\uFE0F\u200D]+\s*/u, ''); if (t !== n.textContent) n.textContent = t; } });
   root.querySelectorAll('.inbox, .scroll').forEach(el => { if (!el.hasAttribute('tabindex')) el.tabIndex = 0; });
+  // tableaux : jamais coupés (défilement horizontal si besoin), noms longs abrégés avec infobulle
+  root.querySelectorAll('table.tbl').forEach(t => {
+    if (!t.closest('.tbl-wrap, .scroll, .defile-x')) { const w = document.createElement('div'); w.className = 'defile-x'; w.tabIndex = 0; t.replaceWith(w); w.appendChild(t); }
+  });
+  root.querySelectorAll('td.nm').forEach(td => { if (!td.title) td.title = td.textContent.trim(); });
+  // titres de panneaux : texte seul (émojis de tête retirés, cohérent avec les icônes du menu)
+  root.querySelectorAll('.card > h2:first-child').forEach(h => { const n = h.firstChild; if (n?.nodeType === 3) { const t = n.textContent.replace(/^\s*[\p{Extended_Pictographic}\uFE0F\u200D]+\s*/u, ''); if (t !== n.textContent) n.textContent = t; } });
 }
 if (typeof show === 'function') {
   const __showD = show;
