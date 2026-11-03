@@ -7,7 +7,7 @@ function enrichirPaysFMInside(pays,catalogue){
   }
   return pays;
 }
-let catalogueFMInsideMonde,correctifsNomsMonde,portraitsLocauxMonde;
+let catalogueFMInsideMonde,correctifsNomsMonde,portraitsLocauxMonde,portraitsCommonsMonde;
 async function lirePaysMonde(file) {
   const r = await fetch('packs/' + file);
   if (!r.ok) throw Error('Base nationale indisponible');
@@ -22,12 +22,19 @@ async function lirePaysMonde(file) {
   // Le pack distingue les portraits locaux des liens externes ; aucun lien n'est inventé.
   portraitsLocauxMonde ||= fetch('packs/portraits-locaux-fmb.json').then(r=>r.ok?r.json():{players:[],external:[]}).then(d=>({local:new Set(d.players.map(String)),external:new Set(d.external.map(String))})).catch(()=>({local:new Set(),external:new Set()}));
   const portraits=await portraitsLocauxMonde;
+  portraitsCommonsMonde ||= fetch('packs/portraits-commons-verifies.json').then(r=>r.ok?r.json():{players:{}}).then(d=>d.players).catch(()=>({}));
+  const commons=await portraitsCommonsMonde;
   for(const c of pays.clubs)for(const p of c.players){
     const uid=String(p.fmUid), distant=portraits.external.has(uid) ? `https://media.footballmanagerblog.org/faces/${encodeURIComponent(uid)}.webp` : null;
     if(portraits.local.has(uid)){
       p.photo=`/api/catalogue/image/players/${encodeURIComponent(uid)}`;
       p.photoFallbackUrl=distant;
     }else if(distant)p.photo=distant;
+    else if(commons[uid] && commons[uid].name===p.name){
+      const credit=commons[uid],fichier=encodeURIComponent(credit.file.replaceAll(' ','_'));
+      p.photo=`https://commons.wikimedia.org/wiki/Special:FilePath/${fichier}?width=300`;
+      p.photoCredit={author:credit.author,license:credit.license,page:`https://commons.wikimedia.org/wiki/File:${fichier}`,note:credit.note||''};
+    }
   }
   return pays;
 }
@@ -67,6 +74,7 @@ function construireCarriereMonde(pays, groupeD3) {
     if(info) {
       appliquerBiographieTransfermarkt(p,info.source);
       if(info.source.photoFallbackUrl)p.photoFallbackUrl=info.source.photoFallbackUrl;
+      if(info.source.photoCredit)p.photoCredit=info.source.photoCredit;
       p.sourceProfile={url:info.source.sourceUrl,database:info.source.sourceDatabase,squad:info.source.squad,contract:info.source.contractEndText};
       if(Number.isFinite(info.source.wageWeekly))p.wage=info.source.wageWeekly;
       if(Number.isFinite(info.source.value))p.value=info.source.value;
