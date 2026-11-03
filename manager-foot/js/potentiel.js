@@ -40,7 +40,7 @@ function evoluerPotentiels(G) {
       const o = playerOvr(p), mine = p.club === G.clubId;
       const hasard = (rnd() + rnd() + rnd() - 1.5) * 4.5;
       const serieux = SERIEUX[p.pers] ?? 0;
-      const accomp = mine ? ((st.coach || 2) - 3) * .9 + ((fac.training || 2) - 2) * .6 + ent * 1.5 : 0;
+      const accomp = typeof envClub === 'function' ? envClub(G, p.club) * 3 : mine ? ((st.coach || 2) - 3) * .9 + ((fac.training || 2) - 2) * .6 + ent * 1.5 : 0;
       const jeu = clamp((p.stats?.min || 0) / (rounds * 90), 0, 1);
       const temps = (jeu - .35) * 4 - (p.injury > 8 ? 1.5 : 0);
       const d = Math.round(hasard + serieux + accomp + temps);

@@ -1,3 +1,12 @@
+# État du projet — v61 (3 novembre 2026)
+
+## Évolution de tout le monde selon l'environnement (js/evolution.js)
+- Environnement de progression de chaque club (-1 à +1) : ton club → entraîneur technique, adjoint, entraîneur principal, centre d'entraînement, entente du staff, cohésion ; autres clubs → réputation, qualité d'encadrement propre au club (change toutes les 3 saisons), cohésion.
+- Fin de saison, tous les joueurs du monde : jeunes accélérés ou freinés par l'environnement ; potentiel revu (hasard, sérieux, temps de jeu, environnement) jusqu'à 28 ans ; âge de déclin propre à chacun (29-34 ans, retardé par un bon environnement), deuxième souffle pour les plus tardifs.
+- Historique du niveau saison par saison (p.evo) ; bilan d'intersaison de ton effectif (progrès / stables / en recul) dans la messagerie.
+- Écran Staff : « Environnement de progression » du club.
+- Vérifié : hasard des matchs intact, niveau moyen du monde stable sur 2 saisons (60,4 → 60,9).
+
 # État du projet — v60 (3 novembre 2026)
 
 ## Carrière du staff (js/carriere_staff.js)
