@@ -1,3 +1,10 @@
+# État du projet — v69 (3 novembre 2026)
+
+## openfootball/europe (CC0)
+- `outils/openfootball_europe.py` (format Football.TXT) → `js/palmares_europe.js` (21 Ko) : palmarès réel recalculé pour 35 pays de plus (Norvège, Suède, Danemark, Pologne, Suisse, Croatie, Serbie, Ukraine, Roumanie, Hongrie…) et les divisions 2 (Pays-Bas, Portugal, Suisse, Tchéquie…), fusionné dans PALMARES_REEL sans remplacer football.json.
+- Championnats étrangers simulés : calibrés par pays sur les résultats réels (buts par match, avantage du terrain, 6 dernières saisons) ; classement : derniers champions réels et chiffres du calibrage.
+- Revu sans intégration : academic-initiative/skillsbuild (exercices IBM Bob, sans licence ; données internationales déjà intégrées depuis martj42, CC0).
+
 # État du projet — v68 (3 novembre 2026)
 
 ## Fiche joueur et retraites annoncées (js/fiche_evolution.js)
