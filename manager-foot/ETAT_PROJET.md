@@ -1,3 +1,9 @@
+# État du projet — v91 (3 novembre 2026)
+
+## Rapports de recrutement et discussions (js/rapports_discussions.js)
+- Fiche d'un joueur d'un autre club : rapport façon FM — avis (À recruter / À suivre / Pas pour nous, selon l'écart avec ton titulaire, l'âge, le potentiel et ton budget), points forts et faibles pour son poste, comparaison avec ton titulaire, potentiel estimé, fiabilité = connaissance du joueur ; sans observation, pas de rapport.
+- Entretiens : réaction selon la personnalité (mercenaire et patience, très loyal et mise sur la liste des transferts, friable et « gagne ta place », leader / résistant et défi…), effet sur le moral et la confiance, expliqué dans la réponse.
+
 # État du projet — v90 (3 novembre 2026)
 
 ## Nationalités du monde étendu (outils/nationalites_monde.py)

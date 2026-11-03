@@ -343,3 +343,15 @@
 .ra-filtres > label .choices, .ra-filtres > label .choices__inner { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
 .ra-raccourcis { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; font-size: var(--fs-s); } .ra-raccourcis > span { font-size: var(--fs-2xs); letter-spacing: .08em; text-transform: uppercase; color: var(--mut); }
 .ag-rel { padding: 1px 6px; border-radius: var(--r-pill); font-size: 11px; font-weight: 600; } .ag-bon { background: color-mix(in srgb, var(--acc) 22%, transparent); color: var(--acc); } .ag-neu { background: var(--surface-3); } .ag-mau { background: color-mix(in srgb, var(--red) 22%, transparent); color: #ff9aa2; }
+
+/* Rapport de recrutement (js/rapports_discussions.js) */
+.rr h3 small { text-transform: none; letter-spacing: 0; font-weight: 500; margin-left: 6px; }
+.rr-avis { margin: 0 0 8px; padding: 8px 10px; border-left: 3px solid var(--mut); border-radius: var(--r-s); background: var(--surface-2); font-size: 12.5px; }
+.rr-avis b { display: block; font-size: 13.5px; }
+.rr-ok { border-color: var(--acc); } .rr-ok b { color: var(--acc); }
+.rr-suivre { border-color: var(--yel); } .rr-suivre b { color: var(--yel); }
+.rr-non { border-color: var(--red); } .rr-non b { color: #ff9aa2; }
+.rr-g { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rr-g small, .rr-comp small { display: block; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); margin-bottom: 3px; }
+.rr-g span { display: inline-block; margin: 0 4px 4px 0; padding: 2px 7px; border-radius: var(--r-pill); background: var(--surface-2); font-size: 12px; }
+.rr-comp { margin: 6px 0 0; font-size: 12.5px; }
