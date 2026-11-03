@@ -121,6 +121,20 @@ def image_manuelle(con, typ, ident):
     return str(ident) in _MANUELS[typ]
 
 
+_IA = {}
+
+
+def visage_ia(con, ident):
+    """Portrait généré par IA (outils/generer_visages_ia.py) : le jeu l'indique sur la fiche."""
+    k = id(con)
+    if k not in _IA:
+        try:
+            _IA[k] = {r[0] for r in con.execute('SELECT id FROM images_ia')}
+        except Exception:
+            _IA[k] = set()
+    return str(ident) in _IA[k]
+
+
 def joueur_jeu(row, con):
     fiche = unpack(con.execute('SELECT fiche FROM fiches WHERE id=?', (row['id'],)).fetchone()[0])
     cap = fiche.get('capacites') or {}
@@ -137,7 +151,7 @@ def joueur_jeu(row, con):
         'foot': None,
         'weakFoot': cap.get('pied_faible_sur_5'), 'skills': cap.get('gestes_techniques_sur_5'),
         'photo': f'/img/joueur/{row["id"]}' if (row['photo_local'] or row['photo_url'] or image_manuelle(con, 'joueur', row['id'])) else None,
-        'real': True, 'quality': row['qualite'],
+        'real': True, 'quality': row['qualite'], 'photoIA': visage_ia(con, row['id']) or None,
         **enrichissements.infos_joueur(con, row['tm_id']),
     }
 

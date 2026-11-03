@@ -1,3 +1,10 @@
+# État du projet — v65 (3 novembre 2026)
+
+## Visages des joueurs sans photo
+- `js/visages_generes.js` : plus de pastille à initiales ; chaque joueur réel sans photo reçoit un visage dessiné stable (identité, sans hasard du jeu), cohérent avec sa nationalité (teinte par région) et son âge (calvitie, cheveux gris), signalé « Visage généré (pas de photo) » sur la fiche.
+- `outils/generer_visages_ia.py` + `Generer_Visages_IA.bat` : vrais portraits générés par IA pour les joueurs sans aucune image, avec Stable Diffusion sur ton PC (AUTOMATIC1111 / Forge, option --api) ou DeepInfra (payant, FLUX schnell, clé). Personnes fictives : la consigne ne contient jamais le nom du joueur (âge, nationalité, tenue seulement). Enregistrés comme images ajoutées + table `images_ia` ; fiche : « Visage généré par IA ». Une vraie photo reste prioritaire. `--essai`, `--pays`, `--max`, `--retirer`.
+- Test : `outils/tests_visages_ia.py` (générateur simulé, API AUTOMATIC1111) : 7/7. Non exécuté contre un vrai générateur dans cet environnement.
+
 # État du projet — v64 (3 novembre 2026)
 
 ## Fins de carrière, retraites du staff, reconversions (js/retraites.js)

@@ -140,3 +140,5 @@
 .diff-opt.on { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 10%, var(--surface-2)); }
 .diff-opt:has(input:focus-visible) { outline: 2px solid var(--acc); outline-offset: 2px; }
 .val-hist { display: block; width: 100%; max-width: 360px; height: 70px; margin: 4px 0; }
+.vg { display: inline-flex; line-height: 0; }
+.vg-note { display: inline-block; margin-left: 8px; padding: 1px 6px; border-radius: var(--r-pill); background: var(--surface-3); font-size: var(--fs-3xs); font-weight: 500; letter-spacing: 0; color: var(--mut); vertical-align: middle; }
