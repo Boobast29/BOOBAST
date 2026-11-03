@@ -23,12 +23,13 @@ function dirLog(label, detail, key = null) {
   news(G, `${label} — ${detail}`, 'info');
   save();
 }
-function dirAssign(kind) {
+function dirAssign(kind, options = {}) {
   if (!DIR_TASKS[kind]) return;
   const d = dirState(), t = DIR_TASKS[kind];
   if (d.tasks.some(x => x.kind === kind && x.status === 'pending')) return toast('Cette mission est déjà confiée.', 'err');
-  d.tasks.unshift({ id: `${G.season}:${G.week}:${kind}`, kind, status: 'pending', due: G.week + 1, season: G.season });
-  dirLog('Mission confiée', `${t.owner} : ${t.label.toLowerCase()}. Résultat la semaine prochaine.`);
+  const criteria = kind === 'scout' ? { pos: Object.hasOwn(ROLES, options.pos) ? options.pos : '', maxAge: [21, 25, 28].includes(+options.maxAge) ? +options.maxAge : 28 } : {};
+  d.tasks.unshift({ id: `${G.season}:${G.week}:${kind}`, kind, status: 'pending', due: G.week + 1, season: G.season, criteria });
+  dirLog('Mission confiée', `${t.owner} : ${t.label.toLowerCase()}${kind === 'scout' ? ` (${criteria.pos || 'tous postes'}, ${criteria.maxAge} ans maximum)` : ''}. Résultat la semaine prochaine.`);
   show('direction');
 }
 function dirResolve(g) {
@@ -37,10 +38,11 @@ function dirResolve(g) {
     const sq = dirSquad(g), kind = task.kind;
     let result = '';
     if (kind === 'scout') {
-      const pool = g.players.filter(p => p.club !== g.clubId && !knows(g, p) && p.age <= 28 && playerOvr(p) >= 55);
+      const pos = task.criteria?.pos, maxAge = task.criteria?.maxAge || 28;
+      const pool = g.players.filter(p => p.club !== g.clubId && !knows(g, p) && p.age <= maxAge && (!pos || p.pos === pos) && playerOvr(p) >= 55);
       const p = pool.length ? pool[Math.floor(rnd() * pool.length)] : null;
       if (p) { (g.known ||= []).push(p.id); if (!g.shortlist.includes(p.id)) g.shortlist.push(p.id); result = `${p.name} (${p.pos}) a été ajouté au suivi avec un rapport complet.`; }
-      else result = 'Aucun nouveau profil répondant aux critères cette semaine.';
+      else result = `Aucun nouveau profil ${pos || 'tous postes'} de ${maxAge} ans maximum répondant aux critères cette semaine.`;
     } else if (kind === 'medical') {
       const targets = sq.filter(p => p.injury > 0 || p.fit < 85).slice(0, 6);
       targets.forEach(p => { if (p.injury > 0) p.injury = Math.max(0, p.injury - 1); else p.fit = clamp(p.fit + 5, 0, 100); });
@@ -126,11 +128,11 @@ function vDirection(el) {
   const red = recent && (m.f.events || []).some(e => e.t === 'red' && e.s === (m.f.h === G.clubId ? 0 : 1));
   const recentResult = recent ? `${esc(getClub(G, m.f.h).short)} ${m.f.res.join('–')} ${esc(getClub(G, m.f.a).short)}` : 'Aucun match récent';
   el.innerHTML = `<div class="dir-heading"><div><small>LE BUREAU DU DIRECTEUR</small><h1>Décisions & délégation</h1><p>Agis auprès du groupe et confie des missions. Chaque décision laisse une trace dans la partie.</p></div><div class="dir-week">${esc(weekLabel(G))}<small>Saison ${G.season}/${G.season + 1}</small></div></div>
-    <div class="dir-grid"><section class="card dir-card dir-wide"><div class="dir-card-head"><span class="dir-icon">◇</span><div><h2>Missions à déléguer</h2><p>Le staff revient avec son rapport après la prochaine semaine simulée.</p></div></div><div class="dir-task-grid">${Object.entries(DIR_TASKS).map(([k, t]) => { const pending = d.tasks.some(x => x.kind === k && x.status === 'pending'); return `<div class="dir-task"><span class="dir-task-icon">${t.icon}</span><strong>${t.label}</strong><small>${t.owner} · ${t.detail}</small><button class="btn ${pending ? '' : 'primary'}" data-assign="${k}" ${pending ? 'disabled' : ''}>${pending ? 'Mission en cours' : 'Confier la mission'}</button></div>`; }).join('')}</div></section>
+    <div class="dir-grid"><section class="card dir-card dir-wide"><div class="dir-card-head"><span class="dir-icon">◇</span><div><h2>Missions à déléguer</h2><p>Le staff revient avec son rapport après la prochaine semaine simulée.</p></div></div><div class="dir-task-grid">${Object.entries(DIR_TASKS).map(([k, t]) => { const pendingTask = d.tasks.find(x => x.kind === k && x.status === 'pending'), pending = !!pendingTask; return `<div class="dir-task"><span class="dir-task-icon">${t.icon}</span><strong>${t.label}</strong><small>${t.owner} · ${t.detail}</small>${k === 'scout' ? `<div class="dir-scout-criteria"><label>Poste <select data-scout-pos aria-label="Poste recherché" ${pending ? 'disabled' : ''}><option value="" ${!pendingTask?.criteria?.pos ? 'selected' : ''}>Tous</option>${Object.keys(ROLES).map(pos => `<option value="${pos}" ${pendingTask?.criteria?.pos === pos ? 'selected' : ''}>${pos} · ${esc(ROLES[pos].label)}</option>`).join('')}</select></label><label>Âge maximum <select data-scout-age aria-label="Âge maximum" ${pending ? 'disabled' : ''}><option value="21" ${pendingTask?.criteria?.maxAge === 21 ? 'selected' : ''}>21 ans</option><option value="25" ${pendingTask?.criteria?.maxAge === 25 ? 'selected' : ''}>25 ans</option><option value="28" ${!pendingTask || pendingTask.criteria?.maxAge === 28 ? 'selected' : ''}>28 ans</option></select></label></div>` : ''}<button class="btn ${pending ? '' : 'primary'}" data-assign="${k}" ${pending ? 'disabled' : ''}>${pending ? 'Mission en cours' : 'Confier la mission'}</button></div>`; }).join('')}</div></section>
     <section class="card dir-card"><div class="dir-card-head"><span class="dir-icon">◈</span><div><h2>Jour de match</h2><p>${recentResult}</p></div></div><div class="dir-actions"><button class="btn" data-match="dressing" ${!recent || used.includes('dressing') ? 'disabled' : ''}>Entrer dans le vestiaire</button><button class="btn" data-match="press" ${!recent || used.includes('press') ? 'disabled' : ''}>Parler à la presse</button><button class="btn" data-match="commission" ${!red || used.includes('commission') ? 'disabled' : ''}>Aller en commission de ligue</button></div><p class="hint">${!red ? 'La commission est accessible si un de tes joueurs a été expulsé lors du dernier match.' : 'L’appel peut réduire la suspension d’un match.'}</p></section>
     <section class="card dir-card"><div class="dir-card-head"><span class="dir-icon">◎</span><div><h2>Interventions</h2><p>La réaction varie selon la situation et la confiance.</p></div></div>${isDS() && G.coach ? `<div class="dir-actions"><button class="btn" data-coach="support">Soutenir ${esc(G.coach.name)}</button><button class="btn" data-coach="pressure">Mettre l’entraîneur sous pression</button></div>` : ''}<button class="btn" id="dirPlayer">Agir auprès d’un joueur</button><p class="hint">Un entretien par joueur et par semaine. Depuis une fiche joueur, choisis félicitations, soutien public ou coup de pression.</p></section>
     <section class="card dir-card dir-wide"><div class="dir-card-head"><span class="dir-icon">☷</span><div><h2>Journal des décisions</h2><p>Missions et conséquences les plus récentes.</p></div></div><div class="dir-log">${d.actions.slice(0, 12).map(a => `<div><small>S${a.season} · semaine ${a.week + 1}</small><strong>${esc(a.label)}</strong><span>${esc(a.detail)}</span></div>`).join('') || '<p class="muted">Aucune décision pour le moment.</p>'}</div></section></div>`;
-  el.querySelectorAll('[data-assign]').forEach(b => b.onclick = () => dirAssign(b.dataset.assign));
+  el.querySelectorAll('[data-assign]').forEach(b => b.onclick = () => { const card = b.closest('.dir-task'); dirAssign(b.dataset.assign, { pos: card.querySelector('[data-scout-pos]')?.value, maxAge: card.querySelector('[data-scout-age]')?.value }); });
   el.querySelectorAll('[data-match]').forEach(b => b.onclick = () => dirMatchAction(b.dataset.match));
   el.querySelectorAll('[data-coach]').forEach(b => b.onclick = () => dirCoachAction(b.dataset.coach));
   $('#dirPlayer').onclick = () => { show('squad'); toast('Ouvre la fiche du joueur pour choisir une intervention.'); };
