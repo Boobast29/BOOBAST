@@ -376,7 +376,7 @@ offerModal = function (pid) {
   const seller = p.club != null ? getClub(G, p.club) : null, me = myClub(G), known = knows(G, p);
   if (seller && !windowOpen(G)) return toast('Mercato fermé : seuls les joueurs libres peuvent signer. Prépare tes cibles dans le suivi.', 'err');
   if (seller && G.board.ban) return toast('Interdiction de recruter (contrôle de gestion) : seuls les joueurs libres sont autorisés.', 'err');
-  if (clubPlayers(G, G.clubId).length >= 32) return toast('Effectif complet (32 max). Vends ou libère quelqu\'un.', 'err');
+  if (effectifPro(G).length >= 32) return toast('Effectif complet (32 max). Vends ou libère quelqu\'un.', 'err');
   if (!seller) return createDeal(p, null, { fee: 0, plan: 'cash', addOn: 0, sellOn: 0, swap: null });
   const myPlayers = clubPlayers(G, G.clubId).filter(x => !x.loan).sort((a, b) => b.value - a.value);
   const o = { fee: roundMoney(p.value * .9), plan: 'cash', addOn: 0, sellOn: 0, swap: null };

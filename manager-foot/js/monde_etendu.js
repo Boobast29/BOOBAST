@@ -56,6 +56,7 @@ function construireCarriereMonde(pays, groupeD3) {
     p.dataQuality=info ? (info.detailed?'documented_attributes':'estimated_attributes') : 'generated_filler';
     if(info) {
       p.sourceProfile={url:info.source.sourceUrl,database:info.source.sourceDatabase,squad:info.source.squad,contract:info.source.contractEndText};
+      if(typeof equipeDeSource==='function')equipeDeSource(p,info.source.squad); // équipe réelle : première, réserve ou U19
       if(Number.isFinite(info.source.wageWeekly))p.wage=info.source.wageWeekly;
       if(Number.isFinite(info.source.value))p.value=info.source.value;
     }

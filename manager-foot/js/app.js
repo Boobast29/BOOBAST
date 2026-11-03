@@ -962,7 +962,7 @@ function vTransfers(el) {
   const tabs = [['search', '🔎 Recherche'], ['shortlist', `👁 Suivi (${G.shortlist.length})`], ['scout', `🔎 Recrutement (${G.scouting.length + (G.missions || []).filter(m => m.left > 0).length})`], ['offers', `📩 Offres reçues (${G.offers.length})`], ['selling', '🏷 Mes joueurs en vente'], ['history', '📜 Historique']];
   el.innerHTML = `<section class="card">
     <div class="row gap wrap"><h2 class="grow">💱 Mercato ${windowOpen(G) ? '<span class="tag grn">Ouvert</span>' : '<span class="tag red">Fermé — agents libres uniquement</span>'}</h2>
-    <span>Budget : <b>${money(club.budget)}</b> · Effectif : ${clubPlayers(G, G.clubId).length}/32</span></div>
+    <span>Budget : <b>${money(club.budget)}</b> · Effectif : ${effectifPro(G).length}/32${clubPlayers(G, G.clubId).length > effectifPro(G).length ? ` (+ ${clubPlayers(G, G.clubId).length - effectifPro(G).length} en réserve et U19)` : ''}</span></div>
     <div class="tabs mt">${tabs.map(([k, l]) => `<button data-tt="${k}" class="${TR_TAB === k ? 'on' : ''}">${l}</button>`).join('')}</div>
   </section><section class="card" id="trBody"></section>`;
   el.querySelectorAll('[data-tt]').forEach(b => b.onclick = () => { TR_TAB = b.dataset.tt; vTransfers(el); });
@@ -1074,7 +1074,7 @@ function offerModal(pid) {
   const me = myClub(G);
   if (seller && !windowOpen(G)) return toast('Mercato fermé : seuls les agents libres peuvent signer.', 'err');
   if (seller && G.board.ban) return toast('Interdiction de recruter (contrôle de gestion) : seuls les agents libres sont autorisés.', 'err');
-  if (clubPlayers(G, G.clubId).length >= 32) return toast('Effectif complet (32 max). Vends ou libère quelqu\'un.', 'err');
+  if (effectifPro(G).length >= 32) return toast('Effectif complet (32 max). Vends ou libère quelqu\'un.', 'err');
   const myRankIfSigned = clubPlayers(G, G.clubId).filter(x => playerOvr(x) > playerOvr(p)).length;
   const wantStatus = defaultStatus(myRankIfSigned, p.age);
   const baseWage = roundMoney(Math.max(demandWage(G, p, me), p.wage * (seller ? 1.1 : .9)) * (1.1 + Math.max(0, playerOvr(p) - me.rep) / 40) * (p.pers === 'Ambitieux' ? 1.1 : 1));

@@ -9,6 +9,8 @@ function reindex(G) { G.pmap = {}; for (const p of G.players) G.pmap[p.id] = p; 
 function getPlayer(G, id) { return G.pmap[id]; }
 function getClub(G, id) { return G.clubs.find(c => c.id === id); }
 function clubPlayers(G, clubId) { return G.players.filter(p => p.club === clubId); }
+// équipe première : hors U19 (académie) et réserve — le plafond de 32 joueurs ne compte qu'elle
+function effectifPro(G, clubId = G.clubId) { return clubPlayers(G, clubId).filter(p => !p.academy && !p.reserve); }
 function available(p) { return p.injury <= 0 && p.susp <= 0; }
 function defaultInst() { return { press: 0, tempo: 0, width: 0, line: 0, pass: 0, cpress: 0, trap: 0, waste: 0 }; }
 function myClub(G) { return getClub(G, G.clubId); }
@@ -21,7 +23,8 @@ function effRating(p, role, cond = p.fit) {
 // ---------- Composition ----------
 function autoLineup(G, clubId, formation, tac = null) {
   const slots = FORMATIONS[formation].map((s, i) => tac ? [slotRole({ ...tac, formation }, i)] : s);
-  const pool = clubPlayers(G, clubId).filter(p => available(p) && !p.academy && !(clubId === G.clubId && (p.rest || p.reserve)));
+  let pool = clubPlayers(G, clubId).filter(p => available(p) && !p.academy && !p.reserve && !(clubId === G.clubId && p.rest));
+  if (pool.length < 16) pool = clubPlayers(G, clubId).filter(p => available(p) && !(clubId === G.clubId && p.rest)); // pénurie : on appelle la réserve et les U19
   const used = new Set();
   const lineup = new Array(slots.length).fill(null);
   const order = slots.map((s, i) => i).sort((a, b) => (slots[a][0] === 'GB' ? -1 : 0) - (slots[b][0] === 'GB' ? -1 : 0));
@@ -791,7 +794,7 @@ function endSeason(G) {
   G.shortlist = (G.shortlist || []).filter(id => !rset.has(id));
   careerSeasonEnd(G, S);
   for (const p of G.players.filter(x => x.academy && x.club === G.clubId)) {
-    if (p.age >= 20) { p.academy = false; p.club = null; news(G, `${p.name} quitte l'académie (trop âgé, non promu).`, 'youth'); }
+    if (p.age >= 20) { p.academy = false; p.reserve = true; news(G, `${p.name} (20 ans) quitte les U19 et passe en réserve : à toi de décider s'il rejoint l'équipe première, part en prêt ou est libéré.`, 'youth'); }
   }
   for (const c of G.clubs) {
     const mineC = c.id === G.clubId;

@@ -240,7 +240,7 @@ if (typeof offerModal === 'function') {
     const p = getPlayer(G, pid); if (!p) return;
     const ex = G.deals.find(d => d.pid === pid && !['done', 'failed'].includes(d.status));
     const seller = p.club != null ? getClub(G, p.club) : null;
-    if (ex || !seller || p.club === G.clubId || !windowOpen(G) || G.board.ban || clubPlayers(G, G.clubId).length >= 32) return __offerModalN.apply(this, arguments);
+    if (ex || !seller || p.club === G.clubId || !windowOpen(G) || G.board.ban || effectifPro(G).length >= 32) return __offerModalN.apply(this, arguments);
     const me = myClub(G), known = knows(G, p);
     const myPlayers = clubPlayers(G, G.clubId).filter(x => !x.loan).sort((a, b) => b.value - a.value);
     const o = { fee: roundMoney(p.value * .9), plan: 'cash', addOn: 0, addOnGoals: 0, sellOn: 0, buyBack: 0, swap: null };

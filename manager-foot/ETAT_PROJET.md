@@ -1,3 +1,14 @@
+# État du projet — v74 (3 novembre 2026)
+
+## Équipe première, réserve, U19 (js/equipes_club.js)
+- Monde étendu FM26 : l'équipe réelle de chaque joueur vient des données (« First team » → équipe première, « Development team » → réserve, « Under-19 » → U19) ; avant, 70 à 90 joueurs dans un seul effectif. Exemple : Lorient 91 joueurs → 24 en équipe première, 28 en réserve, 39 en U19.
+- Autres mondes : club de plus de 34 joueurs réparti à la création (28 meilleurs en équipe première, moins de 20 ans en U19, reste en réserve).
+- Plafond de 32 joueurs : équipe première seulement (affichage « + N en réserve et U19 ») ; recrutement de nouveau possible.
+- Compositions : réserve et U19 alignées seulement en cas de pénurie, pour tous les clubs (avant : ton club seulement).
+- Formation : onglet Réserve pour tous les réservistes (plus seulement les 19-22 ans) ; un U19 de 20 ans passe en réserve au lieu d'être libéré.
+- Clubs de l'IA : réserve et U19 progressent chaque semaine ; en fin de saison, montée des meilleurs jeunes si l'équipe première a moins de 24 joueurs, U19 de 20 ans en réserve.
+- Fiche : étiquette « Réserve » / « U19 ».
+
 # État du projet — v73 (3 novembre 2026)
 
 ## Correction Windows : PermissionError au premier lancement (outils/catalogue_fmb.py)
