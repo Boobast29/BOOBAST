@@ -40,7 +40,7 @@ def analyser(s,target):
 
 def lire_fiche(target):
     url=target['url'].replace('https://fminside.net/players/7-fm-26/','https://database.footballmanagerblog.org/fm26/players/')
-    r=subprocess.run(['curl','-fsSL','--connect-timeout','10','--max-time','30',url],capture_output=True)
+    r=subprocess.run(['curl','-fsSL','--compressed','--connect-timeout','10','--max-time','30',url],capture_output=True)
     if r.returncode:raise ValueError('HTTP indisponible ('+str(r.returncode)+')')
     return analyser(r.stdout.decode(),target)
 
