@@ -1,4 +1,19 @@
-# État du projet — v51 (3 novembre 2026)
+# État du projet — v52 (3 novembre 2026)
+
+## v52 — système de design formalisé et textes d'interface (skills design-system et ux-copy)
+- **Jetons** (`tokens.css`, chargé en premier) : surfaces, traits, texte, couleurs sémantiques, échelle typographique de 9 tailles,
+  6 arrondis, espacements en base 4, élévation, durées d'animation. Audit avant / après : 28 tailles de texte et 14 arrondis différents
+  ramenés aux jetons (164 tailles, 115 arrondis et 47 couleurs convertis automatiquement). Rendu visuel identique.
+  Les anciennes variables (`--bg`, `--panel`…) restent la source des surfaces, donc les thèmes existants fonctionnent toujours.
+- **Documentation** : `DESIGN_SYSTEM.md` (jetons, composants bouton / onglets / panneau / tableau / retours, à faire et à éviter).
+- **Bouton en chargement** : `aria-busy="true"` affiche une roue et bloque le clic (utilisé pour « Simuler 2 000 fins de saison »).
+- **Textes** :
+  - 136 pluriels bricolés « (s) » accordés au rendu selon le nombre qui précède (« 3 joueurs », « 1 saison », « 12 matchs »),
+    dans les écrans, les fenêtres, les notifications et les infobulles ;
+  - boutons génériques remplacés : « OK » devient « Utiliser ce logo », « Valider » devient « Faire le changement » ;
+  - les 16 confirmations reprennent le verbe de leur question (« Licencier ? » → bouton « Licencier ») ;
+  - pluriel des postes corrigé (« mieux que 99 % des défenseurs centraux »).
+Test : `tests/textes_ux.js`. Simulation longue sans erreur ; audit des 27 écrans sans erreur.
 
 ## v51 — corrections issues de la critique de design (skill design-critique) et d'axe-core
 - **Contenu jamais coupé** : tout tableau sans conteneur défilant est enveloppé (`.defile-x`, atteignable au clavier), avec des ombres sur

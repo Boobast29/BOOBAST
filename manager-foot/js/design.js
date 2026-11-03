@@ -100,3 +100,44 @@ if (typeof playerModal === 'function') {
     return r;
   };
 }
+// ============================================================
+//  v52 — textes d'interface (skill ux-copy)
+//  - pluriels : « 3 joueur(s) » devient « 3 joueurs », « 1 saison(s) » devient « 1 saison » (accord avec le nombre qui précède)
+//  - confirmations : le bouton reprend le verbe de la question (« Licencier ? » → bouton « Licencier ») au lieu de « Confirmer »
+// ============================================================
+function accorderPluriels(txt) {
+  if (!txt || txt.indexOf('(s)') < 0) return txt;
+  return txt.replace(/(\S*?)\(s\)/g, (m, mot, pos, tout) => {
+    const avant = tout.slice(Math.max(0, pos - 48), pos);
+    const nums = avant.match(/(\d[\d   ]*(?:[,.]\d+)?)(?=[^\d]*$)/);
+    if (!nums) return mot + 's';                     // pas de nombre : forme plurielle, plus naturelle qu'un « (s) »
+    const n = parseFloat(nums[1].replace(/[\s  ]/g, '').replace(',', '.'));
+    if (mot === 'match') return n >= 2 ? 'matchs' : 'match';
+    return n >= 2 ? mot + 's' : mot;
+  });
+}
+function accorderDans(racine) {
+  if (!racine) return;
+  const w = document.createTreeWalker(racine, NodeFilter.SHOW_TEXT);
+  const L = []; for (let n = w.nextNode(); n; n = w.nextNode()) if (n.nodeValue.indexOf('(s)') >= 0) L.push(n);
+  for (const n of L) {
+    // le nombre peut être dans l'élément précédent (« <b>4</b> joueur(s) ») : on regarde le texte du parent jusqu'à ce nœud
+    const prefixe = (n.parentNode?.textContent || '').split(n.nodeValue)[0].slice(-48);
+    const t = accorderPluriels(prefixe + n.nodeValue).slice(prefixe.length);
+    if (t !== n.nodeValue) n.nodeValue = t;
+  }
+  racine.querySelectorAll?.('[data-tip*="(s)"], [title*="(s)"]').forEach(e => { for (const a of ['data-tip', 'title']) if (e.getAttribute(a)?.includes('(s)')) e.setAttribute(a, accorderPluriels(e.getAttribute(a))); });
+}
+if (typeof show === 'function') { const __showUX = show; show = function () { const r = __showUX.apply(this, arguments); accorderDans($('#main')); accorderDans($('#top')); return r; }; }
+if (typeof modal === 'function') { const __modalUX = modal; modal = function () { const m = __modalUX.apply(this, arguments); accorderDans(m); return m; }; }
+if (typeof toast === 'function') { const __toastUX = toast; toast = function (msg, ...a) { return __toastUX.call(this, accorderPluriels(String(msg)), ...a); }; }
+if (typeof confirmBox === 'function') {
+  const __confirmBoxUX = confirmBox;
+  confirmBox = function (text, onYes, yesLabel = 'Confirmer', danger = false) {
+    if (yesLabel === 'Confirmer') {
+      const brut = String(text).replace(/<[^>]+>/g, '').trim(), m = brut.match(/^([A-ZÉÈÀÂ][a-zéèêàâîôûç-]+(?:er|ir|re))\b/);
+      if (m) yesLabel = m[1];
+    }
+    return __confirmBoxUX.call(this, text, onYes, yesLabel, danger);
+  };
+}

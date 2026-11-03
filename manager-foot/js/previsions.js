@@ -111,7 +111,7 @@ if (typeof vComps === 'function') {
       const grid = el.querySelector('#compBody > .grid2');
       if (grid) {
         grid.insertAdjacentHTML('afterend', `<section class="card mt prev-carte"><h2>🔮 Prévisions de fin de saison</h2><div id="prevZone"><button class="btn" id="prevGo">Simuler 2 000 fins de saison</button></div></section>`);
-        el.querySelector('#prevGo').onclick = () => { const z = el.querySelector('#prevZone'); z.innerHTML = '<p class="muted">Calcul…</p>'; setTimeout(() => { z.innerHTML = blocPrevisions(G, comp); }, 20); };
+        el.querySelector('#prevGo').onclick = e => { const z = el.querySelector('#prevZone'); e.currentTarget.setAttribute('aria-busy', 'true'); setTimeout(() => { z.innerHTML = blocPrevisions(G, comp); }, 30); };
       }
     }
     return r;
