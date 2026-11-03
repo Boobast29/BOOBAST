@@ -48,3 +48,6 @@ Toutes copiées sans modification depuis le registre npm (versions publiées off
 
 `modules.mjs` expose Fuse et ZzFX (modules ES) en variables globales ; il ne fonctionne qu'avec le serveur local (http),
 le jeu reste jouable sans (recherche simple, sons d'origine).
+
+- `socceraction/LICENSE` : ML-KULeuven/socceraction (MIT). Algorithme xT porté dans `js/xthreat.js`.
+- jokecamp/FootballData (MIT, Joe Kampschmidt) : faits dérivés dans `js/cotes_reelles.js` et `js/stades_gps.js`.

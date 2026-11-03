@@ -1,4 +1,19 @@
-# État du projet — v35 (2 novembre 2026)
+# État du projet — v36 (3 novembre 2026)
+
+## v36 — menace attendue (xT), cotes 1N2, déplacements
+- **xT** (`js/xthreat.js`) : portage JavaScript de `socceraction/xthreat.py` (ML-KULeuven, MIT). La grille 16 × 12 (`js/xt_grille.js`)
+  est ajustée par `outils/xt_generer.js` sur 1 066 matchs du moteur (1 million de déplacements, 21 600 tirs). Chaque passe,
+  centre ou dribble réussi rapporte xT(arrivée) − xT(départ) au joueur. On le voit dans l'analyse du match (classement et carte),
+  la fiche du joueur (xT et xT/90) et les statistiques (catégorie « Menace créée »).
+- **Cotes 1N2** dans l'avant-match (`js/avant_match.js`) : la force des deux onze donne l'espérance de points (logistique ajustée sur
+  le moteur). La probabilité de nul et la marge (2,6 %) viennent de vraies cotes Pinnacle sur 86 000 matchs de 22 pays
+  (jokecamp/FootballData, MIT ; `outils/cotes_reelles.py`). Contrôle sur 87 matchs : victoires à domicile 44 % prévues pour 41 % observées,
+  nuls 27 % prévus pour 23 % observés.
+- **Déplacement** : distance entre les deux stades (136 stades d'Angleterre, d'Écosse, de France, d'Allemagne et d'Espagne, jokecamp/FootballData,
+  `outils/stades_gps.py`). Elle ne s'affiche qu'en mode vrais clubs.
+- Non intégrés : hudl/open-data (données StatsBomb : redistribution et usage commercial interdits), hugomathien/football-data-collection et
+  abdullahtarek/football_analysis (sans licence, simples idées), soccerdata (Apache-2.0, extracteur web à lancer sur ton PC, pas de données incluses).
+Vérifications : simulation longue (2 graines × 2 saisons) sans erreur ; audit des 27 écrans sans erreur.
 
 ## v35 — audit complet et équilibre des buteurs
 - Audit automatique de tous les écrans (27) à 1366 px et 390 px : aucune erreur, aucun débordement horizontal, aucun écran vide ;

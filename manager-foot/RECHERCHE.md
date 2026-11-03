@@ -229,6 +229,16 @@ Données (faits dérivés dans `js/donnees_ouvertes2.js`, générés par `outils
 (CC0, 15 finales), [SkillCorner/opendata](https://github.com/SkillCorner/opendata) (MIT, agrégats physiques A-League 2024/25 → distances par poste).
 Écartés : typed.js (GPL-3.0), progressbar.js (dépendances).
 
+## Lot v36 — six dépôts proposés
+| Dépôt | Licence | Usage |
+|---|---|---|
+| ML-KULeuven/socceraction | MIT | xT porté en JS (`js/xthreat.js`) ; VAEP : piste future |
+| jokecamp/FootballData | MIT (données de sources diverses) | cotes Pinnacle → forme du nul et marge ; GPS de 136 stades |
+| probberechts/soccerdata | Apache-2.0 | extracteur FBref/ClubElo/Sofascore… à lancer chez soi ; pas d'accès réseau ici |
+| hudl/open-data (StatsBomb) | accord d'utilisation propriétaire | non intégré : redistribution et usage commercial interdits |
+| hugomathien/football-data-collection | aucune | idées seulement (base européenne Kaggle) |
+| abdullahtarek/football_analysis | aucune | idées seulement (vitesse, distance, possession par vidéo) |
+
 ## À faire (pistes issues de la recherche)
 1. ~~Importer transfermarkt-datasets~~ (fait en v19 : `outils/importer_transfermarkt.py`).
 2. Brancher les médianes d'indemnités (par championnat, âge, poste) dans l'IA du mercato.
