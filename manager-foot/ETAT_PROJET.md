@@ -1,3 +1,10 @@
+# État du projet — v93 (3 novembre 2026)
+
+## Staff des autres clubs et vivier d'entraîneurs (js/staff_ia.js)
+- Chaque club de l'IA : entraîneur et formateur (niveau 1-5 selon la réputation, âge, carrière) ; leur niveau remplace l'encadrement tiré au hasard dans l'environnement de progression.
+- Vivier persistant d'entraîneurs sans club (24 au départ, 60 max) : un entraîneur limogé y entre avec sa carrière, un poste vacant est pourvu par le profil le plus adapté (testé : 30 nominations depuis le vivier en une saison, parcours « en poste → limogé → nommé ailleurs ») ; les anciens joueurs reconvertis y entrent ; vieillissement, départ à 70 ans.
+- Marché des entraîneurs (directeur sportif) : 3 vrais candidats du vivier avec leur parcours. Écran Staff : « Entraîneurs sans club ».
+
 # État du projet — v92 (3 novembre 2026)
 
 ## Trésorerie et bas de tableau (js/equilibre_saison.js)
