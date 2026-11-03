@@ -1,3 +1,11 @@
+# État du projet — v64 (3 novembre 2026)
+
+## Fins de carrière, retraites du staff, reconversions (js/retraites.js)
+- Joueurs : en plus des retraites du moteur (34 ans et plus), fin de carrière plus tôt pour un joueur de 31 ans et plus sans temps de jeu, au niveau trop bas pour son club ou gravement blessé ; annonce pour tes joueurs.
+- Reconversion des retraités (mental, leader, professionnel, sélections, expérience) : entraîneur principal, adjoint, entraîneur technique, formateur, kiné ou recruteur. Certains rejoignent le staff de leur ancien club (nouvelle), les autres un vivier : on les retrouve libres, sans indemnité, sur les marchés du staff et des entraîneurs (« Ancien joueur de… »). Un de tes joueurs qui raccroche peut demander à rester au club (question : l'engager ou non).
+- Staff : retraite entre 64 et 70 ans (intérim jusqu'au recrutement), entraîneur principal entre 66 et 72 ans en mode directeur sportif ; plus de candidats de 66 ans et plus sur les marchés.
+- Monde : +122 à +156 joueurs en deux saisons au lieu de +269.
+
 # État du projet — v63 (3 novembre 2026)
 
 ## Effectifs actuels Transfermarkt (transfermarkt-datasets, CC0)

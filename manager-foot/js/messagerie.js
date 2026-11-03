@@ -14,7 +14,7 @@ const MX_DOSSIERS = [
   ['Archives', [['world', 'Autres clubs'], ['done', 'Réponses données']]]
 ];
 const MX_KIND_THEME = { offer: 'transfer', deal: 'transfer', agentOffer: 'transfer', approach: 'transfer', scoutOffer: 'transfer', raiseReq: 'transfer', cellProposal: 'transfer', cellMeeting: 'transfer',
-  meet: 'team', renew: 'team', coachReq: 'team', coachThreat: 'team', staffRenew: 'team', staffClash: 'team' };
+  meet: 'team', renew: 'team', coachReq: 'team', coachThreat: 'team', staffRenew: 'team', staffClash: 'team', reconv: 'team', staffRaise: 'team' };
 const mxTheme = d => MX_KIND_THEME[d.kind] || 'club';
 
 // Objet : première phrase entière (les « : » ne coupent plus l'objet), aperçu : la suite
