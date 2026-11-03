@@ -1,3 +1,9 @@
+# État du projet — v85 (3 novembre 2026)
+
+## Marché des jeunes (js/marche_jeunes.js)
+- Jeunes non conservés (tes U19 sans contrat en fin de formation, réserves de l'IA ramenées à 20 en fin de saison) : sur le marché, recrutés chaque semaine par des clubs dont le niveau correspond à leur potentiel (U19 ou réserve) ; nouvelle « … non conservé par …, rebondit à … ». Testé : 2 U19 non conservés recrutés ailleurs.
+- Offres pour tes jeunes (U19 et réserve à fort potentiel, pendant le mercato) : achat par un club plus huppé (vendre, demander 40 % de plus, refuser) ou prêt par un club plus modeste jusqu'à la fin de saison (salaire payé par l'autre club ; retour en réserve). Testé : 2 prêts acceptés, retours en fin de saison.
+
 # État du projet — v84 (3 novembre 2026)
 
 ## Demandes de profil de l'entraîneur (js/demandes_profil.js)
