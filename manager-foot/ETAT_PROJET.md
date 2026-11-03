@@ -1,4 +1,13 @@
-# État du projet — v41 (3 novembre 2026)
+# État du projet — v42 (3 novembre 2026)
+
+## v42 — onze optimal
+- `js/onze_optimal.js` : pour ton club, la composition automatique résout l'affectation joueurs → postes avec l'algorithme hongrois,
+  et maximise la somme des notes effectives. L'ancienne méthode remplissait les postes un par un : un joueur polyvalent pouvait être
+  placé là où il était à peine meilleur. Gain mesuré : +15,5 de force en 4-2-3-1 (901,5 contre 886), jamais moins que l'ancienne
+  méthode, moins de 1 ms. Les clubs de l'ordinateur gardent l'ancienne méthode (équilibre des simulations inchangé).
+  Idée tirée de FM-Player-Analyzer (GPL-3.0, aucun code repris). Test : `tests/onze_optimal.js`.
+- Football-Manager-27-Editor (sans licence, modifie la mémoire de FM pendant le jeu) : rien d'utilisable, le jeu a son propre éditeur.
+Vérifications : simulation longue sans erreur.
 
 ## v41 — sauvegarde Football Manager, packs graphiques mieux reconnus, profils similaires
 - **Sauvegarde FM → monde jouable** (`outils/importer_sauvegarde_fm.py`, sur ton PC, avec `pip install fmsave`, rhiever/fmsave, MIT).
