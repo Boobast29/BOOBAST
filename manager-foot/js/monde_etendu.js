@@ -7,7 +7,7 @@ function enrichirPaysFMInside(pays,catalogue){
   }
   return pays;
 }
-let catalogueFMInsideMonde,correctifsNomsMonde;
+let catalogueFMInsideMonde,correctifsNomsMonde,portraitsLocauxMonde;
 async function lirePaysMonde(file) {
   const r = await fetch('packs/' + file);
   if (!r.ok) throw Error('Base nationale indisponible');
@@ -19,6 +19,10 @@ async function lirePaysMonde(file) {
   const noms=await correctifsNomsMonde;
   for(const c of pays.clubs){const n=noms.clubs[c.fmUid];if(n){c.previousSourceName=c.name;c.name=n.name;}}
   for(const c of pays.competitions){const n=noms.competitions[c.fmUid];if(n){c.previousSourceName=c.name;c.name=n.name;}}
+  // Seules les photos réellement présentes dans le catalogue local sont proposées en carrière.
+  portraitsLocauxMonde ||= fetch('packs/portraits-locaux-fmb.json').then(r=>r.ok?r.json():{players:[]}).then(d=>new Set(d.players.map(String))).catch(()=>new Set());
+  const portraits=await portraitsLocauxMonde;
+  for(const c of pays.clubs)for(const p of c.players)if(portraits.has(String(p.fmUid)))p.photo=`/api/catalogue/image/players/${encodeURIComponent(p.fmUid)}`;
   return pays;
 }
 function construireCarriereMonde(pays, groupeD3) {
@@ -39,7 +43,7 @@ function construireCarriereMonde(pays, groupeD3) {
       const niveau = Math.max(1,Math.min(20,Math.round((p.rating || 50)/5)));
       const attrs = detail ? cv.attrs : Object.fromEntries(Object.keys(ATTRS).map(k=>[k,niveau]));
       profils.set(p.fmUid,{source:p, detailed:!!detail});
-      return {name:p.name, fmUid:p.fmUid, age:p.age || 24, nat:'UNK',pos:cv.pos,foot:p.foot?cv.foot:undefined,
+      return {name:p.name, fmUid:p.fmUid, age:p.age || 24, nat:'UNK',pos:cv.pos,foot:p.foot?cv.foot:undefined,photo:p.photo || undefined,
         attrs, detail20:cv.detail20, pot:p.potential || undefined, wage:p.wageWeekly || undefined};
     })
   }));
