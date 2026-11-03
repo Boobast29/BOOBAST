@@ -1,3 +1,9 @@
+# État du projet — v73 (3 novembre 2026)
+
+## Correction Windows : PermissionError au premier lancement (outils/catalogue_fmb.py)
+- `with sqlite3.connect(...)` valide mais ne ferme pas la connexion : sous Windows, `catalogue.tmp` restait ouvert et `os.replace` vers `catalogue.sqlite` échouait (WinError 32), le serveur s'arrêtait.
+- Connexions fermées explicitement ; 5 essais espacés si un antivirus bloque le fichier ; sinon lecture directe de l'index tout neuf (message).
+
 # État du projet — v72 (3 novembre 2026)
 
 ## Lancement plus fiable (Lancer_Manager_Foot.bat, outils/serveur.py)

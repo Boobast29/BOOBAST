@@ -3,6 +3,7 @@ import hashlib
 import io
 import json
 import os
+import time
 from pathlib import Path
 import sqlite3
 import zipfile
@@ -24,12 +25,14 @@ class Catalogue:
         self.base = self.stockage / 'catalogue.sqlite'
         empreinte = hashlib.sha256(self.fichier.read_bytes()).hexdigest()
         if self.base.exists():
-            with sqlite3.connect(self.base) as con:
-                try:
-                    if con.execute('SELECT hash FROM meta').fetchone()[0] == empreinte:
-                        return
-                except (sqlite3.Error, TypeError):
-                    pass
+            con = sqlite3.connect(self.base)  # fermée explicitement : sous Windows, un fichier ouvert ne peut pas être remplacé
+            try:
+                if con.execute('SELECT hash FROM meta').fetchone()[0] == empreinte:
+                    return
+            except (sqlite3.Error, TypeError):
+                pass
+            finally:
+                con.close()
         self._indexer(empreinte)
 
     def _extraire(self):
@@ -70,7 +73,8 @@ class Catalogue:
             membres.setdefault((x['entity_type'], str(x['person_fm_uid'])), []).append(x)
         tmp = self.base.with_suffix('.tmp')
         tmp.unlink(missing_ok=True)
-        with sqlite3.connect(tmp) as c:
+        c = sqlite3.connect(tmp)
+        with c:
             c.executescript('''CREATE TABLE meta(hash TEXT, contenu TEXT);
                 CREATE TABLE fiches(type TEXT, id TEXT, nom TEXT, recherche TEXT, detail INTEGER,
                   photo TEXT, contenu TEXT, PRIMARY KEY(type,id));
@@ -89,7 +93,15 @@ class Catalogue:
                     photo = (x.get('photo') or x.get('logo') or {}).get('local_path')
                     c.execute('INSERT INTO fiches VALUES(?,?,?,?,?,?,?)', (typ, uid, x['name'], normaliser(x['name']), bool(d), photo, json.dumps(x, ensure_ascii=False)))
             c.execute('INSERT INTO meta VALUES(?,?)', (empreinte, json.dumps(data['metadata'], ensure_ascii=False)))
-        os.replace(tmp, self.base)
+        c.close()
+        for essai in range(5):  # Windows : un antivirus ou un autre serveur peut bloquer le fichier un instant
+            try:
+                os.replace(tmp, self.base)
+                return
+            except PermissionError:
+                time.sleep(.5)
+        self.base = tmp  # toujours bloqué (autre fenêtre du jeu ouverte ?) : on lit l'index tout neuf directement
+        print('Index du catalogue utilisé depuis catalogue.tmp (catalogue.sqlite est bloqué : ferme les autres fenêtres du jeu).', flush=True)
 
     def connection(self):
         con = sqlite3.connect(f'{self.base.as_uri()}?mode=ro', uri=True)
