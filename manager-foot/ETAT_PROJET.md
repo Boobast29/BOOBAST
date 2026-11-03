@@ -1,4 +1,23 @@
-# État du projet — v53 (3 novembre 2026)
+# État du projet — v54 (3 novembre 2026)
+
+## v54 — négociations détaillées (transferts, contrats des recrues, prolongations)
+- `js/negociation.js` : une **table de négociation** dans les trois fenêtres. Chaque ligne montre la demande, ta proposition,
+  l'importance du point pour l'autre partie et sa satisfaction (barre). Une jauge des chances d'accord se met à jour en direct :
+  même calcul que la décision, sans tirage aléatoire.
+- **Contrat** (recrue et prolongation), points négociables : salaire, prime à la signature, commission d'agent, augmentation annuelle,
+  prime de fidélité, durée, statut, clause libératoire, option +1 an pour le club, clause de relégation, primes par but, par passe décisive,
+  par match, par clean sheet, prime d'objectif collectif.
+  - Les priorités de l'agent viennent de la personnalité du joueur. Un ambitieux tient au temps de jeu et à la clause ; un loyal, à la durée
+    et à la fidélité ; un tempérament fort, au salaire et à la prime.
+  - Un refus nomme le point qui gêne le plus. « Reprendre toutes ses demandes » remplit le tableau. L'encadré de coût (garanti / attendu / maximum)
+    est conservé.
+- **Offre au club**, points : indemnité, échéancier, bonus après 25 matchs, bonus après 15 buts, % à la revente, clause de rachat (2 saisons),
+  joueur inclus. Une estimation de la réaction du club s'affiche, plus prudente si le joueur n'est pas supervisé.
+- **Clauses appliquées dans la partie** : primes par passe décisive et par clean sheet versées après chaque match ; prime d'objectif versée
+  si l'objectif du président est atteint ; prime de fidélité versée en fin de contrat ; augmentation annuelle à chaque nouvelle saison ;
+  baisse de salaire en cas de relégation ; bonus aux 15 buts versé au club vendeur ; clause de rachat que le club d'origine peut activer ;
+  option +1 an à lever depuis la fiche du joueur en dernière année.
+Test : `tests/negociation.js`. Simulation longue sans erreur ; audit des 27 écrans sans erreur.
 
 ## v53 — import d'un fichier JSON complet (attributs sur 36 points ou toute autre échelle, staff)
 - `js/import_json_complet.js`, branché sur « Importer (JSON) » de l'écran d'accueil et de l'éditeur.
