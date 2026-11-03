@@ -48,3 +48,8 @@ Toutes copiées sans modification depuis le registre npm (versions publiées off
 
 `modules.mjs` expose Fuse et ZzFX (modules ES) en variables globales ; il ne fonctionne qu'avec le serveur local (http),
 le jeu reste jouable sans (recherche simple, sons d'origine).
+
+
+## 20 intégrations supplémentaires : Studio du club
+
+Voir [la liste des fonctions, versions et licences](../INTEGRATIONS_20.md). Les fichiers exécutables locaux sont dans `integration20/`, accompagnés du manifeste, des licences originales et des sources MPL. Les adaptateurs FullCalendar ne sont pas comptés comme des dépôts distincts.
