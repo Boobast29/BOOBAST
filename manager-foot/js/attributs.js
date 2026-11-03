@@ -124,6 +124,8 @@ function statsDetaillees(p) {
 }
 
 // ---------- affichage (fiche joueur) ----------
+const POSTES_PLURIEL = { GB: 'gardiens', DC: 'défenseurs centraux', DG: 'latéraux gauches', DD: 'latéraux droits', MDC: 'milieux défensifs', MC: 'milieux centraux', MOC: 'milieux offensifs', AG: 'ailiers gauches', AD: 'ailiers droits', BU: 'buteurs' };
+const posteAuPluriel = pos => POSTES_PLURIEL[pos] || (ROLES[pos]?.label || pos).toLowerCase() + 's';
 const couleurAttr = v => v >= 16 ? 'a-top' : v >= 13 ? 'a-bon' : v >= 9 ? 'a-moy' : v >= 6 ? 'a-faible' : 'a-tres';
 function blocAttributs(p) {
   const D = attributsDetail(p), n20 = notePoste(p, p.pos, D), connu = typeof knows !== 'function' || knows(G, p);
@@ -134,7 +136,7 @@ function blocAttributs(p) {
       <div><b>Note de poste (${esc(ROLES[p.pos]?.label || p.pos)})</b><small>moyenne pondérée de ${Object.keys(POIDS_POSTE[p.pos] || {}).length} attributs clés · ${connu ? n20.toFixed(1).replace('.', ',') : '?'} sur 20</small><small>Meilleurs postes : ${connu ? bp : 'à découvrir'}</small></div></div>
     <div class="a36-grille">${fams.map(fm => `<div class="a36-fam"><h4>${FAMILLES[fm]}</h4>${ATTR_DETAIL.filter(a => a[2] === fm).map(([k, l]) => {
       const v = D[k], cle = (POIDS_POSTE[p.pos] || {})[k];
-      return `<div class="a36-l ${cle ? 'cle' : ''}" data-tip="${esc(l)}${connu ? ` : ${v}/20, mieux que ${percentile(p, k)} % des ${esc(ROLES[p.pos]?.label || '')}s` : ''}${cle ? ` · compte pour ${Math.round(cle * 100)} % de la note de poste` : ''}"><span>${esc(l)}</span><b class="${connu ? couleurAttr(v) : 'a-flou'}">${flou(v)}</b></div>`;
+      return `<div class="a36-l ${cle ? 'cle' : ''}" data-tip="${esc(l)}${connu ? ` : ${v}/20, mieux que ${percentile(p, k)} % des ${esc(posteAuPluriel(p.pos))}` : ''}${cle ? ` · compte pour ${Math.round(cle * 100)} % de la note de poste` : ''}"><span>${esc(l)}</span><b class="${connu ? couleurAttr(v) : 'a-flou'}">${flou(v)}</b></div>`;
     }).join('')}</div>`).join('')}</div>
     <p class="hint">${p.detail99 ? 'Attributs issus des sous-notes réelles du pack (sur 99, ramenées sur 20), plus la progression en jeu.' : 'Attributs dérivés des 9 qualités du moteur de match, avec un profil propre au joueur.'} En gras : attributs clés du poste.${connu ? '' : ' Envoie ta cellule de recrutement pour connaître les valeurs exactes.'}</p></section>`;
 }

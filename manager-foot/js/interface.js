@@ -26,7 +26,7 @@ toast = function (msg, type = '') {
   box.appendChild(t);
   while (box.children.length > 3) box.firstChild.remove();
   requestAnimationFrame(() => t.classList.add('show'));
-  setTimeout(fermer, Math.min(7000, 2600 + msg.length * 35) + (type === 'err' ? 1500 : 0));
+  setTimeout(fermer, Math.min(5000, 2200 + msg.length * 25) + (type === 'err' ? 1500 : 0));
 };
 
 // ---------- menu latéral repliable ----------

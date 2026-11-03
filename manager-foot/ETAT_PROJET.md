@@ -1,4 +1,225 @@
-# État du projet — v35 (2 novembre 2026)
+# État du projet — v53 (3 novembre 2026)
+
+## v53 — import d'un fichier JSON complet (attributs sur 36 points ou toute autre échelle, staff)
+- `js/import_json_complet.js`, branché sur « Importer (JSON) » de l'écran d'accueil et de l'éditeur.
+  - **Échelle** : champ `echelle` (ou `scale`), sinon détectée par la valeur maximale (20, 36, 99 ou 100). Sur 36 : 32 → 18/20.
+  - **Attributs** : noms français ou anglais (Football Manager, FIFA/EA), rangés à plat ou par familles (technique, mental, physique, gardien).
+    Ils sont reliés aux 37 attributs détaillés du jeu ; les 9 qualités du moteur en sont recalculées. Les attributs non reconnus sont signalés
+    à l'import.
+  - **Joueurs** : rangés dans leur club (`clubs[].joueurs`) ou en liste avec un champ `club` ; nom, âge ou date de naissance, nationalité, poste
+    (codes français ou anglais), pied, contrat, numéro, photo, potentiel.
+  - **Staff** : `staff[]` avec `role` (adjoint, entraîneur technique, kiné, recruteur, formateur…), `club` et `niveau` 1-5 (ou attributs sur l'échelle).
+    Il est appliqué quand tu prends ce club.
+  - Le format interne et l'ancien format simple restent acceptés.
+- La correspondance sera ajustée au fichier réel dès qu'il sera fourni.
+Test : `tests/import_json_complet.js` (fichier fictif sur 36 points). Simulation longue sans erreur.
+
+## v52 — système de design formalisé et textes d'interface (skills design-system et ux-copy)
+- **Jetons** (`tokens.css`, chargé en premier) : surfaces, traits, texte, couleurs sémantiques, échelle typographique de 9 tailles,
+  6 arrondis, espacements en base 4, élévation, durées d'animation. Audit avant / après : 28 tailles de texte et 14 arrondis différents
+  ramenés aux jetons (164 tailles, 115 arrondis et 47 couleurs convertis automatiquement). Rendu visuel identique.
+  Les anciennes variables (`--bg`, `--panel`…) restent la source des surfaces, donc les thèmes existants fonctionnent toujours.
+- **Documentation** : `DESIGN_SYSTEM.md` (jetons, composants bouton / onglets / panneau / tableau / retours, à faire et à éviter).
+- **Bouton en chargement** : `aria-busy="true"` affiche une roue et bloque le clic (utilisé pour « Simuler 2 000 fins de saison »).
+- **Textes** :
+  - 136 pluriels bricolés « (s) » accordés au rendu selon le nombre qui précède (« 3 joueurs », « 1 saison », « 12 matchs »),
+    dans les écrans, les fenêtres, les notifications et les infobulles ;
+  - boutons génériques remplacés : « OK » devient « Utiliser ce logo », « Valider » devient « Faire le changement » ;
+  - les 16 confirmations reprennent le verbe de leur question (« Licencier ? » → bouton « Licencier ») ;
+  - pluriel des postes corrigé (« mieux que 99 % des défenseurs centraux »).
+Test : `tests/textes_ux.js`. Simulation longue sans erreur ; audit des 27 écrans sans erreur.
+
+## v51 — corrections issues de la critique de design (skill design-critique) et d'axe-core
+- **Contenu jamais coupé** : tout tableau sans conteneur défilant est enveloppé (`.defile-x`, atteignable au clavier), avec des ombres sur
+  les bords quand il défile. Les noms longs sont abrégés avec une infobulle. Calendrier en largeurs fixes : adversaire abrégé, score toujours
+  visible et coloré, textes longs sur deux lignes.
+- **Titres de panneaux** en texte seul (émojis de tête retirés, cohérent avec les icônes du menu) ; teinte de la barre de titre adoucie.
+- **Notifications** : deux au plus, durée raccourcie (2,2 à 5 s).
+- axe-core après animations : aucun défaut de contraste. Il reste un avertissement sur l'infobulle (rôle tooltip correct, rattachée au body).
+Vérifications : audit des 27 écrans sans erreur ; simulation longue sans erreur.
+
+## v50 — championnats étrangers simulés ; hasard de la partie protégé
+- **Championnats étrangers** (`js/ligues_etrangeres.js`) : chacun des 16 pays étrangers d'au moins 4 clubs a son championnat aller-retour
+  (18 journées pour 10 clubs). Les journées sont jouées au rythme de ton championnat. Scores : modèle de Poisson corrigé de Dixon-Coles avec
+  la force des effectifs (2,6 buts par match). À la fin de la saison : champion, trophée, palmarès et une nouvelle dans le fil du monde.
+  Classements > 🌍 Monde montre pour chaque pays le classement, la journée, le champion précédent et les derniers résultats ; la liste des
+  effectifs reste dépliable. Environ 19 Ko dans la sauvegarde.
+- **Correctif** : `aiTactics` tire des nombres aléatoires *et* modifie le club (style créé au premier appel, effectif complété). Les cotes et
+  les scores probables de l'avant-match (depuis la v36) et les prévisions l'appelaient : ouvrir l'avant-match changeait donc un peu la suite de
+  la partie. Ces calculs utilisent maintenant une estimation en lecture seule (`tactiqueSansHasard` : meilleur onze automatique dans la
+  formation habituelle du club). Test `tests/hasard_intact.js` : saison identique avec ou sans championnats étrangers, avant-match et prévisions.
+- Doublon de `mulberry32` retiré (même algorithme que `js/data.js`).
+Tests : `tests/ligues_etrangeres.js`, `tests/hasard_intact.js`. Simulation longue sans erreur ; audit des 27 écrans sans erreur.
+
+## v49 — confirmation des transferts, recherche dans le monde entier, onglet Monde
+- **Confirmation finale** (`js/mercato_monde.js`) : après une visite médicale réussie, le transfert passe à l'étape « signature à confirmer ».
+  Une décision s'affiche avec le récapitulatif du coût : indemnité, salaires sur la durée du contrat, primes et agent, total.
+  Tu choisis « ✍ Confirmer la signature » ou « Renoncer au joueur ».
+  Sans réponse en 2 semaines, la négociation est close, comme aux autres étapes. La fermeture du mercato n'annule plus un transfert
+  qui attend ta confirmation. En délégation complète à la cellule de recrutement, la signature reste automatique.
+- **Recherche de joueurs** : nouveau filtre « Championnat » avec toutes les divisions de ton pays, les 20 pays étrangers du monde du jeu
+  (nombre de clubs indiqué) et les joueurs libres.
+- **Classements > 🌍 Monde** : toutes les divisions du pays et tous les clubs étrangers, regroupés par pays, avec réputation, valeur de l'effectif
+  et meilleur joueur (note estimée si non supervisé). Un clic ouvre la fiche du club. Les clubs étrangers n'ont pas de championnat simulé :
+  ils jouent les coupes d'Europe et alimentent le mercato.
+Test : `tests/mercato_monde.js`. Simulation longue sans erreur ; audit des 27 écrans sans erreur.
+
+## v48 — ergonomie à la manière des jeux de gestion (barre de section, panneaux, fiche joueur)
+- **Barre de section** en haut de chaque écran : nom du groupe, écrans du groupe en sous-onglets soulignés (avec leurs pastilles),
+  boutons ‹ › précédent / suivant (Alt+← / Alt+→) et « Aller à… ». Sur téléphone, les sous-onglets défilent. Le bouton ◀ de la barre
+  du haut, devenu redondant, est masqué.
+- **Panneaux** : barre de titre teintée aux couleurs du club ; onglets internes soulignés (fenêtres et cartes).
+- **Tableaux** : lignes zébrées, plus denses, survol aux couleurs du club, ligne de ton club mise en valeur.
+- **Fiche joueur** : bandeau aux couleurs du club du joueur, numéro aux couleurs du maillot.
+- Audit axe-core : un contraste du calendrier corrigé.
+Tests : `tests/navigation.js`. Audit des 27 écrans sans erreur ; simulation longue sans erreur.
+
+## v47 — vrais noms FM (.lnc) dans l'import de sauvegarde
+- `outils/importer_sauvegarde_fm.py --noms-fm DOSSIER` lit les fichiers `.lnc` de vrais noms (par exemple le « Real Names Fix »
+  de Passion4FM, que tu télécharges toi-même), en UTF-8 ou UTF-16. Ils servent à trois choses : nommer les compétitions dans `--lister`
+  (fmsave ne connaît pas leurs noms), donner leur nom aux divisions, et rendre aux clubs leur vrai nom.
+  Essai sur le fichier fourni : 1 050 compétitions et 585 clubs reconnus. Rien de ce contenu n'est versionné.
+- Les bases `.fmf` (ex. « NextGen Wonderkids Database ») sont chiffrées par Sports Interactive : elles ne se lisent pas directement.
+  Il faut les charger dans FM, démarrer une carrière, puis importer la sauvegarde avec l'outil.
+Test : `outils/tests_sauvegarde_fm.py` (fichiers .lnc UTF-8 et UTF-16).
+
+## v46 — avatars cohérents avec l'origine
+- `js/visages_regions.js` : la teinte de peau des avatars générés suit maintenant la grande région d'origine du joueur
+  (sous-régions de la table des pays intégrée). Avant, elle était tirée au hasard. La diversité reste partout (binationaux,
+  diasporas). Le choix se fait par empreinte, sans tirage : le hasard de la partie ne change pas.
+  Teinte moyenne (0 claire à 5 foncée) : Suède 1,0, France 1,7, Espagne 1,6, Japon 1,3, Maroc 2,6, Brésil 2,8, Sénégal 4,4.
+- emilmirzayev/fm-ai-face-generator (MIT) : la génération de visages par IA passe par un service payant (DeepInfra, clé d'API),
+  elle n'est donc pas intégrée. Seule l'idée des visages par région est reprise.
+Test : `tests/visages_regions.js`. Simulation longue sans erreur ; audit des écrans sans erreur.
+
+## v45 — prévisions : scores probables et fin de saison simulée
+- `js/previsions.js` : modèle de Poisson corrigé de Dixon-Coles (`dcTau`, `poissonPmf`, `poissonSample`, repris de
+  Hicruben/world-cup-2026-prediction-model, MIT, `vendor/world-cup-2026-prediction-model/LICENSE`).
+  - Avant-match : les 3 scores les plus probables et les buts attendus.
+  - Compétitions > championnat : « Prévisions de fin de saison », 2 000 saisons simulées (méthode de vickyfriss/football-league-predictions,
+    MIT, réécrite). On obtient les points projetés et les chances de titre, de top 4, de montée et de relégation. 0,16 s pour 260 matchs restants.
+  - Générateur pseudo-aléatoire séparé (mulberry32) : le hasard de la partie ne bouge pas (test `tests/previsions_hasard.js`).
+Tests : `tests/previsions.js`, `tests/previsions_hasard.js`. Simulation longue sans erreur.
+
+## v44 — édition groupée, radar des progressions
+- **Édition groupée** (`js/edition_groupee.js`, idée de tozmoz/FMLibreEditor, GPL-3.0, sans code repris) dans l'éditeur.
+  - Cibles : le club affiché, une division ou toute la base, avec un filtre de poste et d'âge.
+  - Actions : qualité ± N, soins, levée des suspensions, moral, forme, contrat + 1 an.
+  - « Aperçu » montre l'avant/après ; « Annuler » rétablit exactement les valeurs (10 éditions gardées).
+- **Radar des progressions** (`js/progressions.js`, idée de FMSuperScout, MIT) : Statistiques > « Progressions ». Hausses et baisses
+  de note depuis le début de la saison ou sur environ 4 semaines, pour ton effectif et pour les joueurs connus du monde.
+  Deux photos compactes, environ 12 Ko.
+Tests : `tests/edition_groupee.js`, `tests/progressions.js` (lancés par `tests/run_eval.js`). Simulation longue sans erreur ; audit des écrans sans erreur.
+
+## v43 — recommandations selon les besoins du club, cartes de chaleur
+- **Recommandés pour ton club** (`js/recommandation.js`, Mercato > Recherche sans filtre) : chaque secteur du onze reçoit un poids
+  inverse de sa note moyenne (fonction réciproque, méthode de tonyz0x0/football-manager, MIT ; ses données FIFA ne sont pas reprises).
+  Chaque joueur abordable est ensuite noté selon ce qu'il apporte au titulaire le plus faible de son poste. Le brouillard est respecté
+  (note estimée). Exemple en D2 : un DG noté 71 pour remplacer un titulaire à 51, à 11 M€.
+- **Cartes de chaleur** (`js/carte_chaleur.js`, idée d'osnsyc/FMMatchLens, MIT, sans code repris) : pendant les matchs de ton club,
+  la position de chaque joueur est relevée à chaque action (grille 12 × 8). Analyse du match > « Cartes de chaleur », avec un choix
+  du joueur. Stockage compact : 2,6 Ko par match. Vérifié : gardien en colonne 1, avant-centre en colonne 9 sur 12 ; rien n'est relevé
+  pour les autres matchs.
+- Écartés : cruelspawngenerate/football-manager-27-mod-install-guide (piège à logiciel malveillant : ZIP avec exécutable « non vérifié »),
+  Farketmez59/football-club-manager-data-pack (vide).
+Tests : `tests/recommandation.js`, `tests/carte_chaleur.js`. Simulation longue sans erreur ; audit des 27 écrans sans erreur.
+
+## v42 — onze optimal
+- `js/onze_optimal.js` : pour ton club, la composition automatique résout l'affectation joueurs → postes avec l'algorithme hongrois,
+  et maximise la somme des notes effectives. L'ancienne méthode remplissait les postes un par un : un joueur polyvalent pouvait être
+  placé là où il était à peine meilleur. Gain mesuré : +15,5 de force en 4-2-3-1 (901,5 contre 886), jamais moins que l'ancienne
+  méthode, moins de 1 ms. Les clubs de l'ordinateur gardent l'ancienne méthode (équilibre des simulations inchangé).
+  Idée tirée de FM-Player-Analyzer (GPL-3.0, aucun code repris). Test : `tests/onze_optimal.js`.
+- Football-Manager-27-Editor (sans licence, modifie la mémoire de FM pendant le jeu) : rien d'utilisable, le jeu a son propre éditeur.
+Vérifications : simulation longue sans erreur.
+
+## v41 — sauvegarde Football Manager, packs graphiques mieux reconnus, profils similaires
+- **Sauvegarde FM → monde jouable** (`outils/importer_sauvegarde_fm.py`, sur ton PC, avec `pip install fmsave`, rhiever/fmsave, MIT).
+  `--lister` affiche les championnats de la sauvegarde ; `--ligues` choisit les divisions. On obtient un fichier JSON à importer
+  depuis l'écran d'accueil. Les 52 attributs FM donnent les 9 qualités et les sous-notes détaillées ; le reste est converti aussi :
+  poste, pied fort, personnalité, contrat, potentiel (écart PA − CA). Avec `--visages` ou `--logos`, les images des packs sont
+  reliées par l'identifiant FM (dossier `fm_images`, non versionné). Test : `outils/tests_sauvegarde_fm.py`.
+- **Nations FM** : `outils/nations_fm.json` relie 220 identifiants de nation FM aux codes FIFA, d'après mavarobli/FMSuperScout (MIT,
+  `outils/nations_fm.py`).
+- **Packs graphiques** (idées de FMMLoader-26, GPL : aucun code repris) : le type se lit dans le `config.xml` (portrait de personne,
+  logo d'équipe, maillot d'équipe). Les logos de compétitions et de nations ne sont plus pris pour des logos de club quand le numéro
+  coïncide, et le maillot domicile est préféré.
+- **Profils similaires** (`js/remplacants.js`, idée de fm-ai-assistent, sans licence : aucun code repris) : depuis la fiche d'un joueur,
+  « Trouver des profils similaires » liste les joueurs du même poste les plus proches sur les attributs clés. Le brouillard du recrutement
+  est respecté, et un bouton « Suivre » ajoute un joueur à la liste de suivi.
+- Écarté : tahaselimsalman243-glitch/sport-connect-hub. Sa page est un script chiffré qui réécrit tout le document, technique des faux
+  dépôts qui distribuent des logiciels malveillants. Rien n'a été exécuté.
+Vérifications : simulation longue sans erreur ; audit des 27 écrans sans erreur ; tests des outils Python passés.
+
+## v40 — finance des transferts : comptabilité et montages financiers (`js/finance_transferts.js`)
+- **Amortissement** : chaque indemnité, commission d'agent comprise, est étalée de façon linéaire sur la durée du contrat
+  (5 ans au plus, comme le prévoit l'UEFA). Une prolongation réétale la valeur restante. Exemple testé : achat 20 M€ sur 4 ans,
+  donc 5 M€ amortis par saison ; après une saison et une prolongation à 5 ans, les 15 M€ restants sont réétalés.
+- **Plus-values et moins-values** : une vente rapporte prix − valeur nette comptable ; un départ libre coûte la valeur restante.
+  Un journal garde les dernières ventes.
+- **Ratio de coût d'effectif UEFA** (limite 70 %) : (salaires + amortissements + agents) / (recettes + plus-values), affiché dans Finances.
+- **Montages** : vente payée en plusieurs fois (+8 %, 40 % tout de suite et le reste sur deux saisons) ; affacturage d'une créance
+  (comptant immédiat, décote de 5 % par an restant) ; plan d'achat « 25 % maintenant, 75 % sur 3 ans ».
+- Dans Mercato > Offres reçues, chaque offre indique la plus-value ou la moins-value comptable qu'elle produirait.
+- Recherche GitHub : rien de réutilisable. ZenGM n'est pas open source (idées seulement) ; ewenme/transfers et BBC-Data-Unit sont sans licence ;
+  les données transfermarkt-datasets (CC0) sont hébergées hors de GitHub et déjà importables sur ton PC (`importer_transfermarkt.py`).
+  Les mécanismes reprennent donc les règles réelles (IFRS, règlement financier UEFA).
+Test : `tests/finance_transferts.js`. Simulation longue sans erreur ; audit des 27 écrans sans erreur.
+
+## v39 — finition visuelle et ergonomie (skill frontend-design + audit axe-core)
+- `design.css` (chargé en dernier) et `js/design.js`. Direction « tribune de nuit » : la barre du haut sert de tableau d'affichage,
+  avec les chiffres en Bebas Neue, sur une seule ligne. Le nom du club et le prochain adversaire sont coupés proprement ; la recherche
+  et les détails disparaissent sur les écrans plus étroits.
+- Montants au format français partout (59,1 M€ au lieu de 59.1 M€).
+- Notifications compactes en bas à gauche, au-dessus du menu ; en haut sur téléphone, deux au plus. Elles ne cachent plus
+  les filtres ni le contenu.
+- Changement d'écran : entrée douce de 0,22 s, coupée quand le système demande moins d'animations.
+- Accessibilité, mesurée avec axe-core sur 9 écrans : contrastes des titres du menu, des pastilles et des segments corrigés ;
+  titre de niveau 1 pour chaque écran (lecteurs d'écran) ; champs et listes sans libellé nommés ; zones défilantes atteignables au clavier ;
+  fenêtres annoncées comme dialogues ; zone de notifications annoncée. Il reste seulement les lignes volontairement grisées (joueurs indisponibles).
+- Onglets segmentés en texte seul, sans émoji de tête ; « Prochaine étape » remplace « « Continuer » va : » ; boutons plus hauts au doigt.
+Vérifications : audit des 27 écrans (ordinateur et mobile) sans erreur ni débordement ; simulation longue sans erreur.
+
+## v38 — import local des packs graphiques Football Manager (visages, logos, maillots)
+- `outils/importer_pack_fm.py` (+ `Importer_Pack_FM.bat`) : importe sur ton PC un pack déjà téléchargé (FMEurope, sortitoutsi…).
+  Les images de ces packs sont nommées par UID Football Manager, souvent via un `config.xml`. On retrouve le joueur ou le club
+  grâce à une liste exportée depuis FM (colonnes UID + Nom, et date de naissance pour départager les homonymes ; format page web ou texte).
+  Les images vont dans `donnees_jeu/cache_images` comme ajouts manuels, prioritaires sur les téléchargements. Option `--essai` pour
+  vérifier avant d'importer, `--retirer` pour tout enlever.
+- Les maillots ont un nouveau type d'image (`/img/maillot/…`), affiché sur la fiche du club en mode vrais clubs.
+- Rien de ces packs n'est versionné ni publié : leurs logos et photos appartiennent à leurs ayants droit. fmeurope.net est aussi
+  inaccessible depuis l'environnement de développement. Les « vrais noms » de FMEurope corrigent les noms sous licence dans Football Manager ;
+  le jeu utilise déjà les vrais noms des clubs et des compétitions en mode réel.
+Test : `python outils/tests_pack_fm.py` (mini-base et mini-pack synthétiques).
+
+## v37 — palmarès réel, adaptation des recrues, noms de 70 pays
+- **Palmarès réel** (`js/palmares_reel.js`, `outils/palmares_reel.py`) : classements recalculés depuis openfootball/football.json (CC0)
+  pour 12 pays, jusqu'à 4 divisions, de 2010-11 à 2026-27 (en cours). Ils s'affichent sous les règlements de chaque pays :
+  champion, dauphin, buts par match, part des victoires à domicile et clubs les plus titrés.
+  Vérification : Ligue 1 2023-24 PSG 76 pts, Premier League 2023-24 Man City 91, Serie A 2023-24 Inter 94.
+- **Adaptation des recrues** : de temps en temps, une nouvelle raconte l'adaptation d'un joueur qui n'est pas encore intégré
+  (mal du pays, langue, famille, parrain…). Les textes français viennent d'open-football (Apache-2.0) et le choix suit le niveau d'intégration ;
+  il est fait par empreinte, sans tirage aléatoire, donc l'avenir de la partie ne change pas.
+- **Noms générés** : réservoirs de prénoms et de noms d'open-football pour 70 pays (Arménie, Estonie, Kenya…), en plus des noms existants.
+- Non intégrés : openfootmanager (GPL-3.0), HattrickOrganizer (LGPL-3.0), football-manager-ODD (code consultable, sans licence libre) :
+  simples idées. Les 85 000 joueurs d'open-football ne sont pas repris non plus : leurs attributs reprennent le format de Football Manager
+  et leur provenance n'est pas claire.
+Vérifications : simulation longue sans erreur ; audit des 27 écrans sans erreur.
+
+## v36 — menace attendue (xT), cotes 1N2, déplacements
+- **xT** (`js/xthreat.js`) : portage JavaScript de `socceraction/xthreat.py` (ML-KULeuven, MIT). La grille 16 × 12 (`js/xt_grille.js`)
+  est ajustée par `outils/xt_generer.js` sur 1 066 matchs du moteur (1 million de déplacements, 21 600 tirs). Chaque passe,
+  centre ou dribble réussi rapporte xT(arrivée) − xT(départ) au joueur. On le voit dans l'analyse du match (classement et carte),
+  la fiche du joueur (xT et xT/90) et les statistiques (catégorie « Menace créée »).
+- **Cotes 1N2** dans l'avant-match (`js/avant_match.js`) : la force des deux onze donne l'espérance de points (logistique ajustée sur
+  le moteur). La probabilité de nul et la marge (2,6 %) viennent de vraies cotes Pinnacle sur 86 000 matchs de 22 pays
+  (jokecamp/FootballData, MIT ; `outils/cotes_reelles.py`). Contrôle sur 87 matchs : victoires à domicile 44 % prévues pour 41 % observées,
+  nuls 27 % prévus pour 23 % observés.
+- **Déplacement** : distance entre les deux stades (136 stades d'Angleterre, d'Écosse, de France, d'Allemagne et d'Espagne, jokecamp/FootballData,
+  `outils/stades_gps.py`). Elle ne s'affiche qu'en mode vrais clubs.
+- Non intégrés : hudl/open-data (données StatsBomb : redistribution et usage commercial interdits), hugomathien/football-data-collection et
+  abdullahtarek/football_analysis (sans licence, simples idées), soccerdata (Apache-2.0, extracteur web à lancer sur ton PC, pas de données incluses).
+Vérifications : simulation longue (2 graines × 2 saisons) sans erreur ; audit des 27 écrans sans erreur.
 
 ## v35 — audit complet et équilibre des buteurs
 - Audit automatique de tous les écrans (27) à 1366 px et 390 px : aucune erreur, aucun débordement horizontal, aucun écran vide ;

@@ -285,7 +285,7 @@ function subModal(msg = '', outPre = null) {
   modal(`<h2>Changement</h2>${msg ? `<div class="alert">${esc(msg)}</div>` : ''}
     <div class="grid2"><div><h3>Sortant</h3>${side.onPitch.map(x => { const p = getPlayer(G, x.id); return `<label class="opt"><input type="radio" name="out" value="${x.id}" ${x.id === outPre ? 'checked' : ''}> <b>${x.role}</b> ${esc(p.name)} ${bar(side.cond[x.id], 100, side.cond[x.id] < 60 ? 'low' : '')} <small>${mt.pr[x.id].r.toFixed(1)}</small> ${x.injured ? '✚' : ''}</label>`; }).join('')}</div>
     <div><h3>Entrant</h3>${side.bench.map(id => { const p = getPlayer(G, id); return `<label class="opt"><input type="radio" name="in" value="${id}"> <b>${p.pos}</b> ${esc(p.name)} ${ovrBadge(playerOvr(p))}</label>`; }).join('') || '<p class="muted">Banc vide.</p>'}</div></div>
-    <div class="row gap mt"><div class="grow"></div><button class="btn primary" id="doSub">Valider</button></div>`);
+    <div class="row gap mt"><div class="grow"></div><button class="btn primary" id="doSub">Faire le changement</button></div>`);
   $('#doSub').onclick = () => {
     const o = $('input[name=out]:checked'), i = $('input[name=in]:checked');
     if (!o || !i) return toast('Choisis un sortant et un entrant.', 'err');

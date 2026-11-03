@@ -1,0 +1,45 @@
+/* ============================================================
+   Jetons de design de Manager Foot — chargés avant toutes les feuilles de style
+   Documentation : DESIGN_SYSTEM.md. Toute nouvelle règle utilise ces jetons, jamais une valeur en dur.
+   ============================================================ */
+:root {
+  /* surfaces (du fond vers le premier plan) */
+  /* les trois premières suivent les variables historiques (--bg, --panel, --panel2) pour que les thèmes existants restent valables */
+  --surface-0: var(--bg, #0f141b);   /* fond de page */
+  --surface-1: var(--panel, #171e28); /* panneau */
+  --surface-2: var(--panel2, #1e2733); /* champ, bouton, panneau surélevé */
+  --surface-3: #121a24;   /* encart dans un panneau (tuiles, grilles d'attributs) */
+  --surface-4: #19222d;   /* barre de titre de panneau */
+  --surface-inverse: #111822; /* listes déroulantes, menus flottants */
+  /* traits */
+  --line-soft: #243042;
+  --line: #2a3543;
+  --line-strong: #2f3c4d;
+  /* texte */
+  --txt: #e9eef4;
+  --txt-2: #c9d4e0;       /* texte secondaire appuyé (titres de section) */
+  --mut: #9aa9bb;         /* texte secondaire, contraste ≥ 4,5:1 sur --surface-1 */
+  --mut-2: #a9b6c6;       /* intertitres et libellés */
+  /* sémantique */
+  --acc: #2fd27a; --acc2: #1aa35d;    /* succès, action principale */
+  --red: #ef4f5a;                    /* danger, défaite, baisse */
+  --yel: #f4c542;                    /* avertissement, nul */
+  --warn: #f59e0b;                   /* alerte forte (décision à prendre) */
+  --blue: #4aa3ff;                   /* information */
+  --badge: #c22f3b;                  /* pastille de compteur (contraste AA avec le blanc) */
+  /* typographie : échelle de 9 tailles (Inter ; Bebas Neue pour les chiffres d'affichage) */
+  --fs-3xs: 10px; --fs-2xs: 11px; --fs-xs: 12px; --fs-s: 13px; --fs-m: 14px; --fs-l: 15px; --fs-xl: 18px; --fs-2xl: 22px; --fs-3xl: 26px;
+  --lh-tight: 1.2; --lh-base: 1.45; --lh-loose: 1.6;
+  --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
+  /* arrondis : 6 niveaux */
+  --r-xs: 4px; --r-s: 6px; --r-m: 8px; --r-l: 10px; --r-xl: 12px; --r-pill: 999px;
+  /* espacements (base 4 px) */
+  --esp-1: 4px; --esp-2: 8px; --esp-3: 12px; --esp-4: 16px; --esp-5: 24px; --esp-6: 32px;
+  /* élévation */
+  --elev-1: 0 1px 2px rgba(0, 0, 0, .35);
+  --elev-2: 0 10px 30px -18px rgba(0, 0, 0, .7);
+  --elev-3: 0 18px 48px -16px rgba(0, 0, 0, .8);
+  /* mouvement */
+  --dur-1: .12s; --dur-2: .2s; --dur-3: .3s;
+  --ease: cubic-bezier(.215, .61, .355, 1);
+}

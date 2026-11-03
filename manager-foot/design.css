@@ -1,0 +1,177 @@
+/* ============================================================
+   Design v39 — finition d'ensemble (chargé en dernier)
+   Direction : « tribune de nuit ». Des surfaces bleu nuit éclairées par la couleur du club et des chiffres
+   façon tableau d'affichage (Bebas Neue). Le texte courant reste en Inter, sobre.
+   Un seul élément marquant : la barre du haut, qui sert de tableau d'affichage. Tout le reste reste calme.
+   Objectifs : lisibilité (contrastes AA, interlignage), ergonomie (en-tête qui ne se tasse plus, notifications
+   qui ne masquent plus le contenu), fluidité (entrée douce des écrans, sans effet quand le système demande
+   moins d'animations).
+   ============================================================ */
+:root {
+  --mut: #9aa9bb;                 /* texte secondaire : contraste ≥ 4,5:1 sur les panneaux */
+  --line: #283444;
+  --txt: #e9eef4;
+  --t-xs: 11.5px; --t-s: 12.5px; --t-m: 14px; --t-l: 17px; --t-xl: 22px;
+  --esp-1: 4px; --esp-2: 8px; --esp-3: 12px; --esp-4: 16px; --esp-5: 24px;
+}
+body { line-height: 1.45; }
+.hint { font-size: var(--t-s); line-height: 1.5; }
+p { max-width: 80ch; }
+.card p, .mbox p { max-width: none; }
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- barre du haut : une ligne, jamais de chiffres coupés ---------- */
+#top { flex-wrap: nowrap; min-width: 0; }
+#top > * { min-width: 0; }
+#top .tclub { min-width: 0; flex: 0 1 auto; }
+#top .tclub > div { min-width: 0; }
+#top .tclub b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 230px; }
+#top .tclub small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 230px; }
+#top .tinfo { flex: none; }
+#top .tinfo small, #top .tinfo b { white-space: nowrap; }
+#top .tinfo b { font-family: 'Bebas Neue', 'Inter', sans-serif; font-weight: 400; font-size: 21px; letter-spacing: .03em; line-height: 1.05; }
+#top .tnext { min-width: 0; flex: 0 1 auto; }
+#top .tnext small, #top .tnext b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; }
+#top #btnGo { flex: none; }
+#top .search { flex: 0 1 220px; }
+#top .search input { width: 100%; }
+@media (max-width: 1480px) { #top .search { display: none; } }
+@media (max-width: 1280px) { #top .tnext small { display: none; } #top .tclub small { display: none; } }
+@media (max-width: 1120px) { #top .tnext { display: none; } }
+@media (max-width: 760px) {
+  #top { flex-wrap: wrap; }
+  #top .tclub b { max-width: 60vw; }
+  #top .tinfo b { font-size: var(--fs-xl); }
+}
+
+/* ---------- notifications : en bas à gauche, au-dessus du menu (zone la moins utile), compactes ---------- */
+#toasts { top: auto !important; bottom: 14px !important; left: 12px !important; right: auto !important; align-items: flex-start !important; gap: 6px !important; max-width: min(320px, calc(100vw - 24px)); }
+#toasts .toast { transform: translateX(-16px) !important; }
+#toasts .toast.show { transform: none !important; }
+.toast { font-size: var(--fs-s) !important; line-height: 1.35; padding: 8px 12px !important; box-shadow: 0 12px 28px -14px rgba(0, 0, 0, .8) !important; }
+@media (max-width: 760px) {
+  #toasts { top: 8px !important; bottom: auto !important; right: 8px !important; left: 8px !important; max-width: none; align-items: stretch !important; }
+  #toasts .toast:nth-last-child(n+3) { display: none; } /* deux au plus sur téléphone */
+}
+
+/* ---------- écrans : entrée douce lors d'un changement d'écran ---------- */
+@keyframes entreeVue { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+#main.vue-entree > * { animation: entreeVue .22s var(--anim, ease-out) both; }
+#main.vue-entree > *:nth-child(2) { animation-delay: .03s; }
+#main.vue-entree > *:nth-child(n+3) { animation-delay: .06s; }
+#modal .mbox { animation: entreeVue .18s var(--anim, ease-out) both; }
+@media (prefers-reduced-motion: reduce) {
+  #main.vue-entree > *, #modal .mbox { animation: none !important; }
+  * { scroll-behavior: auto !important; }
+}
+html { scroll-behavior: smooth; }
+
+/* ---------- titres de cartes : hiérarchie nette ---------- */
+.card > h2:first-child { font-size: var(--t-l); margin-bottom: var(--esp-3); }
+h3 { color: var(--mut-2); font-size: var(--fs-xs); letter-spacing: .06em; }
+
+/* ---------- tableaux : en-têtes fixes, chiffres alignés, lignes aérées ---------- */
+.scroll .tbl thead th, .tbl-wrap .tbl thead th { position: sticky; top: 0; z-index: 1; background: var(--panel); }
+.tbl td { font-variant-numeric: tabular-nums; }
+.tbl tbody tr:focus-within { background: rgba(255, 255, 255, .035); }
+
+/* ---------- boutons et segments : états lisibles ---------- */
+.btn { touch-action: manipulation; }
+.btn:disabled { opacity: .45; filter: saturate(.4); }
+.seg button.on, [data-tk].on { color: #04140c !important; font-weight: 700; }
+@media (pointer: coarse) { .btn { min-height: 40px; } .btn.sm { min-height: 34px; } .tabs button { min-height: 36px; } }
+
+/* ---------- contrastes (audit axe-core) ---------- */
+.nav-h, .nav-h span { color: #8496ab !important; }
+i.nb, .nb { background: #c22f3b !important; color: #fff; }
+.ev.lg2, .ev.c-L, .ev.c-C { color: #c3cedb !important; }
+
+/* ---------- champs : libellés plus lisibles ---------- */
+label { color: var(--mut-2); font-size: var(--t-s); }
+input, select { min-height: 34px; }
+
+/* ---------- prochaine étape (tableau de bord) ---------- */
+.af-next small { color: #c8d3df; }
+h1.logo-big { margin: 0; font-weight: inherit; }
+.afaire h2.af-titre { font-size: var(--fs-xs); margin: 14px 0 8px; color: var(--mut-2); text-transform: uppercase; letter-spacing: .06em; display: flex; gap: 6px; }
+/* comptabilité des transferts (js/finance_transferts.js) */
+.compta-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 10px 0; padding: 0; border: 0; background: none; box-shadow: none; }
+.compta-kpis > div { background: var(--surface-3); border: 1px solid var(--line); border-radius: var(--r-l); padding: 10px 12px; }
+.compta-kpis small { display: block; color: var(--mut); font-size: var(--t-xs); }
+.compta-kpis b { font-family: 'Bebas Neue', 'Inter', sans-serif; font-weight: 400; font-size: var(--fs-3xl); letter-spacing: .02em; }
+.compta-kpis em { display: block; font-style: normal; font-size: var(--t-xs); color: var(--mut); }
+.compta .creance { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.warn { color: var(--yel); }
+.sim { margin: 10px 0; } .sim-tbl td { white-space: nowrap; }
+.reco { margin-bottom: 14px; } .reco h3 { margin-top: 0; }
+.ch-bloc { margin-top: 14px; } .ch-bloc h4 { margin: 0 0 6px; } .ch-carte { width: 100%; max-width: 520px; display: block; border-radius: var(--r-s); margin-top: 6px; }
+.eg summary { cursor: pointer; list-style: revert; } .eg summary small { margin-left: 6px; }
+
+/* ============================================================
+   v48 — panneaux, barre de section, tableaux denses, fiche joueur
+   ============================================================ */
+/* barre de section : groupe + écrans du groupe en sous-onglets */
+#ariane.sect-bar { display: flex; align-items: center; gap: 10px; margin: -6px 0 14px; padding: 0 0 0 2px; border-bottom: 1px solid var(--line); min-height: 42px; flex-wrap: nowrap; overflow: hidden; }
+.sect-nav { display: flex; gap: 4px; flex: none; }
+.sect-nav .btn { min-width: 30px; min-height: 28px; padding: 0 8px; font-size: var(--fs-xl); line-height: 1; }
+.sect-nom { flex: none; font-weight: 700; color: #c9d4e0; padding-right: 10px; border-right: 1px solid var(--line); }
+.sect-tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
+.sect-tabs::-webkit-scrollbar { display: none; }
+.sect-tabs button { position: relative; flex: none; background: none; border: 0; color: var(--mut); padding: 11px 12px 10px; cursor: pointer; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s, border-color .15s; }
+.sect-tabs button:hover { color: var(--txt); }
+.sect-tabs button.on { color: #fff; border-bottom-color: color-mix(in srgb, var(--club1) 80%, #fff); font-weight: 650; }
+.sect-tabs .nb:empty { display: none; }
+.sect-tabs .nb { margin-left: 6px; font-style: normal; font-size: var(--fs-2xs); padding: 1px 6px; border-radius: var(--r-l); }
+@media (max-width: 760px) { .sect-nom, .sect-bar > .btn.ghost { display: none; } #ariane.sect-bar { margin-top: -4px; } }
+
+/* panneaux : barre de titre teintée aux couleurs du club */
+.card > h2:first-child { margin: -16px -16px 14px; padding: 11px 16px; font-size: var(--fs-l);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--club1) 16%, var(--surface-4)), var(--surface-4) 55%);
+  border-bottom: 1px solid var(--line); border-radius: var(--rayon) var(--rayon) 0 0; }
+
+/* tableaux : lignes zébrées, plus denses, survol net */
+.tbl tbody tr:nth-child(even) { background: rgba(255, 255, 255, .02); }
+.tbl tbody tr:hover { background: color-mix(in srgb, var(--club1) 9%, transparent) !important; }
+.tbl td { padding-top: 6px; padding-bottom: 6px; }
+.tbl tr.me, .tbl tr.me:nth-child(even) { background: color-mix(in srgb, var(--club1) 16%, transparent); }
+
+/* fiche joueur : bandeau aux couleurs du club */
+.pm-head.pm-club { border-radius: var(--r-xl); padding: 14px 16px; margin: -4px 0 10px;
+  background: linear-gradient(110deg, color-mix(in srgb, var(--pc1) 48%, var(--surface-3)) 0%, color-mix(in srgb, var(--pc1) 14%, var(--surface-3)) 45%, var(--surface-3) 80%);
+  border-left: 4px solid var(--pc2); box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .05); }
+.pm-head.pm-club h2 { font-size: var(--fs-2xl); letter-spacing: -.01em; }
+.pm-head.pm-club .num { background: var(--pc1); color: var(--pc2); border: 1px solid color-mix(in srgb, var(--pc2) 40%, transparent); }
+
+/* onglets internes : soulignés plutôt qu'en pilules (lecture plus rapide) */
+.mbox .tabs, .card > .tabs { background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 0; gap: 0; }
+.mbox .tabs button, .card > .tabs button { border-radius: 0 !important; border-bottom: 2px solid transparent !important; margin-bottom: -1px; background: none !important; box-shadow: none !important; padding: 9px 12px; color: var(--mut); }
+.mbox .tabs button.on, .card > .tabs button.on { color: #fff; border-bottom-color: color-mix(in srgb, var(--club1) 80%, #fff) !important; font-weight: 650; }
+#top #btnBack { display: none; } /* remplacé par ‹ › dans la barre de section */
+.rL { color: #ff9aa1 !important; }
+.confirm-deal { margin: 10px 0; padding: 12px; border: 1px solid color-mix(in srgb, var(--acc) 45%, var(--line)); border-radius: var(--r-l); background: color-mix(in srgb, var(--acc) 7%, transparent); }
+.monde-pays { margin-top: 14px; } .monde-pays tr.click { cursor: pointer; }
+.monde-pays { display: block !important; grid-template-columns: none !important; }
+.etr-ligue { margin-bottom: 10px; } .etr-res { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 6px; font-size: var(--fs-s); } .monde-pays details summary { cursor: pointer; color: var(--mut); margin: 8px 0 4px; }
+
+/* v51 — critique de design : contenu jamais coupé, titres sobres, notifications discrètes */
+.defile-x { overflow-x: auto; max-width: 100%; }
+.defile-x, .tbl-wrap, .scroll { background: linear-gradient(90deg, var(--panel) 30%, transparent) left / 24px 100% no-repeat local, linear-gradient(270deg, var(--panel) 30%, transparent) right / 24px 100% no-repeat local, radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.45), transparent) left / 10px 100% no-repeat scroll, radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.45), transparent) right / 10px 100% no-repeat scroll; }
+.tbl td.nm { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card > h2:first-child { background: linear-gradient(90deg, color-mix(in srgb, var(--club1) 10%, var(--surface-4)), var(--surface-4) 50%); }
+#toasts .toast:nth-last-child(n+3) { display: none; }
+/* calendrier : adversaire abrégé, textes longs sur deux lignes, score toujours visible */
+tr[data-w] td { padding-left: 7px; padding-right: 7px; }
+tr[data-w] td:nth-child(2) { white-space: nowrap; color: var(--mut); }
+tr[data-w] td:nth-child(4):not([colspan]) { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+tr[data-w] td[colspan] { white-space: normal; }
+.scroll > .tbl:has(tr[data-w]) { table-layout: fixed; width: 100%; }
+.scroll > .tbl:has(tr[data-w]) td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scroll > .tbl:has(tr[data-w]) td:nth-child(1) { width: 21%; } .scroll > .tbl:has(tr[data-w]) td:nth-child(2) { width: 22%; }
+.scroll > .tbl:has(tr[data-w]) td:nth-child(3) { width: 10%; } .scroll > .tbl:has(tr[data-w]) td:nth-child(5) { width: 15%; text-align: right; }
+.scroll > .tbl:has(tr[data-w]) td[colspan] { white-space: normal; }
+
+/* bouton en cours de chargement (DESIGN_SYSTEM.md) */
+@keyframes tourne { to { transform: rotate(360deg); } }
+.btn[aria-busy="true"] { pointer-events: none; color: transparent !important; }
+.btn[aria-busy="true"]::after { content: ""; position: absolute; width: 14px; height: 14px; border-radius: var(--r-pill); border: 2px solid var(--txt); border-right-color: transparent; animation: tourne .7s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .btn[aria-busy="true"]::after { animation-duration: 2s; } }

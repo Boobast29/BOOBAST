@@ -29,9 +29,9 @@ async function startScreen() {
   const divs = [...new Set(DB.clubs.filter(c => !c.foreign).map(c => c.div || 1))].sort();
   const exClub = ex ? ex.clubs.find(c => c.id === ex.clubId) : null;
   $('#app').innerHTML = `
-  <div class="start-wrap">
+  <div class="start-wrap" role="main">
     <div class="hero">
-      <div class="logo-big">⚽ <b>Manager</b> Foot</div>
+      <h1 class="logo-big">⚽ <b>Manager</b> Foot</h1>
       <p class="sub">Trois divisions, les vrais règlements de 5 pays, barrages et play-offs jouables, un mercato aux règles FIFA et des matchs en direct en 2D. À toi d'écrire l'histoire.</p>
       <div class="hero-etapes"><span><b>1</b>Reprends une partie</span><span><b>2</b>ou choisis le monde réel</span><span><b>3</b>ou un club fictif ci-dessous</span><span><kbd>Ctrl K</kbd> en jeu : aller n'importe où</span></div>
     </div>
@@ -118,10 +118,13 @@ function importDatabase(raw) {
     const p = genPlayer(pos, 10, { club: clubId, age: pp.age, nat: pp.nat || 'FRA', name: pp.name, photo: pp.photo, rep, num: pp.num });
     if (pp.attrs) { for (const k in ATTRS) if (pp.attrs[k] != null) p.attrs[k] = clamp(Math.round(pp.attrs[k]), 1, 20); }
     else setPlayerOvr(p, pp.ovr ?? 60);
-    p.pot = pp.pot ? clamp(pp.pot, playerOvr(p), 99) : Math.max(p.pot, playerOvr(p));
+    p.pot = pp.pot ? clamp(pp.pot, playerOvr(p), 99) : pp.paEcart != null ? clamp(playerOvr(p) + Math.round(pp.paEcart * .4), playerOvr(p), 99) : Math.max(p.pot, playerOvr(p));
     if (pp.contract) p.contract = pp.contract;
     if (pp.pers && PERSONALITIES[pp.pers]) p.pers = pp.pers;
     if (pp.foot) p.foot = pp.foot;
+    if (pp.detail99 && typeof pp.detail99 === 'object') p.detail99 = pp.detail99; // sous-notes détaillées (sur 99), ex. import d'une sauvegarde FM
+    if (pp.fmUid) p.fmUid = pp.fmUid;
+    if (pp.detail20 && typeof pp.detail20 === 'object') p.detail20 = pp.detail20; // attributs détaillés sur 20 (import JSON complet)
     p.wage = pp.wage || calcWage(p);
     p.attrs0 = { ...p.attrs };
     p.value = calcValue(p);
@@ -952,7 +955,7 @@ function viewClub(id) {
 // ============================================================
 //  Mercato
 // ============================================================
-let TF = { q: '', pos: '', maxv: '', maxage: '', minovr: '', free: false };
+let TF = { q: '', pos: '', maxv: '', maxage: '', minovr: '', free: false, lg: '' };
 let TR_TAB = 'search';
 function vTransfers(el) {
   const club = myClub(G);
@@ -978,6 +981,7 @@ function vTransfers(el) {
     if (TF.maxage) list = list.filter(p => p.age <= +TF.maxage);
     if (TF.minovr) list = list.filter(p => estOvr(G, p) >= +TF.minovr);
     if (TF.free) list = list.filter(p => p.club == null || p.listed);
+    if (TF.lg && typeof ligueDe === 'function') list = list.filter(p => ligueDe(G, p) === TF.lg);
     list.sort((a, b) => estOvr(G, b) - estOvr(G, a));
     body.innerHTML = `<div class="row gap wrap filters">
       <input id="fq" placeholder="Nom…" value="${esc(TF.q)}">
@@ -985,10 +989,11 @@ function vTransfers(el) {
       <input id="fmo" type="number" placeholder="Note min." value="${esc(TF.minovr)}">
       <input id="fmv" type="number" placeholder="Valeur max (M€)" value="${esc(TF.maxv)}">
       <input id="fage" type="number" placeholder="Âge max" value="${esc(TF.maxage)}">
+      ${typeof selectLigues === 'function' ? selectLigues(G, TF.lg) : ''}
       <label class="chk"><input type="checkbox" id="ffree" ${TF.free ? 'checked' : ''}> Libres / en vente</label>
     </div>${table(list.slice(0, 150))}<p class="hint">${list.length} joueurs${list.length > 150 ? ' (150 affichés)' : ''}.</p>`;
-    const upd = () => { TF = { q: $('#fq').value, pos: $('#fpos').value, maxv: $('#fmv').value, maxage: $('#fage').value, minovr: $('#fmo').value, free: $('#ffree').checked }; vTransfers(el); };
-    ['#fq', '#fpos', '#fmv', '#fage', '#fmo', '#ffree'].forEach(s => $(s).onchange = upd);
+    const upd = () => { TF = { q: $('#fq').value, pos: $('#fpos').value, maxv: $('#fmv').value, maxage: $('#fage').value, minovr: $('#fmo').value, free: $('#ffree').checked, lg: $('#flg')?.value || '' }; vTransfers(el); };
+    ['#fq', '#fpos', '#fmv', '#fage', '#fmo', '#ffree', '#flg'].forEach(s => { if ($(s)) $(s).onchange = upd; });
   } else if (TR_TAB === 'history') {
     const all = G.transfers || [];
     const mine = all.filter(t => t.from === G.clubId || t.to === G.clubId);

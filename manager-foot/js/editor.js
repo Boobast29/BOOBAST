@@ -153,7 +153,7 @@ function vEditor(el, W, inGame) {
   const applyLogo = async url => { club.logo = url; await persistWorld(W); if (W === G) enterGameKeepView(); else rerender(); };
   $('#lgUp').onclick = () => pickFile(async f => { try { await applyLogo(await readImage(f, 160, 'image/png')); toast('Logo importé.'); } catch (e) { toast(e.message, 'err'); } }, 'image/*');
   $('#lgUrl').onclick = () => {
-    modal(`<h2>Logo par URL</h2><label>Adresse de l'image <input id="lu" value="${esc(club.logo && !club.logo.startsWith('data:') ? club.logo : '')}" placeholder="https://…"></label><div class="row gap mt"><div class="grow"></div><button class="btn primary" id="luOk">OK</button></div>`);
+    modal(`<h2>Logo par URL</h2><label>Adresse de l'image <input id="lu" value="${esc(club.logo && !club.logo.startsWith('data:') ? club.logo : '')}" placeholder="https://…"></label><div class="row gap mt"><div class="grow"></div><button class="btn primary" id="luOk">Utiliser ce logo</button></div>`);
     $('#luOk').onclick = () => { const v = $('#lu').value.trim(); closeModal(); applyLogo(v || null); };
   };
   $('#lgDel')?.addEventListener('click', () => applyLogo(null));
