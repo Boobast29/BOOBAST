@@ -7,8 +7,57 @@ const DIR_TASKS = {
   training: { icon: '◉', label: 'Préparation du groupe', owner: 'Adjoint', detail: 'Remobilise le vestiaire avant la prochaine semaine.' },
   media: { icon: '◌', label: 'Veille médiatique', owner: 'Adjoint', detail: 'Prépare une prise de parole qui rassure les supporters.' }
 };
+const DIR_PLANS = {
+  youth: { icon: '◇', label: 'Faire grandir les jeunes', cost: 100000, detail: 'Mentorat pendant quatre semaines. Un jeune ayant joué au moins 90 minutes progresse d’un point d’attribut à la fin du cycle.' },
+  recovery: { icon: '✚', label: 'Préserver les titulaires', cost: 80000, detail: 'Suivi physique pendant quatre semaines : les six joueurs disponibles les moins en forme récupèrent 4 points par semaine.' },
+  community: { icon: '◌', label: 'Rapprocher le club des supporters', cost: 50000, detail: 'Quatre semaines d’actions publiques : +2 de soutien des supporters par semaine et +1 de confiance du président au bilan.' }
+};
 function dirState(g = G) { return g.direction ||= { tasks: [], actions: [], comparison: [], matchActions: {} }; }
 function dirSquad(g = G) { return clubPlayers(g, g.clubId).filter(p => !p.academy && (!p.loan || p.loan.inLoan)); }
+function dirStartPlan(kind) {
+  const plan = DIR_PLANS[kind], d = dirState();
+  if (!plan || !G.schedule[G.week] || d.plan?.status === 'active') return;
+  if ((myClub(G).budget || 0) < plan.cost) return toast('Budget insuffisant pour ce plan.', 'err');
+  flow(G, myClub(G), -plan.cost, 'staff');
+  d.plan = { kind, status: 'active', season: G.season, weeks: 0,
+    minutes: kind === 'youth' ? Object.fromEntries(dirSquad().filter(p => p.age <= 21).map(p => [p.id, p.stats?.min || 0])) : {} };
+  dirLog('Plan sportif lancé', `${plan.label} · quatre semaines · ${money(plan.cost)} engagés.`);
+  show('direction');
+}
+function dirResolvePlan(g) {
+  const d = dirState(g), p = d.plan;
+  if (!p || p.status !== 'active') return;
+  // Une saison peut se terminer avant les quatre semaines : le plan est clos au premier bilan.
+  if (p.season !== g.season) p.weeks = 4;
+  else {
+    p.weeks++;
+    if (p.kind === 'recovery') {
+      const targets = dirSquad(g).filter(x => !x.injury && x.fit < 100).sort((a, b) => a.fit - b.fit).slice(0, 6);
+      targets.forEach(x => x.fit = clamp(x.fit + 4, 0, 100));
+      p.beneficiaries = (p.beneficiaries || 0) + targets.length;
+    } else if (p.kind === 'community') g.fans = clamp((g.fans ?? 60) + 2, 0, 100);
+  }
+  if (p.weeks < 4) return;
+  let result;
+  if (p.kind === 'youth') {
+    const eligible = dirSquad(g).filter(x => x.age <= 21 && (x.stats?.min || 0) - (p.minutes?.[x.id] ?? x.stats?.min ?? 0) >= 90 && playerOvr(x) < x.pot && Object.keys(ROLES[x.pos]?.w || {}).some(k => x.attrs?.[k] < 20));
+    const chosen = eligible.sort((a, b) => ((b.stats?.min || 0) - (p.minutes?.[b.id] || 0)) - ((a.stats?.min || 0) - (p.minutes?.[a.id] || 0)))[0];
+    if (chosen) { const keys = Object.keys(ROLES[chosen.pos].w).filter(k => chosen.attrs?.[k] < 20); bumpAttr(chosen, 1, keys); result = `${chosen.name} a progressé d’un point d’attribut après avoir joué au moins 90 minutes.`; }
+    else result = 'Aucun jeune éligible n’a joué 90 minutes et conservé une marge de progression : le mentorat ne produit pas de gain supplémentaire.';
+  } else if (p.kind === 'recovery') result = `${p.beneficiaries || 0} séances de récupération individuelles réalisées.`;
+  else { g.board.conf = clamp(g.board.conf + 1, 0, 100); result = 'La campagne se termine : soutien des supporters renforcé et confiance du président +1.'; }
+  p.status = 'done'; p.result = result;
+  d.actions.unshift({ season: g.season, week: g.week, label: `Bilan : ${DIR_PLANS[p.kind].label}`, detail: result });
+  d.actions = d.actions.slice(0, 35);
+  news(g, `Plan sportif terminé : ${result}`, 'info');
+}
+function dirBriefing(g = G) {
+  const next = myNextFixture(), f = next?.f, opp = f ? getClub(g, f.h === g.clubId ? f.a : f.h) : null;
+  const squad = dirSquad(g), unavailable = squad.filter(p => p.injury > 0 || p.susp > 0).length;
+  const tired = squad.filter(p => !p.injury && !p.susp && p.fit < 75).length;
+  const pending = dirState(g).tasks.filter(t => t.status === 'pending').length;
+  return { title: opp ? `${opp.name} · ${weekLabel(g, next.w)}` : next?.cupTbd ? 'Adversaire à déterminer' : 'Aucun match programmé', unavailable, tired, pending };
+}
 function dirLatestFixture(g = G) {
   for (let w = Math.min(g.week - 1, g.schedule.length - 1); w >= 0; w--) {
     const f = weekFixtures(g, w).find(x => (x.h === g.clubId || x.a === g.clubId) && x.res);
@@ -63,6 +112,7 @@ function dirResolve(g) {
     d.actions.unshift({ season: g.season, week: g.week, label: `Rapport : ${DIR_TASKS[kind].label}`, detail: result });
     news(g, `Mission terminée : ${result}`, 'info');
   }
+  dirResolvePlan(g);
   d.tasks = d.tasks.slice(0, 30); d.actions = d.actions.slice(0, 35);
 }
 const dirCompleteWeek = completeWeek;
@@ -124,15 +174,18 @@ function dirMatchAction(kind) {
 }
 function vDirection(el) {
   const d = dirState(), m = dirLatestFixture(), recent = m && G.week - m.w <= 2;
+  const brief = dirBriefing(), activePlan = d.plan?.status === 'active' ? d.plan : null;
   const used = recent ? d.matchActions[m.key] || [] : [];
   const red = recent && (m.f.events || []).some(e => e.t === 'red' && e.s === (m.f.h === G.clubId ? 0 : 1));
   const recentResult = recent ? `${esc(getClub(G, m.f.h).short)} ${m.f.res.join('–')} ${esc(getClub(G, m.f.a).short)}` : 'Aucun match récent';
   el.innerHTML = `<div class="dir-heading"><div><small>LE BUREAU DU DIRECTEUR</small><h1>Décisions & délégation</h1><p>Agis auprès du groupe et confie des missions. Chaque décision laisse une trace dans la partie.</p></div><div class="dir-week">${esc(weekLabel(G))}<small>Saison ${G.season}/${G.season + 1}</small></div></div>
-    <div class="dir-grid"><section class="card dir-card dir-wide"><div class="dir-card-head"><span class="dir-icon">◇</span><div><h2>Missions à déléguer</h2><p>Le staff revient avec son rapport après la prochaine semaine simulée.</p></div></div><div class="dir-task-grid">${Object.entries(DIR_TASKS).map(([k, t]) => { const pendingTask = d.tasks.find(x => x.kind === k && x.status === 'pending'), pending = !!pendingTask; return `<div class="dir-task"><span class="dir-task-icon">${t.icon}</span><strong>${t.label}</strong><small>${t.owner} · ${t.detail}</small>${k === 'scout' ? `<div class="dir-scout-criteria"><label>Poste <select data-scout-pos aria-label="Poste recherché" ${pending ? 'disabled' : ''}><option value="" ${!pendingTask?.criteria?.pos ? 'selected' : ''}>Tous</option>${Object.keys(ROLES).map(pos => `<option value="${pos}" ${pendingTask?.criteria?.pos === pos ? 'selected' : ''}>${pos} · ${esc(ROLES[pos].label)}</option>`).join('')}</select></label><label>Âge maximum <select data-scout-age aria-label="Âge maximum" ${pending ? 'disabled' : ''}><option value="21" ${pendingTask?.criteria?.maxAge === 21 ? 'selected' : ''}>21 ans</option><option value="25" ${pendingTask?.criteria?.maxAge === 25 ? 'selected' : ''}>25 ans</option><option value="28" ${!pendingTask || pendingTask.criteria?.maxAge === 28 ? 'selected' : ''}>28 ans</option></select></label></div>` : ''}<button class="btn ${pending ? '' : 'primary'}" data-assign="${k}" ${pending ? 'disabled' : ''}>${pending ? 'Mission en cours' : 'Confier la mission'}</button></div>`; }).join('')}</div></section>
+    <section class="dir-brief" aria-label="Situation du club"><div><small>PROCHAIN RENDEZ-VOUS</small><strong>${esc(brief.title)}</strong></div><div><small>INDISPONIBLES</small><strong>${brief.unavailable}</strong></div><div><small>À MÉNAGER</small><strong>${brief.tired}</strong></div><div><small>MISSIONS EN COURS</small><strong>${brief.pending}</strong></div></section>
+    <div class="dir-grid"><section class="card dir-card dir-wide"><div class="dir-card-head"><span class="dir-icon">▤</span><div><h2>Plan sportif · quatre semaines</h2><p>Choisis une priorité, finance-la et suis ses effets après chaque semaine simulée.</p></div></div>${activePlan ? `<div class="dir-plan-progress"><strong>${esc(DIR_PLANS[activePlan.kind].label)}</strong><span>${activePlan.weeks}/4 semaines</span><div role="progressbar" aria-label="Progression du plan sportif" aria-valuenow="${activePlan.weeks}" aria-valuemin="0" aria-valuemax="4"><i style="width:${activePlan.weeks * 25}%"></i></div></div>` : d.plan?.status === 'done' ? `<p class="dir-plan-result"><b>Dernier bilan :</b> ${esc(d.plan.result)}</p>` : ''}<div class="dir-plan-grid">${Object.entries(DIR_PLANS).map(([k, p]) => `<div class="dir-plan"><span class="dir-task-icon">${p.icon}</span><strong>${p.label}</strong><small>${p.detail}</small><div class="dir-plan-foot"><span>${money(p.cost)}</span><button class="btn ${!activePlan ? 'primary' : ''}" data-plan="${k}" ${activePlan || !G.schedule[G.week] || (myClub(G).budget || 0) < p.cost ? 'disabled' : ''}>${activePlan?.kind === k ? 'Plan en cours' : 'Choisir ce plan'}</button></div></div>`).join('')}</div></section><section class="card dir-card dir-wide"><div class="dir-card-head"><span class="dir-icon">◇</span><div><h2>Missions à déléguer</h2><p>Le staff revient avec son rapport après la prochaine semaine simulée.</p></div></div><div class="dir-task-grid">${Object.entries(DIR_TASKS).map(([k, t]) => { const pendingTask = d.tasks.find(x => x.kind === k && x.status === 'pending'), pending = !!pendingTask; return `<div class="dir-task"><span class="dir-task-icon">${t.icon}</span><strong>${t.label}</strong><small>${t.owner} · ${t.detail}</small>${k === 'scout' ? `<div class="dir-scout-criteria"><label>Poste <select data-scout-pos aria-label="Poste recherché" ${pending ? 'disabled' : ''}><option value="" ${!pendingTask?.criteria?.pos ? 'selected' : ''}>Tous</option>${Object.keys(ROLES).map(pos => `<option value="${pos}" ${pendingTask?.criteria?.pos === pos ? 'selected' : ''}>${pos} · ${esc(ROLES[pos].label)}</option>`).join('')}</select></label><label>Âge maximum <select data-scout-age aria-label="Âge maximum" ${pending ? 'disabled' : ''}><option value="21" ${pendingTask?.criteria?.maxAge === 21 ? 'selected' : ''}>21 ans</option><option value="25" ${pendingTask?.criteria?.maxAge === 25 ? 'selected' : ''}>25 ans</option><option value="28" ${!pendingTask || pendingTask.criteria?.maxAge === 28 ? 'selected' : ''}>28 ans</option></select></label></div>` : ''}<button class="btn ${pending ? '' : 'primary'}" data-assign="${k}" ${pending ? 'disabled' : ''}>${pending ? 'Mission en cours' : 'Confier la mission'}</button></div>`; }).join('')}</div></section>
     <section class="card dir-card"><div class="dir-card-head"><span class="dir-icon">◈</span><div><h2>Jour de match</h2><p>${recentResult}</p></div></div><div class="dir-actions"><button class="btn" data-match="dressing" ${!recent || used.includes('dressing') ? 'disabled' : ''}>Entrer dans le vestiaire</button><button class="btn" data-match="press" ${!recent || used.includes('press') ? 'disabled' : ''}>Parler à la presse</button><button class="btn" data-match="commission" ${!red || used.includes('commission') ? 'disabled' : ''}>Aller en commission de ligue</button></div><p class="hint">${!red ? 'La commission est accessible si un de tes joueurs a été expulsé lors du dernier match.' : 'L’appel peut réduire la suspension d’un match.'}</p></section>
     <section class="card dir-card"><div class="dir-card-head"><span class="dir-icon">◎</span><div><h2>Interventions</h2><p>La réaction varie selon la situation et la confiance.</p></div></div>${isDS() && G.coach ? `<div class="dir-actions"><button class="btn" data-coach="support">Soutenir ${esc(G.coach.name)}</button><button class="btn" data-coach="pressure">Mettre l’entraîneur sous pression</button></div>` : ''}<button class="btn" id="dirPlayer">Agir auprès d’un joueur</button><p class="hint">Un entretien par joueur et par semaine. Depuis une fiche joueur, choisis félicitations, soutien public ou coup de pression.</p></section>
     <section class="card dir-card dir-wide"><div class="dir-card-head"><span class="dir-icon">☷</span><div><h2>Journal des décisions</h2><p>Missions et conséquences les plus récentes.</p></div></div><div class="dir-log">${d.actions.slice(0, 12).map(a => `<div><small>S${a.season} · semaine ${a.week + 1}</small><strong>${esc(a.label)}</strong><span>${esc(a.detail)}</span></div>`).join('') || '<p class="muted">Aucune décision pour le moment.</p>'}</div></section></div>`;
   el.querySelectorAll('[data-assign]').forEach(b => b.onclick = () => { const card = b.closest('.dir-task'); dirAssign(b.dataset.assign, { pos: card.querySelector('[data-scout-pos]')?.value, maxAge: card.querySelector('[data-scout-age]')?.value }); });
+  el.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => dirStartPlan(b.dataset.plan));
   el.querySelectorAll('[data-match]').forEach(b => b.onclick = () => dirMatchAction(b.dataset.match));
   el.querySelectorAll('[data-coach]').forEach(b => b.onclick = () => dirCoachAction(b.dataset.coach));
   $('#dirPlayer').onclick = () => { show('squad'); toast('Ouvre la fiche du joueur pour choisir une intervention.'); };
