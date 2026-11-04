@@ -1,12 +1,16 @@
 # Manager Foot
 
-Jeu de gestion de club de football, original, qui tourne dans le navigateur.
-Pas d'installation, pas besoin d'internet.
+Jeu de gestion de club de football qui tourne dans le navigateur. Python 3.9+ suffit ; aucune bibliothèque Python supplémentaire n'est requise.
 
 ## Jouer
 
-1. Télécharge le dossier `manager-foot` (ou tout le dépôt).
-2. Double-clique sur `index.html`. Le jeu s'ouvre dans Chrome, Edge ou Firefox.
+1. Décompresse le dossier `manager-foot`. Pour les fiches mondiales, place l'archive **Football_Monde_JSON_Visuels.zip** dans ce dossier ou dans Téléchargements ; elle est distincte du ZIP du code V12.
+2. Sous Windows, double-clique sur **`Tout_Installer.bat`**. Sous macOS ou Linux, lance `sh Tout_Installer.sh`. L'installation ouvre ensuite le jeu dans le navigateur.
+3. Les fois suivantes, double-clique sur **`Lancer_Manager_Foot.bat`** sous Windows, ou lance `python3 outils/serveur.py --ouvrir` ailleurs.
+
+Sans l'archive mondiale, les cinq pays et le catalogue FMblog inclus restent jouables. Si tu ajoutes l'archive plus tard, relance `Tout_Installer.bat`. La première extraction peut occuper plusieurs gigaoctets et prendre du temps ; une relance reprend les fichiers déjà importés. Le bilan se trouve dans `donnees_jeu/etat_installation.json` et le journal dans `donnees_jeu/journal_installation.txt`.
+
+Pour vérifier un ZIP sans l'installer : `python outils/tout_installer.py CHEMIN_DU_ZIP --verifier`. Pour éviter le réseau : `python outils/tout_installer.py --hors-ligne --sans-lancer`. Les homonymes sont répertoriés dans `donnees_jeu/doublons_a_verifier.csv` ; une simple égalité de nom et de date ne supprime jamais une personne.
 
 La partie se sauvegarde automatiquement dans le navigateur (IndexedDB).
 Menu **Options** → « Exporter la sauvegarde » pour garder un fichier ou changer de PC.
