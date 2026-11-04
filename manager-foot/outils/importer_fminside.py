@@ -4,15 +4,19 @@ Les valeurs proviennent de Football Manager, pas de contrats réels vérifiés.
 """
 import gzip, argparse, concurrent.futures, datetime, html, json, re, subprocess, time, tempfile
 from pathlib import Path
+from pack_fminside import lire_catalogue
 BASE = 'https://fminside.net'
 def texte(s):
     return ' '.join(html.unescape(re.sub('<[^>]+>', ' ', s)).split())
 COOKIE = None
 def lire(url, data=None):
-    cmd = ['curl', '-fsSL', '--connect-timeout', '10', '--max-time', '30']
+    cmd = ['curl', '-fsSL', '--connect-timeout', '10', '--max-time', '30', '--retry', '1', '--retry-delay', '2', '--retry-max-time', '45']
     if COOKIE: cmd += ['-b', COOKIE, '-c', COOKIE]
     if data: cmd += ['--data', data]
-    r = subprocess.run(cmd + [url], capture_output=True, check=True)
+    try:
+        r = subprocess.run(cmd + [url], capture_output=True, check=True)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f'Lecture échouée ({e.returncode}) : {e.stderr.decode(errors="replace").strip()}') from e
     return r.stdout.decode('utf-8')
 def fiche(url):
     s = lire(url)
@@ -20,8 +24,8 @@ def fiche(url):
     attrs = {}
     for row in re.findall(r'<tr\b[^>]*>.*?</tr>', s, re.S):
         label = re.search(r'data-player-stat-name="([^"]+)"', row)
-        val = re.search(r'<td class="stat[^"\n]*">(\d+)</td>', row)
-        if label and val:
+        val = re.search(r'<td\b[^>]*class="(?:stat(?:\s[^"]*)?|profile-stat-value[^"]*)"[^>]*>\s*(\d+)\s*</td>', row)
+        if label and val and 1 <= int(val[1]) <= 99:
             attrs[html.unescape(label[1])] = int(val[1])
     if not nom or len(attrs) < 30:
         raise ValueError('Fiche absente ou attributs incomplets : ' + url)
@@ -34,8 +38,10 @@ def fiche(url):
             return float(v.replace('€ ', '').replace(' pw', '').replace(',', ''))
         return None
     wage = montant('Wages')
+    position_section = re.search(r'Positions:\s*</span>(.*?)</li>', s, re.S)
+    natural = re.search(r'class="position natural">([^<]+)', position_section[1]) if position_section else None
     p = {'name': texte(nom[1]), 'club': info('Club'), 'age': int(info('Age')), 'positions': info('Positions'),
-         'attributes': attrs, 'fmUid': re.search(r'/([0-9]+)-[^/]+$', url)[1],
+         'position': natural[1].strip() if natural else None, 'attributes': attrs, 'fmUid': re.search(r'/([0-9]+)-[^/]+$', url)[1],
          'sourceUrl': url, 'sourceGender': 'male', 'sourceDatabase': info('Database version'), 'birthDateText': info('Date of birth'),
          'foot': info('Footedness'), 'contractEndText': info('Contract end'), 'wageWeekly': wage,
          'wageMonthly': round(wage * 52 / 12, 2) if wage is not None else None,
@@ -46,6 +52,7 @@ def fiche(url):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--libres', action='store_true', help='Collecte les joueurs explicitement Free Agent dans le filtre FM26')
     ap.add_argument('--index', default=BASE + '/players')
     ap.add_argument('--sortie', required=True)
     ap.add_argument('--urls', help='JSON de liens déjà découverts (évite de refaire la pagination)')
@@ -58,8 +65,9 @@ def main():
     players, errors, urls = [], [], []
     dest = Path(a.sortie)
     compressed = dest.with_suffix('.json.gz')
-    if compressed.exists(): players = json.loads(gzip.decompress(compressed.read_bytes())).get('players', [])
-    elif dest.exists(): players = json.loads(dest.read_text(encoding='utf-8')).get('players', [])
+    if dest.name=='fminside-fm26.json' and (compressed.exists() or dest.exists() or dest.with_suffix('.manifest.json').exists()): players = lire_catalogue(dest.parent).get('players', [])
+    elif compressed.exists(): players = json.loads(gzip.decompress(compressed.read_bytes())).get('players', [])
+    elif dest.exists(): players = json.loads(dest.read_text()).get('players', [])
     known = {p['fmUid'] for p in players}
     if a.urls:
         urls = json.loads(Path(a.urls).read_text(encoding="utf-8"))
@@ -67,12 +75,20 @@ def main():
     else:
         try:
             lire(a.index)
-            lire(BASE + '/resources/inc/ajax/update_filter.php', 'page=players&database_version=7&gender=1')
+            lire(BASE + '/resources/inc/ajax/update_filter.php', 'page=players&database_version=7&gender=1'+('&contract_expired=1' if a.libres else ''))
             endpoint = BASE + '/beheer/modules/players/resources/inc/frontend/generate-player-table.php?ajax_request=1'
             page = 0
             seen = set()
             while a.pages == 0 or page < a.pages:
-                content = lire(endpoint + ('&loadmore=true' if page else ''))
+                try:
+                    content = lire(endpoint + ('&loadmore=true' if page else ''))
+                except Exception as e:
+                    if not urls:raise
+                    errors.append({'url':endpoint,'error':'Pagination interrompue : '+str(e)})
+                    break
+                if a.libres:
+                    rows=re.findall(r'<ul class="player database-table-row">(.*?)</ul>', content, re.S)
+                    content=''.join(row for row in rows if re.search(r'>\s*Free Agent\s*<',row,re.I))
                 found = list(dict.fromkeys(BASE + u for u in re.findall(r'href="(/players/\d+-fm-\d+/\d+-[^"?]+)"', content)))
                 found = [re.sub(r'/players/\d+-fm-\d+/', '/players/7-fm-26/', u) for u in found]
                 if not found and page == 0: raise ValueError('Aucune fiche repérée ; pagination indisponible')
@@ -85,20 +101,27 @@ def main():
                 time.sleep(.5)
         finally:
             Path(COOKIE).unlink(missing_ok=True); COOKIE = None
+    if a.libres and a.urls:raise SystemExit('--libres nécessite une découverte dans le filtre source, pas une liste de liens sans statut vérifié.')
+    def statut_libre(p):
+        if a.libres and str(p['fmUid']) in male_uids and str(p.get('club') or '').strip().lower() in ('','free agent','unattached','no club'):
+            p.update(freeAgentSnapshot=True,freeAgentSnapshotSource=BASE+'/players/free-transfers',freeAgentSnapshotDatabase='26.2.0',freeAgentSnapshotCheckedAt=datetime.datetime.now(datetime.timezone.utc).isoformat())
     male_uids = {re.search(r'/([0-9]+)-[^/]+$', u)[1] for u in urls}
     for p in players:
         if p['fmUid'] in male_uids: p['sourceGender'] = 'male'
+        statut_libre(p)
     # Les fiches publiques ne nécessitent pas la session de pagination.
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, min(5, a.workers))) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, min(8, a.workers))) as pool:
         futures = {pool.submit(fiche, u): u for u in urls if re.search(r'/([0-9]+)-[^/]+$', u)[1] not in known}
         for f in concurrent.futures.as_completed(futures):
             try:
-                players.append(f.result())
+                profile=f.result();statut_libre(profile);players.append(profile)
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 checkpoint = dest.with_suffix('.tmp')
-                checkpoint.write_text(json.dumps({'source':'FMInside — données Football Manager 26', 'scale':99, 'coverage':'partial_in_progress', 'retrievedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(), 'players':players, 'errors':errors}, ensure_ascii=False), encoding='utf-8')
+                payload=json.dumps({'source':'FMInside — données Football Manager 26', 'scale':99, 'coverage':'partial_in_progress', 'retrievedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(), 'players':players, 'errors':errors}, ensure_ascii=False).encode('utf-8')
+                checkpoint.write_bytes(payload)
                 checkpoint.replace(dest)
-                compressed.write_bytes(gzip.compress(dest.read_bytes(),mtime=0))
+                compressed_temp = compressed.with_suffix('.gz.tmp')
+                compressed_temp.write_bytes(gzip.compress(payload,mtime=0)); compressed_temp.replace(compressed)
                 if len(players) % 50 == 0: print(f'{len(players)} profils détaillés enregistrés', flush=True)
             except Exception as e: errors.append({'url': futures[f], 'error': str(e)})
     players.sort(key=lambda p: (-p.get('rating', 0), p['name']))
@@ -108,7 +131,8 @@ def main():
            'note': 'Salaires mensuels = salaire hebdomadaire × 52 ÷ 12. Aucun attribut caché extrait. Aucun portrait inclus.',
            'players': players, 'errors': errors}
     dest = Path(a.sortie); dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_text(json.dumps(out, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    compressed.write_bytes(gzip.compress(dest.read_bytes(),mtime=0))
+    payload=(json.dumps(out,ensure_ascii=False,indent=2)+'\n').encode('utf-8')
+    temp=dest.with_suffix('.tmp');temp.write_bytes(payload);temp.replace(dest)
+    temp=compressed.with_suffix('.gz.tmp');temp.write_bytes(gzip.compress(payload,mtime=0));temp.replace(compressed)
     print(f'{len(players)} fiches détaillées, {len(errors)} erreurs -> {dest}')
 if __name__ == '__main__': main()
