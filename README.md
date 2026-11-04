@@ -1,5 +1,12 @@
 # BOOBAST — Manager Foot
 
+## Depuis le ZIP GitHub
+
+Décompresse **tout** le ZIP, puis double-clique sur **JOUER.bat** à la racine.
+Le lanceur prépare Python si nécessaire, installe ou reprend la V12 et ouvre le jeu.
+Laisse le ZIP V12 dans **Téléchargements**, sans le décompresser.
+Réutilise **JOUER.bat** pour les prochaines ouvertures.
+
 ## Installer et jouer sous Windows
 
 Colle cette seule commande dans **PowerShell** :
