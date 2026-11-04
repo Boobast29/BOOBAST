@@ -4,7 +4,8 @@
     python outils/tout_installer.py --sans-lancer # tout, sans lancer le jeu (utilisé par le bouton du jeu)
 
 Étapes (une étape qui échoue n'arrête pas les suivantes ; bilan à la fin, journal dans donnees_jeu/journal_installation.txt) :
-  1. Pack Football_Monde (ZIP ou dossier à côté du jeu ou dans Téléchargements) → base mondiale, portraits et logos du pack
+  1. Pack Football_Monde (ZIP ou dossier à côté du jeu, dans Téléchargements ou sur le Bureau ; la version la plus haute
+     gagne, ex. v12 avant v11 ; --pack "chemin" pour imposer un pack) → base mondiale, portraits et logos du pack
   2. Registre reep (liens Wikidata / Transfermarkt / EA)
   3. transfermarkt-datasets : effectifs actuels, valeurs, contrats, transferts, statistiques
   4. ClubElo : force des clubs
@@ -88,9 +89,12 @@ def recuperer_depot(depot, dest):
             raise RuntimeError(f'téléchargement de {depot} impossible ({e})')
 
 
+PACK_CHOISI = None
+
+
 def etape_pack():
     import installer_donnees
-    src = installer_donnees.discover()
+    src = PACK_CHOISI or installer_donnees.discover(verbeux=True)
     if not src:
         return 'ignorée : aucun pack Football_Monde (ZIP) trouvé — place-le dans Téléchargements puis relance'
     lancer('installer_donnees.py', str(src))
@@ -138,7 +142,10 @@ def etape_visages():
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--sans-lancer', action='store_true')
+    ap.add_argument('--pack', help='chemin du ZIP ou du dossier Football_Monde à installer (sinon : le plus récent trouvé)')
     a = ap.parse_args()
+    global PACK_CHOISI
+    PACK_CHOISI = a.pack
     DOSSIER_JEU_DONNEES.mkdir(parents=True, exist_ok=True)
     JOURNAL.write_text('', encoding='utf-8')
     base_ok = lambda: BASE.exists()

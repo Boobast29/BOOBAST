@@ -32,11 +32,24 @@ def local_pack(archive):
     marker.write_text(json.dumps({'sha256':digest.hexdigest(),'archive':archive.name}),encoding='utf8')
     return fm
 
-def discover():
-    folders=[RACINE_JEU,RACINE_JEU.parent,pathlib.Path.cwd(),pathlib.Path.home()/'Downloads',pathlib.Path.home()/'Téléchargements']
-    candidates={p.resolve() for folder in folders if folder.is_dir() for p in folder.glob('Football_Monde*.zip')}
-    def priority(p):
-        m=re.search(r'_v(\d+)',p.stem,re.I);return (int(m.group(1)) if m else 0,p.stat().st_mtime)
+def version_pack(p):
+    m=re.search(r'_v(\d+)',pathlib.Path(p).name,re.I);return int(m.group(1)) if m else 0
+
+def discover(verbeux=False):
+    """Pack Football_Monde le plus récent : ZIP ou dossier extrait, dans le dossier du jeu, son parent, Téléchargements,
+    Bureau (OneDrive compris). La version la plus haute (_v12 > _v11) gagne, puis la date du fichier."""
+    home=pathlib.Path.home()
+    folders=[RACINE_JEU,RACINE_JEU.parent,pathlib.Path.cwd()]+[home/a/b for a in ('','OneDrive') for b in ('Downloads','Téléchargements','Desktop','Bureau','Documents')]
+    candidates=set()
+    for folder in folders:
+        if not folder.is_dir():continue
+        for p in folder.glob('Football_Monde*'):
+            if p.is_file() and p.suffix.lower()=='.zip':candidates.add(p.resolve())
+            elif p.is_dir() and (trouver_football_monde(str(p)) or trouver_football_monde(str(p/'Football_Monde'))):candidates.add(p.resolve())
+    def priority(p):return (version_pack(p),p.stat().st_mtime)
+    if verbeux and candidates:
+        print('Packs Football_Monde trouvés :',flush=True)
+        for c in sorted(candidates,key=priority,reverse=True):print('  -',c,flush=True)
     return max(candidates,key=priority) if candidates else trouver_football_monde()
 
 def audit(fm):
@@ -57,7 +70,7 @@ def audit(fm):
     return report
 
 def main():
-    ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('pack',nargs='?',help='ZIP ou dossier Football_Monde');a=ap.parse_args();source=a.pack or discover()
+    ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('pack',nargs='?',help='ZIP ou dossier Football_Monde');a=ap.parse_args();source=a.pack or discover(verbeux=True)
     if not source:sys.exit('Place Football_Monde_JSON_Visuels_v12.zip à côté du jeu ou dans Téléchargements, puis relance Installer_Joueurs_Photos.bat.')
     print('Installation du pack local :',source,flush=True);fm=local_pack(source)
     subprocess.run([sys.executable,str(RACINE_JEU/'outils/importer_monde.py'),'--donnees',str(fm)],check=True)
