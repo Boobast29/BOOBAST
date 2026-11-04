@@ -364,6 +364,7 @@ def main():
     ap.add_argument('--port', type=int, default=8765)
     ap.add_argument('--donnees', help='dossier Football_Monde')
     ap.add_argument('--hors-ligne', action='store_true', help='ne jamais télécharger d\'image')
+    ap.add_argument('--ouvrir', action='store_true', help='ouvrir le navigateur quand le serveur est prêt')
     a = ap.parse_args()
     FM = trouver_football_monde(a.donnees or lire_config().get('football_monde'))
     CATALOGUE = Catalogue(FM)
@@ -372,14 +373,24 @@ def main():
         RES.hors_ligne = a.hors_ligne
     else:
         print('Catalogue FMB inclus prêt. Pour une carrière mondiale : outils/importer_monde.py --donnees CHEMIN/Football_Monde', flush=True)
-    srv = ThreadingHTTPServer(('127.0.0.1', a.port), Handler)
-    print(f'Manager Foot prêt : http://127.0.0.1:{a.port}/  (Ctrl+C pour arrêter)', flush=True)
+    try:
+        srv = ThreadingHTTPServer(('127.0.0.1', a.port), Handler)
+    except OSError as exc:
+        print(f'Port {a.port} indisponible ({exc}). Le jeu tourne peut-être déjà ; sinon essaie --port 8766.', flush=True)
+        return 1
+    print(f'Manager Foot prêt : http://127.0.0.1:{a.port}/  (laisse cette fenêtre ouverte, Ctrl+C pour arrêter)', flush=True)
+    if a.ouvrir:
+        import webbrowser
+        webbrowser.open(f'http://127.0.0.1:{a.port}/')
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
         pass
+    finally:
+        srv.server_close()
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
 
