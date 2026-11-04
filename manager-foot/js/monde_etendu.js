@@ -80,7 +80,9 @@ function construireCarriereMonde(pays, groupeD3) {
       if(info.source.photoFallbackUrl)p.photoFallbackUrl=info.source.photoFallbackUrl;
       if(info.source.photoCredit)p.photoCredit=info.source.photoCredit;
       if(info.source.photoCandidate)p.photoCandidate=true;
-      p.sourceProfile={url:info.source.sourceUrl,database:info.source.sourceDatabase,squad:info.source.squad,contract:info.source.contractEndText};
+      p.sourceProfile={url:info.source.sourceUrl,database:info.source.sourceDatabase,squad:info.source.squad,contract:info.source.contractEndText,
+        position:info.source.positions,age:info.source.age,rating:info.source.rating,potential:info.source.potential,
+        wageText:info.source.wageSourceText};
       if(Number.isFinite(info.source.wageWeekly))p.wage=info.source.wageWeekly;
       if(Number.isFinite(info.source.value))p.value=info.source.value;
     }
