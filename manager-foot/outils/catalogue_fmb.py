@@ -10,6 +10,14 @@ import zipfile
 from commun import RACINE_JEU, DOSSIER_JEU_DONNEES, normaliser
 import images
 
+SCHEMA_VERSION = 2
+
+
+def entier_source(valeur):
+    """Une cellule absente ou non numérique demeure inconnue."""
+    texte = str(valeur or '').strip()
+    return int(texte) if texte.isdecimal() else None
+
 
 class Catalogue:
     def __init__(self, football_monde=None, stockage=None):
@@ -26,7 +34,8 @@ class Catalogue:
         if self.base.exists():
             with sqlite3.connect(self.base) as con:
                 try:
-                    if con.execute('SELECT hash FROM meta').fetchone()[0] == empreinte:
+                    row = con.execute('SELECT hash, schema_version FROM meta').fetchone()
+                    if row and row[0] == empreinte and row[1] == SCHEMA_VERSION:
                         return
                 except (sqlite3.Error, TypeError):
                     pass
@@ -71,10 +80,13 @@ class Catalogue:
         tmp = self.base.with_suffix('.tmp')
         tmp.unlink(missing_ok=True)
         with sqlite3.connect(tmp) as c:
-            c.executescript('''CREATE TABLE meta(hash TEXT, contenu TEXT);
+            c.executescript('''CREATE TABLE meta(hash TEXT, contenu TEXT, schema_version INTEGER);
                 CREATE TABLE fiches(type TEXT, id TEXT, nom TEXT, recherche TEXT, detail INTEGER,
-                  photo TEXT, contenu TEXT, PRIMARY KEY(type,id));
-                CREATE INDEX tri_fiches ON fiches(type, nom);''')
+                  photo TEXT, contenu TEXT, poste TEXT, age INTEGER, niveau INTEGER,
+                  potentiel INTEGER, club TEXT, PRIMARY KEY(type,id));
+                CREATE INDEX tri_fiches ON fiches(type, nom);
+                CREATE INDEX filtres_joueurs ON fiches(type, poste, age, niveau);''')
+            clubs = {str(x['fm_uid']): x['name'] for x in data['clubs']}
             for genre, liste in [('people', data['people']), ('clubs', data['clubs']), ('competitions', data['competitions'])]:
                 for raw in liste:
                     x = dict(raw)
@@ -84,11 +96,22 @@ class Catalogue:
                         d = details.get((typ, uid))
                         x['detail'] = d
                         x['memberships'] = membres.get((typ, uid), [])
+                        fields = next((o.get('fields_source') for o in x.get('observations', []) if o.get('fields_source')), {})
+                        fields = fields or {}
+                        club_uid = x['memberships'][0].get('owner_club_fm_uid') if x['memberships'] else None
+                        poste = fields.get('position') or (d.get('role_or_position_source') if d else None)
+                        age = entier_source(fields.get('age'))
+                        niveau = entier_source(fields.get('abi'))
+                        potentiel = entier_source(fields.get('pot'))
+                        club = clubs.get(str(club_uid)) if club_uid is not None else None
                     else:
                         d = None
+                        poste = age = niveau = potentiel = club = None
                     photo = (x.get('photo') or x.get('logo') or {}).get('local_path')
-                    c.execute('INSERT INTO fiches VALUES(?,?,?,?,?,?,?)', (typ, uid, x['name'], normaliser(x['name']), bool(d), photo, json.dumps(x, ensure_ascii=False)))
-            c.execute('INSERT INTO meta VALUES(?,?)', (empreinte, json.dumps(data['metadata'], ensure_ascii=False)))
+                    c.execute('INSERT INTO fiches VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',
+                              (typ, uid, x['name'], normaliser(x['name']), bool(d), photo, json.dumps(x, ensure_ascii=False),
+                               poste, age, niveau, potentiel, club))
+            c.execute('INSERT INTO meta VALUES(?, ?, ?)', (empreinte, json.dumps(data['metadata'], ensure_ascii=False), SCHEMA_VERSION))
         os.replace(tmp, self.base)
 
     def connection(self):
@@ -117,16 +140,41 @@ class Catalogue:
             where.append('detail=1')
         if p.get('photo') == '1':
             where.append('photo IS NOT NULL')
+        if typ == 'players':
+            if p.get('club'):
+                where.append('INSTR(LOWER(club), LOWER(?)) > 0')
+                args.append(p['club'][:80].strip())
+            if p.get('poste'):
+                if p['poste'] not in ('GK', 'DC', 'DR', 'DL', 'WBR', 'WBL', 'DM', 'MC', 'MR', 'ML', 'AMC', 'AMR', 'AML', 'ST'):
+                    raise ValueError('Poste inconnu')
+                where.append("(',' || REPLACE(poste, ' ', '') || ',') LIKE ?")
+                args.append('%,' + p['poste'] + ',%')
+            for param, colonne in [('age_max', 'age'), ('niveau_min', 'niveau')]:
+                if p.get(param):
+                    valeur = int(p[param])
+                    if not 0 <= valeur <= 99:
+                        raise ValueError('Filtre hors limites')
+                    where.append(colonne + (' <= ?' if param == 'age_max' else ' >= ?')); args.append(valeur)
+        tri = p.get('tri', 'nom')
+        ordre = {'nom': 'nom, id', 'niveau': 'niveau IS NULL, niveau DESC, nom, id',
+                 'potentiel': 'potentiel IS NULL, potentiel DESC, nom, id',
+                 'age': 'age IS NULL, age, nom, id'}.get(tri)
+        if ordre is None:
+            raise ValueError('Tri inconnu')
         w = ' AND '.join(where)
         with self.connection() as c:
             total = c.execute('SELECT count(*) FROM fiches WHERE ' + w, args).fetchone()[0]
-            rows = c.execute('SELECT type,id,nom,detail,photo FROM fiches WHERE ' + w + ' ORDER BY nom,id LIMIT ? OFFSET ?', args+[taille,page*taille]).fetchall()
+            rows = c.execute('SELECT type,id,nom,detail,photo,poste,age,niveau,potentiel,club FROM fiches WHERE ' + w + ' ORDER BY ' + ordre + ' LIMIT ? OFFSET ?', args+[taille,page*taille]).fetchall()
             return {'total': total, 'page': page, 'taille': taille, 'resultats': [dict(x) for x in rows]}
 
     def fiche(self, typ, uid):
         with self.connection() as c:
-            row = c.execute('SELECT contenu FROM fiches WHERE type=? AND id=?', (typ,uid)).fetchone()
-            return json.loads(row[0]) if row else None
+            row = c.execute('SELECT contenu,poste,age,niveau,potentiel,club FROM fiches WHERE type=? AND id=?', (typ,uid)).fetchone()
+            if not row:
+                return None
+            data = json.loads(row['contenu'])
+            data['_index'] = {k: row[k] for k in ('poste', 'age', 'niveau', 'potentiel', 'club')}
+            return data
 
     def photo(self, typ, uid):
         with self.connection() as c:
