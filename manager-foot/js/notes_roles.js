@@ -68,7 +68,7 @@ function brancherNoteContexte(p) {
   const rolesDe = poste => Object.fromEntries(Object.entries(ROLE_STYLES[poste] || {}).map(([k, s]) => [k, s.label]));
   const tete = sec.querySelector('.a36-tete');
   tete.insertAdjacentHTML('afterend', `<div class="nr-ctrl">
-    <label>Poste <select id="nrPoste">${opts(Object.fromEntries(Object.keys(ROLES).map(r => [r, `${r} · ${ROLES[r].label}`])), ctx.poste)}</select></label>
+    <label>Poste <select id="nrPoste">${opts(Object.fromEntries(Object.keys(ROLES).filter(r => (r === 'GB') === (p.pos === 'GB')).map(r => [r, `${r} · ${ROLES[r].label}`])), ctx.poste)}</select></label>
     <label>Rôle <select id="nrStyle">${opts(rolesDe(ctx.poste), ctx.style)}</select></label>
     <label>Devoir <select id="nrDevoir">${opts({ '-1': 'Défense', 0: 'Soutien', 1: 'Attaque' }, ctx.devoir)}</select></label>
     ${p.club === G.clubId ? `<label class="chk"><input type="checkbox" id="nrEquipe" ${ctx.equipe ? 'checked' : ''}> Consignes de mon équipe</label>` : ''}
@@ -91,7 +91,8 @@ function brancherNoteContexte(p) {
       const k = l.dataset.k, x = w[k] || 0, cle = x >= seuil && x > 0;
       l.classList.toggle('cle', cle);
       let badge = l.querySelector('.nr-w'); if (!badge) { badge = document.createElement('i'); badge.className = 'nr-w'; l.querySelector('span').after(badge); }
-      badge.textContent = cle ? Math.round(x * 100) + ' %' : '';
+      badge.textContent = ''; // poids retirés de l'affichage (incompris) : attributs clés en gras, détail au survol
+      l.title = cle ? `Attribut clé pour ce rôle (compte pour ${Math.round(x * 100)} % de la note au poste)` : '';
     });
   };
   sec.querySelectorAll('.nr-ctrl select, .nr-ctrl input').forEach(e => e.onchange = maj);

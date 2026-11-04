@@ -383,13 +383,13 @@ function matchReport(key) {
 //  Effectif
 // ============================================================
 let SQUAD_SORT = { k: 'pos', d: 1 };
-let SQUAD_LINE = '';
+let SQUAD_LINE = '', SQUAD_EQUIPE = 'A'; // A : équipe première, R : réserve, T : tous (les U19 sont dans Formation)
 let SQUAD_VIEW = 'gen';
 const POS_ORDER = Object.keys(ROLES);
 function vSquad(el, clubId = G.clubId) {
   const mine = clubId === G.clubId;
   const club = getClub(G, clubId);
-  let list = clubPlayers(G, clubId).filter(p => !p.academy);
+  let list = clubPlayers(G, clubId).filter(p => !p.academy && (SQUAD_EQUIPE === 'T' || (SQUAD_EQUIPE === 'R') === !!p.reserve));
   if (SQUAD_LINE) list = list.filter(p => ROLES[p.pos].line === SQUAD_LINE);
   const key = SQUAD_SORT.k, d = SQUAD_SORT.d;
   const val = p => ({ num: p.num || 99, pos: POS_ORDER.indexOf(p.pos) * 1000 - playerOvr(p), name: p.name, age: p.age, ovr: playerOvr(p), pot: p.pot, fit: p.fit, mor: p.morale, val: p.value, wage: p.wage, apps: p.stats.apps, goals: p.stats.goals, rat: p.stats.apps ? p.stats.rating / p.stats.apps : 0, con: p.contract })[key];
@@ -414,6 +414,12 @@ function vSquad(el, clubId = G.clubId) {
     ${mine ? (() => { const ln = G.players.filter(p => p.loan?.from === G.clubId); return ln.length ? `<section class="card"><h2>🔁 Joueurs prêtés</h2><table class="tbl compact">${ln.map(p => `<tr data-pid="${p.id}"><td>${avatar(p, 26)}</td><td class="nm">${esc(p.name)}</td><td>${p.pos}</td><td>${ovrBadge(playerOvr(p))}</td><td>${crest(getClub(G, p.club), 18)} ${esc(getClub(G, p.club).name)}</td><td>${p.stats.apps} MJ · ${p.stats.goals} buts · ${p.stats.apps ? (p.stats.rating / p.stats.apps).toFixed(2) : '-'}</td></tr>`).join('')}</table></section>` : ''; })() : ''}`;
   el.querySelectorAll('th[data-k]').forEach(t => t.onclick = () => { SQUAD_SORT = { k: t.dataset.k, d: SQUAD_SORT.k === t.dataset.k ? -SQUAD_SORT.d : (['name', 'pos', 'age', 'num'].includes(t.dataset.k) ? 1 : -1) }; vSquad(el, clubId); });
   el.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { SQUAD_LINE = b.dataset.l; vSquad(el, clubId); });
+  { // équipe affichée : première, réserve, tous (les U19 sont dans Formation)
+    const nR = clubPlayers(G, clubId).filter(p => p.reserve && !p.academy).length, nU = clubPlayers(G, clubId).filter(p => p.academy).length;
+    const lignes = el.querySelector('[data-l]')?.parentElement;
+    if (lignes && (nR || nU)) lignes.insertAdjacentHTML('beforebegin', `<div class="tabs sm eq-tabs">${[['A', 'Équipe première'], ['R', `Réserve (${nR})`], ['T', 'Tous']].map(([k, l]) => `<button data-eq="${k}" class="${SQUAD_EQUIPE === k ? 'on' : ''}">${l}</button>`).join('')}${nU && mine ? `<button onclick="YOUTH_TAB='U19';show('youth')">U19 (${nU}) →</button>` : ''}</div>`);
+    el.querySelectorAll('[data-eq]').forEach(b => b.onclick = () => { SQUAD_EQUIPE = b.dataset.eq; vSquad(el, clubId); });
+  }
   el.querySelectorAll('[data-vw]').forEach(b => b.onclick = () => { SQUAD_VIEW = b.dataset.vw; vSquad(el, clubId); });
   el.querySelectorAll('tr[data-pid]').forEach(r => r.onclick = () => playerModal(+r.dataset.pid));
 }
@@ -962,7 +968,7 @@ function vTransfers(el) {
   const tabs = [['search', '🔎 Recherche'], ['shortlist', `👁 Suivi (${G.shortlist.length})`], ['scout', `🔎 Recrutement (${G.scouting.length + (G.missions || []).filter(m => m.left > 0).length})`], ['offers', `📩 Offres reçues (${G.offers.length})`], ['selling', '🏷 Mes joueurs en vente'], ['history', '📜 Historique']];
   el.innerHTML = `<section class="card">
     <div class="row gap wrap"><h2 class="grow">💱 Mercato ${windowOpen(G) ? '<span class="tag grn">Ouvert</span>' : '<span class="tag red">Fermé — agents libres uniquement</span>'}</h2>
-    <span>Budget : <b>${money(club.budget)}</b> · Effectif : ${clubPlayers(G, G.clubId).length}/32</span></div>
+    <span>Budget : <b>${money(club.budget)}</b> · Effectif : ${effectifPro(G).length}/32${clubPlayers(G, G.clubId).length > effectifPro(G).length ? ` (+ ${clubPlayers(G, G.clubId).length - effectifPro(G).length} en réserve et U19)` : ''}</span></div>
     <div class="tabs mt">${tabs.map(([k, l]) => `<button data-tt="${k}" class="${TR_TAB === k ? 'on' : ''}">${l}</button>`).join('')}</div>
   </section><section class="card" id="trBody"></section>`;
   el.querySelectorAll('[data-tt]').forEach(b => b.onclick = () => { TR_TAB = b.dataset.tt; vTransfers(el); });
@@ -1074,7 +1080,7 @@ function offerModal(pid) {
   const me = myClub(G);
   if (seller && !windowOpen(G)) return toast('Mercato fermé : seuls les agents libres peuvent signer.', 'err');
   if (seller && G.board.ban) return toast('Interdiction de recruter (contrôle de gestion) : seuls les agents libres sont autorisés.', 'err');
-  if (clubPlayers(G, G.clubId).length >= 32) return toast('Effectif complet (32 max). Vends ou libère quelqu\'un.', 'err');
+  if (effectifPro(G).length >= 32) return toast('Effectif complet (32 max). Vends ou libère quelqu\'un.', 'err');
   const myRankIfSigned = clubPlayers(G, G.clubId).filter(x => playerOvr(x) > playerOvr(p)).length;
   const wantStatus = defaultStatus(myRankIfSigned, p.age);
   const baseWage = roundMoney(Math.max(demandWage(G, p, me), p.wage * (seller ? 1.1 : .9)) * (1.1 + Math.max(0, playerOvr(p) - me.rep) / 40) * (p.pers === 'Ambitieux' ? 1.1 : 1));

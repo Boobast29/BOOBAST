@@ -56,7 +56,7 @@ function montrerBulle(el, texte) {
   computePosition(el, BULLE, { placement: 'top', middleware: [offset(8), flip(), shift({ padding: 8 })] })
     .then(({ x, y }) => { if (CIBLE === el) Object.assign(BULLE.style, { left: x + 'px', top: y + 'px' }); });
 }
-function cacherBulle() { if (BULLE) BULLE.classList.remove('vis'); CIBLE?.removeAttribute('aria-describedby'); CIBLE = null; }
+function cacherBulle() { if (BULLE) { BULLE.classList.remove('vis'); Object.assign(BULLE.style, { left: '0px', top: '0px' }); /* cachée : ramenée à l'origine, sinon elle élargit la page */ } CIBLE?.removeAttribute('aria-describedby'); CIBLE = null; }
 const pointeurFin = () => window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 document.addEventListener('mouseover', e => {
   if (!pointeurFin() || !window.FloatingUIDOM) return;
@@ -70,6 +70,7 @@ document.addEventListener('mouseout', e => { if (CIBLE && !CIBLE.contains(e.rela
 document.addEventListener('focusin', e => { const el = e.target.closest?.('[data-tip]'); if (el && window.FloatingUIDOM) montrerBulle(el, el.dataset.tip); });
 document.addEventListener('focusout', cacherBulle);
 window.addEventListener('scroll', cacherBulle, true);
+window.addEventListener('resize', cacherBulle);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cacherBulle(); });
 
 // ---------- tendances (simple-statistics) ----------

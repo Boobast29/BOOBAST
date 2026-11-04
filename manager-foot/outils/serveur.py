@@ -9,6 +9,7 @@ Le jeu reste utilisable sans ce serveur en ouvrant index.html (mode fictif seule
 import argparse
 import datetime
 import json
+import re
 import mimetypes
 import os
 import sys
@@ -18,7 +19,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from commun import BASE, RACINE_JEU, connexion, lire_config, normaliser, trouver_football_monde, unpack  # noqa: E402
+from commun import BASE, DOSSIER_JEU_DONNEES, RACINE_JEU, connexion, lire_config, normaliser, trouver_football_monde, unpack  # noqa: E402
 import images  # noqa: E402
 import scenario  # noqa: E402
 from catalogue_fmb import Catalogue  # noqa: E402
@@ -28,6 +29,8 @@ FM = None
 RES = None
 CATALOGUE = None
 STATIQUES_INTERDITS = ('donnees_jeu', 'outils', '.git', 'packs')
+# packs du jeu lus par le navigateur (monde étendu, FMInside, noms réels) : seuls ces fichiers de packs/ sont servis
+PACKS_PUBLICS = re.compile(r'^packs/(monde-[a-z-]+\.json(\.gz)?|fminside-fm26\.json\.gz|noms-reels-fmscout\.json|nationalites-monde\.json)$')
 
 
 def db():
@@ -233,6 +236,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(corps)
 
     def do_GET(self):
+        if urllib.parse.urlparse(self.path).path.rstrip('/') == '/api/installation':
+            return self.envoyer(200, etat_installation())
         u = urllib.parse.urlparse(self.path)
         p = {k: v[-1] for k, v in urllib.parse.parse_qs(u.query).items()}
         parts = [urllib.parse.unquote(x) for x in u.path.split('/') if x]
@@ -306,6 +311,8 @@ class Handler(BaseHTTPRequestHandler):
         return self.envoyer(404, {'erreur': 'route inconnue'})
 
     def do_POST(self):
+        if urllib.parse.urlparse(self.path).path.rstrip('/') == '/api/installation':
+            return self.envoyer(200, lancer_installation())
         if RES is None:
             return self.envoyer(503, {'erreur': 'Base mondiale non installée'})
         u = urllib.parse.urlparse(self.path)
@@ -347,7 +354,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def statique(self, path):
         rel = urllib.parse.unquote(path).lstrip('/') or 'index.html'
-        if rel.split('/')[0] in STATIQUES_INTERDITS:
+        if rel.split('/')[0] in STATIQUES_INTERDITS and not PACKS_PUBLICS.match(rel):
             return self.envoyer(403, {'erreur': 'interdit'})
         f = images.chemin_sur(RACINE_JEU, rel)
         if not f:
@@ -358,12 +365,43 @@ class Handler(BaseHTTPRequestHandler):
         self.envoyer(200, f.read_bytes(), ctype)
 
 
+# ---------- installation complète depuis le jeu (outils/tout_installer.py, sans relancer le serveur) ----------
+INSTALLATION = {'proc': None}
+
+
+def lancer_installation():
+    p = INSTALLATION['proc']
+    if p and p.poll() is None:
+        return {'ok': True, 'deja': True}
+    import subprocess
+    INSTALLATION['proc'] = subprocess.Popen([sys.executable, str(RACINE_JEU / 'outils' / 'tout_installer.py'), '--sans-lancer'], cwd=str(RACINE_JEU),
+                                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return {'ok': True}
+
+
+def etat_installation():
+    d = DOSSIER_JEU_DONNEES
+    try:
+        etat = json.loads((d / 'etat_installation.json').read_text(encoding='utf-8'))
+    except Exception:
+        etat = {}
+    try:
+        journal = (d / 'journal_installation.txt').read_text(encoding='utf-8').splitlines()[-40:]
+    except Exception:
+        journal = []
+    p = INSTALLATION['proc']
+    etat['en_cours'] = bool(p and p.poll() is None)
+    etat['journal'] = journal
+    return etat
+
+
 def main():
     global FM, RES, CATALOGUE
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--port', type=int, default=8765)
     ap.add_argument('--donnees', help='dossier Football_Monde')
     ap.add_argument('--hors-ligne', action='store_true', help='ne jamais télécharger d\'image')
+    ap.add_argument('--ouvrir', action='store_true', help='ouvre le jeu dans le navigateur une fois le serveur prêt')
     a = ap.parse_args()
     FM = trouver_football_monde(a.donnees or lire_config().get('football_monde'))
     CATALOGUE = Catalogue(FM)
@@ -372,8 +410,19 @@ def main():
         RES.hors_ligne = a.hors_ligne
     else:
         print('Catalogue FMB inclus prêt. Pour une carrière mondiale : outils/importer_monde.py --donnees CHEMIN/Football_Monde', flush=True)
-    srv = ThreadingHTTPServer(('127.0.0.1', a.port), Handler)
-    print(f'Manager Foot prêt : http://127.0.0.1:{a.port}/  (Ctrl+C pour arrêter)', flush=True)
+    try:
+        srv = ThreadingHTTPServer(('127.0.0.1', a.port), Handler)
+    except OSError:
+        print(f'Le port {a.port} est déjà utilisé : le jeu tourne peut-être déjà (http://127.0.0.1:{a.port}/).', flush=True)
+        print('Ferme l\'autre fenêtre du serveur, ou lance : python outils/serveur.py --port 8766', flush=True)
+        if a.ouvrir:
+            import webbrowser
+            webbrowser.open(f'http://127.0.0.1:{a.port}/')
+        return
+    print(f'Manager Foot prêt : http://127.0.0.1:{a.port}/  (laisse cette fenêtre ouverte pendant la partie, Ctrl+C pour arrêter)', flush=True)
+    if a.ouvrir:  # le navigateur s'ouvre seulement maintenant : plus de « connexion refusée » au démarrage
+        import webbrowser
+        webbrowser.open(f'http://127.0.0.1:{a.port}/')
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

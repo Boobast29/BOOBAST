@@ -136,7 +136,7 @@ function promotionsParPays(W,S,leagues){
   };
   if(typeof enterGame==='function'){
     const enter=enterGame;enterGame=function(...args){const result=enter(...args);
-      if(G?.worldMode){const nav=document.querySelector('#nav');if(nav){const b=document.createElement('button');b.textContent='🌍 Tous les pays';b.onclick=ouvrirClassementsMonde;nav.append(b);}}
+      if(G?.worldMode){const nav=document.querySelector('#nav');if(nav){if(!nav.querySelector('.nav-monde')){const b=document.createElement('button');b.className='nav-monde';b.textContent='🌍 Tous les pays';b.onclick=ouvrirClassementsMonde;(nav.querySelector('.nav-g')?.parentElement||nav).append(b);}}}
       return result;
     };
   }

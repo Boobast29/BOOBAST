@@ -58,11 +58,15 @@ function weeklyFinances(G) {
     const eco = leagueEco(G, L), n = L.clubs.length, sumRep = L.clubs.reduce((s, id) => s + getClub(G, id).rep, 0);
     for (const id of L.clubs) { const c = getClub(G, id); flow(G, c, eco.tv * (.5 / n + .25 * c.rep / sumRep) / R, 'tv'); }
   }
+  // masse salariale de chaque club en un seul passage (avant : tous les joueurs reparcourus pour chaque club)
+  const masse = new Map();
+  for (const p of G.players) {
+    if (p.club != null) masse.set(p.club, (masse.get(p.club) || 0) + (p.loan?.inLoan ? p.wage * (p.loan.share ?? 1) : p.wage));
+    if (p.loan?.inLoan && p.loan.from != null) masse.set(p.loan.from, (masse.get(p.loan.from) || 0) + p.wage * (1 - (p.loan.share ?? 1)));
+  }
   for (const c of G.clubs) {
     const mine = c.id === G.clubId;
-    let wages = 0;
-    for (const p of clubPlayers(G, c.id)) wages += p.loan?.inLoan ? p.wage * (p.loan.share ?? 1) : p.wage;
-    for (const p of G.players) if (p.loan?.inLoan && p.loan.from === c.id) wages += p.wage * (1 - (p.loan.share ?? 1));
+    const wages = masse.get(c.id) || 0;
     flow(G, c, -wages, 'wages');
     if (c.foreign) { flow(G, c, wages * (1.02 + rnd() * .03), 'other'); continue; }
     flow(G, c, weeklyMerch(G, c), 'merch');

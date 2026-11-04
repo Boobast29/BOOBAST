@@ -16,7 +16,7 @@ const ROLE_STYLES = {
         inv: { label: 'Latéral inversé', tip: 'Rentre dans l\'axe pour créer le surnombre au milieu.', cy: .45, w: { safe: 1.2, fwd: 1.2, cross: .4 } } },
   DD: null,
   MDC: { anchor: { label: 'Sentinelle', tip: 'Protège la défense, récupère.', dd: -4, tk: 1, w: { safe: 1.25, shoot: .5, dribble: .6 } },
-         regista: { label: 'Meneur reculé', tip: 'Oriente le jeu de loin, passes longues et en profondeur.', w: { through: 1.6, long: 1.4, fwd: 1.2 } },
+         regista: { label: 'Regista', tip: 'Oriente le jeu de loin, passes longues et en profondeur.', w: { through: 1.6, long: 1.4, fwd: 1.2 } },
          destroyer: { label: 'Récupérateur', tip: 'Harcèle le porteur, très actif à la récupération.', tk: 1.4, w: { safe: 1.2 } } },
   MC: { b2b: { label: 'Box-to-box', tip: 'Couvre tout le terrain, tire de loin.', dd: 3, tk: .6, w: { shoot: 1.25, fwd: 1.1 } },
         play: { label: 'Meneur de jeu', tip: 'Cherche la passe décisive.', w: { through: 1.6, fwd: 1.2, dribble: .9 } },

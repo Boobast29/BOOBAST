@@ -10,7 +10,7 @@
     "Projection sans mutation et RNG inchangé",
     "Offre invalide bloquée sans envoi à l’agent",
     "Dépassement avec engagements bloqué sans consommer la patience",
-    "Signature réelle : salaire remplacé et prime débitée une fois",
+    "Signature réelle : salaire remplacé, prime et commission débitées une fois",
     "Accès depuis Finances et préparation du contrat",
     "Affichage à 390 px sans débordement global"
   ],

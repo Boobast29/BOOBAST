@@ -1,3 +1,281 @@
+# État du projet — v105 (4 novembre 2026)
+
+**Présaison planifiée** (`js/presaison.js`) : question en début de saison (« Planifier » ou « Laisser l'adjoint »).
+- Stage : au centre (gratuit, cohésion +3), en altitude (coût, cohésion +5, condition entretenue 6 semaines), à l'étranger (coût, cohésion +9, familiarité +4), tournée commerciale (grosse recette, cohésion +2, fatigue au départ).
+- Jusqu'à 3 amicaux (faible, moyen, grand club) : familiarité tactique, recette, fatigue, moral selon les résultats.
+
+# État du projet — v104 (4 novembre 2026)
+
+**Avec ballon / sans ballon** (`js/phases_jeu.js`), page Tactique :
+- Organisation sans ballon (autre dispositif que celui avec ballon) : chaque joueur de plus derrière le ballon rend la défense plus solide, mais laisse moins de monde pour contre-attaquer.
+- Bloc haut / médian / bas : remplace pressing et ligne défensive quand l'équipe défend.
+- Transitions : après la perte (contre-pressing ou se replacer), après la récupération (contre-attaque ou garder le ballon).
+- Appliqué pendant les actions adverses ; « selon les consignes » = moteur d'origine.
+
+# État du projet — v103 (4 novembre 2026)
+
+**Centre de données** (`js/centre_donnees.js`, menu « Centre de données ») :
+- Joueurs : percentiles face aux joueurs du même championnat et du même groupe de postes (≥ 270 min), par 90 minutes (buts, xG, tirs, passes clés, xT, dribbles, passes, % de passes, tacles, interceptions, arrêts, note) ; joueurs de l'effectif et joueurs connus du championnat ; tableau de l'effectif par 90 minutes.
+- Équipe : rang dans le championnat (points, buts, xG, encaissés, xG contre, différence, réalisme) ; forme des 10 derniers matchs (différence de xG autour d'un axe, résultat).
+- Prochain adversaire : rapport de force, leurs rangs, joueurs dangereux, conseils (attaque, bloc, pressing, ligne haute, marquage).
+- Lecture seule, tirages à part.
+
+# État du projet — v102 (4 novembre 2026)
+
+**Atelier coups de pied arrêtés** (`js/coups_arretes.js`), page Tactique :
+- Corners : auto, premier poteau, second poteau (meilleur joueur de tête), à la retombée (frappe hors de la surface), joué court (on garde le ballon). Coups francs proches : auto, frappe directe, centre.
+- Défenseurs centraux qui montent : plus de têtes, contre-attaque possible si l'action échoue.
+- Défense : mixte, en zone (moins de centres exploitables et de têtes, plus fragile à la retombée), individuelle (selon le duel physique des 4 meilleurs joueurs de tête).
+- Bilan de la saison : buts marqués et encaissés sur coup de pied arrêté. « Auto » = moteur d'origine inchangé.
+- Mesure (400 matchs) : en zone, buts encaissés sur CPA 0,113 → 0,095 par match ; joué court 0,185 → 0,060 marqués (possession gardée).
+
+# État du projet — v101 (4 novembre 2026)
+
+**Consignes adverses** (`js/consignes_adverses.js`), écran d'avant-match, par joueur adverse :
+- Presser (pression +0,10 quand il a le ballon), marquage serré (marquage individuel du moteur, 2 joueurs au plus), tacle dur (il dribble moins bien, un peu plus de fautes) ou prudent (moins de fautes, il passe plus), mauvais pied (tirs −20 % de conversion).
+- Bouton « Suggestions de l'adjoint » selon le profil (dribbleur, meneur, buteur, joueur fragile mentalement).
+- L'adversaire presse et tacle dur ton joueur le plus dangereux ; ton adjoint le signale (niveau ≥ 2).
+- Mesure (400 matchs, même graine) : avec « dur + presser », le joueur visé tire et dribble moins, l'équipe encaisse moins.
+
+# État du projet — v100 (3 novembre 2026)
+
+**Délégation des tâches** (`js/delegation.js`) — page Staff, carte « Délégation » (Moi / membre du staff, par tâche) :
+- Conférences de presse et causeries (adjoint) : réponses mesurées ; discours d'avant-match selon le rapport de force, de mi-temps selon le score.
+- Programme d'entraînement (adjoint) : repos si fatigue, tactique si cohésion basse, physique sans match.
+- Entretiens avec les joueurs (adjoint), prolongations et contrats du staff (directeur sportif : prolonge les joueurs utiles +2 ans, +10 %), jeunes (responsable du centre), mercato courant (cellule ; option : signer seule dans le budget), courrier courant (secrétariat, dont choix du sponsor).
+- Traitement en fin de semaine ; chaque décision déléguée est signalée dans la boîte (« X a traité … »). Jamais délégué : décisions personnelles (offre d'un autre club, fuite dans la presse) et la réunion de projet.
+
+# État du projet — v99 (3 novembre 2026)
+
+**Actions du manager** (`js/actions_manager.js`) :
+- Fiche d'un joueur de l'effectif, menu « Actions » : coup de pression en privé, le féliciter ou le critiquer dans la presse, amende. Réaction selon son caractère (pression, tempérament) ; critique d'un joueur influent répercutée sur ses proches ; une action par joueur toutes les 3 semaines.
+- Page Réunions, carte « Actions du manager » : sortie dans la presse (une par semaine : défendre le groupe, viser l'adversaire du prochain match, critiquer l'arbitrage avec risque d'amende de la commission de discipline, réclamer des renforts au président) ; entraîneur en mode directeur sportif (soutien public ou pression) ; commission de la ligue (appel d'une suspension après un carton rouge dans les 2 semaines : réduction, confirmation ou aggravation ; réclamation sur l'arbitrage du dernier match).
+- Fin de match en direct : « Entrer dans le vestiaire » (féliciter, rester calme, coup de gueule, ne rien dire), réaction joueur par joueur selon le score et le caractère.
+- Tout est consigné dans le journal des réunions. Tirages à part.
+
+# État du projet — v98 (3 novembre 2026)
+
+**Comparaison de plusieurs joueurs** (`js/comparaison.js`) :
+- Bouton « Comparer » sur chaque fiche (tous les joueurs) ; sélection de 2 à 4 joueurs, barre en bas d'écran (retrait d'un clic), mémorisée dans la partie.
+- Fenêtre : radar des 9 qualités (légende par nom), profil (âge, poste et postes secondaires, club, niveau, potentiel estimé, valeur, salaire, contrat), saison (matchs, buts, passes, note), tous les attributs détaillés par famille (gardien seulement si un gardien est comparé). Meilleur de chaque ligne en vert. Joueurs mal connus : fourchettes du recruteur et niveau « ≈ ».
+- Accès aussi depuis la page Analyse.
+
+# État du projet — v97 (3 novembre 2026)
+
+**Tests réparés** (4 tests périmés par les refontes d'interface) :
+- `tools/test-competences-browser.js`, `tools/test-profils-similaires.js` : activent le bloc « Analyse » de la fiche (masqué par défaut).
+- `tools/test-prolongations.js` : réécrit pour la fenêtre de négociation actuelle (`#nW`, `#nS`, `#nA`).
+- `tools/integration20/test.cjs` : messagerie trois colonnes, liste et lecture redimensionnables (Split.js).
+**Corrections trouvées par ces tests** :
+- Prolongation : les salaires réservés (transferts à la visite médicale) comptent dans le plafond ; une offre bloquée par le club (président, trésorerie, montants invalides) n'est plus envoyée à l'agent et ne coûte plus de patience (transferts aussi).
+- Infobulle cachée ramenée à l'origine (elle élargissait la page sur mobile après un redimensionnement).
+- Bouton « Chercher un remplaçant de ce profil » toujours visible dans l'en-tête de la fiche.
+
+# État du projet — v96 (3 novembre 2026)
+
+**Vitesse** (`js/vitesse.js`) — monde étendu (51 championnats) : **1,3 s → 0,65 s par semaine**.
+- `getClub` : index id → position, vérifié à chaque lecture.
+- `clubPower` (matchs rapides étrangers) : un seul passage sur les joueurs par semaine au lieu d'un par club ; clé de cache corrigée (saison incluse, plus de croissance de la sauvegarde).
+- `save` : sauvegardes demandées dans la même action regroupées en une seule écriture.
+- Mesure : `profil CPU` (Chrome DevTools Protocol) sur 6 semaines.
+
+# État du projet — v95 (3 novembre 2026)
+
+**Écran de match** (`js/match_direct.js`) :
+- Causerie de mi-temps / avant prolongations : écran « Réactions du vestiaire » avec l'effet chiffré sur l'équipe (% d'intensité jusqu'à la fin) et la réaction de chaque joueur (motivé, réceptif, indifférent, nerveux, agacé) selon son caractère (pression, tempérament).
+- Discours d'avant-match : deux réactions marquantes dans le fil du match.
+- Changements en direct (remplacement, dispositif, mentalité, consignes, marquage) datés ; 5 minutes après, comparaison même durée avant / après (xG pour-contre, tirs, possession) et verdict « Ça marche / Sans effet net / Ça ne marche pas ».
+- Photo des stats à chaque minute (même en vitesse instantanée). Aucun tirage ajouté au match.
+
+# État du projet — v94 (3 novembre 2026)
+
+**Entraînement plus visible** (`js/entrainement_plus.js`) :
+- Planning de la semaine : 7 jours, séance du jour selon le programme, barre de charge par jour, jour de match mis en avant.
+- Charge de la semaine (0-100) et sa lecture (récupération, progression, risque).
+- Risque de blessure à l'entraînement par joueur (même formule que le moteur : charge, condition, fragilité, âge, rechute, staff médical) : faible / modéré / élevé.
+- Joueur ménagé : risque ×0,4, +6 de condition, mais pas de progression par les séances.
+- Effet des séances : attributs gagnés sur les 6 dernières semaines, joueurs les plus susceptibles de progresser.
+- Directeur sportif : planning et effets visibles sur la page Entraîneur (séances décidées par lui).
+- Aucun tirage ajouté (partie identique tant qu'aucun joueur n'est ménagé).
+
+# État du projet — v93 (3 novembre 2026)
+
+## Staff des autres clubs et vivier d'entraîneurs (js/staff_ia.js)
+- Chaque club de l'IA : entraîneur et formateur (niveau 1-5 selon la réputation, âge, carrière) ; leur niveau remplace l'encadrement tiré au hasard dans l'environnement de progression.
+- Vivier persistant d'entraîneurs sans club (24 au départ, 60 max) : un entraîneur limogé y entre avec sa carrière, un poste vacant est pourvu par le profil le plus adapté (testé : 30 nominations depuis le vivier en une saison, parcours « en poste → limogé → nommé ailleurs ») ; les anciens joueurs reconvertis y entrent ; vieillissement, départ à 70 ans.
+- Marché des entraîneurs (directeur sportif) : 3 vrais candidats du vivier avec leur parcours. Écran Staff : « Entraîneurs sans club ».
+
+# État du projet — v92 (3 novembre 2026)
+
+## Trésorerie et bas de tableau (js/equilibre_saison.js)
+- Trésorerie : alerte de rappel dès que le compte est réellement négatif (au plus toutes les 8 semaines ; vendre, emprunter, réduire les coûts, assumer), en plus de l'alerte de projection annuelle ; le président perd patience si le trou dépasse 5 % du budget de départ. NB : les tests longs utilisent un gestionnaire automatique passif (refuse toutes les offres, réduit les coûts) — d'où des trésoreries négatives en 2e saison dans ces simulations.
+- Bas de tableau : au mercato d'hiver, les 3 derniers de chaque championnat empruntent jusqu'à 2 joueurs (réservistes ou remplaçants de clubs plus forts, meilleurs que leur moyenne). Ligue 1 : dernier 20-23 pts (avant 15-17), corrélation niveau/classement 0,67-0,85.
+
+# État du projet — v91 (3 novembre 2026)
+
+## Rapports de recrutement et discussions (js/rapports_discussions.js)
+- Fiche d'un joueur d'un autre club : rapport façon FM — avis (À recruter / À suivre / Pas pour nous, selon l'écart avec ton titulaire, l'âge, le potentiel et ton budget), points forts et faibles pour son poste, comparaison avec ton titulaire, potentiel estimé, fiabilité = connaissance du joueur ; sans observation, pas de rapport.
+- Entretiens : réaction selon la personnalité (mercenaire et patience, très loyal et mise sur la liste des transferts, friable et « gagne ta place », leader / résistant et défi…), effet sur le moral et la confiance, expliqué dans la réponse.
+
+# État du projet — v90 (3 novembre 2026)
+
+## Nationalités du monde étendu (outils/nationalites_monde.py)
+- Les packs FM26 n'ont pas de nationalité. À l'installation (étape de `Tout_Installer`), appariement prudent sur la base mondiale puis Transfermarkt : même nom normalisé, âge à ±1 an, correspondance unique (homonymes de nationalités différentes ignorés) → `packs/nationalites-monde.json`, lu au chargement du monde étendu ; sinon « — » (aucune nationalité devinée). Serveur : fichier autorisé dans `packs/`.
+- Test : `outils/tests_nationalites_monde.py` 4/4 (vrais joueurs du pack France, base synthétique). Résultat réel dépendant de ta base installée.
+
+# État du projet — v89 (3 novembre 2026)
+
+## Relations avec les agences d'agents (js/agents_relation.js)
+- Chaque agence a une relation avec ton club (0-100, 50 au départ). Négociations : salaire et commission demandés de −20 % (excellente) à +20 % (mauvaise), patience de l'agent +1 / −1 (testé : salaire 510 k / 610 k / 710 k et commission 1,9 / 2,3 / 2,7 M€ pour une relation de 90 / 50 / 10).
+- Évolution : transfert conclu avec un de ses joueurs +6, vente d'un de ses joueurs +3, négociation rompue −5, joueur non conservé −4 ; retour lent vers 50 chaque saison ; journal des derniers changements.
+- Affichage : relation sur la fiche joueur (ligne Agent) ; tableau des agences dans Négociations.
+
+# État du projet — v88 (3 novembre 2026)
+
+## Catalogue des vrais joueurs libres
+- `outils/enrichissements.py` (`joueurs_libres_tm`) + `outils/scenario.py` (`freeAgents`) : joueurs sans club chez Transfermarkt, actifs récemment, 17-35 ans, absents de la base notée (jusqu'à 400, les plus valorisés d'abord) ; niveau estimé par la valeur marchande, valeur, pied, agent, saisons et transferts réels.
+- Monde réel : ajoutés sans club, recrutables sans indemnité (étiquette « libre réel »).
+- Mercato › Recherche : raccourcis « Tous les libres (N) » et « Vrais joueurs libres (N) ».
+- Le catalogue FM26 (FMB) ne contient que des joueurs sous contrat : pas de joueurs libres dans le monde étendu (source indisponible).
+- Test : `outils/tests_transfermarkt_effectifs.py` 8/8 (joueur libre actif proposé) ; ajout au monde vérifié dans le navigateur.
+
+# État du projet — v87 (3 novembre 2026)
+
+## Recherche par attributs façon Football Manager
+- Liste de critères illimitée : attribut (groupé par Technique / Mental / Physique / Gardien), « au moins » ou « au plus », valeur ; « + Ajouter un critère », ✕ pour retirer. Mode « Tous les critères » ou « Au moins un critère ». Testé : 3 critères → 99 joueurs (tous) / 3 076 (au moins un).
+- Critères supplémentaires : note au poste, notes cachées estimées (professionnalisme, pression, tempérament, ambition, fidélité, fair-play, polémique) ; filtre Personnalité (joueurs observés).
+- Listes longues avec recherche intégrée (Choices) : plus de majuscules ni de débordement.
+
+# État du projet — v86 (3 novembre 2026)
+
+## Fiches façon Football Manager
+- Gardien : blocs Gardien (réflexes, plongeon, prise de balle, placement, jeu au pied, sorties + passes et contrôle), Mental, Physique — plus de finition, dribble… Joueur de champ : aucun attribut de gardien (ni dans les meilleurs postes, ni dans le choix du poste de la fiche).
+- Notes cachées (idée de gilgiltsu/FMTools « Les notes cachées », sans code repris : dépôt sans licence) : professionnalisme, pression, tempérament, ambition, fidélité, fair-play, polémique, tirées du caractère et de l'identité du joueur. Personnalité façon FM (Modèle de professionnalisme, Perfectionniste, Leader né, Mercenaire, Friable, Indolent, Résistant, Très loyal…) et attitude face aux médias. Sur la fiche : estimations (jamais exactes), plus précises avec la connaissance du joueur.
+- Effets : professionnalisme → progression des 24 ans et moins (plus rapide, ou recul si très faible) ; ambition → exigences de salaire. Niveau moyen du monde stable (60,5 → 61,2 sur 2 saisons).
+
+# État du projet — v85 (3 novembre 2026)
+
+## Marché des jeunes (js/marche_jeunes.js)
+- Jeunes non conservés (tes U19 sans contrat en fin de formation, réserves de l'IA ramenées à 20 en fin de saison) : sur le marché, recrutés chaque semaine par des clubs dont le niveau correspond à leur potentiel (U19 ou réserve) ; nouvelle « … non conservé par …, rebondit à … ». Testé : 2 U19 non conservés recrutés ailleurs.
+- Offres pour tes jeunes (U19 et réserve à fort potentiel, pendant le mercato) : achat par un club plus huppé (vendre, demander 40 % de plus, refuser) ou prêt par un club plus modeste jusqu'à la fin de saison (salaire payé par l'autre club ; retour en réserve). Testé : 2 prêts acceptés, retours en fin de saison.
+
+# État du projet — v84 (3 novembre 2026)
+
+## Demandes de profil de l'entraîneur (js/demandes_profil.js)
+- À chaque mercato, l'entraîneur (mode directeur sportif) ou l'adjoint (mode entraîneur) demande un profil pour le poste le plus faible : un rôle (renard des surfaces, faux 9, pivot, regista, ailier intérieur, latéral inversé, stoppeur…) et une ou deux caractéristiques (grand / petit, rapide / puissant, jeune / expérimenté, gaucher). Demande toujours réalisable (au moins 5 joueurs conformes dans le monde).
+- Réponses : accepter, accepter et ouvrir la recherche réglée sur ce profil (postes, taille, âge, pied, attribut minimum), refuser. Recrue conforme : relation en hausse ; mercato fermé sans elle : relation en baisse.
+- Recherche avancée : + taille min et max, colonne Taille (taille réelle si connue, sinon estimée selon le poste). Rôle « Meneur reculé » renommé « Regista ».
+
+# État du projet — v83 (3 novembre 2026)
+
+## Fiche joueur affinée par le scouting (js/fiche_plus.js)
+- Connaissance du joueur (0-100 %) d'après les rapports de ta cellule (nombre, précision, ancienneté) : les fourchettes se resserrent rapport après rapport (testé : 0 % ±4 → 53 % ±2 → 70 % ±1 → exact). Bouton « Le faire superviser ».
+- Bandeau : mini-terrain des postes (naturel, bon, possible, hors poste), âge, taille, pied, valeur, salaire, contrat.
+- Meilleurs rôles calculés sur les attributs : regista, faux 9, renard des surfaces, pivot, ailier intérieur, stoppeur… (note du rôle cachée si joueur mal connu ou note masquée).
+- Pourcentages retirés des attributs (incompris) : attributs clés en gras, poids au survol.
+
+## Effectifs de jeunes réalistes
+- À la création : réserve 20, U19 20, U17 18 par club (les moins prometteurs retirés) — avant jusqu'à 40 U19 et 40 U17. Ex. Lorient : 24 / 20 / 20 + 10 U17.
+
+# État du projet — v82 (3 novembre 2026)
+
+## Rapport après chaque match (js/rapport_match.js)
+- Message « Rapport de match » après chaque match de ton club : score, buteurs et passeurs (domicile à gauche, extérieur à droite), possession, tirs, tirs cadrés, xG, corners, fautes, notes de tes joueurs (minutes, buts, passes décisives, couleur selon la note ; clic → fiche), homme du match. Toujours envoyé, hors limite de messages.
+
+# État du projet — v81 (3 novembre 2026)
+
+## Recherche de joueurs avancée (js/recherche_avancee.js, Mercato › Recherche)
+- Filtres : nom, postes (plusieurs à la fois), âge min et max, nationalité, pays du club (ou sans club), championnat, pied, fin de contrat, valeur max, salaire max, libres ou en vente, observés ou non, jusqu'à 3 attributs avec un minimum (ex. Tacle ≥ 12).
+- Colonnes : chaque attribut filtré + une colonne d'attribut libre ; tri par clic sur n'importe quel en-tête (âge, valeur, salaire, contrat, club, attribut…).
+- Joueur non observé : attribut estimé (milieu de la fourchette affichée sur sa fiche) ou « ? » selon les préférences — la recherche ne révèle jamais la vraie valeur.
+- Rendu : ~140 ms sur tous les joueurs du monde fictif ; 200 résultats affichés.
+
+# État du projet — v80 (3 novembre 2026)
+
+## Fiche joueur compacte et personnalisable (js/fiche_joueur.js)
+- Onglet Profil façon Football Manager : attributs détaillés à gauche (technique, mental, physique côte à côte), informations à droite ; texte plus petit, fenêtre plus large. Hauteur : 2 379 px → 963 px.
+- « Personnaliser » (en-tête de la fiche) : afficher ou masquer chaque bloc (informations, traits, profil physique, évolution et avis du staff, données réelles, parcours, analyse du profil, 9 qualités de base) ; mémorisé pour toutes les fiches.
+
+# État du projet — v79 (3 novembre 2026)
+
+## Préférences de partie (js/preferences_partie.js) — au début de chaque nouvelle partie, puis dans Options
+- Championnats simulés : décocher ceux qu'on ne veut pas (championnats réels ajoutés ; clubs et joueurs retirés pour toute la partie, semaines plus rapides).
+- Joueurs non observés : fourchette par attribut ou « ? » partout. La fourchette n'est plus centrée sur la vraie valeur (avant : v ± 2, qui la révélait) ; largeur selon le recruteur.
+- Note globale masquée (comme Football Manager) : badges de note et colonnes « Note » cachés partout, jugement sur les attributs.
+- Messages : normal (6 par semaine) ou peu (3) ; au-delà, dans le résumé de la semaine (questions, blessures, direction et résultats toujours envoyés).
+
+## Corrections monde étendu
+- Effectif : onglets Équipe première / Réserve / Tous (+ lien U19) ; avant, 92 joueurs mélangés.
+- Nationalité absente de la source : « — » au lieu de « UNK ».
+- Menu : le bouton « Tous les pays » écrasait le menu de gauche.
+
+# État du projet — v78 (3 novembre 2026)
+
+## Les 40 meilleurs championnats du monde et plus (monde étendu)
+- Classement de niveau type Opta (réputation du meilleur club par championnat) : on garde tout ce qui est au-dessus d'une D1 moyenne d'Europe de l'Est. Les D2 et D3 des 5 grands pays (déjà dans le monde étendu : Championship, League One, 2. Bundesliga, 3. Liga, Serie B et C, Ligue 2, National, LaLiga 2, Primera Federación) passent ainsi devant les petites D1 (Estonie, Lituanie…).
+- Total : 51 championnats — 18 compétitions FM26 (5 pays, D1 à D3) + 23 européens (Portugal, Pays-Bas, Belgique, Turquie, Russie, Écosse, Autriche, Grèce, Tchéquie, Croatie, Suisse, Danemark, Ukraine, Norvège, Serbie, Pologne, Suède, Roumanie, Hongrie, Chypre, Bulgarie, Azerbaïdjan, Slovaquie) + 10 hors d'Europe (Brésil, Argentine, Mexique, MLS, Japon, Colombie, Chine, Égypte, Maroc, Australie). 892 clubs, ~28 500 joueurs.
+- Sources : openfootball football.json (Amériques, Asie, Afrique ajoutées à `outils/palmares_reel.py` et `outils/ligues_europe_clubs.py`) + europe (CC0) ; palmarès réels et calibrage aussi pour ces pays.
+- Vitesse : `weeklyFinances` calculait la masse salariale en reparcourant tous les joueurs pour chaque club (892 × 28 000) → un seul passage. Semaine simulée : 2,6 s → 1,6 s (monde étendu sans ces ligues : 1,2 s) ; gain valable dans tous les modes.
+- Saison complète testée (champions : Slavia Prague, FC Copenhague, Hajduk Split, Ludogorets…).
+
+# État du projet — v77 (3 novembre 2026)
+
+## Fin de formation des U19 et responsable du centre de formation (js/centre_formation.js)
+- Nouveau membre du staff : « Responsable du centre de formation » (créé aussi dans les anciennes parties ; marché, entente et carrière comme les autres).
+- Six semaines avant la fin de saison : question « Fin de formation : N U19 à décider », avec son avis pour chaque U19 de 18 ans et plus (contrat pro, contrat réserve ou ne pas garder) et la raison (potentiel estimé, plus ou moins juste selon son niveau, comparé au niveau de l'équipe première).
+- Toi : suivre ses recommandations, décider joueur par joueur (Formation › U19, colonne « Fin de formation »), ou ne garder personne.
+- Fin de saison : contrat pro (équipe première, 3 ans) ou réserve (2 ans), salaires ajustés ; sans décision → non conservé (libre). Bilan dans la messagerie. Testé : 1 pro, 1 réserve, 3 non conservés.
+
+# État du projet — v76 (3 novembre 2026)
+
+## Accueil refait (js/accueil.js)
+- Bug corrigé : la carte d'une sauvegarde portait la classe `.slot`, aussi celle des postes du terrain de la tactique (position absolue, 84 px) → à la reprise d'une partie, carte écrasée et sortie de sa colonne.
+- Nouvelle organisation : « Continuer » (dernière partie en grand, un bouton) · « Nouvelle partie » en trois cartes (Monde étendu recommandé, Monde réel importé, Monde fictif) · Mes parties · monde fictif détaillé · Outils. Le monde étendu est enfin accessible depuis l'accueil.
+
+## Tout installer en une commande (outils/tout_installer.py, Tout_Installer.bat, tout_installer.sh)
+- Enchaîne : pack Football_Monde (s'il est trouvé : dossier du jeu, Téléchargements, Bureau), reep, Transfermarkt, ClubElo, maillots, Wikidata (photos, logos, entraîneurs), openfootball (palmarès, championnats européens ; ZIP GitHub ou git clone), visages (pack NewGAN trouvé ou Stable Diffusion local). Une étape en échec n'arrête pas les autres ; bilan et journal (`donnees_jeu/journal_installation.txt`) ; lance le jeu à la fin.
+- Dans le jeu : Accueil → Outils → « Tout installer / mettre à jour » (serveur local : `POST/GET /api/installation`, suivi des étapes en direct).
+- Essai ici : openfootball OK (git clone), Transfermarkt et ClubElo bloqués par le réseau de cet environnement (signalés dans le bilan).
+
+# État du projet — v75 (3 novembre 2026)
+
+## Championnats européens ajoutés au monde étendu (js/ligues_completes.js, js/ligues_europe_clubs.js)
+- `outils/ligues_europe_clubs.py` : clubs réels de 50 premières divisions (openfootball football.json + europe, CC0, dernière saison connue, ordre du classement).
+- Monde étendu (5 pays FM26, sans club étranger avant) : + 27 championnats de niveau suffisant (Portugal, Pays-Bas, Belgique, Turquie, Russie, Écosse, Autriche, Grèce, Tchéquie, Croatie, Suisse, Danemark, Ukraine, Norvège, Serbie, Pologne, Suède, Roumanie, Hongrie, Chypre, Bulgarie, Azerbaïdjan, Slovaquie, Slovénie, Biélorussie, Géorgie, Bosnie) = 384 vrais clubs. Effectifs générés par le jeu (18 à 20 joueurs, niveau selon le championnat et le rang), recrutables. Simulés chaque semaine avec le calibrage réel de chaque pays ; saison complète testée (champions : Qarabağ, Ludogorets, Dinamo Zagreb…).
+- `js/ligues_etrangeres.js` : les 4 autres pays du monde étendu ne sont plus simulés deux fois (ils ont leur propre simulation).
+- Vitesse : niveau et valeur des joueurs mémorisés pendant le recrutement de l'IA. Monde étendu : ~2,1 s par semaine simulée avec ces ligues (1,1 s sans).
+- Limites : joueurs de ces championnats générés (les sources libres ne donnent pas les effectifs) ; petits championnats (Gibraltar, Saint-Marin, Andorre…) non ajoutés pour la vitesse.
+
+# État du projet — v74 (3 novembre 2026)
+
+## Équipe première, réserve, U19 (js/equipes_club.js)
+- Monde étendu FM26 : l'équipe réelle de chaque joueur vient des données (« First team » → équipe première, « Development team » → réserve, « Under-19 » → U19) ; avant, 70 à 90 joueurs dans un seul effectif. Exemple : Lorient 91 joueurs → 24 en équipe première, 28 en réserve, 39 en U19.
+- Autres mondes : club de plus de 34 joueurs réparti à la création (28 meilleurs en équipe première, moins de 20 ans en U19, reste en réserve).
+- Plafond de 32 joueurs : équipe première seulement (affichage « + N en réserve et U19 ») ; recrutement de nouveau possible.
+- Compositions : réserve et U19 alignées seulement en cas de pénurie, pour tous les clubs (avant : ton club seulement).
+- Formation : onglet Réserve pour tous les réservistes (plus seulement les 19-22 ans) ; un U19 de 20 ans passe en réserve au lieu d'être libéré.
+- Clubs de l'IA : réserve et U19 progressent chaque semaine ; en fin de saison, montée des meilleurs jeunes si l'équipe première a moins de 24 joueurs, U19 de 20 ans en réserve.
+- Fiche : étiquette « Réserve » / « U19 ».
+
+# État du projet — v73 (3 novembre 2026)
+
+## Correction Windows : PermissionError au premier lancement (outils/catalogue_fmb.py)
+- `with sqlite3.connect(...)` valide mais ne ferme pas la connexion : sous Windows, `catalogue.tmp` restait ouvert et `os.replace` vers `catalogue.sqlite` échouait (WinError 32), le serveur s'arrêtait.
+- Connexions fermées explicitement ; 5 essais espacés si un antivirus bloque le fichier ; sinon lecture directe de l'index tout neuf (message).
+
+# État du projet — v72 (3 novembre 2026)
+
+## Lancement plus fiable (Lancer_Manager_Foot.bat, outils/serveur.py)
+- Avant : le navigateur s'ouvrait avant que le serveur soit prêt (chargement de la base) → « 127.0.0.1 n'autorise pas la connexion ».
+- Maintenant : `serveur.py --ouvrir` ouvre le navigateur une fois le serveur à l'écoute ; port déjà pris → message clair (et ouverture du jeu déjà lancé) ; le lanceur vérifie que le zip est extrait et que Python est installé, et garde la fenêtre ouverte avec un message si le serveur s'arrête.
+
+# État du projet — v71 (3 novembre 2026)
+
+## Fusion de la branche Manager-foot
+- Ajouts de la branche : monde étendu (5 pays FM26, 355 clubs, 18 compétitions, 18 589 joueurs : `packs/monde-*.json.gz`), catalogue FMInside, carrière multinationale, noms réels FMScout. Conflit `index.html` résolu en gardant les deux listes de scripts ; `tests/longue.html` et `sw.js` complétés.
+- Correction : `outils/serveur.py` refusait tout le dossier `packs/` (403), alors que le monde étendu y lit ses fichiers. Seuls les packs du jeu sont désormais servis (`monde-*.json[.gz]`, `fminside-fm26.json.gz`, `noms-reels-fmscout.json`) ; le reste de `packs/` reste interdit.
+- Vérifié : tests de la branche (fusion FMInside, carrière multi-pays) OK, jeu lancé par `serveur.py` sans erreur.
+
 # État du projet — v70 (3 novembre 2026)
 
 ## Visages du pack NewGAN (outils/visages_newgan.py, Visages_NewGAN.bat)

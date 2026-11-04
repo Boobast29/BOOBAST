@@ -59,8 +59,13 @@ function verdictContrat(p, t, dm, { renouvellement = false } = {}) {
   const coutSem = weekly(t.wageM) - (renouvellement ? p.wage : 0);
   if (sGap >= 2) return { ok: false, S, bloque: `il refuse le statut « ${STATUS[t.status].label} ».` };
   if (dm.clauseMin && (!t.clause || t.clause > dm.clauseMin * 1.5)) return { ok: false, S, bloque: `il exige une clause libératoire autour de ${fmtE(dm.clauseMin)}.` };
-  if (wageBill(G) + coutSem > G.board.wageCap) return { ok: false, S, bloque: `le président bloque : plafond salarial (${wageM(G.board.wageCap)}) dépassé.` };
-  if ((t.signOn || 0) + (t.agentFee || 0) > me.budget) return { ok: false, S, bloque: 'trésorerie insuffisante pour la prime et la commission.' };
+  if (renouvellement && typeof renewalProjection === 'function') { // engagements en cours (transferts à la visite médicale) compris
+    const r = renewalProjection(G, p, { wageM: t.wageM, years: t.yrs, bonus: (t.signOn || 0) + (t.agentFee || 0), clause: t.clause || 0 });
+    if (!r.valid) return { ok: false, S, club: true, bloque: r.reason };
+    if (!r.allowed) return { ok: false, S, club: true, bloque: `le président bloque : ${r.reasons.join(' ').toLowerCase()}` };
+  }
+  if (wageBill(G) + coutSem > G.board.wageCap) return { ok: false, S, club: true, bloque: `le président bloque : plafond salarial (${wageM(G.board.wageCap)}) dépassé.` };
+  if ((t.signOn || 0) + (t.agentFee || 0) > me.budget) return { ok: false, S, club: true, bloque: 'trésorerie insuffisante pour la prime et la commission.' };
   if (dm.agentFee && (t.agentFee || 0) < dm.agentFee * .6) return { ok: false, S, bloque: 'l\'agent juge sa commission insultante.' };
   return { ok: S >= .95, S, bloque: '' };
 }
@@ -148,6 +153,7 @@ if (typeof openDeal === 'function') {
     $('#dTerms').onclick = () => {
       Object.assign(t, lireContrat(t));
       const v = verdictContrat(p, t, dm);
+      if (!v.ok && v.club) return toast(`Offre non envoyée : ${v.bloque}`, 'err'); // bloquée chez nous : l'agent n'en sait rien
       d.terms = { ...t }; d.log.push(`${weekLabel(G)} : conditions proposées (${fmtE(t.wageM)}/mois, ${t.yrs} ans) → ${v.ok ? 'acceptées' : (v.bloque || `${Math.round(v.S * 100)} % de ses attentes`)}`);
       if (v.ok) { d.status = 'medical'; d.respond = G.week + 1; delete d.brouillon; save(); closeModal(); toast(`Accord personnel avec ${p.name} ! Visite médicale la semaine prochaine.`); refresh(); return; }
       d.patience--;
@@ -200,6 +206,8 @@ if (typeof renewModal === 'function') {
         p.deal = { ...(p.deal || {}), signOn: t.signOn, agentFee: t.agentFee, goalBonus: t.goalBonus, appBonus: t.appBonus, ...clausesDe(t), signed: `${weekLabel(G)} ${G.season}` };
         news(G, `✍ ${p.name} prolonge jusqu'en juin ${G.season + t.yrs} (${fmtE(t.wageM)}/mois).`, 'transfer');
         save(); closeModal(); toast(`${p.name} prolonge !`); refresh();
+      } else if (v.club) { // bloqué chez nous (président, trésorerie, montants) : rien n'est envoyé à l'agent
+        $('#resp').innerHTML = `⛔ Offre non envoyée : ${esc(v.bloque)}`;
       } else {
         p.renewPatience--; p.morale = clamp(p.morale - 3, 0, 100);
         if (p.renewPatience <= 0) { p.noRenew = G.season; closeModal(); news(G, `${p.name} rompt les discussions de prolongation. Il partira libre en fin de contrat si rien ne change.`, 'warn'); save(); return toast(`${p.name} met fin aux discussions.`, 'err'); }
@@ -240,7 +248,7 @@ if (typeof offerModal === 'function') {
     const p = getPlayer(G, pid); if (!p) return;
     const ex = G.deals.find(d => d.pid === pid && !['done', 'failed'].includes(d.status));
     const seller = p.club != null ? getClub(G, p.club) : null;
-    if (ex || !seller || p.club === G.clubId || !windowOpen(G) || G.board.ban || clubPlayers(G, G.clubId).length >= 32) return __offerModalN.apply(this, arguments);
+    if (ex || !seller || p.club === G.clubId || !windowOpen(G) || G.board.ban || effectifPro(G).length >= 32) return __offerModalN.apply(this, arguments);
     const me = myClub(G), known = knows(G, p);
     const myPlayers = clubPlayers(G, G.clubId).filter(x => !x.loan).sort((a, b) => b.value - a.value);
     const o = { fee: roundMoney(p.value * .9), plan: 'cash', addOn: 0, addOnGoals: 0, sellOn: 0, buyBack: 0, swap: null };

@@ -7,7 +7,7 @@ function enrichirPaysFMInside(pays,catalogue){
   }
   return pays;
 }
-let catalogueFMInsideMonde,correctifsNomsMonde;
+let catalogueFMInsideMonde,correctifsNomsMonde,natsMonde,NATS_MONDE={};
 async function lirePaysMonde(file) {
   const r = await fetch('packs/' + file);
   if (!r.ok) throw Error('Base nationale indisponible');
@@ -17,6 +17,7 @@ async function lirePaysMonde(file) {
   enrichirPaysFMInside(pays,await catalogueFMInsideMonde);
   correctifsNomsMonde ||= fetch('packs/noms-reels-fmscout.json').then(r=>{if(!r.ok)throw Error('Correctifs de noms indisponibles');return r.json();}).catch(err=>{correctifsNomsMonde=null;throw err;});
   const noms=await correctifsNomsMonde;
+  natsMonde ||= fetch('packs/nationalites-monde.json').then(r=>r.ok?r.json():{}).catch(()=>({})); NATS_MONDE=await natsMonde; // nationalités appariées à l'installation (outils/nationalites_monde.py)
   for(const c of pays.clubs){const n=noms.clubs[c.fmUid];if(n){c.previousSourceName=c.name;c.name=n.name;}}
   for(const c of pays.competitions){const n=noms.competitions[c.fmUid];if(n){c.previousSourceName=c.name;c.name=n.name;}}
   return pays;
@@ -39,7 +40,7 @@ function construireCarriereMonde(pays, groupeD3) {
       const niveau = Math.max(1,Math.min(20,Math.round((p.rating || 50)/5)));
       const attrs = detail ? cv.attrs : Object.fromEntries(Object.keys(ATTRS).map(k=>[k,niveau]));
       profils.set(p.fmUid,{source:p, detailed:!!detail});
-      return {name:p.name, fmUid:p.fmUid, age:p.age || 24, nat:'UNK',pos:cv.pos,foot:p.foot?cv.foot:undefined,
+      return {name:p.name, fmUid:p.fmUid, age:p.age || 24, nat:NATS_MONDE[String(p.fmUid)]||'UNK',pos:cv.pos,foot:p.foot?cv.foot:undefined,
         attrs, detail20:cv.detail20, pot:p.potential || undefined, wage:p.wageWeekly || undefined};
     })
   }));
@@ -57,6 +58,7 @@ function construireCarriereMonde(pays, groupeD3) {
     if(info) {
       appliquerBiographieTransfermarkt(p,info.source);
       p.sourceProfile={url:info.source.sourceUrl,database:info.source.sourceDatabase,squad:info.source.squad,contract:info.source.contractEndText};
+      if(typeof equipeDeSource==='function')equipeDeSource(p,info.source.squad); // équipe réelle : première, réserve ou U19
       if(Number.isFinite(info.source.wageWeekly))p.wage=info.source.wageWeekly;
       if(Number.isFinite(info.source.value))p.value=info.source.value;
     }

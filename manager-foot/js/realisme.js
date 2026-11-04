@@ -8,11 +8,11 @@
 // ============================================================
 
 // ---------- Centre de formation ----------
-const YOUTH_CAT = { U17: 'U17 (15-16 ans)', U19: 'U19 (17-18 ans)', RES: 'Réserve (19-22 ans)' };
+const YOUTH_CAT = { U17: 'U17 (15-16 ans)', U19: 'U19 (17-18 ans)', RES: 'Réserve' };
 const DEV_PLANS = { equilibre: ['Équilibré', null], technique: ['Technique', ['tec', 'dri', 'pas']], physique: ['Physique', ['phy', 'vit']], mental: ['Mental', ['men']], finition: ['Finition', ['fin', 'tec']], defense: ['Défense', ['tac', 'phy']], gardien: ['Gardien', ['gar', 'men']] };
 function youthCat(p) {
   if (p.academy) return p.age <= 16 ? 'U17' : p.age <= 18 ? 'U19' : 'RES';
-  if (p.reserve && p.age <= 22) return 'RES';
+  if (p.reserve) return 'RES';
   return null;
 }
 // une seule promotion par club et par saison (journal + saisons traitées sauvegardés)
