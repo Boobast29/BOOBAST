@@ -23,7 +23,7 @@
     const el = hote || document.querySelector('#main') || document.querySelector('#app');
     el.innerHTML = `<section class="fmb"><div class="fmb-entete"><div><p class="fmb-sur">FOOTBALL MONDE · FMB</p><h1>Le répertoire du football</h1><p>Joueurs, staff, clubs et compétitions. Consultation sans modifier ta partie.</p></div><button class="btn" id="fmbRetour">Retour au ${enPartie ? 'club' : 'menu'}</button></div>
       <div id="fmbEtat" role="status">Chargement du catalogue local…</div>
-      <form class="fmb-filtres" id="fmbForm"><label>Catégorie<select id="fmbType">${Object.entries(lib).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label><label class="fmb-recherche">Rechercher un nom<input id="fmbQ" type="search" maxlength="200" placeholder="Joueur, entraîneur, club…"></label><label><input type="checkbox" id="fmbDetail"> Profils détaillés</label><label><input type="checkbox" id="fmbPhoto"> Visuel local</label><button class="btn primary">Rechercher</button></form>
+      <form class="fmb-filtres" id="fmbForm"><label>Catégorie<select id="fmbType">${Object.entries(lib).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label><label class="fmb-recherche">Rechercher un nom<input id="fmbQ" type="search" maxlength="200" placeholder="Joueur, entraîneur, club…"></label><label class="fmb-joueurs-filtre">Club du relevé<input id="fmbClub" type="search" maxlength="80" placeholder="Ex. Paris"></label><label class="fmb-joueurs-filtre">Poste<select id="fmbPoste"><option value="">Tous</option>${[['GK','Gardien'],['DC','Défenseur central'],['DR','Latéral droit'],['DL','Latéral gauche'],['DM','Milieu défensif'],['MC','Milieu central'],['AMC','Milieu offensif'],['AMR','Ailier droit'],['AML','Ailier gauche'],['ST','Avant-centre']].map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label><label class="fmb-joueurs-filtre">Âge maximum<select id="fmbAge"><option value="">Tous</option>${[18,21,25,30,35].map(n=>`<option value="${n}">${n} ans</option>`).join('')}</select></label><label class="fmb-joueurs-filtre">Niveau source ≥<select id="fmbNiveau"><option value="">Tous</option>${[50,60,70,80].map(n=>`<option value="${n}">${n} / 99</option>`).join('')}</select></label><label>Tri<select id="fmbTri"><option value="nom">Nom</option><option value="niveau">Niveau source</option><option value="potentiel">Potentiel source</option><option value="age">Plus jeune</option></select></label><label><input type="checkbox" id="fmbDetail"> Profils détaillés</label><label><input type="checkbox" id="fmbPhoto"> Visuel local</label><button class="btn primary">Rechercher</button></form>
       <p id="fmbCompte" role="status"></p><div class="fmb-layout"><div><div id="fmbListe" class="fmb-liste"></div><div class="fmb-pagination"><button class="btn" id="fmbPrec">Précédent</button><span id="fmbPage"></span><button class="btn" id="fmbSuiv">Suivant</button></div></div><aside id="fmbFiche" aria-live="polite"><p>Sélectionne une fiche pour voir ses informations et ses compétences documentées.</p></aside></div></section>`;
     const $ = s => el.querySelector(s);
     $('#fmbRetour').onclick = () => enPartie ? show('inbox') : startScreen();
@@ -33,7 +33,7 @@
       const target=$('#fmbFiche'); target.innerHTML='<p>Chargement de la fiche…</p>';
       try {
         const x = await api(`fiche/${encodeURIComponent(type)}/${encodeURIComponent(id)}`,detailAbort.signal);
-        const d=x.detail, media=x.photo||x.logo, champs=x.observations?.[0]?.fields_source||{};
+        const d=x.detail, media=x.photo||x.logo, champs=x.observations?.[0]?.fields_source||{}, index=x._index||{};
         const credit=type==='players' && photosCommons[String(id)]?.name===x.name ? photosCommons[String(id)] : null;
         const source=x.profile_url||x.source_url;
         const sourceSure=typeof source==='string' && /^https:\/\//.test(source);
@@ -43,9 +43,10 @@
           ${type==='players' && !media?.available_offline && !photosAvecUrl.has(String(id)) && !credit ? '<p class="fmb-mention">Photo : adresse FMB tentée à partir de l’identifiant, sans disponibilité vérifiée. Initiales affichées si elle échoue.</p>' : ''}
           ${credit ? `<p class="fmb-mention">Photo : <a href="https://commons.wikimedia.org/wiki/File:${encodeURIComponent(credit.file.replaceAll(' ','_'))}" target="_blank" rel="noopener noreferrer">${e(credit.author)} · ${e(credit.license)} · Wikimedia Commons</a>${credit.note ? ` · ${e(credit.note)}` : ''}</p>` : ''}
           ${d?.role_or_position_source||champs.position||champs.job ? `<p><b>Rôle source :</b> ${e(d?.role_or_position_source||champs.position||champs.job)}</p>` : ''}
+          ${type==='players' ? `<div class="fmb-identite"><div><small>CLUB DU RELEVÉ</small><strong>${e(index.club||'Non renseigné')}</strong></div><div><small>POSTE</small><strong>${e(index.poste||'Inconnu')}</strong></div><div><small>ÂGE DU RELEVÉ</small><strong>${index.age??'—'}</strong></div></div>${index.niveau!=null||index.potentiel!=null?`<div class="fmb-scores"><div><b>${index.niveau??'—'}</b><small>Niveau source / 99</small></div><div><b>${index.potentiel??'—'}</b><small>Potentiel source / 99</small></div></div><p class="fmb-mention">Scores affichés dans le relevé FM26, distincts des attributs détaillés et de la progression de ta partie.</p>`:''}${champs.value||champs.wage?`<p class="fmb-mention">Valeur source : ${e(champs.value||'inconnue')} · Salaire source : ${e(champs.wage||'inconnu')}. Montants du jeu source, non vérifiés comme contrats actuels.</p>`:''}` : ''}
           ${x.country ? `<p><b>Pays :</b> ${e(x.country)}</p>`:''}
           ${d?.date_of_birth ? `<p><b>Naissance :</b> ${e(d.date_of_birth)}</p>`:''}
-          ${d?.scores ? `<div class="fmb-scores">${Object.entries(d.scores).map(([k,v])=>`<div><b>${e(v??'Inconnu')}</b><small>${k==='current_ability'?'Niveau source':'Potentiel source'} / 99</small></div>`).join('')}</div>`:''}
+          ${d?.scores && (type!=='players' || index.niveau==null && index.potentiel==null) ? `<div class="fmb-scores">${Object.entries(d.scores).map(([k,v])=>`<div><b>${e(v??'Inconnu')}</b><small>${k==='current_ability'?'Niveau source':'Potentiel source'} / 99</small></div>`).join('')}</div>`:''}
           ${groupes.length ? `<p>Compétences FMB sur 99. Les moyennes portent uniquement sur les valeurs connues.</p>${groupes.map(([k,attrs])=>{
             const lignes=Object.entries(attrs).filter(([,a])=>typeof a.value==='number');
             const moyenne=lignes.length ? Math.round(lignes.reduce((n,[,a])=>n+a.value,0)/lignes.length) : null;
@@ -60,12 +61,13 @@
     }
     async function liste() {
       abort?.abort(); abort=new AbortController(); const type=$('#fmbType').value;
-      const p=new URLSearchParams({type,q:$('#fmbQ').value,page,taille:24,detail:$('#fmbDetail').checked?'1':'0',photo:$('#fmbPhoto').checked?'1':'0'});
+        const p=new URLSearchParams({type,q:$('#fmbQ').value,page,taille:24,detail:$('#fmbDetail').checked?'1':'0',photo:$('#fmbPhoto').checked?'1':'0',tri:$('#fmbTri').value});
+        if(type==='players')for(const [key,id] of [['club','fmbClub'],['poste','fmbPoste'],['age_max','fmbAge'],['niveau_min','fmbNiveau']])if($('#'+id).value)p.set(key,$('#'+id).value);
       $('#fmbCompte').textContent='Recherche…';
       try {
         const d=await api('recherche?'+p,abort.signal); total=d.total;
         $('#fmbCompte').textContent=`${total.toLocaleString('fr-FR')} résultats · ${lib[type]}`;
-        $('#fmbListe').innerHTML=d.resultats.map(x=>`<button class="fmb-carte" data-id="${e(x.id)}">${image(x.type,x.id,x.nom,!!x.photo)}<span><strong>${e(x.nom)}</strong><small>${x.detail?'Compétences détaillées':'Fiche de référence'}</small></span><span aria-hidden="true">›</span></button>`).join('')||'<p>Aucune fiche ne correspond aux filtres.</p>';
+        $('#fmbListe').innerHTML=d.resultats.map(x=>`<button class="fmb-carte" data-id="${e(x.id)}">${image(x.type,x.id,x.nom,!!x.photo)}<span><strong>${e(x.nom)}</strong><small>${type==='players' ? e([x.poste,x.age!=null?x.age+' ans':null,x.club].filter(Boolean).join(' · ')||'Profil source') : x.detail?'Compétences détaillées':'Fiche de référence'}</small>${type==='players' ? `<span class="fmb-carte-scores"><b>Niveau ${x.niveau??'—'}</b><b>Potentiel ${x.potentiel??'—'}</b>${x.detail?'<em>Attributs détaillés</em>':''}</span>` : ''}</span><span aria-hidden="true">›</span></button>`).join('')||'<p>Aucune fiche ne correspond aux filtres.</p>';
         $('#fmbListe').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>fiche(type,b.dataset.id));
         $('#fmbPrec').disabled=page===0; $('#fmbSuiv').disabled=(page+1)*24>=total;
         $('#fmbPage').textContent=`${page+1} / ${Math.max(1,Math.ceil(total/24))}`;
@@ -75,6 +77,8 @@
     $('#fmbType').onchange=()=>{
       const personne=['players','staff'].includes($('#fmbType').value);
       $('#fmbDetail').disabled=!personne;if(!personne)$('#fmbDetail').checked=false;
+      el.querySelectorAll('.fmb-joueurs-filtre').forEach(node=>node.hidden=$('#fmbType').value!=='players');
+      $('#fmbTri').value='nom';
       detailAbort?.abort();$('#fmbFiche').innerHTML='<p>Sélectionne une fiche.</p>';page=0;liste();
     };
     $('#fmbPrec').onclick=()=>{if(page>0){page--;liste();}};
