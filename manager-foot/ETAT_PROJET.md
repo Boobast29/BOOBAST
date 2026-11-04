@@ -1,3 +1,9 @@
+# État du projet — v105 (4 novembre 2026)
+
+**Présaison planifiée** (`js/presaison.js`) : question en début de saison (« Planifier » ou « Laisser l'adjoint »).
+- Stage : au centre (gratuit, cohésion +3), en altitude (coût, cohésion +5, condition entretenue 6 semaines), à l'étranger (coût, cohésion +9, familiarité +4), tournée commerciale (grosse recette, cohésion +2, fatigue au départ).
+- Jusqu'à 3 amicaux (faible, moyen, grand club) : familiarité tactique, recette, fatigue, moral selon les résultats.
+
 # État du projet — v104 (4 novembre 2026)
 
 **Avec ballon / sans ballon** (`js/phases_jeu.js`), page Tactique :

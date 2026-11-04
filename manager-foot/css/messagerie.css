@@ -490,3 +490,14 @@
 .pj-formes b { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; } .pj-formes em { font-style: normal; font-size: 11px; color: var(--mut); }
 .pj-formes > span { color: var(--mut); font-size: 18px; }
 .pj-eff { margin: 0 0 8px; font-size: 12.5px; } .pj-eff.pos { color: var(--acc); } .pj-eff.warn { color: var(--yel); }
+
+/* Présaison (js/presaison.js) */
+.ps-stages { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+.ps-st { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 12px; border-radius: var(--r-m); border: 1px solid var(--line); background: var(--surface-2); color: var(--txt); font: inherit; cursor: pointer; }
+.ps-st small { color: var(--mut); font-size: 11.5px; line-height: 1.35; } .ps-st em { font-style: normal; font-size: 11.5px; color: var(--txt-2); margin-top: auto; }
+.ps-st.on { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 10%, var(--surface-2)); }
+.ps-am { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.ps-am label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--txt-2); }
+.ps-bilan { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: 12px; }
+.ps-bilan > div { padding: 10px 12px; border-radius: var(--r-m); background: var(--surface-2); display: flex; flex-direction: column; gap: 2px; }
+.ps-bilan small { font-size: 11px; color: var(--mut); } .ps-bilan b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
