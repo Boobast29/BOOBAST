@@ -447,3 +447,10 @@
 .ca-tbl th { white-space: nowrap; cursor: help; } .ca-tbl td { text-align: center; } .ca-tbl td.nm { text-align: left; }
 .ca-tbl tr.on td.nm { box-shadow: inset 3px 0 0 var(--acc); }
 .ca-tbl select { min-width: 96px; }
+
+/* Coups de pied arrêtés (js/coups_arretes.js) */
+.cpa { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft, var(--line)); }
+.cpa-bilan { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; margin: 4px 0 10px; font-size: 12.5px; }
+.cpa-bilan b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; margin-right: 4px; } .cpa-bilan small { color: var(--mut); }
+.cpa-g label small { display: block; margin-top: 3px; font-size: 11px; color: var(--mut); font-weight: 400; }
+.cpa-monter { grid-column: 1 / -1; }

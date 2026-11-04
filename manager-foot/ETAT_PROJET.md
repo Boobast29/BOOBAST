@@ -1,3 +1,12 @@
+# État du projet — v102 (4 novembre 2026)
+
+**Atelier coups de pied arrêtés** (`js/coups_arretes.js`), page Tactique :
+- Corners : auto, premier poteau, second poteau (meilleur joueur de tête), à la retombée (frappe hors de la surface), joué court (on garde le ballon). Coups francs proches : auto, frappe directe, centre.
+- Défenseurs centraux qui montent : plus de têtes, contre-attaque possible si l'action échoue.
+- Défense : mixte, en zone (moins de centres exploitables et de têtes, plus fragile à la retombée), individuelle (selon le duel physique des 4 meilleurs joueurs de tête).
+- Bilan de la saison : buts marqués et encaissés sur coup de pied arrêté. « Auto » = moteur d'origine inchangé.
+- Mesure (400 matchs) : en zone, buts encaissés sur CPA 0,113 → 0,095 par match ; joué court 0,185 → 0,060 marqués (possession gardée).
+
 # État du projet — v101 (4 novembre 2026)
 
 **Consignes adverses** (`js/consignes_adverses.js`), écran d'avant-match, par joueur adverse :
