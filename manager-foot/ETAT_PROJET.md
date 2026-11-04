@@ -1,3 +1,11 @@
+# État du projet — v103 (4 novembre 2026)
+
+**Centre de données** (`js/centre_donnees.js`, menu « Centre de données ») :
+- Joueurs : percentiles face aux joueurs du même championnat et du même groupe de postes (≥ 270 min), par 90 minutes (buts, xG, tirs, passes clés, xT, dribbles, passes, % de passes, tacles, interceptions, arrêts, note) ; joueurs de l'effectif et joueurs connus du championnat ; tableau de l'effectif par 90 minutes.
+- Équipe : rang dans le championnat (points, buts, xG, encaissés, xG contre, différence, réalisme) ; forme des 10 derniers matchs (différence de xG autour d'un axe, résultat).
+- Prochain adversaire : rapport de force, leurs rangs, joueurs dangereux, conseils (attaque, bloc, pressing, ligne haute, marquage).
+- Lecture seule, tirages à part.
+
 # État du projet — v102 (4 novembre 2026)
 
 **Atelier coups de pied arrêtés** (`js/coups_arretes.js`), page Tactique :

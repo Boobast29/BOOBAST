@@ -454,3 +454,30 @@
 .cpa-bilan b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; margin-right: 4px; } .cpa-bilan small { color: var(--mut); }
 .cpa-g label small { display: block; margin-top: 3px; font-size: 11px; color: var(--mut); font-weight: 400; }
 .cpa-monter { grid-column: 1 / -1; }
+
+/* Centre de données (js/centre_donnees.js) */
+.dh-tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 1px solid var(--line-soft, var(--line)); }
+.dh-tabs button { padding: 8px 14px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--txt-2); font: inherit; font-weight: 500; cursor: pointer; }
+.dh-tabs button.on { color: var(--txt); border-bottom-color: var(--acc); }
+.dh-g { align-items: start; grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr); }
+@media (max-width: 1000px) { .dh-g { grid-template-columns: 1fr; } }
+.dh-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; } .dh-head h2 { margin: 0; } .dh-head select { max-width: 100%; min-width: 0; }
+.dh-qui { margin: 8px 0 2px; }
+.dh-pct { list-style: none; margin: 10px 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.dh-pct li { display: grid; grid-template-columns: minmax(110px, 160px) minmax(0, 1fr) 30px 46px; align-items: center; gap: 10px; font-size: 12.5px; }
+.dh-lab { color: var(--txt-2); } .dh-pct b { text-align: right; font-variant-numeric: tabular-nums; } .dh-pct small { color: var(--mut); text-align: right; font-variant-numeric: tabular-nums; }
+.dh-bar { height: 10px; border-radius: 5px; background: var(--surface-3); overflow: hidden; } .dh-bar i { display: block; height: 100%; border-radius: 5px; }
+.t-top { background: #2fd27a; } .t-bon { background: #8fd14f; } .t-moy { background: #e8c547; } .t-bas { background: #f08c4b; } .t-faible { background: #e5534b; }
+.dh-leg { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; color: var(--mut); margin: 0; } .dh-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.dh-tbl tr { cursor: pointer; } .dh-tbl tr.sel td { background: color-mix(in srgb, var(--acc) 10%, transparent); } .dh-tbl td { font-variant-numeric: tabular-nums; }
+.dh-rangs td { font-variant-numeric: tabular-nums; }
+.dh-rang { display: inline-block; min-width: 40px; padding: 1px 7px; border-radius: var(--r-pill); background: var(--surface-3); font-weight: 600; text-align: center; } .dh-rang small { color: var(--mut); font-weight: 400; }
+.dh-rang.haut { background: color-mix(in srgb, var(--acc) 22%, transparent); color: var(--acc); } .dh-rang.bas { background: color-mix(in srgb, var(--red) 22%, transparent); color: #ff9aa2; }
+.dh-forme { display: flex; gap: 6px; height: 150px; padding: 8px 0; }
+.dh-fm { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; }
+.dh-hp, .dh-hn { flex: 1; width: 100%; display: flex; justify-content: center; } .dh-hp { align-items: flex-end; border-bottom: 1px solid var(--line-strong, var(--line)); } .dh-hn { align-items: flex-start; }
+.dh-fb { width: 100%; max-width: 28px; min-height: 2px; } .dh-fb.p { background: var(--acc); border-radius: 3px 3px 0 0; } .dh-fb.n { background: var(--red); border-radius: 0 0 3px 3px; }
+.dh-fm em { margin-top: 4px; }
+.dh-fm em { font-style: normal; font-size: 11px; font-weight: 600; } .dh-fm em.r3 { color: var(--acc); } .dh-fm em.r1 { color: var(--mut); } .dh-fm em.r0 { color: #ff9aa2; }
+.dh-conseils { margin: 6px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.5; } .dh-conseils li + li { margin-top: 4px; }
+@media (max-width: 640px) { .dh-pct li { grid-template-columns: minmax(90px, 120px) minmax(0, 1fr) 28px 40px; gap: 6px; } }
