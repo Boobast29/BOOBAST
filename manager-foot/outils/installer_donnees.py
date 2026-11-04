@@ -2,33 +2,62 @@
 import argparse, hashlib, json, os, pathlib, re, shutil, sqlite3, subprocess, sys, zipfile
 from commun import RACINE_JEU, DOSSIER_JEU_DONNEES, BASE, trouver_football_monde
 
+def verifier_archive(archive):
+    """Rejette une archive de code, tronquée ou sans base de joueurs avant extraction."""
+    try:
+        with zipfile.ZipFile(archive) as z:
+            required='Football_Monde/base_geante_v8/manifest.json'
+            names=set(z.namelist())
+            if required not in names:
+                raise ValueError('Ce ZIP ne contient pas la base Football_Monde complète (manifest.json absent). Le ZIP BOOBAST/V12 contient le code du jeu : il faut le décompresser, puis fournir séparément Football_Monde_JSON_Visuels.zip.')
+            m=json.loads(z.read(required).decode('utf-8'))
+            if not isinstance(m.get('players'),int) or m['players']<=0 or not isinstance(m.get('player_files'),list):
+                raise ValueError('Manifeste de la base mondiale invalide.')
+            for name in m['player_files']:
+                if not isinstance(name,str) or '/' in name or '..' in name or f'Football_Monde/base_geante_v8/joueurs/{name}' not in names:
+                    raise ValueError('Pack incomplet : un lot de joueurs manque ('+str(name)+').')
+            return m
+    except (zipfile.BadZipFile, EOFError, OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError('Archive ZIP illisible ou incomplète : '+str(archive)) from exc
+
 def local_pack(archive):
     archive=pathlib.Path(archive).expanduser().resolve()
     if archive.is_dir():
         found=trouver_football_monde(str(archive)) or trouver_football_monde(str(archive/'Football_Monde'))
         if not found: raise ValueError('Ce dossier ne contient pas de pack Football_Monde reconnu.')
         return found
+    verifier_archive(archive)
     digest=hashlib.sha256()
     with archive.open('rb') as f:
         for chunk in iter(lambda:f.read(1024*1024),b''):digest.update(chunk)
     target=DOSSIER_JEU_DONNEES/'packs'/digest.hexdigest()[:16]
     marker=target/'installation_complete.json'
-    if marker.is_file():return target/'Football_Monde'
-    target.mkdir(parents=True,exist_ok=True)
-    with zipfile.ZipFile(archive) as z:
-        files=z.infolist();total=sum(i.file_size for i in files)
-        if shutil.disk_usage(target).free<total+200*1024*1024:raise ValueError('Espace disque insuffisant pour extraire le pack et sa base.')
-        for info in files:
-            name=info.filename.replace('\\','/');parts=pathlib.PurePosixPath(name).parts
-            if name.startswith('/') or '..' in parts or any(':' in part for part in parts) or not parts or parts[0]!='Football_Monde':raise ValueError('Chemin non autorisé dans le pack : '+name)
-            dest=target.joinpath(*parts)
-            try:dest.resolve().relative_to(target.resolve())
-            except ValueError:raise ValueError('Chemin sortant du dossier de données.')
-            if info.is_dir():dest.mkdir(parents=True,exist_ok=True);continue
-            dest.parent.mkdir(parents=True,exist_ok=True)
-            with z.open(info) as source,dest.open('wb') as out:shutil.copyfileobj(source,out)
     fm=target/'Football_Monde'
-    if not (fm/'base_geante_v8/manifest.json').is_file():raise ValueError('Manifeste de joueurs absent.')
+    if marker.is_file() and (fm/'base_geante_v8/manifest.json').is_file():return fm
+    target.parent.mkdir(parents=True,exist_ok=True)
+    temp=target.with_name(target.name+'.extraction')
+    if temp.exists():shutil.rmtree(temp)
+    temp.mkdir(parents=True)
+    try:
+        with zipfile.ZipFile(archive) as z:
+            files=z.infolist();total=sum(i.file_size for i in files)
+            if len(files)>100000 or total>20*1024**3:raise ValueError('Pack trop volumineux ou trop de fichiers.')
+            if shutil.disk_usage(temp).free<total+200*1024*1024:raise ValueError('Espace disque insuffisant pour extraire le pack et sa base.')
+            for info in files:
+                name=info.filename.replace('\\','/');parts=pathlib.PurePosixPath(name).parts
+                if name.startswith('/') or '..' in parts or any(':' in part for part in parts) or not parts or parts[0]!='Football_Monde':raise ValueError('Chemin non autorisé dans le pack : '+name)
+                if (info.external_attr>>16)&0o170000==0o120000:raise ValueError('Lien symbolique interdit dans le pack : '+name)
+                dest=temp.joinpath(*parts)
+                try:dest.resolve().relative_to(temp.resolve())
+                except ValueError:raise ValueError('Chemin sortant du dossier de données.')
+                if info.is_dir():dest.mkdir(parents=True,exist_ok=True);continue
+                dest.parent.mkdir(parents=True,exist_ok=True)
+                with z.open(info) as source,dest.open('wb') as out:shutil.copyfileobj(source,out)
+        if not (temp/'Football_Monde/base_geante_v8/manifest.json').is_file():raise ValueError('Manifeste absent après extraction.')
+        if target.exists():shutil.rmtree(target)
+        temp.rename(target)
+    finally:
+        if temp.exists():shutil.rmtree(temp)
     marker.write_text(json.dumps({'sha256':digest.hexdigest(),'archive':archive.name}),encoding='utf8')
     return fm
 
@@ -37,7 +66,15 @@ def discover():
     candidates={p.resolve() for folder in folders if folder.is_dir() for p in folder.glob('Football_Monde*.zip')}
     def priority(p):
         m=re.search(r'_v(\d+)',p.stem,re.I);return (int(m.group(1)) if m else 0,p.stat().st_mtime)
-    return max(candidates,key=priority) if candidates else trouver_football_monde()
+    rejected=[]
+    for candidate in sorted(candidates,key=priority,reverse=True):
+        try:verifier_archive(candidate);return candidate
+        except (ValueError,OSError) as exc:
+            print('Pack ignoré :',candidate.name,'—',exc,flush=True);rejected.append(str(exc))
+    folder=trouver_football_monde()
+    if folder:return folder
+    if rejected:raise ValueError('Aucun pack complet valide trouvé. '+rejected[0])
+    return None
 
 def audit(fm):
     with sqlite3.connect(BASE) as c:
@@ -58,7 +95,7 @@ def audit(fm):
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('pack',nargs='?',help='ZIP ou dossier Football_Monde');a=ap.parse_args();source=a.pack or discover()
-    if not source:sys.exit('Place Football_Monde_JSON_Visuels_v12.zip à côté du jeu ou dans Téléchargements, puis relance Installer_Joueurs_Photos.bat.')
+    if not source:sys.exit('Place Football_Monde_JSON_Visuels.zip à côté du jeu ou dans Téléchargements, puis relance Tout_Installer.bat.')
     print('Installation du pack local :',source,flush=True);fm=local_pack(source)
     subprocess.run([sys.executable,str(RACINE_JEU/'outils/importer_monde.py'),'--donnees',str(fm)],check=True)
     print(json.dumps(audit(fm),ensure_ascii=False,indent=2));print('Installation terminée. Lance Lancer_Manager_Foot.bat puis choisis un club réel.')
