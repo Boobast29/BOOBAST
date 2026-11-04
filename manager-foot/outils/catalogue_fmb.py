@@ -5,19 +5,34 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import sqlite3
 import zipfile
+from decimal import Decimal
 
 from commun import RACINE_JEU, DOSSIER_JEU_DONNEES, normaliser
 import images
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 def entier_source(valeur):
     """Une cellule absente ou non numérique demeure inconnue."""
     texte = str(valeur or '').strip()
     return int(texte) if texte.isdecimal() else None
+
+
+def montant_source_gbp(valeur):
+    """Montant affiché par FMblog, en livres ; '-' n'est jamais assimilé à zéro."""
+    match = re.fullmatch(r'£([\d,.]+)([kmb]?)(?: p/w)?', str(valeur or '').strip(), re.I)
+    if not match:
+        return None
+    try:
+        nombre = Decimal(match[1].replace(',', ''))
+        montant = nombre * {'': 1, 'k': 1_000, 'm': 1_000_000, 'b': 1_000_000_000}[match[2].lower()]
+        return int(montant) if 0 <= montant <= 1_000_000_000_000 else None
+    except (ArithmeticError, ValueError):
+        return None
 
 
 class Catalogue:
@@ -103,7 +118,8 @@ class Catalogue:
             c.executescript('''CREATE TABLE meta(hash TEXT, contenu TEXT, schema_version INTEGER);
                 CREATE TABLE fiches(type TEXT, id TEXT, nom TEXT, recherche TEXT, detail INTEGER,
                   photo TEXT, contenu TEXT, poste TEXT, age INTEGER, niveau INTEGER,
-                  potentiel INTEGER, club TEXT, PRIMARY KEY(type,id));
+                  potentiel INTEGER, club TEXT, valeur_gbp INTEGER, salaire_hebdo_gbp INTEGER,
+                  PRIMARY KEY(type,id));
                 CREATE INDEX tri_fiches ON fiches(type, nom);
                 CREATE INDEX filtres_joueurs ON fiches(type, poste, age, niveau);''')
             clubs = {str(x['fm_uid']): x['name'] for x in data['clubs']}
@@ -127,13 +143,16 @@ class Catalogue:
                         niveau = entier_source(fields.get('abi'))
                         potentiel = entier_source(fields.get('pot'))
                         club = clubs.get(str(club_uid)) if club_uid is not None else None
+                        valeur = montant_source_gbp(fields.get('value'))
+                        salaire = montant_source_gbp(fields.get('wage'))
                     else:
                         d = None
                         poste = age = niveau = potentiel = club = None
+                        valeur = salaire = None
                     photo = (x.get('photo') or x.get('logo') or {}).get('local_path')
-                    c.execute('INSERT INTO fiches VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',
+                    c.execute('INSERT INTO fiches VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                               (typ, uid, x['name'], normaliser(x['name']), bool(d or x.get('supplement')), photo, json.dumps(x, ensure_ascii=False),
-                               poste, age, niveau, potentiel, club))
+                               poste, age, niveau, potentiel, club, valeur, salaire))
             c.execute('INSERT INTO meta VALUES(?, ?, ?)', (empreinte, json.dumps(data['metadata'], ensure_ascii=False), SCHEMA_VERSION))
         os.replace(tmp, self.base)
 
@@ -179,25 +198,33 @@ class Catalogue:
                     if not 0 <= valeur <= 99:
                         raise ValueError('Filtre hors limites')
                     where.append(colonne + (' <= ?' if param == 'age_max' else ' >= ?')); args.append(valeur)
+            for param, colonne in [('valeur_max', 'valeur_gbp'), ('salaire_max', 'salaire_hebdo_gbp')]:
+                if p.get(param):
+                    valeur = int(p[param])
+                    if not 0 <= valeur <= 1_000_000_000_000:
+                        raise ValueError('Filtre hors limites')
+                    where.append(colonne + ' IS NOT NULL AND ' + colonne + ' <= ?'); args.append(valeur)
         tri = p.get('tri', 'nom')
         ordre = {'nom': 'nom, id', 'niveau': 'niveau IS NULL, niveau DESC, nom, id',
                  'potentiel': 'potentiel IS NULL, potentiel DESC, nom, id',
-                 'age': 'age IS NULL, age, nom, id'}.get(tri)
+                 'age': 'age IS NULL, age, nom, id',
+                 'marge': 'niveau IS NULL OR potentiel IS NULL, (potentiel - niveau) DESC, nom, id',
+                 'valeur': 'valeur_gbp IS NULL, valeur_gbp, nom, id'}.get(tri)
         if ordre is None:
             raise ValueError('Tri inconnu')
         w = ' AND '.join(where)
         with self.connection() as c:
             total = c.execute('SELECT count(*) FROM fiches WHERE ' + w, args).fetchone()[0]
-            rows = c.execute('SELECT type,id,nom,detail,photo,poste,age,niveau,potentiel,club FROM fiches WHERE ' + w + ' ORDER BY ' + ordre + ' LIMIT ? OFFSET ?', args+[taille,page*taille]).fetchall()
+            rows = c.execute('SELECT type,id,nom,detail,photo,poste,age,niveau,potentiel,club,valeur_gbp,salaire_hebdo_gbp FROM fiches WHERE ' + w + ' ORDER BY ' + ordre + ' LIMIT ? OFFSET ?', args+[taille,page*taille]).fetchall()
             return {'total': total, 'page': page, 'taille': taille, 'resultats': [dict(x) for x in rows]}
 
     def fiche(self, typ, uid):
         with self.connection() as c:
-            row = c.execute('SELECT contenu,poste,age,niveau,potentiel,club FROM fiches WHERE type=? AND id=?', (typ,uid)).fetchone()
+            row = c.execute('SELECT contenu,poste,age,niveau,potentiel,club,valeur_gbp,salaire_hebdo_gbp FROM fiches WHERE type=? AND id=?', (typ,uid)).fetchone()
             if not row:
                 return None
             data = json.loads(row['contenu'])
-            data['_index'] = {k: row[k] for k in ('poste', 'age', 'niveau', 'potentiel', 'club')}
+            data['_index'] = {k: row[k] for k in ('poste', 'age', 'niveau', 'potentiel', 'club', 'valeur_gbp', 'salaire_hebdo_gbp')}
             return data
 
     def photo(self, typ, uid):
