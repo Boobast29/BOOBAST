@@ -169,8 +169,10 @@ def install_data_pack(state,pack):
     stage=DOSSIER_JEU_DONNEES/'installations'/digest[:16];stage.mkdir(parents=True,exist_ok=True)
     env={**os.environ,'BOOBAST_DATA_DIR':str(stage)}
     subprocess.run([sys.executable,str(RACINE_JEU/'outils/installer_donnees.py'),str(fm)],cwd=RACINE_JEU,env=env,check=True)
+    out('Import terminé. Vérification des fiches, portraits et historiques…')
     report=audit(fm,stage/'monde.db')
     if BASE.exists():
+        out('Sauvegarde de la base précédente… Cette copie peut prendre quelques minutes.')
         with contextlib.closing(sqlite3.connect(BASE)) as old,contextlib.closing(sqlite3.connect(DOSSIER_JEU_DONNEES/'monde.precedent.db')) as backup:old.backup(backup)
         # Les ajouts graphiques personnels restent disponibles dans le nouveau catalogue.
         with contextlib.closing(sqlite3.connect(BASE)) as old,contextlib.closing(sqlite3.connect(stage/'monde.db')) as new:
@@ -179,6 +181,7 @@ def install_data_pack(state,pack):
                 new.execute(schema[0].replace('CREATE TABLE images','CREATE TABLE IF NOT EXISTS images'))
                 for row in old.execute('select * from images'):new.execute('insert or replace into images values ('+','.join('?' for _ in row)+')',tuple(row))
                 new.commit()
+    out('Préparation de la base du jeu… Garde cette fenêtre ouverte ; le navigateur va suivre.')
     next_db=BASE.with_suffix('.next.db')
     with contextlib.closing(sqlite3.connect(stage/'monde.db')) as source,contextlib.closing(sqlite3.connect(next_db)) as dest:source.backup(dest)
     os.replace(next_db,BASE)
@@ -261,6 +264,7 @@ def main(argv=None):
                 out('La base précédente est conservée et reste utilisable.')
         if not database_ready():out('Base mondiale complète absente. Place le ZIP V12 dans Téléchargements ou utilise --pack CHEMIN / --pack-url URL.');return 2
         from enrichir_pack_local import enrichir
+        out('Contrôle des compléments FM locaux…')
         enrichir()
         if args.enrichir and not args.hors_ligne:subprocess.run([sys.executable,str(RACINE_JEU/'outils/tout_installer.py'),'--sans-lancer'],cwd=RACINE_JEU,check=True)
         if args.installer_seul:

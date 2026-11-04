@@ -75,6 +75,6 @@ def main():
     if not source:sys.exit('Place Football_Monde_JSON_Visuels_v12.zip à côté du jeu ou dans Téléchargements, puis relance Lancer_Manager_Foot.bat.')
     print('Installation du pack local :',source,flush=True);fm=local_pack(source)
     subprocess.run([sys.executable,str(RACINE_JEU/'outils/importer_monde.py'),'--donnees',str(fm)],check=True)
-    print(json.dumps(audit(fm),ensure_ascii=False,indent=2));print('Installation terminée. Lance Lancer_Manager_Foot.bat puis choisis un club réel.')
+    print(json.dumps(audit(fm),ensure_ascii=False,indent=2));print('Données importées. Le lanceur poursuit la vérification et ouvrira ensuite le jeu.',flush=True)
 if __name__=='__main__':main()
 
