@@ -146,7 +146,7 @@ class Importeur:
             with self.con:
                 self.con.execute('INSERT OR REPLACE INTO import_log VALUES (?,?,?,?,?,?,?,?)',
                                  (etape, fichier, emp, 0, debut, datetime.datetime.now().isoformat(timespec='seconds'), 'erreur', repr(e)[:500]))
-            raise
+            raise ValueError(f'Import impossible : {fichier} — {e}') from e
 
     # ---------- Images factices (silhouette par défaut) ----------
     def detecter_placeholders(self):
@@ -388,7 +388,7 @@ class Importeur:
             total += n
             if n:
                 log(f'Lot {i + 1}/{len(manifest["player_files"])} {fn} : {n} fiches')
-        profils = sorted(os.listdir(fm / 'extension_stats_v10/profils_jeu'))
+        profils = sorted(p.name for p in (fm / 'extension_stats_v10/profils_jeu').glob('*.json') if not p.name.startswith('.'))
         for fn in profils:
             n = self.etape('profils', f'extension_stats_v10/profils_jeu/{fn}', self.profils)
             if n:

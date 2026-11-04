@@ -77,7 +77,7 @@ function vRechercheAvancee(host) {
   const th = (k, l) => `<th data-tri="${k}" class="ra-th ${tk === k ? 'on' : ''}">${l}${tk === k ? (td > 0 ? ' ▲' : ' ▼') : ''}</th>`;
   const nLibres = G.players.filter(p => p.club == null && !p.retired).length, nReels = G.players.filter(p => p.libreReel && p.club == null).length;
   host.innerHTML = `<section class="ra">
-    <div class="ra-raccourcis"><span>Catalogue des joueurs libres</span><button class="btn sm ${RA.pays === 'LIBRE' && !RA.reels ? 'primary' : ''}" id="raTousLibres">Tous les libres (${nLibres})</button>${nReels ? `<button class="btn sm ${RA.reels ? 'primary' : ''}" id="raReels">Vrais joueurs libres (${nReels})</button>` : '<small class="muted">Vrais joueurs libres : monde réel avec les données Transfermarkt (Tout_Installer).</small>'}</div>
+    <div class="ra-raccourcis"><span>Catalogue des joueurs libres</span><button class="btn sm ${RA.pays === 'LIBRE' && !RA.reels ? 'primary' : ''}" id="raTousLibres">Tous les libres (${nLibres})</button>${nReels ? `<button class="btn sm ${RA.reels ? 'primary' : ''}" id="raReels">Vrais joueurs libres (${nReels})</button>` : '<small class="muted">Vrais joueurs libres : monde réel avec les données Transfermarkt (compléments réseau facultatifs).</small>'}</div>
     <div class="ra-filtres">
       <label class="ra-l2">Nom <input id="raQ" value="${esc(RA.q)}" placeholder="Nom du joueur"></label>
       <div class="ra-l2"><span>Postes</span><div class="ra-postes">${Object.keys(ROLES).map(r => `<button type="button" data-ps="${r}" class="${RA.postes.includes(r) ? 'on' : ''}" title="${esc(ROLES[r].label)}">${r}</button>`).join('')}</div></div>

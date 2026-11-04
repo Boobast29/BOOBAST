@@ -30,7 +30,7 @@ async function organiserAccueil() {
       <button class="ac-mode" id="acEtendu"><span class="ac-m-tag">Recommandé</span><b>Monde étendu</b>
         <span>Angleterre, France, Allemagne, Italie, Espagne (3 divisions, vrais effectifs FM26 avec réserve et U19) + 27 championnats européens.</span><em>Choisir un club →</em></button>
       <button class="ac-mode ${mondeDispo ? '' : 'off'}" id="acReel"><b>Monde réel importé</b>
-        <span>${mondeDispo ? 'Ta base importée (Football Monde) : toutes ses divisions.' : 'Nécessite la base mondiale : lance <code>Tout_Installer.bat</code> une fois.'}</span><em>${mondeDispo ? 'Choisir un pays →' : 'Comment l\'installer ?'}</em></button>
+        <span>${mondeDispo ? 'Ta base importée (Football Monde) : toutes ses divisions.' : 'Nécessite la base mondiale : lance <code>Lancer_Manager_Foot.bat</code> une fois.'}</span><em>${mondeDispo ? 'Choisir un pays →' : 'Comment l\'installer ?'}</em></button>
       <button class="ac-mode" id="acFictif"><b>Monde fictif</b><span>58 clubs inventés sur trois divisions, éditables : idéal pour découvrir le jeu.</span><em>Choisir un club →</em></button>
     </div></section>
     <section class="ac-section" id="acParties"></section>
@@ -44,31 +44,16 @@ async function organiserAccueil() {
   const outils = ac.querySelector('.ac-o-grille');
   for (const e of [fmb, fichiers]) if (e) outils.append(e);
   outils.insertAdjacentHTML('afterbegin', `<div class="card ac-maj"><h2>Données du jeu</h2>
-    <p>Installe ou met à jour tout en une fois : base mondiale, effectifs et contrats réels, photos, logos, maillots, palmarès, championnats européens, visages.</p>
-    <button class="btn primary" id="acMaj">Tout installer / mettre à jour</button><p class="hint">Internet nécessaire. Même chose que <code>Tout_Installer.bat</code> dans le dossier du jeu.</p></div>`);
+    <p>Le même raccourci installe la V12 complète, vérifie les données et ouvre le jeu. Les compléments réseau restent facultatifs ; les dates des sources sont conservées.</p>
+    <button class="btn primary" id="acMaj">Installation et mise à jour</button><p class="hint">Utilise le raccourci BOOBAST ou <code>Lancer_Manager_Foot.bat</code>. Le ZIP V12 est détecté dans Téléchargements.</p></div>`);
   outils.querySelector('#acMaj').onclick = suivreInstallation;
   const viser = id => ac.querySelector(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   ac.querySelector('#acJouer')?.addEventListener('click', () => loadSlot(der.id));
   ac.querySelector('#acEtendu').onclick = () => typeof ouvrirMondeEtendu === 'function' ? ouvrirMondeEtendu() : toast('Monde étendu indisponible dans cette version.', 'err');
   ac.querySelector('#acReel').onclick = () => mondeDispo ? viser('#acReelZone') : modal(`<h2>Installer la base mondiale</h2>
-    <p>Double-clique sur <b>Tout_Installer.bat</b> (dans le dossier du jeu) : il télécharge et prépare tout en une fois (base, données réelles, photos, logos), puis lance le jeu.</p>
+    <p>Double-clique sur <b>Lancer_Manager_Foot.bat</b> (dans le dossier du jeu) : il télécharge et prépare tout en une fois (base, données réelles, photos, logos), puis lance le jeu.</p>
     <p class="hint">Internet nécessaire, une seule fois. Ensuite le jeu fonctionne hors ligne.</p>`);
   ac.querySelector('#acFictif').onclick = () => viser('#acFictifZone');
-}
-async function suivreInstallation() {
-  let r;
-  try { r = await fetch('/api/installation', { method: 'POST' }); } catch { r = null; }
-  if (!r || !r.ok) return modal(`<h2>Mise à jour depuis le jeu indisponible</h2><p>Le jeu n'est pas lancé par son serveur local. Ferme cette page et double-clique sur <b>Tout_Installer.bat</b> dans le dossier du jeu : il fait tout puis lance le jeu.</p>`);
-  modal(`<h2>Installation et mise à jour</h2><div id="acEtapes" class="ac-etapes"></div><pre id="acJournal" class="ac-journal"></pre><p class="hint" id="acFin">En cours… tu peux laisser cette fenêtre ouverte.</p>`, 'wide');
-  const tour = async () => {
-    if (!document.querySelector('#acEtapes')) return;
-    let e = {}; try { e = await (await fetch('/api/installation')).json(); } catch { }
-    document.querySelector('#acEtapes').innerHTML = (e.etapes || []).map(x => `<div class="ac-et ${x.statut === 'ok' ? 'ok' : x.statut === 'échec' ? 'ko' : x.statut === 'ignorée' ? 'ig' : 'run'}"><b>${x.statut === 'ok' ? '✔' : x.statut === 'échec' ? '✘' : x.statut === 'ignorée' ? '–' : '…'}</b><span>${esc(x.nom)}</span><small>${esc(x.detail || '')}</small></div>`).join('');
-    document.querySelector('#acJournal').textContent = (e.journal || []).slice(-12).join('\n');
-    if (e.fini && !e.en_cours) { document.querySelector('#acFin').innerHTML = 'Terminé. <button class="btn primary" onclick="location.reload()">Recharger le jeu</button>'; return; }
-    setTimeout(tour, 2000);
-  };
-  setTimeout(tour, 800);
 }
 window.addEventListener('load', () => {
   if (typeof startScreen !== 'function') return;
@@ -80,3 +65,7 @@ window.addEventListener('load', () => {
   };
   if (document.querySelector('#app .start-wrap')) organiserAccueil().catch(e => console.error(e));
 });
+
+function suivreInstallation() {
+  modal(`<h2>Un seul lanceur</h2><p>Ferme la fenêtre du serveur puis ouvre le raccourci <b>BOOBAST Manager Foot</b> ou <b>Lancer_Manager_Foot.bat</b>.</p><p>Il met à jour le code, installe ou reprend la V12 et ouvre le jeu. Place ton ZIP V12 dans Téléchargements : il est détecté automatiquement.</p><p class="hint">Les parties et les images personnelles sont conservées. Les mises à jour de la base se font avant le démarrage du serveur.</p>`);
+}

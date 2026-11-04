@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-cd /d "%~dp0"
+cd /d "%~dp0..\.."
 echo Complete les attributs des joueurs des clubs du jeu, reserves comprises.
 echo La collecte peut etre longue. Chaque fiche validee est conservee pour reprendre plus tard.
 where py >nul 2>nul

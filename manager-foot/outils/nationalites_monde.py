@@ -51,7 +51,7 @@ def executer(con=None, dossier=RACINE_JEU / 'packs'):
     con = con or commun.connexion()
     idx = index_source(con)
     if not idx:
-        return {'joueurs': 0, 'apparies': 0, 'note': 'base mondiale et Transfermarkt absents : installe-les d\'abord (Tout_Installer)'}
+        return {'joueurs': 0, 'apparies': 0, 'note': 'base mondiale et Transfermarkt absents : installe-les d\'abord (lanceur unique)'}
     total, res = 0, {}
     for f in sorted(pathlib.Path(dossier).glob('monde-*.json.gz')):
         d = json.load(gzip.open(f, 'rt', encoding='utf-8'))

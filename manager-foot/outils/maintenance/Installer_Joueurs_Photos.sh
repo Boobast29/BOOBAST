@@ -1,3 +1,3 @@
 #!/bin/sh
-cd "$(dirname "$0")" || exit 1
+cd "$(dirname "$0")/../.." || exit 1
 python3 outils/installer_donnees.py "$@"

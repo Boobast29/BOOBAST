@@ -264,7 +264,7 @@ function renderFiche(f, d, tab, back) {
   } else if (tab === 'att') {
     const a99 = cap?.attributs_detail_sur_99, a20 = cap?.attributs_detail_sur_20;
     const fm = pr?.attributes;
-    body = !a99 ? `<p>34 attributs détaillés : ${INCONNU}.</p>` : `<table class="tbl"><thead><tr><th>Attribut</th><th>Source /99</th><th>Conversion /20</th></tr></thead><tbody>
+    body = !a99 ? `<p>Attributs EA détaillés : ${INCONNU}.</p>` : `<table class="tbl"><thead><tr><th>Attribut</th><th>Source /99</th><th>Conversion /20</th></tr></thead><tbody>
       ${Object.keys(a99).map(k => `<tr><td>${esc(d.labels?.[k] || k)}</td><td>${a99[k] ?? INCONNU}</td><td>${a20?.[k] ?? INCONNU}</td></tr>`).join('')}</tbody></table>
       ${fm ? `<h3 class="mt">Grille de jeu (profil V10)</h3><p class="hint">Champs absents de la source (leadership, détermination…) laissés inconnus.</p><div class="grid2">${Object.entries(fm).map(([g, o]) => `<div><h4>${esc(g)}</h4>${Object.entries(o).map(([k, v]) => `<div class="attr"><span>${esc(k.replace(/_/g, ' '))}</span><b>${v ?? INCONNU}</b></div>`).join('')}</div>`).join('')}</div>` : ''}`;
   } else if (tab === 'pos') {
@@ -288,6 +288,14 @@ function renderFiche(f, d, tab, back) {
       ${(f.conflits || []).map(c => `<tr><td>Conflit</td><td class="warn"><small>${esc(JSON.stringify(c))}</small></td></tr>`).join('')}
       <tr><td>Archives</td><td>${Object.entries(f.historiques_dispo || {}).map(([k, n]) => `${esc(k)} : ${n}`).join(' · ') || 'aucune'}${f.quarantaine_transferts ? ` · ${f.quarantaine_transferts} transfert(s) à date aberrante mis à part` : ''}</td></tr></table>
       ${ED ? '<p class="hint">Mode éditeur : valeurs source visibles.</p>' : ''}`;
+  }
+  const complement = s.complement_fm;
+  if (complement && (tab === 'att' || tab === 'src')) {
+    const url = /^https:\/\//.test(complement.sourceUrl || '') ? complement.sourceUrl : null;
+    body += `<section class="card mt"><h3>Complément FM · ${esc(complement.sourceDatabase || '')}</h3>
+      <p class="hint">Correspondance unique par nom et date de naissance. Notes publiques sur 99, conservées séparément des notes EA.${complement.sourceModel ? ' Modèle : ' + esc(complement.sourceModel) + '.' : ''}</p>
+      <table class="tbl compact"><thead><tr><th>Attribut source</th><th>Note /99</th></tr></thead><tbody>${Object.entries(complement.attributes || {}).map(([k,v]) => `<tr><td>${esc(k)}</td><td>${esc(String(v))}</td></tr>`).join('')}</tbody></table>
+      ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Voir la fiche source</a>` : ''}</section>`;
   }
   modal(`${head}<div class="tabs">${tabs.map(([k, l]) => `<button data-t="${k}" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div><div class="mt">${body}</div>`, 'wide');
   $$('#modal .tabs button').forEach(b => b.onclick = () => renderFiche(f, d, b.dataset.t, back));

@@ -10,7 +10,7 @@ import unicodedata
 import zlib
 
 RACINE_JEU = pathlib.Path(__file__).resolve().parent.parent          # manager-foot/
-DOSSIER_JEU_DONNEES = RACINE_JEU / 'donnees_jeu'                       # base, cache, journaux (non versionné)
+DOSSIER_JEU_DONNEES = pathlib.Path(os.environ.get('BOOBAST_DATA_DIR') or RACINE_JEU / 'donnees_jeu').expanduser().resolve()                       # base, cache, journaux (non versionné)
 BASE = DOSSIER_JEU_DONNEES / 'monde.db'
 CACHE_IMAGES = DOSSIER_JEU_DONNEES / 'cache_images'
 FICHIER_CONFIG = DOSSIER_JEU_DONNEES / 'config.json'

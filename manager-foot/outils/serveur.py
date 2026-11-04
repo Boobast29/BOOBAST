@@ -236,6 +236,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(corps)
 
     def do_GET(self):
+        if urllib.parse.urlparse(self.path).path.rstrip('/') == '/api/health':
+            return self.envoyer(200, {'application':'BOOBAST', 'root':str(RACINE_JEU.resolve()), 'base_installee':BASE.is_file()})
         if urllib.parse.urlparse(self.path).path.rstrip('/') == '/api/installation':
             return self.envoyer(200, etat_installation())
         u = urllib.parse.urlparse(self.path)
@@ -312,7 +314,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if urllib.parse.urlparse(self.path).path.rstrip('/') == '/api/installation':
-            return self.envoyer(200, lancer_installation())
+            return self.envoyer(409, lancer_installation())
         if RES is None:
             return self.envoyer(503, {'erreur': 'Base mondiale non installée'})
         u = urllib.parse.urlparse(self.path)
@@ -370,13 +372,7 @@ INSTALLATION = {'proc': None}
 
 
 def lancer_installation():
-    p = INSTALLATION['proc']
-    if p and p.poll() is None:
-        return {'ok': True, 'deja': True}
-    import subprocess
-    INSTALLATION['proc'] = subprocess.Popen([sys.executable, str(RACINE_JEU / 'outils' / 'tout_installer.py'), '--sans-lancer'], cwd=str(RACINE_JEU),
-                                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return {'ok': True}
+    return {'ok':False,'erreur':'Ferme la fenêtre du serveur puis relance Lancer_Manager_Foot.bat : installation transactionnelle avant démarrage.'}
 
 
 def etat_installation():
@@ -415,10 +411,7 @@ def main():
     except OSError:
         print(f'Le port {a.port} est déjà utilisé : le jeu tourne peut-être déjà (http://127.0.0.1:{a.port}/).', flush=True)
         print('Ferme l\'autre fenêtre du serveur, ou lance : python outils/serveur.py --port 8766', flush=True)
-        if a.ouvrir:
-            import webbrowser
-            webbrowser.open(f'http://127.0.0.1:{a.port}/')
-        return
+        return 1
     print(f'Manager Foot prêt : http://127.0.0.1:{a.port}/  (laisse cette fenêtre ouverte pendant la partie, Ctrl+C pour arrêter)', flush=True)
     if a.ouvrir:  # le navigateur s'ouvre seulement maintenant : plus de « connexion refusée » au démarrage
         import webbrowser
@@ -430,5 +423,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())
 

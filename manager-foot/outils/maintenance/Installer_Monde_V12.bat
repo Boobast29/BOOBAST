@@ -1,6 +1,6 @@
 @echo off
 setlocal
-cd /d "%~dp0"
+cd /d "%~dp0..\.."
 if not exist "outils\installation_simple.py" (
   echo Extrais le ZIP du code avant de lancer ce fichier.
   pause

@@ -1,4 +1,8 @@
 #!/bin/sh
-# Lanceur unique : mise à jour du code et des données, puis démarrage du jeu.
-cd "$(dirname "$0")" || exit 1
+set -eu
+cd "$(dirname "$0")"
+if ! command -v python3 >/dev/null 2>&1; then
+  echo 'Python 3.9 ou plus récent est nécessaire. Installe Python 3 puis relance ce fichier.' >&2
+  exit 1
+fi
 exec python3 outils/lanceur.py "$@"
