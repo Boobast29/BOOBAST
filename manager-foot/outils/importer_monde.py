@@ -14,6 +14,7 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 
@@ -388,7 +389,10 @@ class Importeur:
             total += n
             if n:
                 log(f'Lot {i + 1}/{len(manifest["player_files"])} {fn} : {n} fiches')
-        profils = sorted(os.listdir(fm / 'extension_stats_v10/profils_jeu'))
+        # Une extraction ou copie interrompue peut laisser des fichiers cachés
+        # .profils_*.json.* tronqués. Seuls les lots profils_NNN.json sont importables.
+        profils = sorted(fn for fn in os.listdir(fm / 'extension_stats_v10/profils_jeu')
+                        if re.fullmatch(r'profils_\d{3}\.json', fn))
         for fn in profils:
             n = self.etape('profils', f'extension_stats_v10/profils_jeu/{fn}', self.profils)
             if n:
