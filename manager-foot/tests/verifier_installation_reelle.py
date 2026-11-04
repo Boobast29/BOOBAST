@@ -1,7 +1,7 @@
 """Contrôle HTTP du jeu et d'une vraie base V12 déjà installée.
 python tests/verifier_installation_reelle.py --donnees CHEMIN/donnees_jeu
 """
-import argparse,json,os,pathlib,socket,sqlite3,subprocess,sys,time,urllib.request
+import argparse,gzip,json,os,pathlib,socket,sqlite3,subprocess,sys,time,urllib.request,urllib.error
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--donnees',required=True);args=ap.parse_args();data=pathlib.Path(args.donnees).resolve()
@@ -20,6 +20,15 @@ def main():
                 if time.monotonic()>deadline:raise RuntimeError('Le serveur ne répond pas.')
                 time.sleep(.1)
         assert health['application']=='BOOBAST' and health['base_installee']
+        with urllib.request.urlopen(base+'/api/complement-fm',timeout=20) as r:
+            complement=json.load(r);assert len(complement['players'])>=3631;assert len({str(p['fmUid']) for p in complement['players']})==len(complement['players'])
+        if len(complement['players'])>3631:
+            with urllib.request.urlopen(base+'/api/effectifs-fm/monde-index.json') as r:
+                index=json.load(r);assert index['totals']['players']==20528
+            with urllib.request.urlopen(base+'/api/effectifs-fm/monde-germany.json.gz') as r:
+                country=json.loads(gzip.decompress(r.read()));assert any(p.get('affiliatedTeamReference') for c in country['clubs'] for p in c['players'])
+            portrait=next(p for p in complement['players'] if (p.get('photo') or {}).get('available_offline'))
+            with urllib.request.urlopen(base+'/api/complement-fm/image/'+str(portrait['fmUid'])) as r:assert r.headers.get('Content-Type','').startswith('image/')
         for url in ['/api/etat','/packs/monde-index.json','/packs/fmblog-fm26.manifest.json','/packs/fminside-fm26.manifest.json']:
             with urllib.request.urlopen(base+url,timeout=20) as r:assert r.status==200;json.load(r)
         with sqlite3.connect(data/'monde.db') as c:

@@ -1,5 +1,5 @@
 const fs=require('fs'),vm=require('vm'),zlib=require('zlib'),assert=require('assert'),path=require('path');
-const root=path.resolve(__dirname,'..');
+const root=path.resolve(__dirname,'..');const effects=process.env.FM_EFFECTIFS_DIR||`${root}/packs`;
 const ctx={console,setTimeout:()=>{},startScreen:()=>{},document:{querySelector:()=>null}};vm.createContext(ctx);
 for(const file of ['data','engine','economy','transfers','europe','attributs']){let code=fs.readFileSync(`${root}/js/${file}.js`,'utf8');if(file==='attributs')code=code.slice(0,code.indexOf('const __playerModalA'));vm.runInContext(code,ctx,{filename:file});}
 const app=fs.readFileSync(`${root}/js/app.js`,'utf8');
@@ -7,9 +7,9 @@ vm.runInContext(app.slice(app.indexOf('function importDatabase(raw)'),app.indexO
 vm.runInContext(fs.readFileSync(`${root}/js/import_json_complet.js`,'utf8'),ctx);
 vm.runInContext(fs.readFileSync(`${root}/js/monde_etendu.js`,'utf8'),ctx);
 vm.runInContext(fs.readFileSync(`${root}/js/integration_fminside.js`,'utf8'),ctx);
-const index=JSON.parse(fs.readFileSync(`${root}/packs/monde-index.json`));
+const index=JSON.parse(fs.readFileSync(`${effects}/monde-index.json`));
 for(const country of index.countries){
- const data=JSON.parse(zlib.gunzipSync(fs.readFileSync(`${root}/packs/${country.file}`)));
+ const data=JSON.parse(zlib.gunzipSync(fs.readFileSync(`${effects}/${country.file}`)));
  for(const group of data.competitions.filter(c=>c.tier===3)){
   const before=JSON.stringify(data);const world=ctx.construireCarriereMonde(data,group.fmUid);
   assert.equal(JSON.stringify(data),before);
@@ -25,7 +25,7 @@ for(const country of index.countries){
 }
 
 // Tous les pays d'une même carrière : calendrier, sauvegarde et promotions.
-const countries=index.countries.map(c=>JSON.parse(zlib.gunzipSync(fs.readFileSync(`${root}/packs/${c.file}`))));
+const countries=index.countries.map(c=>JSON.parse(zlib.gunzipSync(fs.readFileSync(`${effects}/${c.file}`))));
 const mf=JSON.parse(fs.readFileSync(`${root}/packs/fminside-fm26.manifest.json`));
 const realCatalogue=JSON.parse(zlib.gunzipSync(Buffer.concat(mf.parts.map(p=>fs.readFileSync(`${root}/packs/${p.file}`)))));
 const fmbManifest=JSON.parse(fs.readFileSync(`${root}/packs/fmblog-fm26.manifest.json`));
@@ -37,6 +37,10 @@ for(const source of fmb.players){const p=all.players.find(p=>p.fmUid===source.fm
 
 assert.equal(all.players.filter(p=>p.club==null && p.sourceProfile?.freeAgentSnapshot).length,index.freeAgentsDocumented || 0);
 assert.equal(all.players.filter(p=>p.club==null).length,index.freeAgentsDocumented || 0);
+assert.equal(all.sourceCoverage.sourcePlayers,index.totals.players,'Aucun joueur source perdu entre le catalogue et la carrière');
+const affiliates=countries.flatMap(w=>w.clubs.flatMap(c=>c.players.filter(p=>p.affiliatedTeamReference)));
+if(index.affiliatedSquadsIncluded)assert(affiliates.length>=1939,'Les effectifs affiliés doivent rester chargés');
+for(const source of affiliates){const p=all.players.find(p=>String(p.fmUid)===String(source.fmUid));assert(p,'Joueur affilié présent');assert.equal(p.sourceProfile.sourceTeamUid,source.sourceTeamUid);assert(/reserve/i.test(p.sourceProfile.squad));}
 assert.equal(all.clubs.length,355);assert.equal(all.sourceCoverage.countries.length,5);
 assert.equal(new Set(all.players.map(p=>p.id)).size,all.players.length);
 ctx.setupEuropean=()=>{};ctx.news=()=>{};
@@ -72,3 +76,22 @@ const etrClub=all.clubs.find(c=>c.worldCountry==='Germany');const etrPlayer=all.
 assert.equal(ctx.ligueDe(all,etrPlayer),ctx.clubLeague(all,etrClub.id).id);
 assert(ctx.selectLigues(all).includes('Bundesliga'));
 console.log('Mercato : recherche par championnat étranger et absence de double simulation validées.');
+
+// Le choix de pays de l'accueil ouvre les clubs des trois divisions via les effectifs locaux.
+(async()=>{
+  ctx.location={protocol:'http:'};ctx.Response=Response;ctx.DecompressionStream=DecompressionStream;
+  ctx.chargerCatalogueFMInside=async()=>realCatalogue;
+  ctx.localStorage={getItem:()=>'',setItem:()=>{}};
+  let html='';ctx.modal=value=>{html=value;};ctx.closeModal=()=>{};ctx.toast=message=>{throw Error(message);};
+  ctx.document.querySelectorAll=()=>[];
+  ctx.fetch=async url=>{
+    if(url==='/api/complement-fm')return new Response(JSON.stringify(realCatalogue));
+    const file=url.startsWith('/api/effectifs-fm/')?decodeURIComponent(url.split('/').pop()):url.replace(/^packs\//,'');
+    const local=path.join(file.startsWith('monde-')?effects:`${root}/packs`,file);
+    return fs.existsSync(local)?new Response(fs.readFileSync(local)):new Response('{}',{status:404});
+  };
+  await ctx.choisirClubEffectifsFM('Germany');
+  assert.equal((html.match(/data-fm-club=/g)||[]).length,56,'Les 56 clubs allemands doivent être proposés depuis l’accueil');
+  assert(html.includes('D1')&&html.includes('D2')&&html.includes('D3'));
+  console.log('Accueil : choix du club FM D1–D3 via les effectifs locaux validé.');
+})().catch(err=>{console.error(err);process.exitCode=1;});

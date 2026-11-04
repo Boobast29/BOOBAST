@@ -8,12 +8,29 @@ function enrichirPaysFMInside(pays,catalogue){
   return pays;
 }
 let catalogueFMInsideMonde,correctifsNomsMonde,natsMonde,NATS_MONDE={};
+async function catalogueCompletMonde() {
+  const inclus=await chargerCatalogueFMInside();
+  if(!location.protocol.startsWith('http'))return inclus;
+  try {
+    const r=await fetch('/api/complement-fm');if(!r.ok)return inclus;
+    const local=await r.json();if(!Array.isArray(local.players))return inclus;
+    const rows=new Map(inclus.players.map(p=>[String(p.fmUid),p]));
+    for(const p of local.players)if(p.fmUid && Object.keys(p.attributes||{}).length>=30)rows.set(String(p.fmUid),p);
+    return {...inclus,players:[...rows.values()]};
+  }catch{return inclus;}
+}
+async function lireRessourceEffectifs(file) {
+  if(location.protocol.startsWith('http')){
+    try {const local=await fetch('/api/effectifs-fm/'+encodeURIComponent(file));if(local.ok)return local;}catch{}
+  }
+  return fetch('packs/'+file);
+}
 async function lirePaysMonde(file) {
-  const r = await fetch('packs/' + file);
+  const r = await lireRessourceEffectifs(file);
   if (!r.ok) throw Error('Base nationale indisponible');
   if (typeof DecompressionStream === 'undefined') throw Error('Cette base nécessite un navigateur prenant en charge gzip (Chrome, Edge ou Firefox récent).');
   const pays=await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).json();
-  catalogueFMInsideMonde ||= chargerCatalogueFMInside().catch(err=>{catalogueFMInsideMonde=null;throw err;});
+  catalogueFMInsideMonde ||= catalogueCompletMonde().catch(err=>{catalogueFMInsideMonde=null;throw err;});
   enrichirPaysFMInside(pays,await catalogueFMInsideMonde);
   correctifsNomsMonde ||= fetch('packs/noms-reels-fmscout.json').then(r=>{if(!r.ok)throw Error('Correctifs de noms indisponibles');return r.json();}).catch(err=>{correctifsNomsMonde=null;throw err;});
   const noms=await correctifsNomsMonde;
@@ -41,7 +58,8 @@ function construireCarriereMonde(pays, groupeD3) {
       const attrs = detail ? cv.attrs : Object.fromEntries(Object.keys(ATTRS).map(k=>[k,niveau]));
       profils.set(p.fmUid,{source:p, detailed:!!detail});
       return {name:p.name, fmUid:p.fmUid, age:p.age || 24, nat:NATS_MONDE[String(p.fmUid)]||'UNK',pos:cv.pos,foot:p.foot?cv.foot:undefined,
-        attrs, detail20:cv.detail20, pot:p.potential || undefined, wage:p.wageWeekly || undefined};
+        attrs, detail20:cv.detail20, pot:p.potential || undefined, wage:p.wageWeekly || undefined,
+        photo:p.photo?.available_offline && p.photo?.local_path ? '/api/complement-fm/image/'+encodeURIComponent(p.fmUid) : p.photo?.url || null};
     })
   }));
   const monde = importDatabase({clubs,leagueNames:comps.map(c=>c.name),cupName:'Coupe nationale · '+pays.label});
@@ -57,7 +75,7 @@ function construireCarriereMonde(pays, groupeD3) {
     p.dataQuality=info ? (info.detailed?'documented_attributes':'estimated_attributes') : 'generated_filler';
     if(info) {
       appliquerBiographieTransfermarkt(p,info.source);
-      p.sourceProfile={url:info.source.sourceUrl,database:info.source.sourceDatabase,squad:info.source.squad,contract:info.source.contractEndText};
+      p.sourceProfile={url:info.source.sourceUrl,database:info.source.sourceDatabase,squad:info.source.squad,sourceTeamUid:info.source.sourceTeamUid,affiliatedTeamReference:info.source.affiliatedTeamReference,contract:info.source.contractEndText};
       if(typeof equipeDeSource==='function')equipeDeSource(p,info.source.squad); // équipe réelle : première, réserve ou U19
       if(Number.isFinite(info.source.wageWeekly))p.wage=info.source.wageWeekly;
       if(Number.isFinite(info.source.value))p.value=info.source.value;
@@ -94,12 +112,30 @@ function construireMondeComplet(listePays,catalogueLibres=null) {
   if(catalogueLibres){const result=ajouterJoueursLibresDocumentes(monde,catalogueLibres);result.monde.sourceCoverage.freeAgents=result.ajoutes;return result.monde;}
   return monde;
 }
+async function choisirClubEffectifsFM(country) {
+  modal('<h2>Chargement des effectifs FM…</h2><p>Les cinq pays et leurs trois divisions sont chargés pour le recrutement international.</p>','wide',{noClose:true});
+  try {
+    const response=await lireRessourceEffectifs('monde-index.json');if(!response.ok)throw Error('Index des effectifs indisponible');
+    const index=await response.json(),countries=await Promise.all(index.countries.map(c=>lirePaysMonde(c.file)));
+    const world=construireMondeComplet(countries,await catalogueCompletMonde());
+    const source=countries.find(c=>c.country===country);if(!source)throw Error('Pays absent des effectifs FM');
+    const domestic=world.clubs.filter(c=>c.worldCountry===country);
+    modal(`<h2>${esc(source.label)} · Effectifs FM</h2><p>Les trois divisions et tous leurs groupes sont disponibles. Les cinq pays restent accessibles au mercato. Effectifs selon le snapshot FM26 ; notes manquantes signalées comme estimées.</p>
+      <label>Nom de l’entraîneur <input id="fmMgr" value="${esc(localStorage.getItem('mf-mgr')||'')}" maxlength="30"></label>${typeof roleSelectHTML==='function'?roleSelectHTML():''}
+      ${source.competitions.map(comp=>`<h3>D${comp.tier} · ${esc(comp.name)}</h3><div class="club-grid">${domestic.filter(c=>c.worldCompetitionUid===comp.fmUid).map(c=>`<button class="club-pick" data-fm-club="${c.id}">${esc(c.name)}<small>${world.players.filter(p=>p.club===c.id && p.fmUid).length} joueurs des effectifs source</small></button>`).join('')}</div>`).join('')}`,'wide');
+    if(typeof bindRoleSelect==='function')bindRoleSelect();
+    document.querySelectorAll('[data-fm-club]').forEach(b=>b.onclick=()=>{
+      const name=document.getElementById('fmMgr').value.trim()||'Coach';localStorage.setItem('mf-mgr',name);
+      G=newGame(world,+b.dataset.fmClub,name);VIEW='inbox';closeModal();save();enterGame();
+    });
+  }catch(err){closeModal();toast('Effectifs FM indisponibles : '+err.message,'err');}
+}
 async function ouvrirMondeEtendu() {
   const host=document.querySelector('#app');
   host.innerHTML='<section class="card"><h1>Le monde du football</h1><button class="btn" id="meRetour">Retour</button><p id="meEtat">Chargement…</p><label>Pays <select id="mePays"></select></label><select id="meGroupe" hidden></select><p>Chaque nouvelle carrière charge les cinq pays et tous leurs groupes. Le pays sélectionné sert à consulter la base.</p><p id="meBilan"></p><div id="meComps"></div><button class="btn primary" id="meCreer" disabled>Préparer la carrière · tous les pays</button></section>';
   const el=id=>document.getElementById(id);el('meRetour').onclick=startScreen;
   try {
-    const r=await fetch('packs/monde-index.json');if(!r.ok)throw Error('Index mondial indisponible');const index=await r.json();
+    const r=await lireRessourceEffectifs('monde-index.json');if(!r.ok)throw Error('Index mondial indisponible');const index=await r.json();
     el('meEtat').textContent=`${index.totals.clubs} clubs · ${index.totals.competitions} compétitions · ${index.totals.players} joueurs · ${index.totals.staff} membres du staff · ${index.freeAgentsDocumented || 0} joueurs libres documentés. ${index.notice}`;
     el('mePays').innerHTML=index.countries.map(c=>`<option value="${esc(c.key)}">${esc(c.label)}</option>`).join('');
     let pays, request=0;
@@ -118,7 +154,7 @@ async function ouvrirMondeEtendu() {
       el('meCreer').disabled=true;
       try {
         const tousLesPays=await Promise.all(index.countries.map(c=>lirePaysMonde(c.file)));
-        const monde=construireMondeComplet(tousLesPays,await chargerCatalogueFMInside());
+        const monde=construireMondeComplet(tousLesPays,await catalogueCompletMonde());
         await Store.set(DB_KEY,monde);DB=monde;startScreen();toast(`Base préparée : ${monde.clubs.length} clubs, ${monde.sourceCoverage.sourcePlayers} joueurs issus des sources. Choisis ton club.`);
       }catch(err){el('meBilan').textContent=err.message;el('meCreer').disabled=false;}
     };

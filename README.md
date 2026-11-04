@@ -80,3 +80,14 @@ Un lanceur par système ; les anciens outils manuels sont rangés dans
 `manager-foot/documentation/`. Il n'est pas nécessaire de les ouvrir pour jouer.
 
 Détails et sources : [installation et V12](manager-foot/documentation/INSTALLATION_V12.md).
+
+## Effectifs des trois divisions
+
+Sur l’accueil, utilise **Effectifs FM D1–D3** sous le pays souhaité.
+La nouvelle carrière charge les cinq pays, tous leurs groupes et les effectifs
+première/réserve/jeunes référencés. Avec la V12 enrichie 12.3, les 1 939 joueurs des équipes affiliées
+allemandes et espagnoles sont conservés en réserve, avec leur UID source.
+Les anciennes parties restent des instantanés : ces ajouts concernent une nouvelle carrière.
+Les notes détaillées et portraits de la V12 enrichie sont lus depuis le pack local.
+Trois liens italiens de réserves sans UID distinct restent exclus des divisions ;
+aucun club ou joueur n’est inventé pour les remplacer.

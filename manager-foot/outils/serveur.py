@@ -33,6 +33,17 @@ STATIQUES_INTERDITS = ('donnees_jeu', 'outils', '.git', 'packs')
 PACKS_PUBLICS = re.compile(r'^packs/(monde-[a-z-]+\.json(\.gz)?|fminside-fm26\.json\.gz|(?:fminside|fmblog)-fm26\.manifest\.json|(?:fminside|fmblog)-[a-f0-9]{12}\.[0-9]{3}\.part|noms-reels-fmscout\.json|nationalites-monde\.json)$')
 
 
+_COMPLEMENTS_FM = None
+
+def complements_fm():
+    global _COMPLEMENTS_FM
+    if _COMPLEMENTS_FM is None:
+        from enrichir_pack_local import catalogue
+        records = catalogue()
+        _COMPLEMENTS_FM = {str(p['fmUid']): p for p in records}
+    return _COMPLEMENTS_FM
+
+
 def db():
     if not hasattr(LOCAL, 'con'):
         LOCAL.con = connexion(lecture_seule=False)
@@ -280,6 +291,30 @@ class Handler(BaseHTTPRequestHandler):
                 f = CATALOGUE.photo(parts[2], parts[3])
                 return self.envoyer(200, f[0], f[1], 'max-age=86400') if f else self.envoyer(404, {'erreur': 'Image inconnue'})
             return self.envoyer(404, {'erreur': 'Route catalogue inconnue'})
+        if len(parts) == 2 and parts[0] == 'effectifs-fm':
+            name = parts[1]
+            allowed = {'monde-index.json', 'monde-england.json.gz', 'monde-france.json.gz', 'monde-germany.json.gz', 'monde-italy.json.gz', 'monde-spain.json.gz'}
+            if FM and name in allowed:
+                path = images.chemin_sur(FM, 'extension_manager_v12_3/effectifs_jeu/' + name)
+                if path and path.is_file():
+                    mime = 'application/gzip' if name.endswith('.gz') else 'application/json; charset=utf-8'
+                    return self.envoyer(200, path.read_bytes(), mime)
+            return self.envoyer(404, {'erreur': 'Effectifs locaux absents ; utiliser le catalogue inclus'})
+        if parts == ['complement-fm']:
+            return self.envoyer(200, {'players': list(complements_fm().values()), 'source': 'Complément local V12, notes et provenance conservées'})
+        if len(parts) == 3 and parts[:2] == ['complement-fm', 'image']:
+            if not re.fullmatch(r'[0-9]{1,20}', parts[2]):
+                return self.envoyer(404, {'erreur': 'Identifiant inconnu'})
+            record = complements_fm().get(parts[2], {})
+            rel = (record.get('photo') or {}).get('local_path')
+            path = images.chemin_sur(FM, rel) if FM and rel else None
+            if path and path.is_file():
+                return self.envoyer(200, path.read_bytes(), mimetypes.guess_type(path.name)[0] or 'application/octet-stream', 'max-age=86400')
+            if CATALOGUE:
+                fallback = CATALOGUE.photo('players', parts[2])
+                if fallback:
+                    return self.envoyer(200, fallback[0], fallback[1], 'max-age=86400')
+            return self.envoyer(404, {'erreur': 'Portrait local absent'})
         if parts == ['reglements-officiels']:
             path = RACINE_JEU / 'donnees_reference' / 'reglements_officiels_v12.json'
             return self.envoyer(200, json.loads(path.read_text(encoding='utf-8')))

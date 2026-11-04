@@ -59,11 +59,22 @@ def audit(fm, base=None):
         duplicate=c.execute('select count(*)-count(distinct id) from joueurs').fetchone()[0]
         pics=c.execute('select photo_local from joueurs where photo_local is not null').fetchall()
         logos=c.execute('select logo_local from clubs where logo_local is not null').fetchall()
+        # Un inventaire par dossier évite des dizaines de milliers de resolve/stat
+        # successifs, particulièrement lents sur Windows avec l'analyse antivirus.
+        available=set()
+        def inventory(folder, prefix=''):
+            with os.scandir(folder) as entries:
+                for entry in entries:
+                    if entry.is_symlink() or (hasattr(entry, 'is_junction') and entry.is_junction()):continue
+                    rel=prefix+entry.name
+                    if entry.is_dir(follow_symlinks=False):inventory(entry.path,rel+'/')
+                    elif entry.is_file(follow_symlinks=False):available.add(rel)
+        inventory(fm)
         def exists(rel):
-            p=(fm/rel).resolve()
-            try:p.relative_to(fm.resolve())
-            except ValueError:return False
-            return p.is_file()
+            try:
+                from archives_installation import safe_parts
+                return '/'.join(safe_parts(rel)) in available
+            except (ValueError,TypeError):return False
         report={'joueurs':count,'identifiants_dupliques':duplicate,'portraits_locaux_disponibles':sum(exists(r[0]) for r in pics),'logos_locaux_disponibles':sum(exists(r[0]) for r in logos),'historiques':dict(c.execute('select tab,count(*) from historiques group by tab')),'mode':'sources réelles conservées ; contrats/salaires de simulation distincts'}
     expected=json.loads((fm/'base_geante_v8/manifest.json').read_text(encoding='utf8'))['players']
     if count!=expected or duplicate:raise ValueError('Contrôle du nombre de joueurs ou des identifiants échoué.')

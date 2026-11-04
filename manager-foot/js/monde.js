@@ -41,14 +41,14 @@ async function renderMondeCard(el) {
     <div class="row gap wrap"><h2 class="grow">🌍 Monde réel 2026/2027</h2>
       <button class="btn" id="btnBase">🔎 Base mondiale</button><button class="btn" id="btnRes">🖼 Ressources</button></div>
     <p class="hint">${Object.values(pq).reduce((a, b) => a + b, 0).toLocaleString('fr-FR')} fiches : ${(pq.rated_snapshot || 0).toLocaleString('fr-FR')} notées, ${(pq.historical_profile || 0).toLocaleString('fr-FR')} profils historiques, ${(pq.identity_archive || 0).toLocaleString('fr-FR')} identités à compléter.
-      Effectifs = snapshot EA du 12/09/2026, non vérifiés comme effectifs officiels. Règles des compétitions non validées.</p>
+      La base mondiale ci-dessus conserve ses archives EA. Les boutons ci-dessous chargent les effectifs FM des trois divisions et les cinq pays pour chaque nouvelle carrière. Snapshots datés, non vérifiés comme effectifs actuels.</p>
     <div class="monde-pays">${PAYS_MONDE.map(([k, l]) => `<div class="mp"><h3>${l}</h3>${comps.filter(c => c.pays === k).map(c =>
       `<div class="mpl"><span class="tier">N${c.niveau}</span> ${esc(c.nom)}${c.groupe ? ` <small>(${esc(c.groupe)})</small>` : ''}<small class="muted"> · ${c.equipes} éq. · ${c.effectifs_documentes} effectifs ≥ 18 notés</small></div>`).join('')}
-      <button class="btn primary mt" data-pays="${k}">Choisir un club en ${l}</button></div>`).join('')}</div>
+      <button class="btn primary mt" data-pays="${k}">Effectifs FM D1–D3 · ${l}</button></div>`).join('')}</div>
   </div>`;
   $('#btnBase').onclick = () => baseScreen();
   $('#btnRes').onclick = () => ressourcesModal();
-  el.querySelectorAll('[data-pays]').forEach(b => b.onclick = () => choisirClubReel(b.dataset.pays));
+  el.querySelectorAll('[data-pays]').forEach(b => b.onclick = () => typeof choisirClubEffectifsFM === 'function' ? choisirClubEffectifsFM(b.dataset.pays) : choisirClubReel(b.dataset.pays));
 }
 
 async function choisirClubReel(pays) {
