@@ -15,6 +15,13 @@
     if(kind==='documented_attributes'){
       const note=document.createElement('small');note.textContent=(source?.database?.includes('FMB')?'Scores FMB indépendants sur 99, adaptés à la simulation. ':'')+'Instantané partiel de la base source. Les autres notes restent calculées par le jeu ; les attributs évoluent avec la progression de cette carrière.';info.append(note);
     }
+    if(source?.database?.includes('FMB') && (Number.isFinite(source.rating) || Number.isFinite(source.potential))){
+      const snapshot=document.createElement('p');snapshot.className='player-source-snapshot';
+      snapshot.textContent=[source.position?`Poste FM26 : ${source.position}`:null,Number.isFinite(source.age)?`Âge du relevé : ${source.age}`:null,
+        Number.isFinite(source.rating)?`Niveau FMB : ${source.rating}/99`:null,Number.isFinite(source.potential)?`Potentiel FMB : ${source.potential}/99`:null,
+        source.contract?`Contrat dans FM26 : ${source.contract}`:null,source.wageText?`Salaire du jeu source : ${source.wageText}`:null].filter(Boolean).join(' · ');
+      info.append(snapshot);
+    }
     if(source?.url && /^https:\/\//.test(source.url)){
       const link=document.createElement('a');link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';link.className='btn';link.textContent='Voir la fiche source';info.append(link);
     }
