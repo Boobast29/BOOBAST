@@ -2,18 +2,35 @@
 import argparse, hashlib, json, os, pathlib, re, shutil, sqlite3, subprocess, sys, zipfile
 from commun import RACINE_JEU, DOSSIER_JEU_DONNEES, BASE, trouver_football_monde
 
+def verifier_archive(archive):
+    """Valide le conteneur et le manifeste avant toute extraction."""
+    try:
+        with zipfile.ZipFile(archive) as z:
+            required = 'Football_Monde/base_geante_v8/manifest.json'
+            if required not in z.namelist():
+                raise ValueError('Pack incomplet ou extension seule : le manifeste de la base mondiale est absent.')
+            manifest = json.loads(z.read(required).decode('utf-8'))
+            if not isinstance(manifest.get('players'), int) or manifest['players'] <= 0:
+                raise ValueError('Manifeste de joueurs invalide.')
+            return manifest
+    except (zipfile.BadZipFile, EOFError) as exc:
+        raise ValueError('Archive ZIP illisible ou téléchargement incomplet : ' + str(archive) +
+                         '. Télécharge à nouveau le pack complet puis vérifie son ouverture dans Windows.') from exc
+
+
 def local_pack(archive):
     archive=pathlib.Path(archive).expanduser().resolve()
     if archive.is_dir():
         found=trouver_football_monde(str(archive)) or trouver_football_monde(str(archive/'Football_Monde'))
         if not found: raise ValueError('Ce dossier ne contient pas de pack Football_Monde reconnu.')
         return found
+    verifier_archive(archive)
     digest=hashlib.sha256()
     with archive.open('rb') as f:
         for chunk in iter(lambda:f.read(1024*1024),b''):digest.update(chunk)
     target=DOSSIER_JEU_DONNEES/'packs'/digest.hexdigest()[:16]
     marker=target/'installation_complete.json'
-    if marker.is_file():return target/'Football_Monde'
+    if marker.is_file() and (target/'Football_Monde/base_geante_v8/manifest.json').is_file():return target/'Football_Monde'
     target.mkdir(parents=True,exist_ok=True)
     with zipfile.ZipFile(archive) as z:
         files=z.infolist();total=sum(i.file_size for i in files)
@@ -37,7 +54,18 @@ def discover():
     candidates={p.resolve() for folder in folders if folder.is_dir() for p in folder.glob('Football_Monde*.zip')}
     def priority(p):
         m=re.search(r'_v(\d+)',p.stem,re.I);return (int(m.group(1)) if m else 0,p.stat().st_mtime)
-    return max(candidates,key=priority) if candidates else trouver_football_monde()
+    rejected=[]
+    for candidate in sorted(candidates,key=priority,reverse=True):
+        try:
+            verifier_archive(candidate)
+            return candidate
+        except (ValueError, OSError, KeyError, UnicodeError) as exc:
+            print('Pack ignoré :', candidate.name, '—', exc, flush=True)
+            rejected.append(str(exc))
+    folder=trouver_football_monde()
+    if folder:return folder
+    if rejected:raise ValueError('Aucun pack complet valide trouvé. ' + rejected[0])
+    return None
 
 def audit(fm):
     with sqlite3.connect(BASE) as c:
@@ -63,3 +91,4 @@ def main():
     subprocess.run([sys.executable,str(RACINE_JEU/'outils/importer_monde.py'),'--donnees',str(fm)],check=True)
     print(json.dumps(audit(fm),ensure_ascii=False,indent=2));print('Installation terminée. Lance Lancer_Manager_Foot.bat puis choisis un club réel.')
 if __name__=='__main__':main()
+
