@@ -16,6 +16,11 @@
 .dir-heading p { color:#bdcad6; margin:0; }
 .dir-week { background:#182a2e; border:1px solid #31544b; border-radius:14px; padding:12px 18px; color:#e7f8ee; min-width:145px; font-weight:700; text-align:right; }
 .dir-week small { display:block; margin-top:5px; color:#a7c9ba; letter-spacing:0; font-weight:500; }
+.dir-brief { display:grid; grid-template-columns:minmax(220px,2fr) repeat(3,minmax(100px,1fr)); gap:1px; background:#344a4b; border:1px solid #344a4b; border-radius:14px; overflow:hidden; margin-bottom:18px; }
+.dir-brief > div { background:linear-gradient(135deg,#20373b,#172833); padding:16px 18px; min-width:0; }
+.dir-brief small { display:block; color:#a9cdbc; font-size:10px; letter-spacing:.12em; font-weight:800; margin-bottom:7px; }
+.dir-brief strong { color:#f4fbf7; font-size:19px; overflow-wrap:anywhere; }
+.dir-brief > div:first-child strong { font-size:16px; }
 .dir-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; align-items:start; }
 .dir-wide { grid-column:1/-1; }
 .dir-card { padding:20px; border-color:#314250; background:linear-gradient(145deg,rgba(43,63,76,.32),transparent 60%),var(--panel); }
@@ -29,6 +34,18 @@
 .dir-task strong { font-size:14px; color:#f0f5fa; }
 .dir-task small { color:#b7c6d1; line-height:1.5; flex:1; }
 .dir-task .btn { width:100%; justify-content:center; white-space:normal; min-height:42px; }
+.dir-plan-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.dir-plan { display:flex; flex-direction:column; gap:10px; padding:18px; border-radius:13px; border:1px solid #3b5b54; background:linear-gradient(150deg,#1d3937,#142630 75%); }
+.dir-plan strong { color:#f2faf5; font-size:16px; }
+.dir-plan small { color:#b9cfc6; line-height:1.45; flex:1; }
+.dir-plan-foot { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; border-top:1px solid #38534d; padding-top:12px; }
+.dir-plan-foot span { color:#a9e7c1; font-weight:800; }
+.dir-plan-foot .btn { min-height:40px; }
+.dir-plan-progress { display:grid; grid-template-columns:1fr auto; gap:8px; margin:-2px 0 15px; color:#eaf9ef; }
+.dir-plan-progress span { color:#a9dabc; font-weight:700; }
+.dir-plan-progress [role=progressbar] { grid-column:1/-1; height:8px; border-radius:8px; background:#304a49; overflow:hidden; }
+.dir-plan-progress i { display:block; height:100%; background:linear-gradient(90deg,#59bd8a,#b5e9a7); border-radius:8px; }
+.dir-plan-result { background:#224139; border-left:3px solid #88dca8; padding:10px 12px; border-radius:5px; color:#d5ecdc; margin:0 0 15px; }
 .dir-scout-criteria { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .dir-scout-criteria label { display:grid; gap:4px; min-width:0; color:#bfcec8; font-size:11px; font-weight:700; }
 .dir-scout-criteria select { min-width:0; width:100%; min-height:38px; font-size:12px; padding:6px; }
@@ -62,5 +79,5 @@
 .dir-metric-value { display:flex; justify-content:space-between; align-items:center; gap:8px; min-height:19px; }
 .dir-best .dir-metric-value { color:#a7ebbf; font-weight:800; }.dir-best-mark { font-size:12px; color:#9ce1b6; }
 .dir-metric-track { display:block; background:#2c3e48; height:5px; border-radius:9px; margin-top:6px; overflow:hidden; }.dir-metric-track i { display:block; height:100%; background:#6e9ba1; border-radius:9px; }.dir-best .dir-metric-track i { background:#8bdda8; }
-@media(max-width:900px) { .dir-grid { grid-template-columns:1fr; }.dir-wide { grid-column:auto; } }
-@media(max-width:620px) { .dir-heading { align-items:flex-start; flex-direction:column; }.dir-week { text-align:left; }.dir-card { padding:16px; }.dir-task-grid { grid-template-columns:1fr; } }
+@media(max-width:900px) { .dir-grid { grid-template-columns:1fr; }.dir-wide { grid-column:auto; }.dir-plan-grid { grid-template-columns:1fr; }.dir-brief { grid-template-columns:repeat(3,minmax(0,1fr)); }.dir-brief > div:first-child { grid-column:1/-1; } }
+@media(max-width:620px) { .dir-heading { align-items:flex-start; flex-direction:column; }.dir-week { text-align:left; }.dir-card { padding:16px; }.dir-task-grid { grid-template-columns:1fr; }.dir-brief > div { padding:12px; }.dir-brief strong { font-size:16px; }.dir-brief small { font-size:9px; } }
