@@ -1,3 +1,9 @@
+# État du projet — v106 (4 novembre 2026)
+
+**Clubs affiliés** (`js/clubs_affilies.js`, page Club) : jusqu'à 2 partenariats avec des clubs plus modestes du pays (divisions inférieures d'abord), contribution annuelle.
+- Prêt chez un affilié (fenêtre « Prêter ») : toujours accepté, 50 % du salaire pris en charge, titularisé à son poste.
+- Fin de saison : chaque affilié propose son meilleur espoir (≤ 20 ans) à 50 % de sa valeur ; l'affilié gagne un peu de réputation.
+
 # État du projet — v105 (4 novembre 2026)
 
 **Présaison planifiée** (`js/presaison.js`) : question en début de saison (« Planifier » ou « Laisser l'adjoint »).
