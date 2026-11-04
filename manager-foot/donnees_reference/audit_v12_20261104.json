@@ -1,0 +1,19 @@
+{
+  "base_ids": 436020,
+  "profile_ids": 17849,
+  "profile_ids_without_base": 0,
+  "duplicate_ids": [],
+  "duplicate_ids_count": 0,
+  "same_name_and_birthdate_groups": 1726,
+  "rated_base": 17849,
+  "quality": {
+    "rated_snapshot": 17849,
+    "historical_profile": 80561,
+    "identity_archive": 337610
+  },
+  "local_photos_base": 17955,
+  "missing_profile_photo_paths": [],
+  "missing_profile_photo_paths_count": 0,
+  "attributes_outside_1_20_count": 0,
+  "attributes_outside_1_20_samples": []
+}
