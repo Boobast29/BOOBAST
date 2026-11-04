@@ -1,13 +1,19 @@
-## Installation et mises à jour automatiques
+## Démarrage et mises à jour
 
-Utilise un seul lanceur : `Lancer_Manager_Foot.bat` sous Windows ou `Lancer_Manager_Foot.sh` sous macOS/Linux. À chaque démarrage, il vérifie les changements du dépôt GitHub, met à jour les fichiers du jeu sans toucher à `donnees_jeu/`, puis lance le serveur local. Si Internet est indisponible, il conserve la version déjà installée.
+Lance le jeu avec `Lancer_Manager_Foot.bat` (Windows) ou `Lancer_Manager_Foot.sh` (macOS/Linux). À chaque démarrage, le lanceur vérifie les mises à jour du code sur GitHub puis lance le serveur. Il ne modifie pas `donnees_jeu/` ni les sauvegardes existantes. Sans Internet, il continue avec la version locale.
 
-Les fiches, notes et photos du pack Football Monde sont distribuées séparément du dépôt. Le lanceur installe automatiquement un ZIP local `Football_Monde*.zip` trouvé dans le dossier du jeu, le dossier parent ou Téléchargements. Pour télécharger aussi un pack actualisé automatiquement, créer `donnees_jeu/launcher.json` avec l’URL HTTPS directe du ZIP :
+### Pack V12 sur ton PC
+
+Au premier démarrage, le lanceur cherche un ZIP `Football_Monde*.zip` ou contenant `V12` dans le dossier du jeu, son dossier parent, le dossier courant, Téléchargements/Downloads, Bureau/Desktop et Documents. Il contrôle le ZIP avant import. Si le pack est ailleurs, une fenêtre permet de le choisir ; le chemin est mémorisé pour les prochains démarrages.
+
+Quand tu remplaces ce ZIP par une nouvelle version au même endroit, le lanceur compare son empreinte et réimporte les données modifiées. L'importeur conserve son journal de progression et reprend les fichiers déjà importés. Les photos et fichiers de la base restent locaux.
+
+Pour obtenir le ZIP par Internet au lieu de le garder localement, renseigne une URL HTTPS directe vers l'archive dans `donnees_jeu/launcher.json` :
 
 ```json
 {
-  "pack_url": "https://exemple.invalid/Football_Monde.zip"
+  "pack_url": "https://serveur.example/Football_Monde.zip"
 }
 ```
 
-Remplace cette URL par le lien direct réel de ton pack. Le ZIP est contrôlé avant import ; les données et sauvegardes locales ne sont pas supprimées. Les mises à jour de la base fusionnent les fiches par identifiant et reprennent les lots déjà importés. Python 3.9+ est requis. Pour installer/mette à jour sans lancer le jeu : `py -3 outils/lanceur.py --installer-seul`.
+Cette URL est facultative : elle n'est pas nécessaire quand tu as le ZIP V12 sur ton PC. Il faut Python 3.9+.

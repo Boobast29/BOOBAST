@@ -1,11 +1,8 @@
-"""Lanceur unique : met à jour le code, synchronise le pack de données configuré, puis lance le jeu.
+"""Lanceur unique : met à jour le jeu et, si un pack V12 change, ses données puis démarre le serveur.
 
-Python 3.9+ et accès internet sont nécessaires pour recevoir les mises à jour.
-Le jeu peut encore démarrer hors ligne avec la dernière version déjà installée.
-
-Pour recevoir aussi les nouvelles fiches/photos/notes, ajouter dans
-`donnees_jeu/launcher.json` : {"pack_url": "https://.../Football_Monde.zip"}.
-Le pack reste séparé du dépôt Git, car il est volumineux.
+Python 3.9+ requis. Le pack V12 reste sur le PC de l'utilisateur et n'est pas envoyé au dépôt.
+Au premier lancement, le lanceur cherche dans les dossiers habituels puis propose de choisir le ZIP.
+Le chemin choisi est mémorisé. Remplacer le ZIP par sa nouvelle version déclenche son réimport.
 """
 import argparse
 import hashlib
@@ -20,214 +17,235 @@ import urllib.error
 import urllib.request
 import zipfile
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from commun import RACINE_JEU, DOSSIER_JEU_DONNEES  # noqa: E402
-
-OWNER = 'Boobast29'
-REPO = 'BOOBAST'
-BRANCH = 'Manager-foot'
+RACINE = pathlib.Path(__file__).resolve().parent.parent
+OUTILS = RACINE / 'outils'
+DONNEES = RACINE / 'donnees_jeu'
+CONFIG = DONNEES / 'launcher.json'
+ETAT = DONNEES / 'launcher_state.json'
+OWNER, REPO, BRANCH = 'Boobast29', 'BOOBAST', 'Manager-foot'
 API_COMMIT = f'https://api.github.com/repos/{OWNER}/{REPO}/commits/{BRANCH}'
-ARCHIVE = f'https://codeload.github.com/{OWNER}/{REPO}/zip/'
-META = DOSSIER_JEU_DONNEES / 'launcher_state.json'
-CONFIG = DOSSIER_JEU_DONNEES / 'launcher.json'
+ZIP_URL = f'https://codeload.github.com/{OWNER}/{REPO}/zip/'
 
 
-def request(url, timeout=30, method=None, headers=None):
-    req = urllib.request.Request(
-        url,
-        headers={'User-Agent': 'BOOBAST-launcher/1.0', **(headers or {})},
-        method=method,
-    )
-    return urllib.request.urlopen(req, timeout=timeout)
-
-
-def read_json(path, default=None):
+def lire_json(path):
     try:
         return json.loads(path.read_text(encoding='utf-8'))
     except (OSError, ValueError):
-        return default if default is not None else {}
+        return {}
 
 
-def write_json(path, value):
+def ecrire_json(path, obj):
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_suffix(path.suffix + '.tmp')
-    temp.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding='utf-8')
+    temp.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding='utf-8')
     os.replace(temp, path)
 
 
-def update_code(state):
-    """Overlay files from the trusted upstream branch; never touches local game data."""
+def ouvrir(url, timeout=30, headers=None):
+    req = urllib.request.Request(url, headers={'User-Agent': 'BOOBAST-launcher/1.0', **(headers or {})})
+    return urllib.request.urlopen(req, timeout=timeout)
+
+
+def mettre_a_jour_code(etat):
+    """Télécharge la révision GitHub ciblée, sans toucher au dossier local des données/sauvegardes."""
     try:
-        with request(API_COMMIT, timeout=12) as response:
-            info = json.load(response)
-        commit = info['sha']
-        if state.get('code_commit') == commit:
+        with ouvrir(API_COMMIT, timeout=12) as response:
+            commit = json.load(response)['sha']
+        if etat.get('code_commit') == commit:
             print(f'Code déjà à jour ({commit[:10]}).')
-            return state
-
-        print('Recherche/téléchargement de la mise à jour du jeu…')
-        with tempfile.TemporaryDirectory(prefix='boobast-update-') as tmp:
+            return etat
+        print('Vérification des mises à jour du jeu…')
+        with tempfile.TemporaryDirectory(prefix='boobast-code-') as tmp:
             archive_path = pathlib.Path(tmp) / 'source.zip'
-            url = ARCHIVE + commit
-            with request(url, timeout=120) as response, archive_path.open('wb') as out:
-                shutil.copyfileobj(response, out, length=1024 * 1024)
-            if archive_path.stat().st_size == 0:
-                raise RuntimeError('archive GitHub vide')
-
+            with ouvrir(ZIP_URL + commit, timeout=120) as response, archive_path.open('wb') as out:
+                shutil.copyfileobj(response, out, 1024 * 1024)
             with zipfile.ZipFile(archive_path) as archive:
-                names = archive.namelist()
-                roots = [n.split('/')[0] for n in names if n.startswith('')]
-                prefix = next((f'{root}/manager-foot/' for root in roots if f'{root}/manager-foot/index.html' in names), None)
+                names = set(archive.namelist())
+                prefix = next((name.rsplit('manager-foot/index.html', 1)[0] + 'manager-foot/'
+                               for name in names if name.endswith('/manager-foot/index.html')), None)
                 if not prefix:
-                    raise RuntimeError('archive GitHub invalide : dossier manager-foot/index.html absent')
-                copied = 0
-                for member in archive.infolist():
-                    if member.is_dir() or not member.filename.startswith(prefix):
+                    raise RuntimeError('archive GitHub invalide : manager-foot/index.html absent')
+                count = 0
+                for item in archive.infolist():
+                    if item.is_dir() or not item.filename.startswith(prefix):
                         continue
-                    rel = pathlib.PurePosixPath(member.filename[len(prefix):])
-                    if not rel.parts or any(part in ('..', '.git', '__pycache__', 'donnees_jeu') for part in rel.parts):
+                    rel = pathlib.PurePosixPath(item.filename[len(prefix):])
+                    if not rel.parts or rel.is_absolute() or any(x in ('.', '..', '.git', '__pycache__', 'donnees_jeu') for x in rel.parts) or ':' in rel.parts[0]:
                         continue
-                    # Ignore any unexpected absolute or drive-qualified paths.
-                    if rel.is_absolute() or ':' in rel.parts[0]:
-                        continue
-                    target = (RACINE_JEU / pathlib.Path(*rel.parts)).resolve()
+                    dest = (RACINE / pathlib.Path(*rel.parts)).resolve()
                     try:
-                        target.relative_to(RACINE_JEU.resolve())
+                        dest.relative_to(RACINE.resolve())
                     except ValueError:
                         continue
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    staged = target.with_name(target.name + '.update-tmp')
-                    with archive.open(member) as source, staged.open('wb') as dest:
-                        shutil.copyfileobj(source, dest, length=1024 * 1024)
-                    os.replace(staged, target)
-                    copied += 1
-                if copied == 0:
-                    raise RuntimeError('aucun fichier du jeu extrait')
-        state['code_commit'] = commit
-        write_json(META, state)
-        print(f'Jeu mis à jour ({copied} fichiers, {commit[:10]}).')
-    except (OSError, urllib.error.URLError, KeyError, ValueError, zipfile.BadZipFile, RuntimeError) as exc:
-        print(f'Mise à jour du code indisponible : {exc}')
-        print('Le lanceur continue avec les fichiers déjà installés.')
-    return state
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    staged = dest.with_name(dest.name + '.update-tmp')
+                    with archive.open(item) as source, staged.open('wb') as target:
+                        shutil.copyfileobj(source, target, 1024 * 1024)
+                    os.replace(staged, dest)
+                    count += 1
+                if not count:
+                    raise RuntimeError('aucun fichier du jeu trouvé dans le ZIP')
+        etat['code_commit'] = commit
+        ecrire_json(ETAT, etat)
+        print(f'Jeu actualisé ({count} fichiers, {commit[:10]}).')
+    except Exception as exc:
+        print(f'Mise à jour du code impossible ({exc}). Utilisation de la version déjà installée.')
+    return etat
 
 
-def file_sha256(path):
-    digest = hashlib.sha256()
-    with path.open('rb') as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
-            digest.update(chunk)
-    return digest.hexdigest()
+def sha256(path):
+    h = hashlib.sha256()
+    with path.open('rb') as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b''):
+            h.update(chunk)
+    return h.hexdigest()
 
 
-def configured_pack_url():
-    cfg = read_json(CONFIG)
-    return os.environ.get('FOOTBALL_MONDE_URL') or cfg.get('pack_url')
+def valider_zip(path):
+    try:
+        with zipfile.ZipFile(path) as archive:
+            if archive.testzip() is not None:
+                return False
+            name = 'Football_Monde/base_geante_v8/manifest.json'
+            if name not in archive.namelist():
+                return False
+            manifest = json.loads(archive.read(name).decode('utf-8'))
+            return isinstance(manifest.get('players'), int) and manifest['players'] > 0
+    except (OSError, ValueError, zipfile.BadZipFile, KeyError):
+        return False
 
 
-def download_pack(url):
+def dossiers_recherche():
+    home = pathlib.Path.home()
+    return [RACINE, RACINE.parent, pathlib.Path.cwd(), home / 'Downloads', home / 'Téléchargements',
+            home / 'Desktop', home / 'Bureau', home / 'Documents']
+
+
+def choisir_zip():
+    """Cherche le ZIP dans les emplacements habituels ; affiche un sélecteur si introuvable."""
+    config = lire_json(CONFIG)
+    memorise = pathlib.Path(config.get('pack_path', '')).expanduser() if config.get('pack_path') else None
+    if memorise and memorise.is_file() and valider_zip(memorise):
+        return memorise.resolve()
+
+    candidats = set()
+    for dossier in dossiers_recherche():
+        if not dossier.is_dir():
+            continue
+        for motif in ('*Football_Monde*.zip', '*v12*.zip', '*V12*.zip'):
+            try:
+                candidats.update(p.resolve() for p in dossier.glob(motif) if p.is_file())
+            except OSError:
+                continue
+    def ordre(path):
+        nom = path.name.lower()
+        return (3 if 'v12' in nom else 2 if 'football_monde' in nom else 1, path.stat().st_mtime)
+    for path in sorted(candidats, key=ordre, reverse=True):
+        if valider_zip(path):
+            return path
+        print(f'ZIP ignoré (incomplet ou non reconnu) : {path}')
+
+    # L'utilisateur peut avoir rangé le ZIP dans n'importe quel autre dossier.
+    if not (DONNEES / 'monde.db').is_file():
+        try:
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes('-topmost', True)
+            selection = filedialog.askopenfilename(
+                title='Choisir le pack Football Monde V12',
+                filetypes=[('Pack Football Monde (ZIP)', '*.zip'), ('Tous les fichiers', '*.*')],
+            )
+            root.destroy()
+            if selection:
+                path = pathlib.Path(selection).resolve()
+                if valider_zip(path):
+                    return path
+                print('Le ZIP sélectionné est incomplet ou ne contient pas la base Football_Monde attendue.')
+        except Exception as exc:
+            print(f'Sélecteur de fichiers indisponible : {exc}')
+    return None
+
+
+def telecharger_pack(url, etat):
     if not url:
         return None
     if not url.lower().startswith('https://'):
-        raise ValueError('pack_url doit utiliser HTTPS')
-    folder = DOSSIER_JEU_DONNEES / 'downloads'
-    folder.mkdir(parents=True, exist_ok=True)
-    target = folder / 'Football_Monde_update.zip'
+        raise ValueError('Le lien du pack doit utiliser HTTPS.')
+    target = DONNEES / 'downloads' / 'Football_Monde_update.zip'
+    target.parent.mkdir(parents=True, exist_ok=True)
     headers = {}
-    state = read_json(META)
-    if target.is_file() and state.get('pack_etag'):
-        headers['If-None-Match'] = state['pack_etag']
-    if target.is_file() and state.get('pack_last_modified'):
-        headers['If-Modified-Since'] = state['pack_last_modified']
+    if target.is_file() and etat.get('pack_etag'):
+        headers['If-None-Match'] = etat['pack_etag']
+    if target.is_file() and etat.get('pack_modified'):
+        headers['If-Modified-Since'] = etat['pack_modified']
     try:
-        response = request(url, timeout=90, headers=headers)
+        response = ouvrir(url, timeout=120, headers=headers)
     except urllib.error.HTTPError as exc:
         if exc.code == 304 and target.is_file():
-            print('Pack joueur déjà à jour (serveur : HTTP 304).')
+            print('Pack joueur déjà à jour.')
             return target
         raise
     temp = target.with_suffix('.download')
     with response, temp.open('wb') as out:
-        shutil.copyfileobj(response, out, length=1024 * 1024)
-        etag = response.headers.get('ETag')
-        modified = response.headers.get('Last-Modified')
-    try:
-        import zipfile as _zipfile
-        with _zipfile.ZipFile(temp) as archive:
-            manifest = 'Football_Monde/base_geante_v8/manifest.json'
-            if manifest not in archive.namelist():
-                raise ValueError('le ZIP reçu ne contient pas la base Football_Monde attendue')
-            data = json.loads(archive.read(manifest).decode('utf-8'))
-            if not isinstance(data.get('players'), int) or data['players'] <= 0:
-                raise ValueError('manifeste de joueurs invalide')
-    except Exception:
+        shutil.copyfileobj(response, out, 1024 * 1024)
+        etat['pack_etag'] = response.headers.get('ETag')
+        etat['pack_modified'] = response.headers.get('Last-Modified')
+    if not valider_zip(temp):
         temp.unlink(missing_ok=True)
-        raise
-    digest = file_sha256(temp)
-    if target.is_file() and file_sha256(target) == digest:
+        raise ValueError('Le téléchargement reçu n’est pas un pack Football Monde valide.')
+    if target.is_file() and sha256(target) == sha256(temp):
         temp.unlink(missing_ok=True)
     else:
         os.replace(temp, target)
-        print('Nouvelle version du pack joueur téléchargée et vérifiée.')
-    state.update({'pack_etag': etag, 'pack_last_modified': modified})
-    write_json(META, state)
+        print('Nouveau pack de joueurs téléchargé et vérifié.')
+    ecrire_json(ETAT, etat)
     return target
 
 
-def find_local_pack():
-    import installer_donnees
-    return installer_donnees.discover()
-
-
-def install_data_pack(state):
-    """Importe seulement un pack nouveau/modifié; la reprise par fichier est gérée par l'importeur."""
-    pack = None
+def mettre_a_jour_donnees(etat):
+    config = lire_json(CONFIG)
     try:
-        url = configured_pack_url()
-        pack = download_pack(url) if url else find_local_pack()
+        url = os.environ.get('FOOTBALL_MONDE_URL') or config.get('pack_url')
+        pack = telecharger_pack(url, etat) if url else choisir_zip()
         if not pack:
-            print('Pack mondial absent : le jeu démarre quand même en mode disponible (monde fictif/catalogue).')
-            return state
+            print('Pack V12 non trouvé : le jeu démarre quand même avec les données déjà installées.')
+            return etat
         pack = pathlib.Path(pack).resolve()
-        digest = file_sha256(pack) if pack.is_file() else hashlib.sha256(
-            (pack / 'base_geante_v8' / 'manifest.json').read_bytes()
-        ).hexdigest()
-        if state.get('pack_sha256') == digest and (DOSSIER_JEU_DONNEES / 'monde.db').is_file():
-            print('Données joueurs/photos/notes déjà importées pour ce pack.')
-            return state
-        print(f'Installation/mise à jour des données joueurs depuis {pack.name}…')
-        script = pathlib.Path(__file__).resolve().parent / 'installer_donnees.py'
-        subprocess.run([sys.executable, str(script), str(pack)], cwd=str(RACINE_JEU), check=True)
-        state['pack_sha256'] = digest
-        write_json(META, state)
-        print('Données joueurs mises à jour.')
+        digest = sha256(pack)
+        if etat.get('pack_sha256') == digest and (DONNEES / 'monde.db').is_file():
+            print('Fiches joueurs, photos et notes déjà à jour.')
+            return etat
+        print(f'Import/mise à jour du pack local : {pack.name}')
+        subprocess.run([sys.executable, str(OUTILS / 'installer_donnees.py'), str(pack)], cwd=RACINE, check=True)
+        etat['pack_sha256'] = digest
+        ecrire_json(ETAT, etat)
+        config['pack_path'] = str(pack)
+        ecrire_json(CONFIG, config)
+        print('Fiches, photos et notes importées.')
     except Exception as exc:
-        print(f'Mise à jour des données joueurs ignorée/échouée : {exc}')
-        print('Le jeu démarre avec les données locales déjà installées.')
-    return state
+        print(f'Mise à jour des données V12 impossible ({exc}). Les données déjà installées sont conservées.')
+    return etat
 
 
 def main():
     parser = argparse.ArgumentParser(description='Met à jour Manager Foot puis le lance.')
-    parser.add_argument('--installer-seul', action='store_true', help='met à jour le code et les données, sans lancer le serveur')
-    parser.add_argument('--sans-lancer', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--installer-seul', action='store_true', help='mettre à jour sans lancer le jeu')
     args = parser.parse_args()
-    DOSSIER_JEU_DONNEES.mkdir(parents=True, exist_ok=True)
-    state = read_json(META)
-    state = update_code(state)
-    state = install_data_pack(state)
-    if args.installer_seul or args.sans_lancer:
-        print('Mise à jour terminée.')
+    DONNEES.mkdir(parents=True, exist_ok=True)
+    etat = lire_json(ETAT)
+    etat = mettre_a_jour_code(etat)
+    etat = mettre_a_jour_donnees(etat)
+    if args.installer_seul:
         return 0
-    server = OUTILS / 'serveur.py'
-    if not server.is_file():
-        print('Serveur absent : vérifie que le dossier manager-foot est complet.')
+    serveur = OUTILS / 'serveur.py'
+    if not serveur.is_file():
+        print('Le serveur est introuvable : vérifie que le dossier manager-foot est complet.')
         return 1
-    print('Démarrage de Manager Foot…')
-    return subprocess.call([sys.executable, str(server), '--ouvrir'], cwd=str(RACINE_JEU))
+    print('Démarrage du jeu…')
+    return subprocess.call([sys.executable, str(serveur), '--ouvrir'], cwd=RACINE)
 
-
-OUTILS = RACINE_JEU / 'outils'
 
 if __name__ == '__main__':
     raise SystemExit(main())
