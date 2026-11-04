@@ -33,7 +33,7 @@
       const target=$('#fmbFiche'); target.innerHTML='<p>Chargement de la fiche…</p>';
       try {
         const x = await api(`fiche/${encodeURIComponent(type)}/${encodeURIComponent(id)}`,detailAbort.signal);
-        const d=x.detail, media=x.photo||x.logo, champs=x.observations?.[0]?.fields_source||{}, index=x._index||{};
+        const d=x.detail, supplement=x.supplement, media=x.photo||x.logo, champs=x.observations?.find(o=>o.fields_source)?.fields_source||{}, index=x._index||{};
         const credit=type==='players' && photosCommons[String(id)]?.name===x.name ? photosCommons[String(id)] : null;
         const source=x.profile_url||x.source_url;
         const sourceSure=typeof source==='string' && /^https:\/\//.test(source);
@@ -44,14 +44,18 @@
           ${credit ? `<p class="fmb-mention">Photo : <a href="https://commons.wikimedia.org/wiki/File:${encodeURIComponent(credit.file.replaceAll(' ','_'))}" target="_blank" rel="noopener noreferrer">${e(credit.author)} · ${e(credit.license)} · Wikimedia Commons</a>${credit.note ? ` · ${e(credit.note)}` : ''}</p>` : ''}
           ${d?.role_or_position_source||champs.position||champs.job ? `<p><b>Rôle source :</b> ${e(d?.role_or_position_source||champs.position||champs.job)}</p>` : ''}
           ${type==='players' ? `<div class="fmb-identite"><div><small>CLUB DU RELEVÉ</small><strong>${e(index.club||'Non renseigné')}</strong></div><div><small>POSTE</small><strong>${e(index.poste||'Inconnu')}</strong></div><div><small>ÂGE DU RELEVÉ</small><strong>${index.age??'—'}</strong></div></div>${index.niveau!=null||index.potentiel!=null?`<div class="fmb-scores"><div><b>${index.niveau??'—'}</b><small>Niveau source / 99</small></div><div><b>${index.potentiel??'—'}</b><small>Potentiel source / 99</small></div></div><p class="fmb-mention">Scores affichés dans le relevé FM26, distincts des attributs détaillés et de la progression de ta partie.</p>`:''}${champs.value||champs.wage?`<p class="fmb-mention">Valeur source : ${e(champs.value||'inconnue')} · Salaire source : ${e(champs.wage||'inconnu')}. Montants du jeu source, non vérifiés comme contrats actuels.</p>`:''}` : ''}
+          ${supplement ? `<div class="fmb-supplement"><h3>Informations de la fiche FMblog</h3><p>${[supplement.foot?`Pied préféré : ${e(supplement.foot)}`:'',supplement.contractEndText?`Échéance du contrat dans FM26 : ${e(supplement.contractEndText)}`:'',supplement.targetCompetition?`Compétition du relevé : ${e(supplement.targetCompetition)}`:''].filter(Boolean).join(' · ')}</p>${supplement.wageSourceText?`<p class="fmb-mention">Salaire affiché : ${e(supplement.wageSourceText)}. Montant du jeu source, pas une rémunération réelle vérifiée.</p>`:''}</div>`:''}
           ${x.country ? `<p><b>Pays :</b> ${e(x.country)}</p>`:''}
           ${d?.date_of_birth ? `<p><b>Naissance :</b> ${e(d.date_of_birth)}</p>`:''}
+          ${d?.nationality_display_source ? `<p><b>Nationalité affichée :</b> ${e(d.nationality_display_source)}</p>`:''}
           ${d?.scores && (type!=='players' || index.niveau==null && index.potentiel==null) ? `<div class="fmb-scores">${Object.entries(d.scores).map(([k,v])=>`<div><b>${e(v??'Inconnu')}</b><small>${k==='current_ability'?'Niveau source':'Potentiel source'} / 99</small></div>`).join('')}</div>`:''}
           ${groupes.length ? `<p>Compétences FMB sur 99. Les moyennes portent uniquement sur les valeurs connues.</p>${groupes.map(([k,attrs])=>{
             const lignes=Object.entries(attrs).filter(([,a])=>typeof a.value==='number');
             const moyenne=lignes.length ? Math.round(lignes.reduce((n,[,a])=>n+a.value,0)/lignes.length) : null;
             return `<h3>${e(k.replaceAll('_',' '))} <small>${moyenne??'—'} / 99</small></h3><div class="fmb-attributs">${lignes.map(([,a])=>`<div><span>${e(a.label_fr||a.label_source)}</span><meter min="1" max="99" value="${a.value}">${a.value}</meter><b>${a.value}</b></div>`).join('')}</div>`;
-          }).join('')}`:'<p class="fmb-mention">Compétences détaillées inconnues. Cette fiche ne fournit pas de notes individuelles.</p>'}
+          }).join('')}`:supplement?.attributes?'':'<p class="fmb-mention">Compétences détaillées inconnues. Cette fiche ne fournit pas de notes individuelles.</p>'}
+          ${!groupes.length && supplement?.attributes ? `<h3>Attributs calculés FMblog · sur 99</h3><p class="fmb-mention">Scores publics du modèle FMB, distincts des notes originales de Football Manager et de la carrière jouée.</p><div class="fmb-attributs">${Object.entries(supplement.attributes).filter(([,v])=>Number.isFinite(v)).map(([k,v])=>`<div><span>${e(k)}</span><meter min="1" max="99" value="${v}">${v}</meter><b>${v}</b></div>`).join('')}</div>`:''}
+          ${supplement?.fmbIndicators && Object.keys(supplement.fmbIndicators).length ? `<details class="fmb-indicateurs"><summary>Indicateurs composites FMblog</summary><p class="fmb-mention">Indicateurs calculés par FMblog, sans divulguer les attributs cachés originaux.</p><div class="fmb-attributs">${Object.entries(supplement.fmbIndicators).filter(([,v])=>Number.isFinite(v)).map(([k,v])=>`<div><span>${e(k)}</span><meter min="1" max="99" value="${v}">${v}</meter><b>${v}</b></div>`).join('')}</div></details>`:''}
           ${d?.descriptive_summary ? ['highest_measured_attributes','lowest_measured_attributes'].map((k,i)=>{
             const list=d.descriptive_summary[k]||[];return list.length?`<h3>${i?'Points à travailler':'Points forts'} mesurés</h3><p>${list.map(a=>e(a.label_fr||a.label_source||a.attribute||a.key||'')+' ('+e(a.value)+')').join(' · ')}</p>`:'';
           }).join(''):''}
@@ -87,7 +91,7 @@
       try { const r=await fetch('packs/portraits-locaux-fmb.json'); if(r.ok)photosAvecUrl=new Set((await r.json()).external.map(String)); } catch { photosAvecUrl=new Set(); }
       try { const r=await fetch('packs/portraits-commons-verifies.json'); if(r.ok)photosCommons=(await r.json()).players; } catch { photosCommons={}; }
       const s=await api('etat');
-      $('#fmbEtat').innerHTML=`<div class="fmb-chiffres">${Object.entries(s.comptes).map(([k,n])=>`<div><b>${n.toLocaleString('fr-FR')}</b><span>${e(lib[k])}</span></div>`).join('')}</div><p class="fmb-mention">${s.profils_detailles_catalogue} profils détaillés dans ce périmètre · ${e(s.note)}</p>`;
+      $('#fmbEtat').innerHTML=`<div class="fmb-chiffres">${Object.entries(s.comptes).map(([k,n])=>`<div><b>${n.toLocaleString('fr-FR')}</b><span>${e(lib[k])}</span></div>`).join('')}</div><p class="fmb-mention">${(s.profils_detailles_joueurs??s.profils_detailles_catalogue).toLocaleString('fr-FR')} fiches joueurs avec attributs détaillés · ${e(s.note)}</p>`;
       await liste();
     } catch(err) {
       $('#fmbEtat').textContent='Catalogue hors ligne : lance Lancer_Manager_Foot.bat ou python outils/serveur.py. '+err.message;
