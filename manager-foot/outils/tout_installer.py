@@ -12,8 +12,12 @@
   5. Maillots réels
   6. Wikidata : entraîneurs, photos et logos libres, effectifs des petites divisions
   7. openfootball (football.json + europe) : palmarès réels, championnats européens, calibrage
-  8. Visages des joueurs sans photo : pack NewGAN (dossier « NewGAN » trouvé) ou Stable Diffusion local (s'il tourne)
-Internet nécessaire pour les étapes 2 à 7. Rien n'est supprimé : chaque étape complète la base.
+  8. Nationalités des joueurs du monde étendu
+  9. Visages des joueurs sans photo : pack NewGAN (dossier « NewGAN » trouvé) ou Stable Diffusion local (s'il tourne)
+ 10. Fiches FM26 détaillées de tous les joueurs des clubs du jeu, réserves comprises, et des vrais joueurs libres (FMInside)
+ 11. Complément de 1 000 fiches FM26 (Football Manager Blog) et contrôle de couverture
+Les étapes 10 et 11 sont longues (plusieurs heures la première fois) ; chaque fiche est gardée, une relance reprend
+où elle s'était arrêtée. --rapide les saute. Internet nécessaire. Rien n'est supprimé : chaque étape complète la base.
 """
 import argparse
 import datetime
@@ -142,6 +146,7 @@ def etape_visages():
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--sans-lancer', action='store_true')
+    ap.add_argument('--rapide', action='store_true', help='sauter les longues collectes de fiches (étapes 10 et 11)')
     ap.add_argument('--pack', help='chemin du ZIP ou du dossier Football_Monde à installer (sinon : le plus récent trouvé)')
     a = ap.parse_args()
     global PACK_CHOISI
@@ -160,6 +165,11 @@ def main():
         ('Nationalités des joueurs du monde étendu', lambda: (lancer('nationalites_monde.py'), 'nationalités appariées (nom + âge)')[1]),
         ('Visages des joueurs sans photo', etape_visages),
     ]
+    if not a.rapide:
+        etapes += [
+            ('Fiches FM26 des clubs du jeu et joueurs libres (FMInside, long)', lambda: (lancer('enrichir_effectifs.py', '--tout', '--libres', '--pages-libres', '0'), 'fiches complétées (relancer pour reprendre si interrompu)')[1]),
+            ('Complément Football Manager Blog (1 000 fiches)', lambda: (lancer('importer_fmblog.py', '--limite', '1000', '--workers', '4'), lancer('auditer_couverture_fmi.py'), 'complément à jour')[2]),
+        ]
     etat = {'debut': datetime.datetime.now().isoformat(timespec='seconds'), 'fini': False, 'etapes': []}
     ecrire('Installation complète de Manager Foot — chaque étape complète la base, une étape en échec n\'arrête pas les autres.', etat)
     for i, (nom, f) in enumerate(etapes, 1):

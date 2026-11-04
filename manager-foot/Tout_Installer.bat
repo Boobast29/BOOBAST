@@ -1,6 +1,7 @@
 @echo off
 rem INSTALLE ET MET A JOUR TOUT en une fois : base mondiale (pack Football_Monde si present), donnees reelles,
-rem photos, logos, maillots, palmares, championnats europeens, visages ; puis lance le jeu.
+rem photos, logos, maillots, palmares, championnats europeens, visages, fiches FM26 de tous les joueurs (long) ; puis lance le jeu.
+rem Options : --rapide (sans les longues collectes de fiches)  --pack "chemin du zip Football_Monde"
 rem Internet necessaire. Peut se relancer a tout moment (mise a jour). Journal : donnees_jeu\journal_installation.txt
 cd /d "%~dp0"
 if not exist "outils\tout_installer.py" (
