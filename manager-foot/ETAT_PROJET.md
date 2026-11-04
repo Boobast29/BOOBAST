@@ -1,3 +1,11 @@
+# État du projet — v101 (4 novembre 2026)
+
+**Consignes adverses** (`js/consignes_adverses.js`), écran d'avant-match, par joueur adverse :
+- Presser (pression +0,10 quand il a le ballon), marquage serré (marquage individuel du moteur, 2 joueurs au plus), tacle dur (il dribble moins bien, un peu plus de fautes) ou prudent (moins de fautes, il passe plus), mauvais pied (tirs −20 % de conversion).
+- Bouton « Suggestions de l'adjoint » selon le profil (dribbleur, meneur, buteur, joueur fragile mentalement).
+- L'adversaire presse et tacle dur ton joueur le plus dangereux ; ton adjoint le signale (niveau ≥ 2).
+- Mesure (400 matchs, même graine) : avec « dur + presser », le joueur visé tire et dribble moins, l'équipe encaisse moins.
+
 # État du projet — v100 (3 novembre 2026)
 
 **Délégation des tâches** (`js/delegation.js`) — page Staff, carte « Délégation » (Moi / membre du staff, par tâche) :

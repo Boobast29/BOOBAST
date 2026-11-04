@@ -439,3 +439,11 @@
 .dl-tbl select { width: 280px; max-width: 100%; }
 .dl-signe { display: flex; margin-top: 6px; font-size: 12px; }
 .dl-note { display: block; margin-top: 4px; font-size: 11px; color: var(--acc); }
+
+/* Consignes adverses (js/consignes_adverses.js) */
+.ca { margin-top: 10px; }
+.ca-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.ca-head h3 { margin: 0; }
+.ca-tbl th { white-space: nowrap; cursor: help; } .ca-tbl td { text-align: center; } .ca-tbl td.nm { text-align: left; }
+.ca-tbl tr.on td.nm { box-shadow: inset 3px 0 0 var(--acc); }
+.ca-tbl select { min-width: 96px; }
