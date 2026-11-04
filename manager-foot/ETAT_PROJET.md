@@ -1,3 +1,11 @@
+# État du projet — v104 (4 novembre 2026)
+
+**Avec ballon / sans ballon** (`js/phases_jeu.js`), page Tactique :
+- Organisation sans ballon (autre dispositif que celui avec ballon) : chaque joueur de plus derrière le ballon rend la défense plus solide, mais laisse moins de monde pour contre-attaquer.
+- Bloc haut / médian / bas : remplace pressing et ligne défensive quand l'équipe défend.
+- Transitions : après la perte (contre-pressing ou se replacer), après la récupération (contre-attaque ou garder le ballon).
+- Appliqué pendant les actions adverses ; « selon les consignes » = moteur d'origine.
+
 # État du projet — v103 (4 novembre 2026)
 
 **Centre de données** (`js/centre_donnees.js`, menu « Centre de données ») :

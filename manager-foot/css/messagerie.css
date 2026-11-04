@@ -481,3 +481,12 @@
 .dh-fm em { font-style: normal; font-size: 11px; font-weight: 600; } .dh-fm em.r3 { color: var(--acc); } .dh-fm em.r1 { color: var(--mut); } .dh-fm em.r0 { color: #ff9aa2; }
 .dh-conseils { margin: 6px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.5; } .dh-conseils li + li { margin-top: 4px; }
 @media (max-width: 640px) { .dh-pct li { grid-template-columns: minmax(90px, 120px) minmax(0, 1fr) 28px 40px; gap: 6px; } }
+
+/* Avec ballon / sans ballon (js/phases_jeu.js) */
+.pj { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft, var(--line)); }
+.pj-formes { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 8px; }
+.pj-formes > div { display: flex; flex-direction: column; gap: 1px; padding: 8px 12px; border-radius: var(--r-m); background: var(--surface-2); min-width: 150px; }
+.pj-formes small { font-size: var(--fs-2xs); letter-spacing: .08em; text-transform: uppercase; color: var(--mut); }
+.pj-formes b { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; } .pj-formes em { font-style: normal; font-size: 11px; color: var(--mut); }
+.pj-formes > span { color: var(--mut); font-size: 18px; }
+.pj-eff { margin: 0 0 8px; font-size: 12.5px; } .pj-eff.pos { color: var(--acc); } .pj-eff.warn { color: var(--yel); }
