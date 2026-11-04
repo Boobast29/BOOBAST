@@ -4,7 +4,7 @@ Le jeu conserve les fonctions récentes du dépôt : centre « À faire », chro
 
 ## Joueurs et photos
 
-Placer Football_Monde_JSON_Visuels_v12.zip à côté de manager-foot ou dans Téléchargements, puis lancer Installer_Joueurs_Photos.bat. Python3.9+ requis. L'installateur extrait le pack local, importe toutes les fiches et tous les historiques disponibles, vérifie le compte du manifeste et les identifiants, et comptabilise les portraits/logos locaux. Ensuite lancer Lancer_Manager_Foot.bat et choisir un club réel.
+Placer Football_Monde_JSON_Visuels.zip dans manager-foot ou dans Téléchargements, puis lancer Tout_Installer.bat (Python 3.9+ requis). L'installateur vérifie le ZIP, extrait et importe les fiches et les historiques, contrôle les comptes et les portraits/logos, puis ouvre le jeu. Pour rejouer sans réinstaller, lancer Lancer_Manager_Foot.bat.
 
 L'import complet vérifié a produit 436 020 fiches uniques, 17 884 chemins de portraits locaux disponibles et 706 logos locaux disponibles. Les historiques contiennent88372performances,34561absences,105454transferts,69438valeurs,34834sélections et33059entrées d'années civiles. Ces comptes ne signifient pas que chaque joueur a toutes ces informations. Les contrats et salaires du jeu restent simulés ; les effectifs proviennent des snapshots datés, pas d'une vérification individuelle actuelle.
 
