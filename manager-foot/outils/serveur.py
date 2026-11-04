@@ -216,6 +216,25 @@ def etat():
 class Handler(BaseHTTPRequestHandler):
     server_version = 'ManagerFoot/1.0'
 
+    def origine_locale(self):
+        """Refuse les hôtes détournés et les modifications lancées depuis un autre site."""
+        host = self.headers.get('Host', '')
+        try:
+            h = urllib.parse.urlsplit('http://' + host)
+            if h.username or h.password or h.hostname not in ('127.0.0.1', 'localhost') or h.port != self.server.server_port:
+                return False
+            if self.command == 'POST':
+                if self.headers.get('Sec-Fetch-Site', '').lower() == 'cross-site':
+                    return False
+                origin = self.headers.get('Origin')
+                if origin:
+                    o = urllib.parse.urlsplit(origin)
+                    if o.scheme != 'http' or o.hostname != h.hostname or o.port != h.port or o.path not in ('', '/'):
+                        return False
+        except ValueError:
+            return False
+        return True
+
     def log_message(self, fmt, *a):
         if os.environ.get('MF_VERBEUX'):
             sys.stderr.write('%s - %s\n' % (self.address_string(), fmt % a))
@@ -233,6 +252,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(corps)
 
     def do_GET(self):
+        if not self.origine_locale():
+            return self.envoyer(403, {'erreur': 'Origine non autorisée'})
         u = urllib.parse.urlparse(self.path)
         p = {k: v[-1] for k, v in urllib.parse.parse_qs(u.query).items()}
         parts = [urllib.parse.unquote(x) for x in u.path.split('/') if x]
@@ -256,7 +277,8 @@ class Handler(BaseHTTPRequestHandler):
         except BrokenPipeError:
             pass
         except Exception as e:
-            self.envoyer(500, {'erreur': repr(e)[:300]})
+            print('Erreur serveur :', repr(e), file=sys.stderr)
+            self.envoyer(500, {'erreur': 'Erreur interne du serveur'})
 
     def api_get(self, parts, p):
         if parts[:1] == ['catalogue']:
@@ -306,11 +328,18 @@ class Handler(BaseHTTPRequestHandler):
         return self.envoyer(404, {'erreur': 'route inconnue'})
 
     def do_POST(self):
+        if not self.origine_locale():
+            return self.envoyer(403, {'erreur': 'Origine non autorisée'})
         if RES is None:
             return self.envoyer(503, {'erreur': 'Base mondiale non installée'})
         u = urllib.parse.urlparse(self.path)
         parts = [urllib.parse.unquote(x) for x in u.path.split('/') if x]
-        n = int(self.headers.get('Content-Length') or 0)
+        try:
+            n = int(self.headers.get('Content-Length') or 0)
+        except ValueError:
+            return self.envoyer(400, {'erreur': 'Taille de requête invalide'})
+        if n < 0:
+            return self.envoyer(400, {'erreur': 'Taille de requête invalide'})
         if n > images.MAX_OCTETS + 1024:
             return self.envoyer(413, {'erreur': 'trop volumineux'})
         body = self.rfile.read(n) if n else b''
@@ -347,7 +376,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def statique(self, path):
         rel = urllib.parse.unquote(path).lstrip('/') or 'index.html'
-        if rel.split('/')[0] in STATIQUES_INTERDITS:
+        if any(part.startswith('.') or part in STATIQUES_INTERDITS for part in rel.replace('\\','/').split('/')):
             return self.envoyer(403, {'erreur': 'interdit'})
         f = images.chemin_sur(RACINE_JEU, rel)
         if not f:
