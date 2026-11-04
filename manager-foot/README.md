@@ -60,6 +60,7 @@ Raccourcis : `Espace` = continuer · `1`…`9` = menus · `/` = recherche · `É
   - plan de match avec marquage individuel ;
   - en direct : changement de dispositif, de mentalité, des missions et du marquage.
 - **Gestion de l'effectif** : statut promis à chaque joueur (Joueur clé, Titulaire, Rotation, Remplaçant, Espoir) comparé à son temps de jeu réel, confiance envers l'entraîneur, repos, équipe réserve.
+- **Bureau de direction** : missions confiées au staff, interventions auprès des joueurs et de l'entraîneur, vestiaire, presse et commission de ligue. Un briefing affiche le prochain adversaire, les absents, les joueurs à ménager et les missions en cours. Trois plans sportifs financés sur quatre semaines permettent de développer un jeune ayant joué, de récupérer physiquement ou de renforcer le soutien des supporters ; leur bilan est conservé dans la sauvegarde. Comparaison de deux à quatre joueurs côte à côte.
 - **Vestiaire** : hiérarchie et leaders, clans (langue, jeunes), ambiance, moral qui se propage dans le groupe, automatismes entre coéquipiers (passes plus réussies), conflits à apaiser, liste des joueurs mécontents avec leurs raisons.
 - **Mercato approfondi** :
   - clauses libératoires (pour toi comme pour l'IA) ;
