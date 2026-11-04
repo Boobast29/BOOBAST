@@ -1,0 +1,14 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const ctx={playerModal:()=>{},convertirJoueur:()=>({attrs:{fin:18,gar:19},detail20:{finition:18,reflexes:19}})};vm.createContext(ctx);
+vm.runInContext(fs.readFileSync(__dirname+'/../js/sources_joueurs.js','utf8'),ctx);
+const player={id:1,fmUid:'123',club:9,age:30,wage:100,contract:4,attrs:{fin:13,gar:14},attrs0:{fin:10,gar:15},stats:{goals:6},dataQuality:'estimated_attributes'};
+const world={players:[player],pmap:{1:player},_pow:{9:100}};
+const catalogue={players:[{fmUid:'123',sourceUrl:'https://fminside.net/test',sourceDatabase:'26.2.0',attributes:Object.fromEntries(Array.from({length:36},(_,i)=>['attribut'+i,50]))}]};
+const result=ctx.actualiserAttributsCarriere(world,catalogue);
+assert.equal(result.count,1);const p=result.world.players[0];
+assert.equal(p.attrs.fin,20);assert.equal(p.attrs.gar,18);assert.equal(p.attrs0.fin,18);
+for(const key of ['club','age','wage','contract'])assert.equal(p[key],player[key]);assert.deepEqual(p.stats,player.stats);
+assert.equal(world.players[0].attrs.fin,13);assert.equal(result.world.pmap,undefined);assert.equal(result.world._pow,undefined);
+assert.equal(ctx.actualiserAttributsCarriere(result.world,catalogue).count,0);
+assert.equal(ctx.actualiserAttributsCarriere({players:[{...player,fmUid:'autre'}]},catalogue).count,0);
+console.log('Actualisation : progression, contrats, statistiques, identité et absence de double application vérifiées.');

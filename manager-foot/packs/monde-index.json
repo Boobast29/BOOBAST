@@ -10,7 +10,7 @@
       "competitions": 3,
       "players": 4272,
       "staff": 2967,
-      "detailedPlayers": 204,
+      "detailedPlayers": 725,
       "sha256": "23e3091c964e09a8962bcef486c8bcf4af744d3a91779a116e44f411d2a03daf"
     },
     {
@@ -21,7 +21,7 @@
       "competitions": 3,
       "players": 3485,
       "staff": 1512,
-      "detailedPlayers": 38,
+      "detailedPlayers": 463,
       "sha256": "77d0a80646c32c7eeafa7f13b117937f5d4ff4656541e9c792591bf36b59a2e7"
     },
     {
@@ -32,7 +32,7 @@
       "competitions": 3,
       "players": 2997,
       "staff": 1920,
-      "detailedPlayers": 70,
+      "detailedPlayers": 511,
       "sha256": "bf3fd6d54fd1d2223d1f1347ae52ff23c3609dabe3f8893bd4516763c11d7407"
     },
     {
@@ -43,7 +43,7 @@
       "competitions": 5,
       "players": 5038,
       "staff": 4135,
-      "detailedPlayers": 106,
+      "detailedPlayers": 793,
       "sha256": "963d7ab6c8b7b87c010654f79f768f9569361bb34e5334da05bf29fe7641213c"
     },
     {
@@ -54,7 +54,7 @@
       "competitions": 4,
       "players": 2797,
       "staff": 1790,
-      "detailedPlayers": 118,
+      "detailedPlayers": 726,
       "sha256": "41514e49ff0ee0f74a701f45cf554613afc6d2807a178d70cd651cd03ab40c9c"
     }
   ],
@@ -65,7 +65,11 @@
     "competitions": 18,
     "players": 18589,
     "staff": 12324,
-    "detailedPlayers": 536
+    "detailedPlayers": 3218
   },
-  "attributesOverlay": "fminside-fm26.json.gz"
+  "attributesOverlay": "fminside-fm26.json.gz",
+  "fmInsideProfiles": 2631,
+  "freeAgentsDocumented": 149,
+  "fmBlogProfiles": 1000,
+  "documentedProfiles": 3631
 }

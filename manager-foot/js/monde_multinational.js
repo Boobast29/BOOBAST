@@ -81,6 +81,21 @@ function promotionsParPays(W,S,leagues){
   }
   const clubL=clubLeague;clubLeague=function(W,id){return clubL(W,id) || Object.values(W.comps||{}).find(c=>c.type==='worldLeague' && c.clubs.includes(id));};
   if(typeof reglesPays==='function'){const previousRules=reglesPays;reglesPays=function(W){return W.worldMode && typeof REGLES!=='undefined' && REGLES[W.clubs.find(c=>c.id===W.clubId)?.country] || previousRules(W);};}
+  // Le moteur historique regroupait toutes les divisions étrangères d'un pays.
+  // Le nouveau calendrier par compétition est l'unique source de résultats.
+  if(typeof initLiguesEtrangeres==='function'){
+    const init=initLiguesEtrangeres;initLiguesEtrangeres=function(W){if(!W.worldMode)return init(W);W.etr={season:W.season,ligues:{}};};
+    const advance=avancerLiguesEtrangeres;avancerLiguesEtrangeres=function(W){if(!W.worldMode)return advance(W);};
+    const close=cloreLiguesEtrangeres;cloreLiguesEtrangeres=function(W){if(!W.worldMode)return close(W);};
+  }
+  if(typeof ligueDe==='function'){
+    const previousLeague=ligueDe;ligueDe=function(W,p){if(!W.worldMode)return previousLeague(W,p);return p.club==null?'libre':clubLeague(W,p.club)?.id || '';};
+    const previousSelect=selectLigues;selectLigues=function(W,val=''){
+      if(!W.worldMode)return previousSelect(W,val);
+      const leagues=liguesDuMonde(W),countries=[...new Set(leagues.map(L=>L.country))];
+      return `<select id="flg" aria-label="Pays et championnat"><option value="">Tous les pays et championnats</option>${countries.map(country=>`<optgroup label="${esc(country)}">${leagues.filter(L=>L.country===country).map(L=>`<option value="${esc(L.id)}" ${val===L.id?'selected':''}>${esc(L.name)}</option>`).join('')}</optgroup>`).join('')}<option value="libre" ${val==='libre'?'selected':''}>Joueurs libres</option></select>`;
+    };
+  }
   const norm=normalizeWorld;normalizeWorld=function(W){preparerPaysActif(W);return norm(W);};
   const migrate=migrateGame;migrateGame=function(W){preparerPaysActif(W);return migrate(W);};
   const setup=setupSeason;setupSeason=function(W){
@@ -128,7 +143,8 @@ function promotionsParPays(W,S,leagues){
 })();
 function ouvrirClassementsMonde(){
   const main=document.querySelector('#main');if(!G?.worldMode || !main)return;
-  main.innerHTML='<section class="card"><h1>Tous les pays de la carrière</h1><p>Le pays de ton club utilise le moteur complet. Les autres championnats et coupes avancent en simulation rapide. Promotions simplifiées, sans barrages.</p><select id="wmLeague" aria-label="Championnat"></select><div id="wmTable"></div></section>';
+  main.innerHTML='<section class="card"><h1>Tous les pays de la carrière</h1><button class="btn" id="wmActualiser">Actualiser les attributs documentés</button><p>Le pays de ton club utilise le moteur complet. Les autres championnats et coupes avancent en simulation rapide. Promotions simplifiées, sans barrages.</p><select id="wmLeague" aria-label="Championnat"></select><div id="wmTable"></div></section>';
+  document.querySelector('#wmActualiser').onclick=proposerMiseAJourAttributs;
   const ls=liguesDuMonde(G),select=document.querySelector('#wmLeague');
   select.innerHTML=ls.map(L=>`<option value="${esc(L.id)}">${esc(L.country)} · ${esc(L.name)}</option>`).join('');
   const render=()=>{const L=G.comps[select.value];document.querySelector('#wmTable').innerHTML='<table><thead><tr><th>Club</th><th>MJ</th><th>Points</th></tr></thead><tbody>'+standings(G,L.id).map(r=>`<tr><td>${esc(getClub(G,r.id).name)}</td><td>${r.p}</td><td>${r.pts}</td></tr>`).join('')+'</tbody></table>';};

@@ -13,7 +13,7 @@ async function lirePaysMonde(file) {
   if (!r.ok) throw Error('Base nationale indisponible');
   if (typeof DecompressionStream === 'undefined') throw Error('Cette base nécessite un navigateur prenant en charge gzip (Chrome, Edge ou Firefox récent).');
   const pays=await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).json();
-  catalogueFMInsideMonde ||= fetch('packs/fminside-fm26.json.gz').then(async response=>{if(!response.ok)throw Error('Attributs FMInside indisponibles');return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}).catch(err=>{catalogueFMInsideMonde=null;throw err;});
+  catalogueFMInsideMonde ||= chargerCatalogueFMInside().catch(err=>{catalogueFMInsideMonde=null;throw err;});
   enrichirPaysFMInside(pays,await catalogueFMInsideMonde);
   correctifsNomsMonde ||= fetch('packs/noms-reels-fmscout.json').then(r=>{if(!r.ok)throw Error('Correctifs de noms indisponibles');return r.json();}).catch(err=>{correctifsNomsMonde=null;throw err;});
   const noms=await correctifsNomsMonde;
@@ -56,6 +56,7 @@ function construireCarriereMonde(pays, groupeD3) {
     const info=profils.get(String(p.fmUid));
     p.dataQuality=info ? (info.detailed?'documented_attributes':'estimated_attributes') : 'generated_filler';
     if(info) {
+      appliquerBiographieTransfermarkt(p,info.source);
       p.sourceProfile={url:info.source.sourceUrl,database:info.source.sourceDatabase,squad:info.source.squad,contract:info.source.contractEndText};
       if(typeof equipeDeSource==='function')equipeDeSource(p,info.source.squad); // équipe réelle : première, réserve ou U19
       if(Number.isFinite(info.source.wageWeekly))p.wage=info.source.wageWeekly;
@@ -65,7 +66,7 @@ function construireCarriereMonde(pays, groupeD3) {
   monde.sourceCoverage={country:pays.country,competitions:comps.map(c=>c.fmUid),sourcePlayers:uids.size};
   return monde;
 }
-function construireMondeComplet(listePays) {
+function construireMondeComplet(listePays,catalogueLibres=null) {
   const clubs=[], players=[], seen=new Set(); let nextClub=1,nextPlayer=1;
   const catalogue=[];
   for(const pays of listePays){
@@ -87,9 +88,11 @@ function construireMondeComplet(listePays) {
     }
     catalogue.push({country:pays.country,label:pays.label,competitions:comps});
   }
-  return {clubs,players,noForeign:true,wagesScaled:true,worldMode:true,worldCountries:catalogue,
+  const monde={clubs,players,noForeign:true,wagesScaled:true,worldMode:true,worldCountries:catalogue,
     leagueNames:['D1 · tous les pays','D2 · tous les pays','D3 · groupe 1','D3 · groupe 2','D3 · groupe 3'],cupName:'Coupe nationale',
     sourceCoverage:{countries:listePays.map(p=>p.country),sourcePlayers:seen.size,competitions:catalogue.flatMap(c=>c.competitions.map(c=>c.fmUid))}};
+  if(catalogueLibres){const result=ajouterJoueursLibresDocumentes(monde,catalogueLibres);result.monde.sourceCoverage.freeAgents=result.ajoutes;return result.monde;}
+  return monde;
 }
 async function ouvrirMondeEtendu() {
   const host=document.querySelector('#app');
@@ -97,7 +100,7 @@ async function ouvrirMondeEtendu() {
   const el=id=>document.getElementById(id);el('meRetour').onclick=startScreen;
   try {
     const r=await fetch('packs/monde-index.json');if(!r.ok)throw Error('Index mondial indisponible');const index=await r.json();
-    el('meEtat').textContent=`${index.totals.clubs} clubs · ${index.totals.competitions} compétitions · ${index.totals.players} joueurs · ${index.totals.staff} membres du staff. ${index.notice}`;
+    el('meEtat').textContent=`${index.totals.clubs} clubs · ${index.totals.competitions} compétitions · ${index.totals.players} joueurs · ${index.totals.staff} membres du staff · ${index.freeAgentsDocumented || 0} joueurs libres documentés. ${index.notice}`;
     el('mePays').innerHTML=index.countries.map(c=>`<option value="${esc(c.key)}">${esc(c.label)}</option>`).join('');
     let pays, request=0;
     const charger=async()=>{
@@ -107,7 +110,7 @@ async function ouvrirMondeEtendu() {
         const result=await lirePaysMonde(c.file);if(ticket!==request)return;pays=result;
         el('meGroupe').innerHTML=pays.competitions.filter(c=>c.tier===3).map(c=>`<option value="${esc(c.fmUid)}">${esc(c.name)}</option>`).join('');
         el('meBilan').textContent=`${c.players} joueurs, dont ${c.detailedPlayers} avec attributs détaillés ; ${c.staff} fiches de staff. ${pays.unresolvedReserveTeams?.length || 0} liens de réserve sans identifiant propre exclus des divisions pour éviter les doublons. Les autres attributs sont estimés pour permettre la simulation. Staff consultable comme référence ; fonctions d’encadrement non attribuées automatiquement.`;
-        el('meComps').innerHTML=pays.competitions.map(c=>`<p><b>D${c.tier} · ${esc(c.name)}</b> : ${c.clubs.length} clubs référencés</p>`).join('');el('meCreer').disabled=false;
+        el('meComps').innerHTML=pays.competitions.map(c=>`<p><b>D${c.tier} · ${esc(c.name)}</b> : ${c.clubs.length} clubs référencés · ${pays.clubs.filter(club=>c.clubs.includes(club.fmUid)).flatMap(club=>club.players).filter(p=>p.attributes && Object.keys(p.attributes).length>=30).length} profils avec attributs documentés</p>`).join('');el('meCreer').disabled=false;
       }catch(err){if(ticket===request)el('meBilan').textContent=err.message;}
     };
     el('mePays').onchange=charger;
@@ -115,7 +118,7 @@ async function ouvrirMondeEtendu() {
       el('meCreer').disabled=true;
       try {
         const tousLesPays=await Promise.all(index.countries.map(c=>lirePaysMonde(c.file)));
-        const monde=construireMondeComplet(tousLesPays);
+        const monde=construireMondeComplet(tousLesPays,await chargerCatalogueFMInside());
         await Store.set(DB_KEY,monde);DB=monde;startScreen();toast(`Base préparée : ${monde.clubs.length} clubs, ${monde.sourceCoverage.sourcePlayers} joueurs issus des sources. Choisis ton club.`);
       }catch(err){el('meBilan').textContent=err.message;el('meCreer').disabled=false;}
     };

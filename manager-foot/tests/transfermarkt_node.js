@@ -1,0 +1,10 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const c={};vm.createContext(c);vm.runInContext(fs.readFileSync(__dirname+'/../js/integration_fminside.js','utf8'),c);
+assert.equal(c.estLibreDocumente({freeAgentSnapshot:true,transfermarktStatus:{status:'retired'}}),false);
+assert.equal(c.estLibreDocumente({freeAgentSnapshot:true,transfermarktStatus:{status:'contracted'}}),false);
+assert.equal(c.estLibreDocumente({transfermarktStatus:{status:'free'}}),true);
+assert.equal(c.estLibreDocumente({club:''}),false);
+const p={club:5,wage:100,stats:{goals:7}},source={transfermarkt:{heightCm:184,appearancesBySeason:{'2025/26':{goals:20}}}};
+c.appliquerBiographieTransfermarkt(p,source);p.transfermarkt.heightCm=190;
+assert.equal(source.transfermarkt.heightCm,184);assert.equal(p.club,5);assert.equal(p.stats.goals,7);assert.equal(p.wage,100);
+console.log('Transfermarkt : statuts, séparation historique/carrière et absence de mutation source validés.');
