@@ -1,5 +1,6 @@
 """Catalogue FMB hors ligne. Index séparé des joueurs de la partie (Python standard)."""
 import hashlib
+import gzip
 import io
 import json
 import os
@@ -10,7 +11,7 @@ import zipfile
 from commun import RACINE_JEU, DOSSIER_JEU_DONNEES, normaliser
 import images
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def entier_source(valeur):
@@ -30,7 +31,8 @@ class Catalogue:
             self.fichier = self.racine / 'extension_fmb_v15' / 'catalogue_fmb_v15.json'
             self._extraire()
         self.base = self.stockage / 'catalogue.sqlite'
-        empreinte = hashlib.sha256(self.fichier.read_bytes()).hexdigest()
+        self.supplement, empreinte_supplement = self._lire_supplement()
+        empreinte = hashlib.sha256(self.fichier.read_bytes() + empreinte_supplement.encode()).hexdigest()
         if self.base.exists():
             with sqlite3.connect(self.base) as con:
                 try:
@@ -40,6 +42,24 @@ class Catalogue:
                 except (sqlite3.Error, TypeError):
                     pass
         self._indexer(empreinte)
+
+    def _lire_supplement(self):
+        pack = RACINE_JEU / 'packs'
+        chemin = pack / 'fmblog-fm26.manifest.json'
+        if not chemin.is_file():
+            return {}, ''
+        manifest = json.loads(chemin.read_text(encoding='utf-8'))
+        chunks = []
+        for part in manifest['parts']:
+            fichier = images.chemin_sur(pack, part['file'])
+            octets = fichier.read_bytes() if fichier else b''
+            if len(octets) != part['bytes'] or hashlib.sha256(octets).hexdigest() != part['sha256']:
+                raise ValueError('Complément FMblog incomplet ou corrompu : ' + part['file'])
+            chunks.append(octets)
+        profils = json.loads(gzip.decompress(b''.join(chunks)))['players']
+        if len(profils) != manifest['profiles']:
+            raise ValueError('Nombre de profils FMblog incohérent')
+        return {str(p['fmUid']): p for p in profils if p.get('sourceGender') == 'male' and len(p.get('attributes') or {}) >= 30}, hashlib.sha256(b''.join(chunks)).hexdigest()
 
     def _extraire(self):
         pack = RACINE_JEU / 'packs'
@@ -94,6 +114,9 @@ class Catalogue:
                     uid = str(x['fm_uid'])
                     if genre == 'people':
                         d = details.get((typ, uid))
+                        supplement = self.supplement.get(uid) if typ == 'players' else None
+                        if supplement and supplement['name'] == x['name']:
+                            x['supplement'] = supplement
                         x['detail'] = d
                         x['memberships'] = membres.get((typ, uid), [])
                         fields = next((o.get('fields_source') for o in x.get('observations', []) if o.get('fields_source')), {})
@@ -109,7 +132,7 @@ class Catalogue:
                         poste = age = niveau = potentiel = club = None
                     photo = (x.get('photo') or x.get('logo') or {}).get('local_path')
                     c.execute('INSERT INTO fiches VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',
-                              (typ, uid, x['name'], normaliser(x['name']), bool(d), photo, json.dumps(x, ensure_ascii=False),
+                              (typ, uid, x['name'], normaliser(x['name']), bool(d or x.get('supplement')), photo, json.dumps(x, ensure_ascii=False),
                                poste, age, niveau, potentiel, club))
             c.execute('INSERT INTO meta VALUES(?, ?, ?)', (empreinte, json.dumps(data['metadata'], ensure_ascii=False), SCHEMA_VERSION))
         os.replace(tmp, self.base)
@@ -123,6 +146,7 @@ class Catalogue:
         with self.connection() as c:
             chiffres = {r['type']: r['n'] for r in c.execute('SELECT type,count(*) n FROM fiches GROUP BY type')}
             return {'comptes': chiffres, 'profils_detailles_catalogue': c.execute('SELECT count(*) FROM fiches WHERE detail=1').fetchone()[0],
+                    'profils_detailles_joueurs': c.execute("SELECT count(*) FROM fiches WHERE type='players' AND detail=1").fetchone()[0],
                     'source': json.loads(c.execute('SELECT contenu FROM meta').fetchone()[0]),
                     'note': 'Instantané FM26 26.3.2. Notes FMB sur 99. Affectations et salaires non vérifiés dans le monde réel.'}
 
