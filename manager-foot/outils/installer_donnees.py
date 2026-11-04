@@ -7,7 +7,25 @@ def verifier_archive(archive):
     try:
         with zipfile.ZipFile(archive) as z:
             required='Football_Monde/base_geante_v8/manifest.json'
-            names=set(z.namelist())
+            infos=z.infolist()
+            names=set()
+            names_windows=set()
+            total=0
+            for info in infos:
+                name=info.filename.replace('\\','/')
+                parts=pathlib.PurePosixPath(name).parts
+                if (not parts or parts[0]!='Football_Monde' or name.startswith('/')
+                    or any(part in ('.','..') or ':' in part for part in parts)
+                    or (info.external_attr >> 16) & 0o170000 == 0o120000):
+                    raise ValueError('Chemin ou lien non autorisé dans le pack : '+name)
+                key=name.rstrip('/').casefold()
+                if key in names_windows:
+                    raise ValueError('Entrées ZIP en double ou incompatibles avec Windows : '+name)
+                names_windows.add(key)
+                names.add(name)
+                total += info.file_size
+            if len(infos)>100000 or total>20*1024**3:
+                raise ValueError('Pack trop volumineux ou trop de fichiers.')
             if required not in names:
                 raise ValueError('Ce ZIP ne contient pas la base Football_Monde complète (manifest.json absent). Le ZIP BOOBAST/V12 contient le code du jeu : il faut le décompresser, puis fournir séparément Football_Monde_JSON_Visuels.zip.')
             m=json.loads(z.read(required).decode('utf-8'))
@@ -33,7 +51,12 @@ def local_pack(archive):
     target=DOSSIER_JEU_DONNEES/'packs'/digest.hexdigest()[:16]
     marker=target/'installation_complete.json'
     fm=target/'Football_Monde'
-    if marker.is_file() and (fm/'base_geante_v8/manifest.json').is_file():return fm
+    if marker.is_file() and (fm/'base_geante_v8/manifest.json').is_file():
+        try:
+            if json.loads(marker.read_text(encoding='utf-8')).get('sha256') == digest.hexdigest():
+                return fm
+        except (OSError, ValueError):
+            pass
     target.parent.mkdir(parents=True,exist_ok=True)
     temp=target.with_name(target.name+'.extraction')
     if temp.exists():shutil.rmtree(temp)
