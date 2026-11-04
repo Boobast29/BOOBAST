@@ -1,6 +1,4 @@
 @echo off
-cd /d "%~dp0"
-where py >nul 2>nul && (set PY=py -3) || (set PY=python)
-%PY% outils\installer_donnees.py %*
-if errorlevel 1 echo Installation interrompue. Consulte le message ci-dessus.
-pause
+rem Compatibilite V12 : le lanceur unique trouve/importera le ZIP et demarrera ensuite le jeu.
+call "%~dp0Lancer_Manager_Foot.bat" %*
+exit /b %errorlevel%

@@ -1,19 +1,11 @@
-## Démarrage et mises à jour
+# Un seul lanceur
 
-Lance le jeu avec `Lancer_Manager_Foot.bat` (Windows) ou `Lancer_Manager_Foot.sh` (macOS/Linux). À chaque démarrage, le lanceur vérifie les mises à jour du code sur GitHub puis lance le serveur. Il ne modifie pas `donnees_jeu/` ni les sauvegardes existantes. Sans Internet, il continue avec la version locale.
+Utilise uniquement **`Lancer_Manager_Foot.bat`** (Windows) ou **`Lancer_Manager_Foot.sh`** (macOS/Linux). Le même lanceur vérifie les mises à jour du code GitHub, cherche le ZIP V12 local, l'importe si nouveau ou modifié, puis démarre le jeu. Les anciens fichiers `Tout_Installer` et `Installer_*V12/Joueurs_Photos` sont conservés comme raccourcis de compatibilité et renvoient vers le lanceur unique.
 
-### Pack V12 sur ton PC
+## ZIP V12 sur ton ordinateur
 
-Au premier démarrage, le lanceur cherche un ZIP `Football_Monde*.zip` ou contenant `V12` dans le dossier du jeu, son dossier parent, le dossier courant, Téléchargements/Downloads, Bureau/Desktop et Documents. Il contrôle le ZIP avant import. Si le pack est ailleurs, une fenêtre permet de le choisir ; le chemin est mémorisé pour les prochains démarrages.
+Au premier lancement, le lanceur cherche un ZIP Football_Monde/V12 dans le dossier du jeu, le dossier parent, Téléchargements, Bureau et Documents. S'il ne le trouve pas, il propose de sélectionner le ZIP et mémorise son chemin. Il vérifie l'archive avant l'import. Un ZIP remplacé ou modifié est réimporté au lancement suivant. Le code de reprise de l'import évite de dupliquer les identifiants et conserve les données locales.
 
-Quand tu remplaces ce ZIP par une nouvelle version au même endroit, le lanceur compare son empreinte et réimporte les données modifiées. L'importeur conserve son journal de progression et reprend les fichiers déjà importés. Les photos et fichiers de la base restent locaux.
+Le pack ne peut pas être actualisé automatiquement depuis un fichier qui reste uniquement sur ton PC et n'a pas changé. Pour recevoir de nouvelles fiches, photos ou notes, remplace le ZIP local par sa nouvelle version. Le téléchargement automatique du pack est aussi possible en configurant une URL HTTPS directe dans `donnees_jeu/launcher.json` sous la forme `{"pack_url":"https://ton-hebergeur/Football_Monde.zip"}`.
 
-Pour obtenir le ZIP par Internet au lieu de le garder localement, renseigne une URL HTTPS directe vers l'archive dans `donnees_jeu/launcher.json` :
-
-```json
-{
-  "pack_url": "https://serveur.example/Football_Monde.zip"
-}
-```
-
-Cette URL est facultative : elle n'est pas nécessaire quand tu as le ZIP V12 sur ton PC. Il faut Python 3.9+.
+Les mises à jour du jeu remplacent les fichiers du programme, sans supprimer `donnees_jeu/` ni les sauvegardes. Internet indisponible ? Le lanceur continue avec la version locale installée. Python 3.9+ est requis.

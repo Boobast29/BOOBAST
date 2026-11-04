@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0"
 if not exist "outils\lanceur.py" (
-  echo Fichier outils\lanceur.py absent. Extrais le dossier manager-foot complet.
+  echo Fichier outils\lanceur.py absent. Mets a jour ou re-extrais le dossier manager-foot.
   exit /b 1
 )
 set "PY="

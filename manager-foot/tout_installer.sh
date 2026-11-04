@@ -1,3 +1,4 @@
 #!/bin/sh
-# Installe et met a jour tout (Linux / macOS), puis lance le jeu.
-cd "$(dirname "$0")" && exec python3 outils/tout_installer.py "$@"
+# Ancien nom conservé pour compatibilité : transfert au lanceur unique.
+DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit 1
+exec "$DIR/Lancer_Manager_Foot.sh" "$@"
