@@ -21,6 +21,9 @@
 .dir-brief small { display:block; color:#a9cdbc; font-size:10px; letter-spacing:.12em; font-weight:800; margin-bottom:7px; }
 .dir-brief strong { color:#f4fbf7; font-size:19px; overflow-wrap:anywhere; }
 .dir-brief > div:first-child strong { font-size:16px; }
+.dir-brief .dir-brief-advice { grid-column:1/-1; display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#1b3435; }
+.dir-brief-advice p { flex:1 1 300px; color:#d1e7d8; margin:0; line-height:1.4; }
+.dir-brief-advice .btn { min-height:38px; }
 .dir-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; align-items:start; }
 .dir-wide { grid-column:1/-1; }
 .dir-card { padding:20px; border-color:#314250; background:linear-gradient(145deg,rgba(43,63,76,.32),transparent 60%),var(--panel); }
